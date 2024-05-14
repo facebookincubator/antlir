@@ -13,6 +13,8 @@ rust_library(
         "rayon",
         "rustc-hash",
         "serde",
+        "serde_json",
+        "static_assertions",
         "thiserror",
         "tracing",
         "walkdir",

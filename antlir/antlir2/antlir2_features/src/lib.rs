@@ -21,10 +21,10 @@ pub mod types;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("run_info was malformed")]
-    RunInfo,
     #[error("could not load plugin: {0}")]
     PluginLoad(#[from] libloading::Error),
+    #[error("could not deserialize feature json: {0}")]
+    Deserialize(serde_json::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

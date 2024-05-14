@@ -332,45 +332,39 @@ pub trait CompileFeature {
     }
 }
 
+static_assertions::assert_obj_safe!(CompileFeature);
+
 /// PluginExt indirects the implementation of [CompileFeature] through a .so
 /// plugin. The underlying crates all provide a type that implements
 /// [CompileFeature], and some generated code provides a set of exported symbols
 /// that let us call that implementation.
 trait PluginExt {
-    fn compile_fn(
+    fn as_compile_feature_fn(
         &self,
-    ) -> Result<libloading::Symbol<fn(&antlir2_features::Feature, &CompilerContext) -> Result<()>>>;
-    fn plan_fn(
-        &self,
-    ) -> Result<
-        libloading::Symbol<
-            fn(&antlir2_features::Feature, &CompilerContext) -> Result<Vec<plan::Item>>,
-        >,
-    >;
+    ) -> Result<libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn CompileFeature>>>>;
 }
 
 impl PluginExt for antlir2_features::Plugin {
-    fn compile_fn(
+    fn as_compile_feature_fn(
         &self,
-    ) -> Result<libloading::Symbol<fn(&Feature, &CompilerContext) -> Result<()>>> {
-        self.get_symbol(b"CompileFeature_compile\0")
-            .map_err(|e| anyhow::anyhow!("while getting compile function: {e}").into())
-    }
-
-    fn plan_fn(
-        &self,
-    ) -> Result<libloading::Symbol<fn(&Feature, &CompilerContext) -> Result<Vec<plan::Item>>>> {
-        self.get_symbol(b"CompileFeature_plan\0")
-            .map_err(|e| anyhow::anyhow!("while getting plan function: {e}").into())
+    ) -> Result<libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn CompileFeature>>>>
+    {
+        self.get_symbol(b"as_compile_feature\0")
+            .map_err(antlir2_features::Error::from)
+            .map_err(Error::from)
     }
 }
 
 impl CompileFeature for Feature {
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
-        self.plugin()?.compile_fn()?(self, ctx)
+        let func = self.plugin()?.as_compile_feature_fn()?;
+        let feat = func(self)?;
+        feat.compile(ctx)
     }
 
     fn plan(&self, ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
-        self.plugin()?.plan_fn()?(self, ctx)
+        let func = self.plugin()?.as_compile_feature_fn()?;
+        let feat = func(self)?;
+        feat.plan(ctx)
     }
 }

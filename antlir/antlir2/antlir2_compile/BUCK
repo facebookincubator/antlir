@@ -15,6 +15,7 @@ rust_library(
         "openat2",
         "serde",
         "serde_json",
+        "static_assertions",
         "thiserror",
         "tracing",
         "xattr",
