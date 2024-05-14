@@ -13,9 +13,11 @@ if [ -f "/is-facebook" ]; then
         echo "not in repo" > /status
     fi
 else
-    if [ -f ".git" ]; then
+    if [ -d ".git" ]; then
         echo "in repo" > /status
-    elif [ -f ".hg" ]; then
+    elif [ -d ".hg" ]; then
+        echo "in repo" > /status
+    elif [ -d ".sl" ]; then
         echo "in repo" > /status
     else
         echo "not in repo" > /status

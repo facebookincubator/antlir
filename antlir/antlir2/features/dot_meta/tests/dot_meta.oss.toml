@@ -1,0 +1,35 @@
+[file.".meta/package"]
+op = "added"
+
+[file.".meta/package".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+foo:bar
+"""
+
+[file.".meta/revision"]
+op = "added"
+
+[file.".meta/revision".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+deadbeef
+"""
+
+[file.".meta/target"]
+op = "diff"
+
+[file.".meta/target".diff]
+text-patch = """
+--- parent
++++ child
+@@ -1 +1 @@
+-antlir//antlir/antlir2/features/dot_meta/tests:base
++antlir//antlir/antlir2/features/dot_meta/tests:dot_meta
+"""

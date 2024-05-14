@@ -2,7 +2,7 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
-load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "internal_external")
 
 # Normally, the `dot_meta` feature is included only when packaging up a final
 # layer, but we want to make it easier to test with image_diff_test, so these
@@ -31,7 +31,10 @@ image.layer(
 
 image_diff_test(
     name = "dot_meta-test",
-    diff = "dot_meta.toml",
+    diff = internal_external(
+        fb = "dot_meta.toml",
+        oss = "dot_meta.oss.toml",
+    ),
     diff_type = "file",
     layer = ":dot_meta",
 )
@@ -47,6 +50,12 @@ package.cpio_gz(
 
 buck_sh_test(
     name = "cpio-is-stamped",
-    args = ["$(location :stamped.cpio.gz)"],
+    args = [
+        "$(location :stamped.cpio.gz)",
+        internal_external(
+            fb = "fbcode//antlir/antlir2/features/dot_meta/tests:stamped.cpio.gz",
+            oss = "antlir//antlir/antlir2/features/dot_meta/tests:stamped.cpio.gz",
+        ),
+    ],
     test = "test-cpio-is-stamped.sh",
 )
