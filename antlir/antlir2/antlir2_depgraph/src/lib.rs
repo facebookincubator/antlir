@@ -60,8 +60,7 @@ impl Display for Cycle {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("cycle in dependency graph:\n{0}")]
     Cycle(Cycle),
@@ -84,6 +83,10 @@ pub enum Error {
     Provides(String),
     #[error("failure determining 'requires': {0}")]
     Requires(String),
+    #[error("failed to deserialize feature data: {0}")]
+    Deserialize(serde_json::Error),
+    #[error(transparent)]
+    Plugin(#[from] antlir2_features::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -113,9 +113,6 @@ def feature_impl(
         ],
         visibility = [":" + name],
         deps = [
-            "//antlir/antlir2/antlir2_features:antlir2_features",
-            "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
-            "//antlir/antlir2/antlir2_compile:antlir2_compile",
             "static_assertions",
             "anyhow",
             "serde_json",
