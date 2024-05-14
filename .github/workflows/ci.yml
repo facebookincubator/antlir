@@ -27,6 +27,11 @@ jobs:
           sudo apt install \
             cpio jq systemd-container
 
+      - name: Disable watchman
+        run: |
+          echo '[buck2]' >> .buckconfig
+          echo 'file_watcher=notify' >> .buckconfig
+
       - name: Find tests
         run: |
           ./buck2 uquery 'kind(".*_test", set(%s)) - attrfilter(labels, disabled, set(%s))' \
