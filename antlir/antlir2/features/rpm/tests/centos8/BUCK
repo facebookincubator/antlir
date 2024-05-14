@@ -3,6 +3,7 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/features/rpm/tests:defs.bzl", "expected_t", "test_rpms")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 
 oncall("antlir")
 
@@ -33,6 +34,10 @@ test_rpms(
             ] + _RPM_DEPS_OF_TEST,
         ),
     ],
+    labels = internal_external(
+        fb = [],
+        oss = ["disabled"],
+    ),
 )
 
 image.layer(
@@ -40,10 +45,18 @@ image.layer(
     features = [
         feature.rpms_install(rpms = _RPM_DEPS_OF_TEST),
     ],
+    labels = internal_external(
+        fb = [],
+        oss = ["disabled"],
+    ),
 )
 
 image_python_test(
     name = "test-db-backend",
     srcs = ["test_db_backend.py"],
+    labels = internal_external(
+        fb = [],
+        oss = ["disabled"],
+    ),
     layer = ":simple",
 )

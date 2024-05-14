@@ -15,7 +15,7 @@ jobs:
       - uses: facebook/install-dotslash@latest
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
       - name: BTRFS-ify antlir2-out
         run: |
           mkdir antlir2-out
@@ -34,12 +34,14 @@ jobs:
 
       - name: Find tests
         run: |
-          ./buck2 uquery 'kind(".*_test", set(%s)) - attrfilter(labels, disabled, set(%s))' \
-            //antlir/antlir2/antlir2_facts/... \
-            //antlir/antlir2/features/clone/tests: \
-            //antlir/antlir2/features/install/tests: \
-            //antlir/antlir2/features/rpm/tests: \
-            //antlir/antlir2/features/tarball/tests: \
+          ./buck2 bxl :find_tests.bxl:find_tests -- \
+            --pattern //antlir/antlir2/antlir2_facts/... \
+            --pattern //antlir/antlir2/features/... \
+            --pattern //antlir/antlir2/test_images/... \
+            --disable //antlir/antlir2/test_images/cfg/os/... \
+            --disable //antlir/antlir2/test_images/cfg/target_arch/... \
+            --disable //antlir/antlir2/test_images/package/ext3/... \
+            --disable //antlir/antlir2/test_images/package/xar/... \
             | tee ${{ runner.temp }}/tests.txt
 
       - name: Build tests
