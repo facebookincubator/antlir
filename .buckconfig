@@ -21,3 +21,7 @@ ignore = antlir2-out, .git, .sl
 
 [buck2]
 file_watcher = watchman
+materializations = deferred
+sqlite_materializer_state = true
+defer_write_actions = true
+hash_all_commands = true
