@@ -21,12 +21,12 @@ use antlir2_depgraph::item::Path as PathItem;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_depgraph::requires_provides::Validator;
 use antlir2_facts::fact::dir_entry::DirEntry;
+use antlir2_facts::fact::user::Group;
+use antlir2_facts::fact::user::User;
 use antlir2_features::types::GroupName;
 use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
-use antlir2_users::group::EtcGroup;
-use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
@@ -276,52 +276,41 @@ impl antlir2_compile::CompileFeature for Clone {
             // sure that we look up the src ids and copy the _names_ instead of
             // just the ids
 
-            let src_userdb: EtcPasswd =
-                std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/passwd"))
-                    .and_then(|s| s.parse().map_err(std::io::Error::other))
-                    .unwrap_or_else(|_| Default::default());
-            let src_groupdb: EtcGroup =
-                std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/group"))
-                    .and_then(|s| s.parse().map_err(std::io::Error::other))
-                    .unwrap_or_else(|_| Default::default());
+            let src_facts = antlir2_facts::RoDatabase::open(&self.src_layer.facts_db)
+                .context("while opening src_layer facts db")?;
 
             let meta = entry.metadata().map_err(std::io::Error::from)?;
 
             let (new_uid, new_gid) = match &self.usergroup {
-                Some(usergroup) => (
-                    ctx.uid(
-                        &src_userdb
-                            .get_user_by_name(&usergroup.user)
-                            .with_context(|| {
-                                format!("src_layer missing passwd entry for {}", usergroup.user)
-                            })?
-                            .name,
-                    )?,
-                    ctx.gid(
-                        &src_groupdb
-                            .get_group_by_name(&usergroup.group)
-                            .with_context(|| {
-                                format!("src_layer missing group entry for {}", usergroup.group)
-                            })?
-                            .name,
-                    )?,
-                ),
+                Some(usergroup) => (ctx.uid(&usergroup.user)?, ctx.gid(&usergroup.group)?),
                 None => (
                     ctx.uid(
-                        &src_userdb
-                            .get_user_by_id(meta.uid().into())
+                        src_facts
+                            .iter::<User>()
+                            .context("while iterating over src users")?
+                            .find(|u| u.id() == meta.uid())
                             .with_context(|| {
-                                format!("src_layer missing passwd entry for {}", meta.uid())
+                                format!(
+                                    "src_layer {} missing entry for user id {}",
+                                    self.src_layer.label,
+                                    meta.uid()
+                                )
                             })?
-                            .name,
+                            .name(),
                     )?,
                     ctx.gid(
-                        &src_groupdb
-                            .get_group_by_id(meta.gid().into())
+                        src_facts
+                            .iter::<Group>()
+                            .context("while iterating over src groups")?
+                            .find(|g| g.id() == meta.gid())
                             .with_context(|| {
-                                format!("src_layer missing group entry for {}", meta.gid())
+                                format!(
+                                    "src_layer {} missing entry for group id {}",
+                                    self.src_layer.label,
+                                    meta.gid()
+                                )
                             })?
-                            .name,
+                            .name(),
                     )?,
                 ),
             };

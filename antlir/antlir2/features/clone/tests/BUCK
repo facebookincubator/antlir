@@ -204,6 +204,17 @@ image.layer(
             gid = 10,
             groupname = "antlir",
         ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "bar",
+            shell = "/fakeshell",
+            uid = 11,
+            username = "foo",
+        ),
+        feature.group_add(
+            gid = 12,
+            groupname = "bar",
+        ),
     ],
 )
 
@@ -228,22 +239,22 @@ image_diff_test(
 )
 
 image.layer(
-    name = "clone-file-chown-root",
+    name = "clone-file-chown-user",
     features = [
         feature.clone(
             dst_path = "/cloned-file",
-            group = "root",
+            group = "bar",
             src_layer = ":clone-src",
             src_path = "/f",
-            user = "root",
+            user = "foo",
         ),
     ],
     parent_layer = ":base-ids-remap",
 )
 
 image_diff_test(
-    name = "clone-file-chown-root-test",
-    diff = "clone-file-root.toml",
+    name = "clone-file-chown-user-test",
+    diff = "clone-file-user.toml",
     diff_type = "file",
-    layer = ":clone-file-chown-root",
+    layer = ":clone-file-chown-user",
 )

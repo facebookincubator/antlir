@@ -10,6 +10,5 @@ feature_impl(
     deps = [
         "walkdir",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
-        "//antlir/antlir2/antlir2_users:antlir2_users",
     ],
 )

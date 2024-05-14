@@ -4,8 +4,8 @@ op = 'added'
 [file.cloned-file.diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
-user = "root"
-group = "root"
+user = "foo"
+group = "bar"
 text = '''
 This file will be cloned!
 '''
