@@ -259,6 +259,8 @@ _rpm, _rpm_anon = _new_package_rule(
             ["x86_64", "aarch64", "noarch"],
             default = arch_select(x86_64 = "x86_64", aarch64 = "aarch64"),
         ),
+        "autoprov": attrs.bool(default = True),
+        "autoreq": attrs.bool(default = True),
         "changelog": attrs.option(attrs.string(), default = None),
         "conflicts": attrs.list(attrs.string(), default = []),
         "description": attrs.option(attrs.string(), default = None),
