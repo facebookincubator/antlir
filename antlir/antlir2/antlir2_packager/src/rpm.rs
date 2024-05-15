@@ -60,6 +60,10 @@ pub struct Rpm {
     extra_files: Vec<String>,
     #[serde(default)]
     python_bytecompile: bool,
+    #[serde(default)]
+    autoreq: bool,
+    #[serde(default)]
+    autoprov: bool,
 }
 
 impl PackageFormat for Rpm {
@@ -120,6 +124,8 @@ BuildArch: {arch}
 
 Summary: {summary}
 License: {license}
+AutoReq: {autoreq}
+AutoProv: {autoprov}
 
 {requires}
 {requires_post}
@@ -135,6 +141,8 @@ License: {license}
 
 {post_install_script}
 "#,
+            autoreq = if self.autoreq { "yes" } else { "no" },
+            autoprov = if self.autoprov { "yes" } else { "no" },
             summary = self.summary.as_deref().unwrap_or(name.as_str()),
             version = version
                 .as_deref()
