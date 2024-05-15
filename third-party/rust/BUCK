@@ -1063,7 +1063,7 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
-    deps = [":rustversion-1.0.16"],
+    deps = [":rustversion-1.0.17"],
 )
 
 http_archive(
@@ -3315,25 +3315,28 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "erased-serde-0.4.4.crate",
-    sha256 = "2b73807008a3c7f171cc40312f37d95ef0396e048b5848d775f54b1a4dd4a0d3",
-    strip_prefix = "erased-serde-0.4.4",
-    urls = ["https://static.crates.io/crates/erased-serde/0.4.4/download"],
+    name = "erased-serde-0.4.5.crate",
+    sha256 = "24e2389d65ab4fab27dc2a5de7b191e1f6617d1f1c8855c0dc569c94a4cbb18d",
+    strip_prefix = "erased-serde-0.4.5",
+    urls = ["https://static.crates.io/crates/erased-serde/0.4.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "erased-serde-0.4.4",
-    srcs = [":erased-serde-0.4.4.crate"],
+    name = "erased-serde-0.4.5",
+    srcs = [":erased-serde-0.4.5.crate"],
     crate = "erased_serde",
-    crate_root = "erased-serde-0.4.4.crate/src/lib.rs",
+    crate_root = "erased-serde-0.4.5.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
         "std",
     ],
     visibility = [],
-    deps = [":serde-1.0.201"],
+    deps = [
+        ":serde-1.0.201",
+        ":typeid-1.0.0",
+    ],
 )
 
 http_archive(
@@ -10833,46 +10836,46 @@ buildscript_run(
 
 alias(
     name = "rustversion",
-    actual = ":rustversion-1.0.16",
+    actual = ":rustversion-1.0.17",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "rustversion-1.0.16.crate",
-    sha256 = "092474d1a01ea8278f69e6a358998405fae5b8b963ddaeb2b0b04a128bf1dfb0",
-    strip_prefix = "rustversion-1.0.16",
-    urls = ["https://static.crates.io/crates/rustversion/1.0.16/download"],
+    name = "rustversion-1.0.17.crate",
+    sha256 = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6",
+    strip_prefix = "rustversion-1.0.17",
+    urls = ["https://static.crates.io/crates/rustversion/1.0.17/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rustversion-1.0.16",
-    srcs = [":rustversion-1.0.16.crate"],
+    name = "rustversion-1.0.17",
+    srcs = [":rustversion-1.0.17.crate"],
     crate = "rustversion",
-    crate_root = "rustversion-1.0.16.crate/src/lib.rs",
+    crate_root = "rustversion-1.0.17.crate/src/lib.rs",
     edition = "2018",
     env = {
-        "OUT_DIR": "$(location :rustversion-1.0.16-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :rustversion-1.0.17-build-script-run[out_dir])",
     },
     proc_macro = True,
-    rustc_flags = ["@$(location :rustversion-1.0.16-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :rustversion-1.0.17-build-script-run[rustc_flags])"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "rustversion-1.0.16-build-script-build",
-    srcs = [":rustversion-1.0.16.crate"],
+    name = "rustversion-1.0.17-build-script-build",
+    srcs = [":rustversion-1.0.17.crate"],
     crate = "build_script_build",
-    crate_root = "rustversion-1.0.16.crate/build/build.rs",
+    crate_root = "rustversion-1.0.17.crate/build/build.rs",
     edition = "2018",
     visibility = [],
 )
 
 buildscript_run(
-    name = "rustversion-1.0.16-build-script-run",
+    name = "rustversion-1.0.17-build-script-run",
     package_name = "rustversion",
-    buildscript_rule = ":rustversion-1.0.16-build-script-build",
-    version = "1.0.16",
+    buildscript_rule = ":rustversion-1.0.17-build-script-build",
+    version = "1.0.17",
 )
 
 alias(
@@ -12466,7 +12469,7 @@ cargo.rust_library(
         ":heck-0.4.1",
         ":proc-macro2-1.0.82",
         ":quote-1.0.36",
-        ":rustversion-1.0.16",
+        ":rustversion-1.0.17",
         ":syn-2.0.63",
     ],
 )
@@ -13036,13 +13039,13 @@ cargo.rust_library(
     platform = {
         "windows-gnu": dict(
             deps = [
-                ":rustversion-1.0.16",
+                ":rustversion-1.0.17",
                 ":winapi-0.3.9",
             ],
         ),
         "windows-msvc": dict(
             deps = [
-                ":rustversion-1.0.16",
+                ":rustversion-1.0.17",
                 ":winapi-0.3.9",
             ],
         ),
@@ -14271,6 +14274,23 @@ cargo.rust_library(
     ],
 )
 
+http_archive(
+    name = "typeid-1.0.0.crate",
+    sha256 = "059d83cc991e7a42fc37bd50941885db0888e34209f8cfd9aab07ddec03bc9cf",
+    strip_prefix = "typeid-1.0.0",
+    urls = ["https://static.crates.io/crates/typeid/1.0.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "typeid-1.0.0",
+    srcs = [":typeid-1.0.0.crate"],
+    crate = "typeid",
+    crate_root = "typeid-1.0.0.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+)
+
 alias(
     name = "typenum",
     actual = ":typenum-1.17.0",
@@ -14338,7 +14358,7 @@ cargo.rust_library(
     edition = "2021",
     visibility = [],
     deps = [
-        ":erased-serde-0.4.4",
+        ":erased-serde-0.4.5",
         ":inventory-0.3.15",
         ":once_cell-1.19.0",
         ":serde-1.0.201",
@@ -14845,7 +14865,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":erased-serde-0.4.4",
+        ":erased-serde-0.4.5",
         ":serde-1.0.201",
         ":serde_fmt-1.0.3",
     ],
