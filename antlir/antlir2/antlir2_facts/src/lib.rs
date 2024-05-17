@@ -7,7 +7,6 @@
 
 #![feature(trait_upcasting)]
 
-use std::any::Any;
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 #[cfg(unix)]
@@ -72,7 +71,6 @@ impl RwDatabase {
     where
         F: Fact,
     {
-        let fact: &dyn Fact = fact;
         let val = serde_json::to_string(fact)?;
         self.db.execute(
             "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
@@ -190,7 +188,6 @@ impl<'db> Transaction<'db> {
     where
         F: Fact,
     {
-        let fact: &dyn Fact = fact;
         let val = serde_json::to_string(fact)?;
         self.tx.execute(
             "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
@@ -239,13 +236,8 @@ where
     // processes that are using the exact same code version as was used to
     // write them, since all antlir2 binaries are atomically built out of
     // (or possibly in the future, pinned into) the repo.
-    let fact: Box<dyn Fact> = serde_json::from_str(row.get_ref("value")?.as_str()?)
-        .expect("invalid JSON can never be stored in the DB");
-    let fact: Box<dyn Any> = fact;
-    let fact: Box<F> = fact
-        .downcast()
-        .expect("the type name is part of the key, so this should never fail");
-    Ok(*fact)
+    Ok(serde_json::from_str(row.get_ref("value")?.as_str()?)
+        .expect("invalid JSON can never be stored in the DB"))
 }
 
 fn rows_to_facts<F>(rows: Rows) -> rusqlite::Result<Vec<F>>

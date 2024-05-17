@@ -10,7 +10,6 @@ use antlir2_systemd::UnitFile;
 use super::Fact;
 use super::Key;
 
-#[typetag::serde]
 impl Fact for UnitFile {
     fn key(&self) -> Key {
         self.name().as_bytes().into()

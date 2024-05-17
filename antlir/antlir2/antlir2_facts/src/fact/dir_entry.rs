@@ -24,7 +24,6 @@ pub enum DirEntry {
     RegularFile(RegularFile),
 }
 
-#[typetag::serde]
 impl Fact for DirEntry {
     fn key(&self) -> Key {
         match self {

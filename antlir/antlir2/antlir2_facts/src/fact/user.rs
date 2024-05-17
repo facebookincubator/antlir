@@ -17,7 +17,6 @@ pub struct User {
     id: u32,
 }
 
-#[typetag::serde]
 impl Fact for User {
     fn key(&self) -> Key {
         self.name.as_str().into()
@@ -55,7 +54,6 @@ pub struct Group {
     members: Vec<String>,
 }
 
-#[typetag::serde]
 impl Fact for Group {
     fn key(&self) -> Key {
         self.name.as_str().into()

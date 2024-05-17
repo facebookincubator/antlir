@@ -7,6 +7,9 @@
 
 use std::any::Any;
 
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
 pub mod dir_entry;
 pub mod rpm;
 pub mod systemd;
@@ -14,8 +17,7 @@ pub mod user;
 
 use super::Key;
 
-#[typetag::serde]
-pub trait Fact: Any {
+pub trait Fact: Any + Serialize + DeserializeOwned {
     fn kind() -> &'static str
     where
         Self: Sized,
@@ -25,5 +27,3 @@ pub trait Fact: Any {
 
     fn key(&self) -> Key;
 }
-
-static_assertions::assert_obj_safe!(Fact);
