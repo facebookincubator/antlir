@@ -41,6 +41,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "fxhash",
         "itertools",
         "jwalk",
         "nix",

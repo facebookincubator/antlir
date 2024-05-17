@@ -17,10 +17,12 @@ use antlir2_facts::fact::dir_entry::Symlink;
 use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
+use antlir2_facts::fact::Fact;
 use antlir2_facts::RwDatabase;
 use antlir2_facts::Transaction;
 use antlir2_isolate::sys::unshare;
 use antlir2_isolate::IsolationContext;
+use antlir2_systemd::UnitFile;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
 use anyhow::bail;
@@ -28,6 +30,7 @@ use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use fxhash::FxHashSet;
 use itertools::Itertools;
 use jwalk::WalkDir;
 use tracing::trace;
@@ -37,6 +40,8 @@ use tracing::warn;
 struct Args {
     #[clap(long)]
     root: PathBuf,
+    #[clap(long)]
+    parent: Option<PathBuf>,
     #[clap(long)]
     build_appliance: Option<PathBuf>,
     #[clap(long)]
@@ -50,10 +55,12 @@ fn populate(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -
     populate_files(tx, &root)?;
     populate_usergroups(tx, &root)?;
     populate_rpms(tx, &root, build_appliance)?;
+    populate_systemd_units(tx, &root)?;
     Ok(())
 }
 
 fn populate_files(tx: &mut Transaction, root: &Path) -> Result<()> {
+    let mut remove: FxHashSet<_> = tx.all_keys::<DirEntry>()?.collect();
     for entry in WalkDir::new(root).skip_hidden(false) {
         let entry = entry?;
         let full_path = entry.path();
@@ -66,25 +73,32 @@ fn populate_files(tx: &mut Transaction, root: &Path) -> Result<()> {
             .metadata()
             .with_context(|| format!("while statting {}", full_path.display()))?;
         let common = FileCommon::new_with_metadata(path.clone(), &meta);
-        if entry.file_type().is_dir() {
-            tx.insert(&DirEntry::Directory(common.into()))?;
+        let fact = if entry.file_type().is_dir() {
+            DirEntry::Directory(common.into())
         } else if entry.file_type().is_symlink() {
             let raw_target = std::fs::read_link(&full_path)
                 .with_context(|| format!("while reading raw link {}", full_path.display()))?;
-            tx.insert(&DirEntry::Symlink(Symlink::new(common, raw_target)))?;
+            DirEntry::Symlink(Symlink::new(common, raw_target))
         } else if entry.file_type().is_file() {
-            tx.insert(&DirEntry::RegularFile(common.into()))?;
+            DirEntry::RegularFile(common.into())
         } else {
             bail!(
                 "{} was not a directory, symlink or file",
                 full_path.display()
             );
-        }
+        };
+        remove.remove(&fact.key());
+        tx.insert(&fact)?;
+    }
+    for remove in &remove {
+        tx.delete::<DirEntry>(remove)?;
     }
     Ok(())
 }
 
 fn populate_usergroups(tx: &mut Transaction, root: &Path) -> Result<()> {
+    let mut remove_users: FxHashSet<_> = tx.all_keys::<User>()?.collect();
+    let mut remove_groups: FxHashSet<_> = tx.all_keys::<Group>()?.collect();
     let user_db: EtcPasswd = match std::fs::read_to_string(root.join("etc/passwd")) {
         Ok(contents) => contents.parse().context("while parsing /etc/passwd"),
         Err(e) => match e.kind() {
@@ -93,7 +107,9 @@ fn populate_usergroups(tx: &mut Transaction, root: &Path) -> Result<()> {
         },
     }?;
     for user in user_db.into_records() {
-        tx.insert(&User::new(user.name.clone(), user.uid.into()))
+        let fact = User::new(user.name.clone(), user.uid.into());
+        remove_users.remove(&fact.key());
+        tx.insert(&fact)
             .with_context(|| format!("while inserting user '{}'", user.name))?;
     }
     let group_db: EtcGroup = match std::fs::read_to_string(root.join("etc/group")) {
@@ -104,12 +120,16 @@ fn populate_usergroups(tx: &mut Transaction, root: &Path) -> Result<()> {
         },
     }?;
     for group in group_db.into_records() {
-        tx.insert(&Group::new(
-            group.name.clone(),
-            group.gid.into(),
-            group.users,
-        ))
-        .with_context(|| format!("while inserting group '{}'", group.name))?;
+        let fact = Group::new(group.name.clone(), group.gid.into(), group.users);
+        remove_groups.remove(&fact.key());
+        tx.insert(&fact)
+            .with_context(|| format!("while inserting group '{}'", group.name))?;
+    }
+    for remove in &remove_users {
+        tx.delete::<User>(remove)?;
+    }
+    for remove in &remove_groups {
+        tx.delete::<Group>(remove)?;
     }
     Ok(())
 }
@@ -130,6 +150,7 @@ macro_rules! decode_rpm_field {
 }
 
 fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
+    let mut remove: FxHashSet<_> = tx.all_keys::<Rpm>()?.collect();
     let mut list_cmd = match build_appliance {
         Some(build_appliance) => {
             let isol = unshare(
@@ -219,15 +240,27 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
             })?)
             .source_rpm(source_rpm)
             .build();
+        remove.remove(&rpm.key());
         tx.insert(&rpm)
             .with_context(|| format!("while inserting rpm '{rpm}'"))?;
     }
+    for remove in &remove {
+        tx.delete::<Rpm>(remove)?;
+    }
+    Ok(())
+}
 
+fn populate_systemd_units(tx: &mut Transaction, root: &Path) -> Result<()> {
+    let mut remove: FxHashSet<_> = tx.all_keys::<UnitFile>()?.collect();
     for unit in
         antlir2_systemd::list_unit_files(root).context("while listing systemd unit files")?
     {
+        remove.remove(&unit.key());
         tx.insert(&unit)
             .with_context(|| format!("while inserting unit {unit:?}"))?;
+    }
+    for remove in &remove {
+        tx.delete::<UnitFile>(remove)?;
     }
 
     Ok(())
@@ -246,12 +279,17 @@ fn main() -> Result<()> {
         Some(antlir2_rootless::init().context("while dropping privileges")?)
     };
 
-    if args.db.exists() {
-        bail!(
-            "{} already exists - populate currently only works with completely new dbs",
-            args.db.display()
-        );
+    ensure!(
+        !args.db.exists(),
+        "output '{}' already exists",
+        args.db.display()
+    );
+
+    if let Some(parent) = &args.parent {
+        std::fs::copy(parent, &args.db)
+            .with_context(|| format!("while copying existing db '{}'", parent.display()))?;
     }
+
     let mut db = RwDatabase::create(&args.db)
         .with_context(|| format!("while creating db {}", args.db.display()))?;
 

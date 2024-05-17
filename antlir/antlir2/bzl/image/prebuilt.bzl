@@ -115,6 +115,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     facts_db = facts.new_facts_db(
         actions = ctx.actions,
         subvol_symlink = subvol_symlink,
+        parent_facts_db = None,
         build_appliance = None,
         new_facts_db = ctx.attrs._new_facts_db[RunInfo],
         phase = None,
