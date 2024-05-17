@@ -7,26 +7,25 @@
 
 use std::fmt::Debug;
 
-use antlir2_features::Feature;
 use nix::sys::stat::Mode;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::item::FileType;
-use crate::item::Item;
-use crate::item::ItemKey;
-use crate::item::Path;
-use crate::Error;
-use crate::Result;
+pub mod item;
+
+use item::FileType;
+use item::Item;
+use item::ItemKey;
+use item::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Requirement {
-    pub(crate) key: ItemKey,
-    pub(crate) validator: Validator,
+    pub key: ItemKey,
+    pub validator: Validator,
     /// This [Requirement] necessitates ordered running of the features
     /// involved. If false, the compiler is free to run the features in any
     /// order.
-    pub(crate) ordered: bool,
+    pub ordered: bool,
 }
 
 impl Requirement {
@@ -84,7 +83,7 @@ pub enum Validator {
 }
 
 impl Validator {
-    pub(crate) fn satisfies(&self, item: &Item) -> bool {
+    pub fn satisfies(&self, item: &Item) -> bool {
         match self {
             Self::Exists => true,
             Self::DoesNotExist => match item {
@@ -118,51 +117,3 @@ pub trait RequiresProvides {
 }
 
 static_assertions::assert_obj_safe!(RequiresProvides);
-
-/// PluginExt indirects the implementation of [RequiresProvides] through a .so
-/// plugin. The underlying crates all provide a type that implements
-/// [RequiresProvides], and some generated code provides a set of exported
-/// symbols that let us call that implementation.
-trait PluginExt {
-    fn as_requires_provides_fn(
-        &self,
-    ) -> Result<
-        libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn RequiresProvides>>>,
-    >;
-}
-
-impl PluginExt for antlir2_features::Plugin {
-    fn as_requires_provides_fn(
-        &self,
-    ) -> Result<
-        libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn RequiresProvides>>>,
-    > {
-        self.get_symbol(b"as_requires_provides\0")
-            .map_err(antlir2_features::Error::from)
-            .map_err(Error::from)
-    }
-}
-
-impl RequiresProvides for Feature {
-    #[tracing::instrument]
-    fn provides(&self) -> std::result::Result<Vec<Item>, String> {
-        let func = self
-            .plugin()
-            .map_err(|e| e.to_string())?
-            .as_requires_provides_fn()
-            .map_err(|e| e.to_string())?;
-        let feat = func(self).map_err(|e| e.to_string())?;
-        feat.provides()
-    }
-
-    #[tracing::instrument]
-    fn requires(&self) -> std::result::Result<Vec<Requirement>, String> {
-        let func = self
-            .plugin()
-            .map_err(|e| e.to_string())?
-            .as_requires_provides_fn()
-            .map_err(|e| e.to_string())?;
-        let feat = func(self).map_err(|e| e.to_string())?;
-        feat.requires()
-    }
-}

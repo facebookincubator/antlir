@@ -11,6 +11,11 @@ use std::fmt::Display;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
+use antlir2_depgraph_if::item;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::RequiresProvides as _;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::Feature;
 use buck_label::Label;
 use itertools::Itertools;
@@ -26,15 +31,11 @@ use rustc_hash::FxHashSet;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub mod item;
-use item::Item;
-use item::ItemKey;
-pub mod requires_provides;
-use requires_provides::RequiresProvides as _;
-use requires_provides::Validator;
 mod node;
+mod plugin;
 use node::GraphExt;
 pub use node::Node;
+use plugin::FeatureWrapper;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Edge {
@@ -221,7 +222,7 @@ impl GraphBuilder {
             .map(|feature_nx| {
                 let f = &self.g[*feature_nx];
                 tracing::trace!("getting provides from {f:?}");
-                let provides = f.provides().map_err(Error::Provides)?;
+                let provides = FeatureWrapper(f).provides().map_err(Error::Provides)?;
                 Ok((*feature_nx, provides))
             })
             .collect::<Result<Vec<_>>>()?
@@ -238,7 +239,7 @@ impl GraphBuilder {
             .map(|feature_nx| {
                 let f = &self.g[*feature_nx];
                 tracing::trace!("getting requires from {f:?}");
-                let reqs = f.requires().map_err(Error::Requires)?;
+                let reqs = FeatureWrapper(f).requires().map_err(Error::Requires)?;
                 Ok((*feature_nx, reqs))
             })
             .collect::<Result<_>>()?;
@@ -370,7 +371,8 @@ impl GraphBuilder {
                                 })
                             {
                                 feature_items.extend(
-                                    feat.provides()
+                                    FeatureWrapper(feat)
+                                        .provides()
                                         .map_err(Error::Provides)?
                                         .into_iter()
                                         .filter(|fi| fi.key() == item.key()),

@@ -6,8 +6,8 @@
  */
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::requires_provides::Requirement;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::Requirement;
 use antlir2_features as _;
 use anyhow as _;
 use serde::Deserialize;
@@ -21,7 +21,7 @@ pub struct Trace {
     msg: String,
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Trace {
+impl antlir2_depgraph_if::RequiresProvides for Trace {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
     }

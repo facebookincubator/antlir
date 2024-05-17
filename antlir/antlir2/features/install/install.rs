@@ -16,13 +16,13 @@ use std::path::Path;
 
 use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::FsEntry;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::Path as PathItem;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::FsEntry;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path as PathItem;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::stat::Mode;
 use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::GroupName;
@@ -177,7 +177,7 @@ impl<'de> Deserialize<'de> for XattrValue {
     }
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
+impl antlir2_depgraph_if::RequiresProvides for Install {
     fn provides(&self) -> Result<Vec<Item>, String> {
         if self.is_dir() {
             let mut v = vec![Item::Path(PathItem::Entry(FsEntry {

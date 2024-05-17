@@ -12,13 +12,13 @@ use std::io::BufReader;
 use std::os::unix::ffi::OsStrExt;
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::FsEntry;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::Path as PathItem;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::FsEntry;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path as PathItem;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::PathInLayer;
 use anyhow::anyhow;
@@ -82,7 +82,7 @@ impl Tarball {
     }
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Tarball {
+impl antlir2_depgraph_if::RequiresProvides for Tarball {
     fn provides(&self) -> Result<Vec<Item>, String> {
         let mut provides = Vec::new();
         let mut archive = self.open_archive().map_err(|e| format!("{e:#?}"))?;

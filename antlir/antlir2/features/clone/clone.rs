@@ -13,13 +13,13 @@ use std::path::Path;
 
 use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::FsEntry;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::Path as PathItem;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::FsEntry;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path as PathItem;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
@@ -52,7 +52,7 @@ pub struct CloneUserGroup {
     group: GroupName,
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
+impl antlir2_depgraph_if::RequiresProvides for Clone {
     fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = Vec::new();
         if self.pre_existing_dest {

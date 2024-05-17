@@ -14,8 +14,8 @@ use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::requires_provides::Requirement;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::Requirement;
 use antlir2_features::types::UserName;
 use antlir2_isolate::sys::unshare;
 use antlir2_isolate::InvocationType;
@@ -55,7 +55,7 @@ impl Genrule {
     }
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Genrule {
+impl antlir2_depgraph_if::RequiresProvides for Genrule {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
     }

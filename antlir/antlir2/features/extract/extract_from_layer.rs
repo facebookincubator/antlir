@@ -13,13 +13,13 @@ use std::path::Path;
 use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::FsEntry;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::Path as PathItem;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::FsEntry;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path as PathItem;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
 use anyhow::Context;
@@ -47,7 +47,7 @@ fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
     }
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractFromLayer {
+impl antlir2_depgraph_if::RequiresProvides for ExtractFromLayer {
     fn provides(&self) -> Result<Vec<Item>, String> {
         // Intentionally provide only the direct files the user asked for,
         // because we don't want to produce conflicts with all the transitive

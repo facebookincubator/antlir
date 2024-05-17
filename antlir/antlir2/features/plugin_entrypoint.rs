@@ -7,7 +7,7 @@
 
 use antlir2_compile::CompileFeature as _;
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::requires_provides::RequiresProvides as _;
+use antlir2_depgraph_if::RequiresProvides as _;
 use anyhow::Context;
 use r#impl::Feature;
 
@@ -18,13 +18,13 @@ pub fn init_tracing(dispatch: &tracing::Dispatch) {
 }
 
 static_assertions::assert_impl_all!(
-    Feature: antlir2_depgraph::requires_provides::RequiresProvides, antlir2_compile::CompileFeature,
+    Feature: antlir2_depgraph_if::RequiresProvides, antlir2_compile::CompileFeature,
 );
 
 #[no_mangle]
 pub extern "Rust" fn as_requires_provides(
     feature: &antlir2_features::Feature,
-) -> antlir2_features::Result<Box<dyn antlir2_depgraph::requires_provides::RequiresProvides>> {
+) -> antlir2_features::Result<Box<dyn antlir2_depgraph_if::RequiresProvides>> {
     let feature: Box<Feature> = serde_json::from_value(feature.data.clone())
         .map_err(antlir2_features::Error::Deserialize)?;
     Ok(feature)

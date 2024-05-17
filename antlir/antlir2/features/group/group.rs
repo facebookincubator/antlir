@@ -6,11 +6,11 @@
  */
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::Group as GroupItem;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::Group as GroupItem;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::types::GroupName;
 use antlir2_users::group::GroupRecord;
 use antlir2_users::NextAvailableId;
@@ -28,7 +28,7 @@ pub struct Group {
     pub gid: Option<u32>,
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Group {
+impl antlir2_depgraph_if::RequiresProvides for Group {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Group(GroupItem {
             name: self.groupname.to_owned(),
