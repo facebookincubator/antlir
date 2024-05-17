@@ -45,7 +45,6 @@ fn skip_epoch(epoch: &u64) -> bool {
     *epoch == 0
 }
 
-#[typetag::serde]
 impl Fact for Rpm {
     fn key(&self) -> Key {
         // It would be great to just use the name as the key, but a small set of
