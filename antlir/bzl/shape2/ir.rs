@@ -125,8 +125,13 @@ impl TryFrom<String> for Target {
         // make unnecessary copies of the string
         anyhow::ensure!(s.contains(':'), "target must contain exactly one ':'");
         anyhow::ensure!(s.ends_with(".shape"), "shape target must end with '.shape'");
-
-        Ok(Self(s))
+        // The @antlir cell is assumed to point to the current cell. In
+        // fbsource, it's an alias to 'fbcode', and we don't care about / want
+        // to support shapes that are outside of fbcode
+        match s.strip_prefix("@antlir") {
+            Some(s) => Ok(Self(s.to_owned())),
+            None => Ok(Self(s)),
+        }
     }
 }
 

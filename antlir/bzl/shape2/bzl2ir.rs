@@ -411,7 +411,7 @@ impl FileLoader for Dependencies {
     fn load(&self, load: &str) -> Result<FrozenModule> {
         // shape.bzl itself is an implicit dependency and comes with a native
         // implementation
-        if load == "//antlir/bzl:shape.bzl" {
+        if load == "//antlir/bzl:shape.bzl" || load == "@antlir//antlir/bzl:shape.bzl" {
             let ast = AstModule::parse("", "shape = shape_impl".to_string(), &Dialect::Standard)
                 .map_err(starlark::Error::into_anyhow)?;
             let module = Module::new();
