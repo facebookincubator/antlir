@@ -87,7 +87,7 @@ def feature_impl(
                 "serde",
                 "tracing",
                 "//antlir/antlir2/antlir2_compile:antlir2_compile",
-                "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
+                "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
                 "//antlir/antlir2/antlir2_features:antlir2_features",
             ],
         ),
@@ -119,7 +119,7 @@ def feature_impl(
             "tracing",
             "tracing-core",
             "//antlir/antlir2/antlir2_compile:antlir2_compile",
-            "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
+            "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
             "//antlir/antlir2/antlir2_features:antlir2_features",
         ],
     )

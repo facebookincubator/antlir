@@ -9,12 +9,12 @@ use std::borrow::Cow;
 use std::os::unix::fs::PermissionsExt;
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::User as UserItem;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::User as UserItem;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
@@ -39,7 +39,7 @@ pub struct User {
     pub comment: Option<String>,
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for User {
+impl antlir2_depgraph_if::RequiresProvides for User {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::User(UserItem {
             name: self.username.to_owned(),

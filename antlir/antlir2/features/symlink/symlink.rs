@@ -6,12 +6,12 @@
  */
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::Path;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::types::PathInLayer;
 use anyhow::Result;
 use serde::Deserialize;
@@ -28,7 +28,7 @@ pub struct Symlink {
     pub unsafe_dangling_symlink: bool,
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
+impl antlir2_depgraph_if::RequiresProvides for Symlink {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Path(Path::Symlink {
             link: self.link.to_owned(),

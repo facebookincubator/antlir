@@ -11,13 +11,13 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::FsEntry;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::Path as PathItem;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::FsEntry;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path as PathItem;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::PathInLayer;
 use anyhow as _;
@@ -73,7 +73,7 @@ pub enum LibDstPath {
     Relative(PathBuf),
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractBuckBinary {
+impl antlir2_depgraph_if::RequiresProvides for ExtractBuckBinary {
     fn provides(&self) -> Result<Vec<Item>, String> {
         // Intentionally provide only the direct files the user asked for,
         // because we don't want to produce conflicts with all the transitive

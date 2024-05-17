@@ -11,6 +11,8 @@ use std::ops::Deref;
 use std::ops::Index;
 use std::ops::IndexMut;
 
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
 use antlir2_features::Feature;
 use petgraph::graph::DefaultIx;
 use petgraph::graph::NodeIndex;
@@ -18,8 +20,6 @@ use petgraph::stable_graph::StableGraph;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::item::Item;
-use crate::item::ItemKey;
 use crate::Edge;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]

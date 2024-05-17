@@ -17,8 +17,8 @@ use antlir2_compile::plan;
 use antlir2_compile::plan::DnfTransaction;
 use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::requires_provides::Requirement;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::Requirement;
 use antlir2_features::types::BuckOutSource;
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
@@ -133,7 +133,7 @@ pub struct InternalOnlyOptions {
     pub ignore_scriptlet_errors: bool,
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for Rpm {
+impl antlir2_depgraph_if::RequiresProvides for Rpm {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
     }

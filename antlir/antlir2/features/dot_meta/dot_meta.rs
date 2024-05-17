@@ -6,8 +6,8 @@
  */
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::requires_provides::Requirement;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::Requirement;
 use antlir2_features as _;
 use anyhow::Context;
 use anyhow::Result;
@@ -30,7 +30,7 @@ struct BuildInfo {
     package: Option<String>,
 }
 
-impl antlir2_depgraph::requires_provides::RequiresProvides for DotMeta {
+impl antlir2_depgraph_if::RequiresProvides for DotMeta {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
     }
