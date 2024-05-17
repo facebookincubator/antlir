@@ -17,7 +17,6 @@ use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::RequiresProvides as _;
 use antlir2_depgraph_if::Validator;
 use antlir2_features::Feature;
-use buck_label::Label;
 use itertools::Itertools;
 use petgraph::graph::DefaultIx;
 use petgraph::graph::NodeIndex;
@@ -84,8 +83,6 @@ pub enum Error {
     Provides(String),
     #[error("failure determining 'requires': {0}")]
     Requires(String),
-    #[error("failed to deserialize feature data: {0}")]
-    Deserialize(serde_json::Error),
     #[error(transparent)]
     Plugin(#[from] antlir2_features::Error),
 }
@@ -98,11 +95,10 @@ pub struct GraphBuilder {
     root: node::RootNodeIndex,
     pending_features: Vec<node::PendingFeatureNodeIndex>,
     items: FxHashMap<ItemKey, node::ItemNodeIndex>,
-    label: Label,
 }
 
 impl GraphBuilder {
-    pub fn new(label: Label, parent: Option<Graph>) -> Self {
+    pub fn new(parent: Option<Graph>) -> Self {
         let mut g = StableGraph::new();
         let mut items = FxHashMap::default();
 
@@ -133,7 +129,6 @@ impl GraphBuilder {
             root,
             pending_features: Vec::new(),
             items,
-            label,
         };
 
         if let Some(parent) = parent {
@@ -459,15 +454,13 @@ impl GraphBuilder {
                             }
                         }
                         Node::MissingItem(key) => {
-                            if *validator != Validator::DoesNotExist {
-                                return Err(Error::MissingItem {
-                                    key: key.clone(),
-                                    required_by: self.g[feature]
-                                        .as_feature()
-                                        .expect("endpoint is always feature")
-                                        .clone(),
-                                });
-                            }
+                            return Err(Error::MissingItem {
+                                key: key.clone(),
+                                required_by: self.g[feature]
+                                    .as_feature()
+                                    .expect("endpoint is always feature")
+                                    .clone(),
+                            });
                         }
                         _ => unreachable!("Requires edges cannot exist on anything but Items"),
                     }
@@ -477,7 +470,6 @@ impl GraphBuilder {
         }
 
         Ok(Graph {
-            label: self.label,
             g: self.g,
             root: self.root,
             items: self.items,
@@ -488,7 +480,6 @@ impl GraphBuilder {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Graph {
-    label: Label,
     g: StableGraph<Node, Edge>,
     root: node::RootNodeIndex,
     #[serde(with = "serde_items")]
@@ -537,8 +528,8 @@ mod serde_items {
 }
 
 impl Graph {
-    pub fn builder(label: Label, parent: Option<Self>) -> GraphBuilder {
-        GraphBuilder::new(label, parent)
+    pub fn builder(parent: Option<Self>) -> GraphBuilder {
+        GraphBuilder::new(parent)
     }
 
     /// Iterate over features in topographical order (dependencies sorted before the

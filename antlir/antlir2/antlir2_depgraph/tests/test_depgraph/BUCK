@@ -11,7 +11,6 @@ rust_binary(
         "regex",
         "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
         "//antlir/antlir2/antlir2_features:antlir2_features",
-        "//antlir/buck/buck_label:buck_label",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )

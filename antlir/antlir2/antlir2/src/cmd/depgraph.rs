@@ -11,7 +11,6 @@ use std::path::PathBuf;
 
 use antlir2_depgraph::Graph;
 use anyhow::Context;
-use buck_label::Label;
 use clap::Parser;
 use json_arg::JsonFile;
 
@@ -20,8 +19,6 @@ use crate::Result;
 #[derive(Parser, Debug)]
 /// Process an image's dependency graph without building it
 pub(crate) struct Depgraph {
-    #[clap(long)]
-    label: Label,
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<HashSet<antlir2_features::Feature>>>,
     #[clap(long = "parent")]
@@ -50,7 +47,7 @@ impl Depgraph {
             Some(rootless)
         };
 
-        let mut depgraph = Graph::builder(self.label, self.parent.map(JsonFile::into_inner));
+        let mut depgraph = Graph::builder(self.parent.map(JsonFile::into_inner));
         for f in self.features.into_iter().flat_map(JsonFile::into_inner) {
             depgraph.add_feature(f);
         }

@@ -68,10 +68,6 @@ pub enum Validator {
     /// Always succeeds. Existence of the provider edge is validated when
     /// finalizing the graph.
     Exists,
-    /// Validator that succeeds if the [Item] signifies a removal of a previous
-    /// item. The depgraph validation special-cases this to pass when the
-    /// requirement is a [crate::Node::MissingItem].
-    DoesNotExist,
     /// ANDs all of the contained [Validator]s.
     All(Vec<Validator>),
     /// ORs all of the contained [Validator]s.
@@ -86,10 +82,6 @@ impl Validator {
     pub fn satisfies(&self, item: &Item) -> bool {
         match self {
             Self::Exists => true,
-            Self::DoesNotExist => match item {
-                Item::Path(_) => false,
-                _ => false,
-            },
             Self::All(v) => v.iter().all(|v| v.satisfies(item)),
             Self::Any(v) => v.iter().any(|v| v.satisfies(item)),
             Self::FileType(f) => match item {
