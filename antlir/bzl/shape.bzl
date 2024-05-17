@@ -230,20 +230,25 @@ def _shape(__thrift = None, **fields):
 
     return record(**fields)
 
-def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, **kwargs):  # pragma: no cover
+def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, test_only_rc_bzl2_ir: bool = False, **kwargs):  # pragma: no cover
     if not name.endswith(".shape"):
         fail("shape.impl target must be named with a .shape suffix")
     export_file(
         name = name + ".bzl",
     )
 
+    # @oss-disable
+
+    bzl2ir = antlir_dep("bzl/shape2:bzl2ir") # @oss-enable
+    if test_only_rc_bzl2_ir:
+        bzl2ir = antlir_dep("bzl/shape2:bzl2ir")
+
     buck_genrule(
         name = name,
         cmd = """
             $(exe {}) {} $(location :{}.bzl) {} > $OUT
         """.format(
-            # @oss-disable
-            antlir_dep("bzl/shape2:bzl2ir"), # @oss-enable
+            bzl2ir,
             normalize_target(":" + name),
             name,
             shell.quote(repr({d: "$(location {})".format(d) for d in deps})),

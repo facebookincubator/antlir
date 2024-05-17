@@ -12,6 +12,7 @@ oncall("antlir")
 shape.impl(
     name = "test.shape",
     rust_crate = "test_shape",
+    test_only_rc_bzl2_ir = True,
     deps = [
         "//antlir/bzl:target.shape",
     ],

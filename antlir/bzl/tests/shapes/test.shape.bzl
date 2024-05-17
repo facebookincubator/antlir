@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:target.shape.bzl", "target_t")
+load("@antlir//antlir/bzl:shape.bzl", "shape")
+load("@antlir//antlir/bzl:target.shape.bzl", "target_t")
 
 affiliations_t = shape.shape(
     faction = str,
