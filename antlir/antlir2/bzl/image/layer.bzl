@@ -254,6 +254,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     parent_layer = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None
     parent_depgraph = ctx.attrs.parent_layer[LayerInfo].depgraph if ctx.attrs.parent_layer else None
+    parent_facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
     final_subvol = None
     final_depgraph = None
     final_facts_db = None
@@ -431,6 +432,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
             subvol_symlink = final_subvol,
+            parent_facts_db = parent_facts_db,
             build_appliance = build_appliance[BuildApplianceInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = phase,
@@ -460,6 +462,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         parent_layer = final_subvol
         parent_depgraph = final_depgraph
+        parent_facts_db = final_facts_db
 
     # If final_subvol was not produced, that means that this layer is devoid of
     # features, so just present the parent artifacts as our own. This is a weird
@@ -480,6 +483,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
             subvol_symlink = final_subvol,
+            parent_facts_db = parent_facts_db,
             build_appliance = build_appliance[BuildApplianceInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = None,

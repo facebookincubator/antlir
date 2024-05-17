@@ -75,7 +75,7 @@ impl RwDatabase {
         let fact: &dyn Fact = fact;
         let val = serde_json::to_string(fact)?;
         self.db.execute(
-            "INSERT INTO facts (kind, key, value) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
             (F::kind(), fact.key().as_ref(), val),
         )?;
         Ok(())
@@ -162,6 +162,20 @@ impl<const RW: bool> Database<{ RW }> {
             iter: facts.into_iter(),
         })
     }
+
+    pub fn all_keys<F>(&self) -> Result<KeyIter>
+    where
+        F: Fact,
+    {
+        // The lifetimes of querying are nasty, so just eagerly load all the
+        // keys.
+        let mut stmt = self.db.prepare("SELECT key FROM facts WHERE kind=?")?;
+        let keys: Vec<Key> = stmt
+            .query_map((F::kind(),), |row| row.get(0).map(Key))?
+            .map(|res| res.map_err(Error::from))
+            .collect::<Result<_>>()?;
+        Ok(KeyIter(keys.into_iter()))
+    }
 }
 
 /// Transaction to write a batch of data into the db at once. Caller must call
@@ -179,10 +193,35 @@ impl<'db> Transaction<'db> {
         let fact: &dyn Fact = fact;
         let val = serde_json::to_string(fact)?;
         self.tx.execute(
-            "INSERT INTO facts (kind, key, value) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
             (F::kind(), fact.key().as_ref(), val),
         )?;
         Ok(())
+    }
+
+    pub fn delete<F>(&mut self, key: &Key) -> Result<bool>
+    where
+        F: Fact,
+    {
+        let num_rows = self.tx.execute(
+            "DELETE FROM facts WHERE kind=? AND key=?",
+            (F::kind(), key.as_ref()),
+        )?;
+        Ok(num_rows > 0)
+    }
+
+    pub fn all_keys<F>(&self) -> Result<KeyIter>
+    where
+        F: Fact,
+    {
+        // The lifetimes of querying are nasty, so just eagerly load all the
+        // keys.
+        let mut stmt = self.tx.prepare("SELECT key FROM facts WHERE kind=?")?;
+        let keys: Vec<Key> = stmt
+            .query_map((F::kind(),), |row| row.get(0).map(Key))?
+            .map(|res| res.map_err(Error::from))
+            .collect::<Result<_>>()?;
+        Ok(KeyIter(keys.into_iter()))
     }
 
     pub fn commit(self) -> Result<()> {
@@ -234,7 +273,17 @@ where
     }
 }
 
-#[derive(Clone)]
+pub struct KeyIter(<Vec<Key> as IntoIterator>::IntoIter);
+
+impl Iterator for KeyIter {
+    type Item = Key;
+
+    fn next(&mut self) -> Option<Key> {
+        self.0.next()
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Key(Vec<u8>);
 
 impl AsRef<[u8]> for Key {

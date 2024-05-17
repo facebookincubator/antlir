@@ -6,6 +6,7 @@
  */
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::path::Path;
 
 use antlir2_facts::fact::dir_entry::DirEntry;
@@ -191,4 +192,52 @@ fn systemd_unit_file() {
         .expect("foo.service did not exist");
     assert_eq!(ent.name(), "foo.service");
     assert_eq!(ent.state(), antlir2_systemd::UnitFileState::Static);
+}
+
+#[test]
+#[traced_test]
+fn child_removes_things() {
+    let db = RoDatabase::open(
+        buck_resources::get("antlir/antlir2/antlir2_facts/tests/child_db")
+            .expect("child_db resource not set"),
+    )
+    .expect("failed to open db");
+
+    assert!(
+        db.get::<DirEntry>(DirEntry::key(Path::new("/feature/foo")))
+            .expect("failed to get /feature/foo")
+            .is_none(),
+        "/feature/foo should have been removed"
+    );
+
+    assert!(
+        db.get::<User>(User::key("antlir"))
+            .expect("failed to get user antlir")
+            .is_none(),
+        "user 'antlir' should have been removed"
+    );
+
+    assert!(
+        db.get::<Group>(Group::key("antlir"))
+            .expect("failed to get group antlir")
+            .is_none(),
+        "group 'antlir' should have been removed"
+    );
+
+    let rpm_names = db
+        .iter::<Rpm>()
+        .expect("failed to iterate over rpms")
+        .map(|r| r.name().to_owned())
+        .collect::<HashSet<_>>();
+    assert!(
+        !rpm_names.contains("foobar"),
+        "'foobar' should have been removed"
+    );
+
+    assert!(
+        db.get::<antlir2_systemd::UnitFile>("foo.service")
+            .expect("failed to get foo.service")
+            .is_none(),
+        "foo.service should have been removed"
+    )
 }

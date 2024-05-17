@@ -89,6 +89,20 @@ feature.new(
     ],
 )
 
+image.layer(
+    name = "child-layer",
+    features = [
+        feature.remove(path = "/feature/foo"),
+        feature.rpms_remove(rpms = ["foobar"]),
+        feature.remove(path = "/etc/systemd/system/foo.service"),
+        feature.genrule(
+            bash = "userdel antlir",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":test-layer",
+)
+
 rust_unittest(
     name = "test-db-contents",
     srcs = ["test_db_contents.rs"],
@@ -97,6 +111,7 @@ rust_unittest(
         oss = ["disabled"],  # buck_resources does not exist in oss
     ),
     resources = {
+        "child_db": ":child-layer[debug][facts]",
         "test_db": ":test-layer[debug][facts]",
     },
     deps = [
