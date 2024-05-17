@@ -22,7 +22,6 @@ use antlir2_users::passwd::UserRecord;
 use antlir2_users::NextAvailableId;
 use antlir2_users::Password;
 use anyhow::Context;
-use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 

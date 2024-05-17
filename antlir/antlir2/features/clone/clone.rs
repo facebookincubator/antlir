@@ -28,7 +28,6 @@ use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
 use anyhow::Context;
-use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 use walkdir::WalkDir;

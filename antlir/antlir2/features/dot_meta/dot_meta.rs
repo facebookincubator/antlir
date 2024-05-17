@@ -10,7 +10,6 @@ use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::Requirement;
 use antlir2_features as _;
 use anyhow::Context;
-use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 

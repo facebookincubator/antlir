@@ -4,4 +4,5 @@ oncall("antlir")
 
 feature_impl(
     name = "symlink",
+    deps = ["anyhow"],
 )

@@ -4,6 +4,7 @@ load("//antlir/bzl:build_defs.bzl", "alias", "internal_external", "is_facebook")
 oncall("antlir")
 
 _base_deps = [
+    "anyhow",
     "base64",
     "hex",
     "serde_json",

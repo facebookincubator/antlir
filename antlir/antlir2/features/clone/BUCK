@@ -8,6 +8,7 @@ feature_impl(
         "io_error_more",
     ],
     deps = [
+        "anyhow",
         "walkdir",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
     ],

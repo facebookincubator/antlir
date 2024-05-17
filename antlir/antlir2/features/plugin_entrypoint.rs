@@ -5,10 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use antlir2_compile::CompileFeature as _;
-use antlir2_compile::CompilerContext;
-use antlir2_depgraph_if::RequiresProvides as _;
-use anyhow::Context;
 use r#impl::Feature;
 
 #[no_mangle]

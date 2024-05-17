@@ -21,7 +21,6 @@ use antlir2_isolate::sys::unshare;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
-use anyhow::Result;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;

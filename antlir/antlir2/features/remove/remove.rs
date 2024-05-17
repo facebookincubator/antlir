@@ -11,7 +11,6 @@ use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
 use antlir2_features::types::PathInLayer;
-use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing::trace;

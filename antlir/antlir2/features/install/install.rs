@@ -32,7 +32,6 @@ use antlir2_users::GroupId;
 use antlir2_users::Id;
 use antlir2_users::UserId;
 use anyhow::Context;
-use anyhow::Result;
 #[cfg(feature = "setcap")]
 use libcap::Capabilities;
 #[cfg(feature = "setcap")]
