@@ -83,7 +83,6 @@ def feature_impl(
         deps = selects.apply(
             deps or [],
             lambda deps: deps + [
-                "anyhow",
                 "serde",
                 "tracing",
                 "//antlir/antlir2/antlir2_compile:antlir2_compile",
@@ -114,7 +113,6 @@ def feature_impl(
         visibility = [":" + name],
         deps = [
             "static_assertions",
-            "anyhow",
             "serde_json",
             "tracing",
             "tracing-core",

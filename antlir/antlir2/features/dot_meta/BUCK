@@ -4,4 +4,7 @@ oncall("antlir")
 
 feature_impl(
     name = "dot_meta",
+    deps = [
+        "anyhow",
+    ],
 )

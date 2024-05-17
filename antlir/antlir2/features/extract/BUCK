@@ -30,6 +30,7 @@ feature_impl(
 feature_impl(
     name = "extract_from_layer",
     deps = [
+        "anyhow",
         ":extract",
     ],
 )

@@ -16,7 +16,6 @@ use antlir2_depgraph_if::item::Path;
 use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
 use antlir2_features::types::PathInLayer;
-use anyhow::Result;
 use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;

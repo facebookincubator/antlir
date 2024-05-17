@@ -21,7 +21,6 @@ use antlir2_features::stat::Mode;
 use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
-use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 

@@ -5,6 +5,7 @@ oncall("antlir")
 feature_impl(
     name = "tarball",
     deps = [
+        "anyhow",
         "flate2",
         "tar",
         "tracing",

@@ -5,6 +5,7 @@ oncall("antlir")
 feature_impl(
     name = "rpm",
     deps = [
+        "anyhow",
         "memfd",
         "serde_json",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",

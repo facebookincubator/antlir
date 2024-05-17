@@ -20,7 +20,6 @@ use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
 use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::PathInLayer;
-use anyhow as _;
 use extract::copy_dep;
 use serde::de::Deserializer;
 use serde::de::Error as _;
