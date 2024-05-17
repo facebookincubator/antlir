@@ -65,7 +65,6 @@ def _map_image(
         "--working-dir=antlir2-out",
         cmd_args(build_appliance.dir, format = "--build-appliance={}"),
         cmd_args(str(ctx.label), format = "--label={}"),
-        cmd_args(identifier, format = "--identifier={}"),
         cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
         cmd_args(out.as_output(), format = "--output={}"),
         cmd_args("--rootless") if rootless else cmd_args(),

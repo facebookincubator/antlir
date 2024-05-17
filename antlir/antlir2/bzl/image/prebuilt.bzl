@@ -88,7 +88,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "sudo" if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs.antlir2_receive[RunInfo],
             "--working-dir=antlir2-out",
-            cmd_args(str(ctx.label), format = "--label={}"),
             cmd_args(format, format = "--format={}"),
             cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
