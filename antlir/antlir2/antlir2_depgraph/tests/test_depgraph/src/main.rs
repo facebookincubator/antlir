@@ -9,15 +9,12 @@ use antlir2_depgraph::Graph;
 use antlir2_features::Feature;
 use anyhow::anyhow;
 use anyhow::Result;
-use buck_label::Label;
 use clap::Parser;
 use json_arg::JsonFile;
 use regex::Regex;
 
 #[derive(Debug, Parser)]
 struct Args {
-    #[clap(long)]
-    label: Label,
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<Feature>>>,
     #[clap(long)]
@@ -28,7 +25,7 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let mut builder = Graph::builder(args.label, args.parent.map(JsonFile::into_inner));
+    let mut builder = Graph::builder(args.parent.map(JsonFile::into_inner));
     for feature in args.features.into_iter().flat_map(JsonFile::into_inner) {
         eprintln!("adding feature {feature:?}");
         builder.add_feature(feature);

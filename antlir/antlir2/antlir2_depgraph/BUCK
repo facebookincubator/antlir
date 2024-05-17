@@ -12,13 +12,11 @@ rust_library(
         "rayon",
         "rustc-hash",
         "serde",
-        "serde_json",
         "thiserror",
         "tracing",
         "walkdir",
         "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
         "//antlir/antlir2/antlir2_features:antlir2_features",
         "//antlir/antlir2/antlir2_users:antlir2_users",
-        "//antlir/buck/buck_label:buck_label",
     ],
 )

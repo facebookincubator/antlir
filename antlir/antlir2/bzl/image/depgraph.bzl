@@ -23,7 +23,6 @@ def build_depgraph(
             "sudo" if (subvol and not rootless) else cmd_args(),
             ctx.attrs.antlir2[RunInfo],
             "depgraph",
-            cmd_args(str(ctx.label), format = "--label={}"),
             cmd_args(features_json, format = "--feature-json={}") if features_json else cmd_args(),
             cmd_args(parent_depgraph, format = "--parent={}") if parent_depgraph else cmd_args(),
             cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
