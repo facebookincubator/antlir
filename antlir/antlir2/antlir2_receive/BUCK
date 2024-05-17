@@ -21,6 +21,5 @@ rust_binary(
         "//antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
-        "//antlir/buck/buck_label:buck_label",
     ],
 )

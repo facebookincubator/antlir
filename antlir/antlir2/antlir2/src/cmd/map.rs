@@ -55,12 +55,6 @@ struct SetupArgs {
     #[clap(long)]
     /// Path to a subvolume to use as the starting point
     parent: Option<PathBuf>,
-    /// Name for this mapping operation, applied to the internal subvolume
-    /// created.
-    /// Each [Label] can have many identifiers, but these must be unique within
-    /// a single [Label].
-    #[clap(long)]
-    identifier: String,
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,

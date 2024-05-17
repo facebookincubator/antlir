@@ -17,7 +17,6 @@ use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;
 use nix::sched::unshare;
@@ -32,9 +31,6 @@ mod caf;
 #[derive(Parser, Debug)]
 /// Receive a pre-built image package into the local working volume.
 pub(crate) struct Receive {
-    #[clap(long)]
-    /// Label of the image being build
-    label: Label,
     #[clap(long)]
     /// Path to the image file
     source: PathBuf,
