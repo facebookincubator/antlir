@@ -387,40 +387,40 @@ cargo.rust_library(
 
 alias(
     name = "anyhow",
-    actual = ":anyhow-1.0.85",
+    actual = ":anyhow-1.0.86",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "anyhow-1.0.85.crate",
-    sha256 = "27a4bd113ab6da4cd0f521068a6e2ee1065eab54107266a11835d02c8ec86a37",
-    strip_prefix = "anyhow-1.0.85",
-    urls = ["https://static.crates.io/crates/anyhow/1.0.85/download"],
+    name = "anyhow-1.0.86.crate",
+    sha256 = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da",
+    strip_prefix = "anyhow-1.0.86",
+    urls = ["https://static.crates.io/crates/anyhow/1.0.86/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "anyhow-1.0.85",
-    srcs = [":anyhow-1.0.85.crate"],
+    name = "anyhow-1.0.86",
+    srcs = [":anyhow-1.0.86.crate"],
     crate = "anyhow",
-    crate_root = "anyhow-1.0.85.crate/src/lib.rs",
+    crate_root = "anyhow-1.0.86.crate/src/lib.rs",
     edition = "2018",
     env = {
-        "OUT_DIR": "$(location :anyhow-1.0.85-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :anyhow-1.0.86-build-script-run[out_dir])",
     },
     features = [
         "default",
         "std",
     ],
-    rustc_flags = ["@$(location :anyhow-1.0.85-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :anyhow-1.0.86-build-script-run[rustc_flags])"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "anyhow-1.0.85-build-script-build",
-    srcs = [":anyhow-1.0.85.crate"],
+    name = "anyhow-1.0.86-build-script-build",
+    srcs = [":anyhow-1.0.86.crate"],
     crate = "build_script_build",
-    crate_root = "anyhow-1.0.85.crate/build.rs",
+    crate_root = "anyhow-1.0.86.crate/build.rs",
     edition = "2018",
     features = [
         "default",
@@ -430,14 +430,14 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "anyhow-1.0.85-build-script-run",
+    name = "anyhow-1.0.86-build-script-run",
     package_name = "anyhow",
-    buildscript_rule = ":anyhow-1.0.85-build-script-build",
+    buildscript_rule = ":anyhow-1.0.86-build-script-build",
     features = [
         "default",
         "std",
     ],
-    version = "1.0.85",
+    version = "1.0.86",
 )
 
 http_archive(
@@ -9499,7 +9499,7 @@ cargo.rust_library(
     proc_macro = True,
     visibility = [],
     deps = [
-        ":anyhow-1.0.85",
+        ":anyhow-1.0.86",
         ":itertools-0.10.5",
         ":proc-macro2-1.0.82",
         ":quote-1.0.36",
@@ -9569,7 +9569,7 @@ cargo.rust_library(
     rustc_flags = ["@$(location :pyo3-0.21.2-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
-        ":anyhow-1.0.85",
+        ":anyhow-1.0.86",
         ":cfg-if-1.0.0",
         ":indoc-2.0.5",
         ":libc-0.2.155",
