@@ -1,14 +1,18 @@
 load("@prelude//:rules.bzl", "git_fetch")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
-load("//antlir/bzl:build_defs.bzl", "export_file")
+load("//antlir/bzl:build_defs.bzl", "export_file", "internal_external")
 
 oncall("antlir")
 
 git_fetch(
     name = "kernel.git",
-    repo = "ssh://git-ro.vip.facebook.com/data/gitrepos/kernel/linux.git",
-    rev = "44ec95f7d7f400b9cdc16e0eea5dec91618f65c9",
+    # @oss-disable
+    repo = "https://github.com/torvalds/linux.git", # @oss-enable
+    # @oss-disable
+    rev = "a38297e3fb012ddfa7ce0321a7e5a8daeb1872b6", # @oss-enable
 )
 
 export_file(
@@ -43,5 +47,60 @@ genrule_in_image(
             config = sel.config,
         ),
     ),
-    layer = "//kernel/build/image:_appliance.layer",
+    layer = internal_external(
+        fb = "//kernel/build/image:_appliance.layer",
+        oss = ":appliance",
+    ),
+)
+
+image.layer(
+    name = "appliance",
+    features = [
+        # common RPMs
+        feature.rpms_install(subjects = [
+            "bc",
+            "binutils-devel",
+            "bison",
+            "ccache",
+            "clang",
+            "clang-libs",
+            "compiler-rt",
+            "cpio",
+            "dwarves",
+            "elfutils-libelf-devel",
+            "flex",
+            "gcc",
+            "git",
+            "hostname",
+            "kmod",
+            "libcap-devel",
+            "lld",
+            "llvm",
+            "llvm-libs",
+            "m4",
+            "make",
+            "openssl",
+            "openssl-devel",
+            "perl",
+            "python3",
+            "rpm-build",
+            "rsync",
+            "sed",
+            "tar",
+            "which",
+            "xz",
+            "zstd",
+        ]),
+        # x86_64 common RPMs
+        feature.rpms_install(subjects = select({
+            "DEFAULT": [],
+            "ovr_config//cpu:x86_64": [
+                "kpatch-build",
+            ],
+        })),
+        feature.remove(
+            must_exist = False,
+            path = "/usr/lib/rpm/macros.d/macros.kmp",
+        ),
+    ],
 )
