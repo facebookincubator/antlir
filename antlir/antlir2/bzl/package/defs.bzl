@@ -12,7 +12,7 @@ load(":btrfs.bzl", "btrfs")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":macro.bzl", "package_macro")
-load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
+load(":sendstream.bzl", "sendstream_v2")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 
 # Attrs that are required by all packages
@@ -355,9 +355,7 @@ package = struct(
     ext3 = package_macro(_ext3),
     gpt = gpt,
     rpm = package_macro(_rpm),
-    sendstream = sendstream,
     sendstream_v2 = sendstream_v2,
-    sendstream_zst = sendstream_zst,
     squashfs = package_macro(_squashfs),
     tar = package_macro(_tar),
     tar_gz = package_macro(_tar_gz),

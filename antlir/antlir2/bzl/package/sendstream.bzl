@@ -129,8 +129,6 @@ _sendstream_v1 = rule(
     cfg = package_cfg,
 )
 
-sendstream = _sendstream_package_macro(_sendstream_v1)
-
 def anon_v1_sendstream(
         *,
         ctx: AnalysisContext,
@@ -146,47 +144,6 @@ def anon_v1_sendstream(
         _sendstream,
         attrs,
     )
-
-def _zst_impl(ctx: AnalysisContext) -> Promise:
-    sendstream_zst = ctx.actions.declare_output("image.sendstream.zst")
-
-    def _map(providers: ProviderCollection) -> list[Provider]:
-        v1_sendstream = providers[SendstreamInfo].sendstream
-        ctx.actions.run(
-            cmd_args(
-                "zstd",
-                "--compress",
-                cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
-                "-o",
-                sendstream_zst.as_output(),
-                v1_sendstream,
-            ),
-            category = "compress",
-            local_only = True,  # zstd not available on RE
-        )
-        return [
-            DefaultInfo(
-                sendstream_zst,
-                sub_targets = {"layer": ctx.attrs.layer.providers},
-            ),
-            SendstreamInfo(
-                sendstream = sendstream_zst,
-                subvol_symlink = providers[SendstreamInfo].subvol_symlink,
-                layer = providers[SendstreamInfo].layer,
-            ),
-        ]
-
-    return anon_v1_sendstream(ctx = ctx).promise.map(_map)
-
-_sendstream_zst = rule(
-    impl = _zst_impl,
-    attrs = {
-        "compression_level": attrs.int(default = 3),
-    } | _base_sendstream_args | layer_attrs,
-    cfg = package_cfg,
-)
-
-sendstream_zst = _sendstream_package_macro(_sendstream_zst)
 
 def _v2_impl(ctx: AnalysisContext) -> Promise:
     sendstream_v2 = ctx.actions.declare_output("image.sendstream.v2")
@@ -214,7 +171,7 @@ def _v2_impl(ctx: AnalysisContext) -> Promise:
                 sub_targets = {"layer": ctx.attrs.layer.providers},
             ),
             SendstreamInfo(
-                sendstream = sendstream_zst,
+                sendstream = sendstream_v2,
                 subvol_symlink = providers[SendstreamInfo].subvol_symlink,
                 layer = providers[SendstreamInfo].layer,
             ),
