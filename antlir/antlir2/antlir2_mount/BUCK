@@ -9,9 +9,6 @@ rust_library(
         "ovr_config//os:freebsd",
         "ovr_config//os:linux",
     ],
-    test_deps = [
-        "maplit",
-    ],
     visibility = ["PUBLIC"],
     deps = [
         "mockall",
