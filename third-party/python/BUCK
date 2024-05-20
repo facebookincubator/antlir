@@ -27,3 +27,45 @@ prebuilt_python_library(
     binary_src = ":click-8.1.7-py3-none-any.whl",
     visibility = ["PUBLIC"],
 )
+
+http_file(
+    name = "jinja2-3.1.4-py3-none-any.whl",
+    urls = [
+        "https://files.pythonhosted.org/packages/31/80/3a54838c3fb461f6fec263ebf3a3a41771bd05190238de3486aae8540c36/jinja2-3.1.4-py3-none-any.whl",
+    ],
+    sha256 = "bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d",
+)
+
+prebuilt_python_library(
+    name = "jinja2",
+    binary_src = ":jinja2-3.1.4-py3-none-any.whl",
+    visibility = ["PUBLIC"],
+)
+
+http_file(
+    name = "pydantic-2.7.1-py3-none-any.whl",
+    urls = [
+        "https://files.pythonhosted.org/packages/ed/76/9a17032880ed27f2dbd490c77a3431cbc80f47ba81534131de3c2846e736/pydantic-2.7.1-py3-none-any.whl"
+    ],
+    sha256 = "e029badca45266732a9a79898a15ae2e8b14840b1eabbb25844be28f0b33f3d5",
+)
+
+prebuilt_python_library(
+    name = "pydantic",
+    binary_src = ":pydantic-2.7.1-py3-none-any.whl",
+    visibility = ["PUBLIC"],
+)
+
+http_file(
+    name = "requests-2.31.0-py3-none-any.whl",
+    urls = [
+        "https://files.pythonhosted.org/packages/70/8e/0e2d847013cb52cd35b38c009bb167a1a26b2ce6cd6965bf26b47bc0bf44/requests-2.31.0-py3-none-any.whl"
+    ],
+    sha256 = "58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f",
+)
+
+prebuilt_python_library(
+    name = "requests",
+    binary_src = ":requests-2.31.0-py3-none-any.whl",
+    visibility = ["PUBLIC"],
+)
