@@ -4,10 +4,13 @@ oncall("antlir")
 
 rust_library(
     name = "antlir_mount",
-    srcs = ["src/lib.rs"],
+    srcs = glob(["src/**/*.rs"]),
     compatible_with = [
         "ovr_config//os:freebsd",
         "ovr_config//os:linux",
+    ],
+    test_deps = [
+        "maplit",
     ],
     visibility = ["PUBLIC"],
     deps = [
@@ -16,6 +19,5 @@ rust_library(
         "proc-mounts",
         "thiserror",
         "tracing",
-        "//metalos/antlir_image/antlir_image:antlir_image",
     ],
 )
