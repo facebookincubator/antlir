@@ -13,13 +13,6 @@ use nix::mount::MsFlags;
 use proc_mounts::MountIter;
 use tracing::info;
 
-mod antlir_image;
-use antlir_image::layer::AntlirLayer;
-use antlir_image::partition::Partition;
-use antlir_image::path::VerifiedPath;
-use antlir_image::subvolume::AntlirSubvolume;
-use antlir_image::subvolume::AntlirSubvolumes;
-
 #[derive(thiserror::Error, Debug)]
 pub enum MountError {
     #[error("No such file or directory: Mount source {0:?} doesn't exist")]
@@ -47,67 +40,6 @@ pub fn source_mounted_at(source: &Path, target: &Path) -> Result<bool, MountErro
     }
 
     Ok(false)
-}
-
-pub trait SafeMounter {
-    fn mount_btrfs<'a, S, L, F>(
-        &'a self,
-        source: &Partition<S>,
-        target: VerifiedPath,
-        flags: MsFlags,
-        make_subvolume: F,
-        //TODO support data
-    ) -> Result<L, MountError>
-    where
-        S: AntlirSubvolumes,
-        L: AntlirLayer,
-        F: Fn(&Partition<S>) -> AntlirSubvolume<L>;
-
-    fn umount(&self, mountpoint: &Path, force: bool) -> Result<(), nix::errno::Errno>;
-}
-
-pub struct RealSafeMounter;
-
-impl SafeMounter for RealSafeMounter {
-    fn mount_btrfs<'a, S, L, F>(
-        &'a self,
-        source: &Partition<S>,
-        target: VerifiedPath,
-        flags: MsFlags,
-        make_subvolume: F,
-    ) -> Result<L, MountError>
-    where
-        S: AntlirSubvolumes,
-        L: AntlirLayer,
-        F: Fn(&Partition<S>) -> AntlirSubvolume<L>,
-    {
-        let subvolume = make_subvolume(source);
-
-        let data = format!(
-            "subvol={}",
-            match subvolume.relative_path.to_str() {
-                Some(p) => p,
-                None => {
-                    return Err(MountError::InvalidSubvolume(
-                        subvolume.relative_path.to_path_buf(),
-                    ));
-                }
-            }
-        );
-
-        RealMounter {}.mount(
-            source.path.path(),
-            target.path(),
-            Some("btrfs"),
-            flags,
-            Some(&data),
-        )?;
-        Ok(subvolume.mount_unchecked(target))
-    }
-
-    fn umount(&self, mountpoint: &Path, force: bool) -> Result<(), nix::errno::Errno> {
-        RealMounter {}.umount(mountpoint, force)
-    }
 }
 
 #[mockall::automock]
