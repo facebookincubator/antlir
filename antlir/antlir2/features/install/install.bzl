@@ -3,9 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -147,6 +149,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.text != None:
         src = ctx.actions.write("install_text", ctx.attrs.text)
     if type(src) == "dependency":
+        expect(LayerInfo not in src, "Layers cannot be used as install `src`, consider using feature.mount instead")
         if mode == None:
             if RunInfo in src:
                 # There is no need for the old buck1 `install_buck_runnable` stuff
