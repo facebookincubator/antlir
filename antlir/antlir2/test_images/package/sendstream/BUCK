@@ -50,11 +50,6 @@ image.layer(
     ],
 )
 
-package.sendstream(
-    name = "layer.sendstream",
-    layer = ":layer",
-)
-
 package.sendstream_v2(
     name = "layer.sendstream.v2",
     layer = ":layer",
