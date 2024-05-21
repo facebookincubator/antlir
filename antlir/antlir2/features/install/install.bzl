@@ -149,7 +149,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.text != None:
         src = ctx.actions.write("install_text", ctx.attrs.text)
     if type(src) == "dependency":
-        expect(LayerInfo not in src, "Layers cannot be used as install `src`, consider using feature.mount instead")
+        expect(LayerInfo not in src, "Layers ({}) cannot be used as install `src`, consider using feature.mount instead".format(src.label))
         if mode == None:
             if RunInfo in src:
                 # There is no need for the old buck1 `install_buck_runnable` stuff
