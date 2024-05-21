@@ -78,9 +78,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 prefer_local = True,
             )
 
-    if format == "caf":
-        warning("{}: CAF prebuilts may lose xattrs! https://fb.workplace.com/groups/279514141750091/posts/3609421132674735".format(ctx.label))
-
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     ctx.actions.run(
         cmd_args(
