@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -63,7 +64,7 @@ def bad_depgraph(
     _bad_depgraph(
         name = name,
         features = ":" + name + "--features",
-        **kwargs
+        **(kwargs | default_target_platform_kwargs())
     )
 
 def _good_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -89,4 +90,5 @@ def good_depgraph(name, **kwargs):
     _good_depgraph(
         name = name + "-test",
         layer = ":" + name,
+        **default_target_platform_kwargs()
     )

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable
+load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 
 _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
@@ -82,6 +83,7 @@ def test_that_should_fail(
         labels = labels,
         stdout_re = stdout_re,
         stderr_re = stderr_re,
+        **default_target_platform_kwargs()
     )
 
 cpp_test_that_should_fail = partial(

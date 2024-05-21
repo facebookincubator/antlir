@@ -6,6 +6,7 @@
 load("@prelude//linking:shared_libraries.bzl", "SharedLibraryInfo")
 load("@prelude//rust:link_info.bzl", "RustLinkInfo")
 load("@prelude//utils:selects.bzl", "selects")
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "rust_library")
 
@@ -44,13 +45,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(plugin, sub_targets = {"libs": [DefaultInfo(lib_dir)]}),
     ]
 
-feature_plugin = rule(
+_feature_plugin = rule(
     impl = _impl,
     attrs = {
         "deps": attrs.query(),
         "lib": attrs.dep(providers = [RustLinkInfo]),
     },
 )
+
+feature_plugin = rule_with_default_target_platform(_feature_plugin)
 
 def feature_impl(
         *,
