@@ -251,12 +251,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # inconvenient for image authors, but is incredibly useful for everyone
     # involved, so we can do it for them implicitly.
 
-    parent_layer = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None
-    parent_depgraph = ctx.attrs.parent_layer[LayerInfo].depgraph if ctx.attrs.parent_layer else None
-    parent_facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
-    final_subvol = None
-    final_depgraph = None
-    final_facts_db = None
+    subvol = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None
+    facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
     debug_sub_targets = {}
 
     # Dirty hack to provide pre-computed dnf repos to multiple phases that
@@ -284,7 +280,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         # this is the final phase and nothing has been built yet, we need to
         # fall through and produce an empty subvolume so it can still be used as
         # a parent_layer and/or snapshot its own parent's contents
-        if not features and not (phase == BuildPhase("compile") and parent_layer == None):
+        if not features and not (phase == BuildPhase("compile") and subvol == None):
             continue
 
         # TODO(vmagro): when we introduce other package managers, this will need
@@ -311,11 +307,12 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             [feat.analysis.required_run_infos for feat in features],
         ]
 
-        depgraph_input = build_depgraph(
+        # facts_db also holds the depgraph
+        facts_db = build_depgraph(
             ctx = ctx,
             features_json = features_json,
             identifier_prefix = identifier_prefix,
-            parent_depgraph = parent_depgraph,
+            parent = facts_db,
             add_items_from_facts_db = None,
         )
 
@@ -323,7 +320,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         compileish_args = cmd_args(
             cmd_args(target_arch, format = "--target-arch={}"),
-            cmd_args(depgraph_input, format = "--depgraph-json={}"),
+            cmd_args(facts_db, format = "--depgraph={}"),
         )
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
@@ -345,7 +342,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 ).hidden(features_json, compile_feature_hidden_deps),
                 ctx = ctx,
                 identifier = identifier_prefix + "plan",
-                parent = parent_layer,
+                parent = subvol,
                 logs = logs["plan"],
                 rootless = ctx.attrs._rootless,
             )
@@ -396,7 +393,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         if resolved_fbpkgs_dir:
             compile_feature_hidden_deps.append(resolved_fbpkgs_dir)
 
-        cmd, final_subvol = _map_image(
+        cmd, subvol = _map_image(
             build_appliance = build_appliance[BuildApplianceInfo],
             cmd = cmd_args(
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
@@ -412,28 +409,28 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             ).hidden(features_json, compile_feature_hidden_deps),
             ctx = ctx,
             identifier = identifier_prefix + "compile",
-            parent = parent_layer,
+            parent = subvol,
             logs = logs["compile"],
             rootless = ctx.attrs._rootless,
         )
         build_cmd.append(cmd)
 
-        final_facts_db = facts.new_facts_db(
+        facts_db = facts.new_facts_db(
             actions = ctx.actions,
-            subvol_symlink = final_subvol,
-            parent_facts_db = parent_facts_db,
+            subvol_symlink = subvol,
+            parent_facts_db = facts_db,
             build_appliance = build_appliance[BuildApplianceInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = phase,
             rootless = ctx.attrs._rootless,
         )
 
-        final_depgraph = build_depgraph(
+        facts_db = build_depgraph(
             ctx = ctx,
             features_json = None,
             identifier_prefix = identifier_prefix,
-            parent_depgraph = depgraph_input,
-            add_items_from_facts_db = final_facts_db,
+            parent = facts_db,
+            add_items_from_facts_db = facts_db,
         )
 
         phase_mounts = all_mounts(
@@ -445,79 +442,47 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         debug_sub_targets[phase.value] = [
             DefaultInfo(
                 sub_targets = {
-                    "container": _container_sub_target(ctx.attrs._run_container, final_subvol, mounts = phase_mounts, rootless = ctx.attrs._rootless),
-                    "facts": [DefaultInfo(final_facts_db)],
+                    "container": _container_sub_target(ctx.attrs._run_container, subvol, mounts = phase_mounts, rootless = ctx.attrs._rootless),
+                    "facts": [DefaultInfo(facts_db)],
                     "features": [DefaultInfo(features_json_artifact)],
                     "logs": [DefaultInfo(all_logs, sub_targets = {
                         key: [DefaultInfo(artifact)]
                         for key, artifact in logs.items()
                     })],
-                    "subvol": [DefaultInfo(final_subvol)],
+                    "subvol": [DefaultInfo(subvol)],
                 },
             ),
         ]
 
-        parent_layer = final_subvol
-        parent_depgraph = final_depgraph
-        parent_facts_db = final_facts_db
+    debug_sub_targets["facts"] = [DefaultInfo(facts_db)]
 
-    # If final_subvol was not produced, that means that this layer is devoid of
-    # features, so just present the parent artifacts as our own. This is a weird
-    # use case, but sometimes creating layers with no features makes life easier
-    # for macro authors, so antlir2 should allow it.
-    if not final_subvol:
-        final_subvol = parent_layer
-    if not final_facts_db:
-        final_facts_db = facts.new_facts_db(
-            actions = ctx.actions,
-            subvol_symlink = final_subvol,
-            parent_facts_db = parent_facts_db,
-            build_appliance = build_appliance[BuildApplianceInfo],
-            new_facts_db = ctx.attrs._new_facts_db[RunInfo],
-            phase = None,
-            rootless = False,
-        )
-    if not final_depgraph:
-        final_depgraph = build_depgraph(
-            ctx = ctx,
-            features_json = None,
-            identifier_prefix = "empty_layer_",
-            parent_depgraph = parent_depgraph,
-            add_items_from_facts_db = final_facts_db,
-        )
-
-    debug_sub_targets["depgraph"] = [DefaultInfo(final_depgraph)]
-
-    debug_sub_targets["facts"] = [DefaultInfo(final_facts_db)]
-
-    sub_targets["subvol_symlink"] = [DefaultInfo(final_subvol)]
+    sub_targets["subvol_symlink"] = [DefaultInfo(subvol)]
 
     parent_layer_info = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None
     mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
     # @oss-disable
 
-    sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, final_subvol, mounts, ctx.attrs._rootless)
+    sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, subvol, mounts, ctx.attrs._rootless)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
     providers = [
-        DefaultInfo(final_subvol, sub_targets = sub_targets),
+        DefaultInfo(subvol, sub_targets = sub_targets),
         LayerInfo(
             build_appliance = build_appliance,
-            depgraph = final_depgraph,
-            facts_db = final_facts_db,
+            facts_db = facts_db,
             flavor = flavor,
             flavor_info = flavor_info,
             label = ctx.label,
             mounts = mounts,
             parent = ctx.attrs.parent_layer,
-            subvol_symlink = final_subvol,
+            subvol_symlink = subvol,
             features = all_features,
         ),
     ]
 
     if ctx.attrs._implicit_image_test:
         providers.append(
-            _implicit_image_test(final_subvol, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
+            _implicit_image_test(subvol, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
         )
 
     if ctx.attrs.default_mountpoint:

@@ -85,10 +85,14 @@ pub enum Error {
     Provides(String),
     #[error("failure determining 'requires': {0}")]
     Requires(String),
+    #[error("failed to (de)serialize graph data: {0}")]
+    GraphSerde(serde_json::Error),
     #[error(transparent)]
     Plugin(#[from] antlir2_features::Error),
     #[error(transparent)]
     Facts(#[from] antlir2_facts::Error),
+    #[error("sqlite error: {0}")]
+    Sqlite(#[from] rusqlite::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -532,6 +536,19 @@ mod serde_items {
 }
 
 impl Graph {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let conn = rusqlite::Connection::open(path)?;
+        conn.query_row_and_then("SELECT json FROM depgraph", [], |row| {
+            serde_json::from_slice(
+                row.get_ref(0)?
+                    .as_bytes()
+                    .expect("column is definitely BLOB"),
+            )
+            .map_err(Error::GraphSerde)
+        })
+        .map_err(Error::from)
+    }
+
     pub fn builder(parent: Option<Self>) -> GraphBuilder {
         GraphBuilder::new(parent)
     }
@@ -609,6 +626,20 @@ impl Graph {
                 e.insert(nx);
             }
         }
+        Ok(())
+    }
+
+    pub fn write_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
+        let conn = rusqlite::Connection::open(path)?;
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS depgraph (json BLOB NOT NULL)",
+            [],
+        )?;
+        conn.execute("DELETE FROM depgraph", [])?;
+        conn.execute(
+            "INSERT INTO depgraph VALUES (?)",
+            [&serde_json::to_vec(&self).map_err(Error::GraphSerde)?],
+        )?;
         Ok(())
     }
 }

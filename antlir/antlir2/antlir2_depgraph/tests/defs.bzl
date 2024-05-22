@@ -27,7 +27,7 @@ def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
         ctx.attrs.test_depgraph[RunInfo],
         cmd_args(features_json, format = "--feature-json={}"),
         cmd_args(ctx.attrs.error_regex, format = "--error-regex={}"),
-        cmd_args(ctx.attrs.parent[LayerInfo].depgraph, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
+        cmd_args(ctx.attrs.parent[LayerInfo].facts_db, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
     ).hidden(hidden_deps)
 
 def _bad_impl(ctx: AnalysisContext) -> list[Provider]:

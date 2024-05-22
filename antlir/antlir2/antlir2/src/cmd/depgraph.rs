@@ -6,7 +6,7 @@
  */
 
 use std::collections::HashSet;
-use std::io::BufWriter;
+use std::fs::File;
 use std::path::PathBuf;
 
 use antlir2_depgraph::Graph;
@@ -24,18 +24,19 @@ pub(crate) struct Depgraph {
     features: Vec<JsonFile<HashSet<antlir2_features::Feature>>>,
     #[clap(long = "parent")]
     /// Path to depgraph for the parent layer
-    parent: Option<JsonFile<Graph>>,
+    parent: Option<PathBuf>,
     #[clap(long)]
     /// Add dynamically built items from this facts database
     add_built_items: Option<PathBuf>,
-    #[clap(long, default_value = "-")]
+    #[clap(long)]
     out: PathBuf,
 }
 
 impl Depgraph {
     #[tracing::instrument(name = "depgraph", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
-        let mut depgraph = Graph::builder(self.parent.map(JsonFile::into_inner));
+        let parent = self.parent.as_deref().map(Graph::open).transpose()?;
+        let mut depgraph = Graph::builder(parent);
         for f in self.features.into_iter().flat_map(JsonFile::into_inner) {
             depgraph.add_feature(f);
         }
@@ -47,10 +48,14 @@ impl Depgraph {
                 .context("while adding dynamically built items")?;
         }
 
-        let mut out =
-            BufWriter::new(stdio_path::create(&self.out).context("while opening output")?);
+        if let Some(parent) = &self.parent {
+            let mut src = File::open(parent).context("while opening parent db")?;
+            let mut out = File::create(&self.out).context("while creating output file")?;
+            std::io::copy(&mut src, &mut out).context("while copying parent db")?;
+        }
 
-        serde_json::to_writer_pretty(&mut out, &depgraph)
+        depgraph
+            .write_to_file(&self.out)
             .context("while serializing graph to file")?;
         Ok(())
     }

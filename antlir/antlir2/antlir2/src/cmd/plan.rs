@@ -8,6 +8,7 @@
 use std::path::PathBuf;
 
 use antlir2_compile::CompileFeature;
+use antlir2_depgraph::Graph;
 use antlir2_rootless::Rootless;
 use anyhow::Context;
 use clap::Parser;
@@ -49,10 +50,8 @@ impl Plan {
         let ctx = self.compileish.compiler_context(None)?;
 
         let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-        let items: Vec<_> = self
-            .compileish
-            .external
-            .depgraph
+        let depgraph = Graph::open(self.compileish.external.depgraph)?;
+        let items: Vec<_> = depgraph
             .pending_features()
             .map(|f| f.plan(&ctx).map_err(Error::Compile))
             .flatten_ok()
