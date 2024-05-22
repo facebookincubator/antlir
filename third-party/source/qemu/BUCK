@@ -1,0 +1,13 @@
+load("//antlir/bzl:build_defs.bzl", "http_file")
+
+src = {
+    "sha256": "467331c0a32ce3087f1f3bfa07dd75cd2b17f3d408986054c9448f7a3b2e293b",
+    "version": "8.1.2",
+}
+
+http_file(
+    name = "tarball",
+    sha256 = src["sha256"],
+    urls = ["https://gitlab.com/qemu-project/qemu/-/archive/v{ver}/qemu-v{ver}.tar".format(ver = src["version"])],
+    visibility = ["//third-party/..."],
+)

@@ -9,4 +9,5 @@ http_file(
     name = "tarball",
     sha256 = src["sha256"],
     urls = ["https://github.com/libffi/libffi/archive/refs/tags/v{}.tar.gz".format(src["version"])],
+    visibility = ["//third-party/..."],
 )

@@ -26,5 +26,8 @@ third_party.build(
         install = "meson install -C _build",
         prepare = "meson _build . -Ddefault_library=static -Dprefix=\"${OUTPUT}\"",
     ),
-    visibility = ["//antlir/third-party/..."],
+    visibility = [
+        "//antlir/third-party/...",
+        "//third-party/antlir/...",
+    ],
 )
