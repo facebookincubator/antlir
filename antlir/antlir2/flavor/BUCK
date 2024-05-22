@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/flavor:defs.bzl", "flavor")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 
 oncall("antlir")
 
@@ -16,7 +17,10 @@ flavor(
     name = "none",
     # TODO: this should have its own build_appliance that doesn't have dnf
     # installed, but is not strictly necessary right now
-    default_build_appliance = "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
+    default_build_appliance = internal_external(
+        fb = "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
+        oss = "//flavor/centos9:build-appliance.prebuilt",
+    ),
     default_dnf_repo_set = ":empty-repo-set",
     rpm_reflink_flavor = None,
     visibility = ["PUBLIC"],

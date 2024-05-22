@@ -1,0 +1,3 @@
+load("//antlir/antlir2/os:package.bzl", "all_images_in_package_use_default_os")
+
+all_images_in_package_use_default_os()
