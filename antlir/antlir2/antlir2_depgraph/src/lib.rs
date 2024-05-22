@@ -8,14 +8,16 @@
 use std::collections::BTreeSet;
 use std::fmt::Debug;
 use std::fmt::Display;
-use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 use antlir2_depgraph_if::item;
+use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::RequiresProvides as _;
 use antlir2_depgraph_if::Validator;
+use antlir2_facts::fact::dir_entry::DirEntry;
+use antlir2_facts::RoDatabase;
 use antlir2_features::Feature;
 use itertools::Itertools;
 use petgraph::graph::DefaultIx;
@@ -85,6 +87,8 @@ pub enum Error {
     Requires(String),
     #[error(transparent)]
     Plugin(#[from] antlir2_features::Error),
+    #[error(transparent)]
+    Facts(#[from] antlir2_facts::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -546,25 +550,23 @@ impl Graph {
     /// method will add [Item] nodes for anything newly discovered in the
     /// filesystem and add it to the end of the graph since we don't know where
     /// it came from.
-    pub fn populate_dynamic_items(&mut self, root: &Path) -> std::io::Result<()> {
+    pub fn populate_dynamic_items(&mut self, db: &RoDatabase) -> Result<()> {
         let mut seen_paths = FxHashSet::default();
-        for entry in walkdir::WalkDir::new(root) {
-            let entry = entry?;
-            let path =
-                Path::new("/").join(entry.path().strip_prefix(root).expect("this must succeed"));
-            seen_paths.insert(path.clone());
-            let key = ItemKey::Path(path.clone());
+        for dir_entry in db.iter::<DirEntry>()? {
+            seen_paths.insert(dir_entry.path().to_owned());
+            let key = ItemKey::Path(dir_entry.path().to_owned());
             if let std::collections::hash_map::Entry::Vacant(e) = self.items.entry(key) {
-                let meta = entry.metadata()?;
-                let path_item = if entry.path_is_symlink() {
-                    let target = std::fs::read_link(entry.path())?;
-                    item::Path::Symlink { target, link: path }
-                } else {
-                    item::Path::Entry(item::FsEntry {
-                        path,
-                        mode: meta.mode(),
-                        file_type: meta.file_type().into(),
-                    })
+                let path_item = match dir_entry {
+                    DirEntry::Symlink(sym) => item::Path::Symlink {
+                        target: sym.target().to_owned(),
+                        link: sym.path().to_owned(),
+                    },
+                    _ => item::Path::Entry(item::FsEntry {
+                        path: dir_entry.path().to_owned(),
+                        mode: dir_entry.mode(),
+                        file_type: FileType::from_mode(dir_entry.mode())
+                            .expect("invalid file type in mode"),
+                    }),
                 };
                 let nx = self.g.add_node_typed(Item::Path(path_item));
                 e.insert(nx);
@@ -587,38 +589,22 @@ impl Graph {
             _ => true,
         });
 
-        let passwd_path = root.join("etc/passwd");
-        let passwd = if passwd_path.exists() {
-            antlir2_users::passwd::EtcPasswd::parse(&std::fs::read_to_string(passwd_path)?)
-                .map_err(std::io::Error::other)?
-                .into_owned()
-        } else {
-            Default::default()
-        };
-        for user in passwd.into_records() {
+        for user in db.iter::<antlir2_facts::fact::user::User>()? {
             if let std::collections::hash_map::Entry::Vacant(e) =
-                self.items.entry(ItemKey::User(user.name.clone().into()))
+                self.items.entry(ItemKey::User(user.name().to_owned()))
             {
                 let nx = self.g.add_node_typed(Item::User(item::User {
-                    name: user.name.into(),
+                    name: user.name().to_owned(),
                 }));
                 e.insert(nx);
             }
         }
-        let group_path = root.join("etc/group");
-        let groups = if group_path.exists() {
-            antlir2_users::group::EtcGroup::parse(&std::fs::read_to_string(group_path)?)
-                .map_err(std::io::Error::other)?
-                .into_owned()
-        } else {
-            Default::default()
-        };
-        for group in groups.into_records() {
+        for group in db.iter::<antlir2_facts::fact::user::Group>()? {
             if let std::collections::hash_map::Entry::Vacant(e) =
-                self.items.entry(ItemKey::Group(group.name.clone().into()))
+                self.items.entry(ItemKey::Group(group.name().to_owned()))
             {
                 let nx = self.g.add_node_typed(Item::Group(item::Group {
-                    name: group.name.into(),
+                    name: group.name().to_owned(),
                 }));
                 e.insert(nx);
             }

@@ -10,6 +10,7 @@ use std::io::BufWriter;
 use std::path::PathBuf;
 
 use antlir2_depgraph::Graph;
+use antlir2_facts::RoDatabase;
 use anyhow::Context;
 use clap::Parser;
 use json_arg::JsonFile;
@@ -25,37 +26,24 @@ pub(crate) struct Depgraph {
     /// Path to depgraph for the parent layer
     parent: Option<JsonFile<Graph>>,
     #[clap(long)]
-    /// Add dynamically built items from this built image
+    /// Add dynamically built items from this facts database
     add_built_items: Option<PathBuf>,
     #[clap(long, default_value = "-")]
     out: PathBuf,
-    #[clap(long)]
-    rootless: bool,
 }
 
 impl Depgraph {
     #[tracing::instrument(name = "depgraph", skip(self))]
-    pub(crate) fn run(self, rootless: antlir2_rootless::Rootless) -> Result<()> {
-        // This naming is a little confusing, but basically `rootless` exists to
-        // drop privileges when the process is invoked with `sudo`, and as such
-        // is not used if the entire build is running solely as an unprivileged
-        // user.
-        let rootless = if self.rootless && self.add_built_items.is_some() {
-            antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
-            None
-        } else {
-            Some(rootless)
-        };
-
+    pub(crate) fn run(self) -> Result<()> {
         let mut depgraph = Graph::builder(self.parent.map(JsonFile::into_inner));
         for f in self.features.into_iter().flat_map(JsonFile::into_inner) {
             depgraph.add_feature(f);
         }
         let mut depgraph = depgraph.build()?;
-        if let Some(dir) = &self.add_built_items {
-            let _root_guard = rootless.map(|r| r.escalate()).transpose()?;
+        if let Some(path) = &self.add_built_items {
+            let db = RoDatabase::open(path).context("while opening facts db")?;
             depgraph
-                .populate_dynamic_items(dir)
+                .populate_dynamic_items(&db)
                 .context("while adding dynamically built items")?;
         }
 
