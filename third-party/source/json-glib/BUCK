@@ -22,4 +22,5 @@ buck_genrule(
         h = src["sha256"],
         v = src["version"],
     ),
+    visibility = ["//third-party/..."],
 )

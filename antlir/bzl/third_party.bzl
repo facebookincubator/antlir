@@ -7,7 +7,7 @@ load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load(":build_defs.bzl", "buck_genrule", third_party_shim = "third_party")
+load(":build_defs.bzl", "buck_genrule", "internal_external", third_party_shim = "third_party")
 load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third-party-build"
@@ -64,7 +64,10 @@ chmod +x $OUT
 
     image.layer(
         name = name + "__setup_layer",
-        parent_layer = antlir2_dep("//antlir/third-party:build-base"),
+        parent_layer = internal_external(
+            fb = antlir2_dep("//antlir/third-party:build-base"),
+            oss = "//third-party/antlir:build-base",
+        ),
         dnf_additional_repos = dnf_additional_repos,
         features = features + [
             feature.ensure_dirs_exist(dirs = DEPS_DIR),
