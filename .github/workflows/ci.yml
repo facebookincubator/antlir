@@ -32,9 +32,13 @@ jobs:
           echo '[buck2]' >> .buckconfig
           echo 'file_watcher=notify' >> .buckconfig
 
+      - name: Test target graph
+        run: |
+          ./buck2 bxl //ci:test_target_graph.bxl:test_target_graph
+
       - name: Find tests
         run: |
-          ./buck2 bxl :find_tests.bxl:find_tests -- \
+          ./buck2 bxl //ci:find_tests.bxl:find_tests -- \
             --pattern //antlir/antlir2/antlir2_facts/... \
             --pattern //antlir/antlir2/features/... \
             --pattern //antlir/antlir2/test_images/... \

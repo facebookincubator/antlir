@@ -1,0 +1,18 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+def _impl(ctx):
+    targets = ctx.uquery().eval("//...")
+
+    ctx.output.print("All BUCK files evaluate")
+
+    ctx.analysis(targets)
+
+    ctx.output.print("All targets analyze successfully")
+
+test_target_graph = bxl_main(
+    impl = _impl,
+    cli_args = {},
+)

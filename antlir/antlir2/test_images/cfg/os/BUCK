@@ -5,17 +5,29 @@ load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
 load("//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
-load("//antlir/bzl:build_defs.bzl", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 load(":defs.bzl", "write_os")
 
 oncall("antlir")
 
+OSES = internal_external(
+    fb = [
+        "centos8",
+        "centos9",
+        "eln",
+    ],
+    oss = ["centos9"],
+)
+
 # This single-constraint select is useful to ensure that we can select on an ROU
 # and that the default of stable is actually configured and we don't need to
 # rely on DEFAULT
-test_rpm_root = select({
-    "//antlir/antlir2/os/facebook:rou-stable": "test-rpm-root",
-}) if is_facebook else "test-rpm-root"
+test_rpm_root = internal_external(
+    fb = select({
+        "//antlir/antlir2/os/facebook:rou-stable": "test-rpm-root",
+    }),
+    oss = "test-rpm-root",
+)
 
 image.layer(
     name = "root",
@@ -90,11 +102,7 @@ image.layer(
             layer = ":leaf.generic",
         ),
     ]
-    for os in [
-        "centos8",
-        "centos9",
-        "eln",
-    ]
+    for os in OSES
 ]
 
 # Create synthetic test rpms that dnf will choose different versions based on
@@ -188,11 +196,7 @@ all_rpms = []
         ),
         all_rpms.append(":test-rpm-" + level + "." + os),
     ]
-    for os in [
-        "centos8",
-        "centos9",
-        "eln",
-    ]
+    for os in OSES
     for level in [
         "root",
         "intermediate",
