@@ -56,7 +56,7 @@ impl antlir2_depgraph_if::RequiresProvides for Clone {
         let mut v = Vec::new();
         if self.pre_existing_dest {
             v.push(Requirement::ordered(
-                ItemKey::Path(self.dst_path.to_owned()),
+                ItemKey::Path(self.dst_path.components().collect()),
                 Validator::FileType(FileType::Directory),
             ));
         } else {

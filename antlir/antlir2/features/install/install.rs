@@ -180,7 +180,7 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
     fn provides(&self) -> Result<Vec<Item>, String> {
         if self.is_dir() {
             let mut v = vec![Item::Path(PathItem::Entry(FsEntry {
-                path: self.dst.to_owned(),
+                path: self.dst.components().collect(),
                 file_type: FileType::Directory,
                 mode: self.mode.as_raw(),
             }))];
