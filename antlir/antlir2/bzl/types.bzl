@@ -24,7 +24,6 @@ FlavorDnfInfo = provider(fields = [
 
 LayerInfo = provider(fields = [
     "build_appliance",  # dep on the build appliance that was use to build this (if any)
-    "depgraph",  # JSON-serialized depgraph
     "facts_db",  # Database managed by antlir2_facts
     "features",  # List of all feature analyses
     "flavor",  # dep on the flavor this layer was built with

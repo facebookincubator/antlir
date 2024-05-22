@@ -7,6 +7,7 @@
 
 use antlir2_compile::plan::Plan;
 use antlir2_compile::CompileFeature;
+use antlir2_depgraph::Graph;
 use antlir2_rootless::Rootless;
 use clap::Parser;
 use json_arg::JsonFile;
@@ -41,7 +42,8 @@ impl Compile {
             .compileish
             .compiler_context(self.external.plan.map(JsonFile::into_inner))?;
         let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-        for feature in self.compileish.external.depgraph.pending_features() {
+        let depgraph = Graph::open(self.compileish.external.depgraph)?;
+        for feature in depgraph.pending_features() {
             feature.compile(&ctx)?;
         }
         drop(root_guard);

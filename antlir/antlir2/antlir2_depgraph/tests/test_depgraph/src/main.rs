@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::path::PathBuf;
+
 use antlir2_depgraph::Graph;
 use antlir2_features::Feature;
 use anyhow::anyhow;
@@ -18,14 +20,15 @@ struct Args {
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<Feature>>>,
     #[clap(long)]
-    parent: Option<JsonFile<Graph>>,
+    parent: Option<PathBuf>,
     #[clap(long)]
     error_regex: Regex,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let mut builder = Graph::builder(args.parent.map(JsonFile::into_inner));
+    let parent = args.parent.map(Graph::open).transpose()?;
+    let mut builder = Graph::builder(parent);
     for feature in args.features.into_iter().flat_map(JsonFile::into_inner) {
         eprintln!("adding feature {feature:?}");
         builder.add_feature(feature);

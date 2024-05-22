@@ -12,7 +12,6 @@ use std::path::PathBuf;
 use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
 use antlir2_compile::DnfContext;
-use antlir2_depgraph::Graph;
 use buck_label::Label;
 use clap::Parser;
 use json_arg::Json;
@@ -89,9 +88,9 @@ struct CompileishExternal {
     #[clap(long)]
     /// Architecture of the image being built
     pub(crate) target_arch: Arch,
-    #[clap(long = "depgraph-json")]
-    /// Path to input depgraph json file with features to include in this image
-    pub(crate) depgraph: JsonFile<Graph>,
+    #[clap(long = "depgraph")]
+    /// Path to input depgraph with features to include in this image
+    pub(crate) depgraph: PathBuf,
 }
 
 impl Compileish {

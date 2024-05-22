@@ -110,9 +110,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         rootless = ctx.attrs._rootless,
     )
 
-    depgraph_output = build_depgraph(
+    facts_db = build_depgraph(
         ctx = ctx,
-        parent_depgraph = None,
+        parent = None,
         features_json = None,
         add_items_from_facts_db = facts_db,
     )
@@ -121,7 +121,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         LayerInfo(
             label = ctx.label,
             facts_db = facts_db,
-            depgraph = depgraph_output,
             subvol_symlink = subvol_symlink,
             mounts = [],
             flavor = ctx.attrs.flavor,
