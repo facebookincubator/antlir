@@ -36,11 +36,13 @@ http_archive(
 build_appliance(
     name = "build-appliance.prebuilt",
     src = ":build-appliance.tar.zst",
+    visibility = [
+        "antlir//antlir/antlir2/flavor:none",
+    ]
 )
 
 image.layer(
     name = "build-appliance",
-    parent_layer = ":build-appliance.prebuilt",
     build_appliance = ":build-appliance.prebuilt",
     features = [
         "//antlir/antlir2/build_appliance:features",
