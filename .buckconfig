@@ -1,23 +1,26 @@
-[repositories]
-antlir = .
-prelude = prelude
-toolchains = toolchains
-none = none
-generated = generated
+[cells]
+    antlir = .
+    prelude = prelude
+    toolchains = toolchains
+    none = none
+    generated = generated
 
-[repository_aliases]
-config = prelude
-ovr_config = prelude
-fbcode = none
-fbsource = none
-fbcode_macros = none
-buck = none
+[cell_aliases]
+    config = prelude
+    ovr_config = prelude
+    fbcode = none
+    fbsource = none
+    fbcode_macros = none
+    buck = none
+
+[external_cells]
+    prelude = bundled
 
 [parser]
-target_platform_detector_spec = target:antlir//...->prelude//platforms:default
+    target_platform_detector_spec = target:antlir//...->prelude//platforms:default
 
 [project]
-ignore = antlir2-out, .git, .sl
+    ignore = antlir2-out, .git, .sl
 
 [buck2]
-file_watcher = watchman
+    file_watcher = watchman
