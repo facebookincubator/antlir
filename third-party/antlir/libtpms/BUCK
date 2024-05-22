@@ -45,7 +45,10 @@ sed -i 's/char state_directory/static char state_directory/' ./src/tpm12/tpm_nvf
 ./autogen.sh --prefix="${OUTPUT}" --with-openssl --with-tpm2 --disable-shared
         """,
     ),
-    visibility = ["//antlir/third-party/..."],
+    visibility = [
+        "//antlir/third-party/...",
+        "//third-party/antlir/...",
+    ],
     deps = [
         third_party.library("libcrypto"),
     ],

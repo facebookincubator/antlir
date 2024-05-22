@@ -85,7 +85,11 @@ export LDFLAGS="-L/third-party-build/deps/libtpms/lib \
 ./autogen.sh --prefix="${OUTPUT}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
         """,
     ),
-    visibility = ["//antlir/vm/..."],
+    visibility = [
+        "//antlir/third-party/...",
+        "//antlir/vm/...",
+        "//third-party/antlir/...",
+    ],
     deps = [
         third_party.library(
             "libffi",

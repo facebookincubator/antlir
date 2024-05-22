@@ -30,7 +30,7 @@ def _third_party_library(project, rule = None, platform = None):
         return "antlir//third-party/rust:" + project
 
     if platform == "antlir":
-        return "//antlir/third-party/{project}:{rule}".format(
+        return "//third-party/antlir/{project}:{rule}".format(
             project = project,
             rule = rule,
         )
@@ -44,7 +44,7 @@ def _third_party_source(project, rule = "tarball"):
 
     Return a target path based on that.
     """
-    return "fbsource//third-party/antlir-build/{}:{}".format(project, rule)
+    return "antlir//third-party/source/{}:{}".format(project, rule)
 
 def _get_visibility(visibility = None):
     """

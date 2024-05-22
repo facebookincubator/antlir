@@ -1,14 +1,53 @@
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "internal_external")
 
 oncall("antlir")
+
+image.layer(
+    name = "qemu-tools-rc",
+    features = [
+        feature.clone(
+            dst_path = path,
+            src_layer = internal_external(
+                fb = "//antlir/third-party/qemu:qemu",
+                oss = "//third-party/antlir/qemu:qemu",
+            ),
+            src_path = path,
+        )
+        for path in [
+            "/bin",
+            "/libexec",
+            "/share/qemu",
+        ]
+    ] + [
+        feature.ensure_dirs_exist(dirs = "/share"),
+        feature.clone(
+            dst_path = "/bin/swtpm",
+            src_layer = internal_external(
+                fb = "//antlir/third-party/swtpm:swtpm",
+                oss = "//third-party/antlir/swtpm:swtpm",
+            ),
+            src_path = "/bin/swtpm",
+        ),
+    ],
+)
+
+alias(
+    name = "qemu-tools",
+    actual = internal_external(
+        fb = "fbcode//antlir/vm/runtime/facebook:qemu-tools",
+        oss = ":qemu-tools-rc",
+    ),
+)
 
 [
     hoist(
         name = paths.basename(binary),
         executable = True,
-        layer = "fbcode//antlir/vm/runtime/facebook:qemu-tools",
+        layer = ":qemu-tools",
         path = binary,
         visibility = ["PUBLIC"],
     )
@@ -25,7 +64,7 @@ oncall("antlir")
 hoist(
     name = "share-qemu",
     dir = True,
-    layer = "fbcode//antlir/vm/runtime/facebook:qemu-tools",
+    layer = ":qemu-tools",
     path = "share/qemu",
     visibility = ["PUBLIC"],
 )
