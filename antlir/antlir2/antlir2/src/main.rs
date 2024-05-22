@@ -107,7 +107,7 @@ fn main() -> Result<()> {
 
     let result = match args.subcommand {
         Subcommand::CasDir(x) => x.run(rootless),
-        Subcommand::Depgraph(x) => x.run(rootless),
+        Subcommand::Depgraph(x) => x.run(),
         Subcommand::Map(x) => x.run(rootless),
         Subcommand::Shell(x) => x.run(),
     };

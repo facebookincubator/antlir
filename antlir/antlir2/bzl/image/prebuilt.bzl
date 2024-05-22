@@ -100,14 +100,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         },
     )
 
-    depgraph_output = build_depgraph(
-        ctx = ctx,
-        parent_depgraph = None,
-        features_json = None,
-        subvol = subvol_symlink,
-        rootless = ctx.attrs._rootless,
-    )
-
     facts_db = facts.new_facts_db(
         actions = ctx.actions,
         subvol_symlink = subvol_symlink,
@@ -116,6 +108,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         new_facts_db = ctx.attrs._new_facts_db[RunInfo],
         phase = None,
         rootless = ctx.attrs._rootless,
+    )
+
+    depgraph_output = build_depgraph(
+        ctx = ctx,
+        parent_depgraph = None,
+        features_json = None,
+        add_items_from_facts_db = facts_db,
     )
 
     return [

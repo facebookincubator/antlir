@@ -13,25 +13,20 @@ def build_depgraph(
         ctx: AnalysisContext,
         parent_depgraph: Artifact | None,
         features_json: typing.Any,
-        subvol: Artifact | None,
-        identifier_prefix: str = "",
-        rootless: bool = False) -> Artifact:
-    output = ctx.actions.declare_output(identifier_prefix + "depgraph.json" + (".pre" if not subvol else ""))
+        add_items_from_facts_db: Artifact | None,
+        identifier_prefix: str = "") -> Artifact:
+    output = ctx.actions.declare_output(identifier_prefix + "depgraph.json" + (".pre" if not add_items_from_facts_db else ""))
     ctx.actions.run(
         cmd_args(
-            # Inspecting already-built images often requires root privileges
-            "sudo" if (subvol and not rootless) else cmd_args(),
             ctx.attrs.antlir2[RunInfo],
             "depgraph",
             cmd_args(features_json, format = "--feature-json={}") if features_json else cmd_args(),
             cmd_args(parent_depgraph, format = "--parent={}") if parent_depgraph else cmd_args(),
-            cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
+            cmd_args(add_items_from_facts_db, format = "--add-built-items={}") if add_items_from_facts_db else cmd_args(),
             cmd_args(output.as_output(), format = "--out={}"),
-            cmd_args("--rootless") if rootless else cmd_args(),
         ),
         category = "antlir2_depgraph",
-        identifier = identifier_prefix.removesuffix("_") + ("/pre" if not subvol else ""),
-        local_only = bool(subvol),
+        identifier = identifier_prefix.removesuffix("_") + ("/pre" if not add_items_from_facts_db else ""),
         env = {
             "RUST_LOG": "antlir2=trace",
         },

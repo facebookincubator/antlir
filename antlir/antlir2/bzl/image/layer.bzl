@@ -316,8 +316,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             features_json = features_json,
             identifier_prefix = identifier_prefix,
             parent_depgraph = parent_depgraph,
-            subvol = None,
-            rootless = ctx.attrs._rootless,
+            add_items_from_facts_db = None,
         )
 
         target_arch = ctx.attrs._selected_target_arch
@@ -419,15 +418,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
         build_cmd.append(cmd)
 
-        final_depgraph = build_depgraph(
-            ctx = ctx,
-            features_json = None,
-            identifier_prefix = identifier_prefix,
-            parent_depgraph = depgraph_input,
-            subvol = final_subvol,
-            rootless = ctx.attrs._rootless,
-        )
-
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
             subvol_symlink = final_subvol,
@@ -436,6 +426,14 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = phase,
             rootless = ctx.attrs._rootless,
+        )
+
+        final_depgraph = build_depgraph(
+            ctx = ctx,
+            features_json = None,
+            identifier_prefix = identifier_prefix,
+            parent_depgraph = depgraph_input,
+            add_items_from_facts_db = final_facts_db,
         )
 
         phase_mounts = all_mounts(
@@ -469,15 +467,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # for macro authors, so antlir2 should allow it.
     if not final_subvol:
         final_subvol = parent_layer
-    if not final_depgraph:
-        final_depgraph = build_depgraph(
-            ctx = ctx,
-            features_json = None,
-            identifier_prefix = "empty_layer_",
-            parent_depgraph = parent_depgraph,
-            subvol = final_subvol,
-            rootless = ctx.attrs._rootless,
-        )
     if not final_facts_db:
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
@@ -487,6 +476,14 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = None,
             rootless = False,
+        )
+    if not final_depgraph:
+        final_depgraph = build_depgraph(
+            ctx = ctx,
+            features_json = None,
+            identifier_prefix = "empty_layer_",
+            parent_depgraph = parent_depgraph,
+            add_items_from_facts_db = final_facts_db,
         )
 
     debug_sub_targets["depgraph"] = [DefaultInfo(final_depgraph)]
