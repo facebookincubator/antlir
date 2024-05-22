@@ -27,19 +27,7 @@ def _third_party_library(project, rule = None, platform = None):
         if not rule == project:
             fail("rust dependencies must omit rule or be identical to project")
 
-        # A small number of Facebook-maintained OSS libraries need special
-        # casing internally since the source of truth is no longer
-        # `fbsource/third-party`
-        return {
-            "allocative": "fbcode//buck2/allocative/allocative:allocative",
-            "fbthrift": "fbcode//thrift/lib/rust:fbthrift",
-            "gazebo": "fbcode//buck2/gazebo/gazebo:gazebo",
-            "slog_glog_fmt": "fbcode//common/rust/shed/slog_glog_fmt:slog_glog_fmt",
-            "starlark": "fbcode//buck2/starlark-rust/starlark:starlark",
-        }.get(
-            project,
-            "antlir//third-party/rust:" + project,
-        )
+        return "antlir//third-party/rust:" + project
 
     if platform == "antlir":
         return "//antlir/third-party/{project}:{rule}".format(
