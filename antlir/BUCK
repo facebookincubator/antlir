@@ -189,11 +189,6 @@ python_binary(
     ],
 )
 
-python_library(
-    name = "errors",
-    srcs = ["errors.py"],
-)
-
 # Keep around until D53708598 pushes to Sandcastle
 export_file(
     name = "compiler",
