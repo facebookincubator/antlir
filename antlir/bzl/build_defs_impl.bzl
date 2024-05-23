@@ -194,26 +194,38 @@ def _rust_unittest(*args, **kwargs):
     _wrap_internal(native.rust_test, args, kwargs)
 
 def _rust_binary(*, name: str, **kwargs):
-    unittests = kwargs.pop("unittests")
+    unittests = kwargs.pop("unittests", True)
     if unittests:
         _rust_unittest(name = name + "-unittests", **kwargs)
     kwargs["name"] = name
     _wrap_internal(native.rust_binary, [], kwargs)
 
 def _rust_library(*, name: str, **kwargs):
-    unittests = kwargs.pop("unittests")
+    unittests = kwargs.pop("unittests", True)
     if unittests:
         _rust_unittest(name = name + "-unittests", **kwargs)
     kwargs["name"] = name
     kwargs.pop("autocargo", None)
     _wrap_internal(native.rust_library, [], kwargs)
 
-def _rust_bindgen_library(name: str, **kwargs):
-    native.alias(
-        name = name,
-        actual = "//antlir:empty",
+def _rust_bindgen_library(name: str, header: str, **kwargs):
+    _buck_genrule(
+        name = name + "--bindings.rs",
+        out = "bindings.rs",
+        bash = """
+            $(exe antlir//third-party/rust/bindgen:bindgen) --header "$SRCS" --out $OUT
+        """,
+        srcs = [header],
+        visibility = [],
     )
-    print("TODO: rust_bindgen_library")
+    _rust_library(
+        name = name,
+        mapped_srcs = {
+            ":{}--bindings.rs".format(name): "src/lib.rs",
+        },
+        deps = kwargs.pop("cpp_deps", []),
+        visibility = kwargs.pop("visibility", []),
+    )
 
 def _rust_python_extension(name: str, **kwargs):
     native.alias(

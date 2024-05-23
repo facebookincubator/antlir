@@ -1,0 +1,12 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "bindgen",
+    srcs = ["bindgen.rs"],
+    deps = [
+        "//third-party/rust:anyhow",
+        "//third-party/rust:bindgen",
+        "//third-party/rust:clap",
+        "//third-party/rust:clang-sys",
+    ]
+)
