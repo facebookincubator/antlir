@@ -8,7 +8,7 @@ rust_bindgen_library(
         "ovr_config//os:linux",
     ],
     cpp_deps = [
-        "third-party//libcap:cap",
+        "//third-party/source/libcap:libcap",
     ],
     generate = ("types", "functions", "vars"),
     header = "bridge.h",

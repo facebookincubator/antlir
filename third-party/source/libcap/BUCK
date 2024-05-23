@@ -1,0 +1,6 @@
+load("@prelude//third-party:pkgconfig.bzl", "external_pkgconfig_library")
+
+# TODO: make this build with buck
+external_pkgconfig_library(
+    name = "libcap",
+)
