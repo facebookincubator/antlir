@@ -13,8 +13,11 @@ def build_depgraph(
         ctx: AnalysisContext,
         parent: Artifact | None,
         features_json: typing.Any,
-        identifier_prefix: str = "") -> Artifact:
-    output = ctx.actions.declare_output(identifier_prefix + "depgraph")
+        identifier: str | None = None) -> Artifact:
+    if identifier:
+        output = ctx.actions.declare_output(identifier, "depgraph")
+    else:
+        output = ctx.actions.declare_output("depgraph")
     ctx.actions.run(
         cmd_args(
             ctx.attrs.antlir2[RunInfo],
@@ -24,7 +27,7 @@ def build_depgraph(
             cmd_args(output.as_output(), format = "--out={}"),
         ),
         category = "antlir2_depgraph",
-        identifier = identifier_prefix.removesuffix("_"),
+        identifier = identifier,
         env = {
             "RUST_LOG": "antlir2=trace",
         },

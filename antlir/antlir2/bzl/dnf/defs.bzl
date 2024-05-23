@@ -74,7 +74,7 @@ def _possible_rpm_artifacts(*, rpm_info: RpmInfo | Provider, reflink_flavor: str
 
 def compiler_plan_to_local_repos(
         ctx: AnalysisContext,
-        identifier_prefix: str,
+        identifier: str,
         dnf_available_repos: list[RepoInfo | Provider],
         compiler_plan: Artifact,
         reflink_flavor: str | None) -> Artifact:
@@ -82,7 +82,7 @@ def compiler_plan_to_local_repos(
     Use the compiler plan to build a directory of all the RPM repodata and RPM
     blobs we need to perform the dnf installations in the image.
     """
-    dir = ctx.actions.declare_output(identifier_prefix + "dnf_repos", dir = True)
+    dir = ctx.actions.declare_output(identifier, "dnf_repos", dir = True)
 
     # collect all rpms keyed by repo, then nevra
     by_repo = {}
