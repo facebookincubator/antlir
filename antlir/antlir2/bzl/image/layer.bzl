@@ -188,6 +188,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         sub_targets["flavor"] = flavor.providers
 
     all_features = features[FeatureInfo].features
+
     dnf_available_repos = []
     if types.is_list(ctx.attrs.dnf_available_repos):
         dnf_available_repos = ctx.attrs.dnf_available_repos
@@ -213,6 +214,19 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             dnf_available_repos.append(repo)
         else:
             fail("Unknown type for repo {} in dnf_additional_repos: ".format(repo))
+
+    for logical_id in ctx.attrs.dnf_exclude_repos:
+        to_remove = None
+        for repo in dnf_available_repos:
+            if repo[RepoInfo].logical_id == logical_id:
+                to_remove = repo
+        if not to_remove:
+            fail("Logical id '{}' does not match any repo ({}), remove it".format(
+                logical_id,
+                [r[RepoInfo].logical_id for r in dnf_available_repos],
+            ))
+        dnf_available_repos.remove(to_remove)
+
     dnf_repodatas = ctx.actions.anon_target(repodata_only_local_repos, {
         "repos": dnf_available_repos,
     }).artifact("repodatas")
@@ -517,6 +531,13 @@ _layer_attrs = {
         doc = """
             Restrict the available dnf repos while building this layer to this
             repo_set and anything in dnf_additional_repos
+        """,
+    ),
+    "dnf_exclude_repos": attrs.list(
+        attrs.string(doc = "RepoInfo logical_id to exclude from the otherwise available repos"),
+        default = [],
+        doc = """
+            Hide some repos from dnf resolution
         """,
     ),
     "dnf_excluded_rpms": attrs.option(
