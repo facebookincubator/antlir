@@ -154,15 +154,6 @@ python_binary(
     ],
 )
 
-# Some rust dependencies are only used in OSS, add this target to be able to easily
-# bring in third-party crates that will show up in `buck query` within fbcode
-rust_library(
-    name = "extra_oss_deps",
-    mapped_srcs = {
-        "//antlir:empty": "src/lib.rs",
-    },
-)
-
 export_file(
     name = "empty",
     visibility = ["PUBLIC"],
