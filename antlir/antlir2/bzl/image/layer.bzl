@@ -327,7 +327,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             features_json = features_json,
             identifier_prefix = identifier_prefix,
             parent = facts_db,
-            add_items_from_facts_db = None,
         )
 
         target_arch = ctx.attrs._selected_target_arch
@@ -437,14 +436,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = phase,
             rootless = ctx.attrs._rootless,
-        )
-
-        facts_db = build_depgraph(
-            ctx = ctx,
-            features_json = None,
-            identifier_prefix = identifier_prefix,
-            parent = facts_db,
-            add_items_from_facts_db = facts_db,
         )
 
         phase_mounts = all_mounts(

@@ -52,7 +52,7 @@ impl Plan {
         let root_guard = rootless.map(|r| r.escalate()).transpose()?;
         let depgraph = Graph::open(self.compileish.external.depgraph)?;
         let items: Vec<_> = depgraph
-            .pending_features()
+            .pending_features()?
             .map(|f| f.plan(&ctx).map_err(Error::Compile))
             .flatten_ok()
             .collect::<Result<_>>()?;

@@ -9,33 +9,34 @@ use std::collections::BTreeSet;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::path::Path;
+use std::time::Duration;
 
 use antlir2_depgraph_if::item;
 use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path as PathItem;
 use antlir2_depgraph_if::RequiresProvides as _;
 use antlir2_depgraph_if::Validator;
 use antlir2_facts::fact::dir_entry::DirEntry;
+use antlir2_facts::fact::Fact as _;
 use antlir2_facts::RoDatabase;
+use antlir2_facts::RwDatabase;
 use antlir2_features::Feature;
-use itertools::Itertools;
-use petgraph::graph::DefaultIx;
-use petgraph::graph::NodeIndex;
-use petgraph::stable_graph::StableGraph;
-use petgraph::visit::Dfs;
-use petgraph::Directed;
-use petgraph::Direction;
-use rayon::prelude::*;
-use rustc_hash::FxHashMap;
-use rustc_hash::FxHashSet;
+use fxhash::FxHashMap;
+use rusqlite::backup::Backup;
+use rusqlite::DatabaseName;
+use rusqlite::OptionalExtension as _;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::warn;
 
-mod node;
+mod fact_interop;
+use fact_interop::FactExt as _;
+use fact_interop::ItemKeyExt as _;
 mod plugin;
-use node::GraphExt;
-pub use node::Node;
+mod resolve;
+mod toposort;
 use plugin::FeatureWrapper;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -85,11 +86,13 @@ pub enum Error {
     Provides(String),
     #[error("failure determining 'requires': {0}")]
     Requires(String),
+    #[error("failed to deserialize feature data: {0}")]
+    DeserializeFeature(serde_json::Error),
     #[error("failed to (de)serialize graph data: {0}")]
     GraphSerde(serde_json::Error),
     #[error(transparent)]
     Plugin(#[from] antlir2_features::Error),
-    #[error(transparent)]
+    #[error("facts db error: {0}")]
     Facts(#[from] antlir2_facts::Error),
     #[error("sqlite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
@@ -97,549 +100,488 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug)]
 pub struct GraphBuilder {
-    g: StableGraph<Node, Edge, Directed, DefaultIx>,
-    root: node::RootNodeIndex,
-    pending_features: Vec<node::PendingFeatureNodeIndex>,
-    items: FxHashMap<ItemKey, node::ItemNodeIndex>,
+    memdb: RwDatabase,
 }
 
 impl GraphBuilder {
-    pub fn new(parent: Option<Graph>) -> Self {
-        let mut g = StableGraph::new();
-        let mut items = FxHashMap::default();
+    pub fn new(parent: Option<Graph>) -> Result<Self> {
+        // use an in-memory database for the temporary graph changes
+        let mut memdb = RwDatabase::create(":memory:")?;
+        if let Some(parent) = parent {
+            Backup::new(parent.db.as_ref(), memdb.as_mut())?.run_to_completion(
+                128,
+                Duration::from_millis(0),
+                None,
+            )?;
+        }
+        let conn = memdb.as_mut();
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS feature (id INTEGER PRIMARY KEY, value TEXT NOT NULL, pending BOOLEAN NOT NULL)",
+            [],
+        )?;
+        conn.execute(
+            r#"CREATE TABLE IF NOT EXISTS item (
+                id INTEGER PRIMARY KEY,
+                key TEXT NOT NULL,
+                value TEXT NOT NULL,
+                -- fact_kind and fact_key let us associate items to facts
+                -- (temporarily until they are properly consolidated)
+                fact_kind TEXT NOT NULL,
+                fact_key BLOB NOT NULL
+            )"#,
+            [],
+        )?;
+        conn.execute(
+            r#"CREATE TABLE IF NOT EXISTS provides (
+                feature INTEGER NOT NULL,
+                item INTEGER NOT NULL,
+                FOREIGN KEY(feature) REFERENCES feature(id),
+                FOREIGN KEY(item) REFERENCES item ON DELETE CASCADE
+            )"#,
+            [],
+        )?;
+        conn.execute(
+            r#"CREATE TABLE IF NOT EXISTS requires (
+                feature INTEGER NOT NULL,
+                item_key TEXT NOT NULL,
+                fact_kind TEXT NOT NULL,
+                fact_key BLOB NOT NULL,
+                ordered BOOLEAN NOT NULL,
+                validator TEXT NOT NULL,
+                FOREIGN KEY(feature) REFERENCES feature(id)
+                -- item_key is not a FOREIGN key because it may not actually exist
+                -- fact_{kind|key} is not a FOREIGN key because it may not actually exist
+            )"#,
+            [],
+        )?;
+
+        let tx = conn.transaction()?;
+        // mark parent features as complete
+        tx.execute("UPDATE feature SET pending = FALSE", [])?;
+        // remove any parent items where the facts have been deleted rendering
+        // any existing requires/provides links obsolete
+        tx.execute(
+            r#"
+                DELETE FROM item
+                WHERE id IN (
+                    SELECT id FROM item
+                    LEFT JOIN facts ON (
+                        facts.kind=item.fact_kind
+                        AND facts.key=item.fact_key
+                    )
+                    WHERE facts.key IS NULL
+                )
+            "#,
+            [],
+        )?;
 
         // Some items are always available, since they are a property of the
         // operating system. Add them to the graph now so that the dependency
         // checks will be satisfied.
-        for item in [
+        for (id, item) in [
+            Item::Path(item::Path::Entry(item::FsEntry {
+                path: Path::new("/").into(),
+                file_type: item::FileType::Directory,
+                mode: 0o0755,
+            })),
             Item::User(item::User {
                 name: "root".into(),
             }),
             Item::Group(item::Group {
                 name: "root".into(),
             }),
-            Item::Path(item::Path::Entry(item::FsEntry {
-                path: Path::new("/").into(),
-                file_type: item::FileType::Directory,
-                mode: 0o0755,
-            })),
-        ] {
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let key = item.key();
-            let nx = g.add_node_typed(item);
-            items.insert(key, nx);
+            // The 'item' table has no unique constraints so that we can have
+            // better error messages on conflicts, but we really only want one
+            // of each of these ambient items, so we can just use the index in
+            // this array as the primary key
+            tx.execute(
+                "INSERT OR IGNORE INTO item (id, key, value, fact_kind, fact_key) VALUES (?, ?, ?, ?, ?)",
+                (
+                    id,
+                    serde_json::to_string(&key).map_err(Error::GraphSerde)?,
+                    serde_json::to_string(&item).map_err(Error::GraphSerde)?,
+                    key.fact_kind(),
+                    key.to_fact_key().as_ref(),
+                ),
+            )?;
         }
-        let root = g.add_node_typed(());
-
-        let mut s = Self {
-            g,
-            root,
-            pending_features: Vec::new(),
-            items,
-        };
-
-        if let Some(parent) = parent {
-            let mut new_nodes = FxHashMap::default();
-            for nx in parent.g.node_indices() {
-                let new_nx = match &parent.g[nx] {
-                    Node::Item(i) => Some(s.add_item(i.clone()).into_untyped()),
-                    Node::PendingFeature(f) | Node::ParentFeature(f) => {
-                        Some(s.g.add_node(Node::ParentFeature(f.clone())))
-                    }
-                    _ => None,
-                };
-                if let Some(new_nx) = new_nx {
-                    new_nodes.insert(nx, new_nx);
-                }
-            }
-            for ex in parent.g.edge_indices() {
-                let (a, b) = parent.g.edge_endpoints(ex).expect("must exist");
-                let weight = parent.g.edge_weight(ex).expect("must exist").clone();
-                if new_nodes.contains_key(&a) && new_nodes.contains_key(&b) {
-                    s.g.add_edge(new_nodes[&a], new_nodes[&b], weight);
-                }
-            }
-        }
-        s
+        tx.commit()?;
+        Ok(Self { memdb })
     }
 
-    fn item(&self, key: &ItemKey) -> Option<node::ItemNodeIndex> {
-        match self.items.get(key) {
-            Some(i) => Some(*i),
-            None => {
-                if let ItemKey::Path(path) = key {
-                    // if any of the ancestor directory paths are actually
-                    // symlinks, resolve them
-                    for ancestor in path.ancestors().skip(1) {
-                        if let Some(nx) = self.items.get(&ItemKey::Path(ancestor.into())) {
-                            if let Item::Path(item::Path::Symlink { target, link }) = &self.g[*nx] {
-                                // target may be a relative path, in which
-                                // case we need to resolve it relative to
-                                // the link
-                                let target = match target.is_absolute() {
-                                    true => target.clone(),
-                                    false => link
-                                        .parent()
-                                        .expect("the link cannot itself be /")
-                                        .join(target),
-                                };
-                                let new_path = target.join(path.strip_prefix(ancestor).expect(
-                                    "ancestor path can definitely be stripped as a prefix",
-                                ));
-                                return self.item(&ItemKey::Path(new_path));
-                            }
-                        };
+    pub fn add_feature(&mut self, feature: Feature) -> Result<&mut Self> {
+        let tx = self.memdb.as_mut().transaction()?;
+        tx.execute(
+            "INSERT INTO feature (value, pending) VALUES (?, ?)",
+            (
+                serde_json::to_string(&feature).map_err(Error::GraphSerde)?,
+                true,
+            ),
+        )?;
+        let feature_id = tx.last_insert_rowid();
+        let provides = FeatureWrapper(&feature)
+            .provides()
+            .map_err(Error::Provides)?;
+        for item in provides {
+            let key = item.key();
+            tx.execute(
+                "INSERT INTO item (key, value, fact_kind, fact_key) VALUES (?, ?, ?, ?)",
+                (
+                    serde_json::to_string(&key).map_err(Error::GraphSerde)?,
+                    serde_json::to_string(&item).map_err(Error::GraphSerde)?,
+                    key.fact_kind(),
+                    key.to_fact_key().as_ref(),
+                ),
+            )?;
+            let item_id = tx.last_insert_rowid();
+            tx.execute(
+                "INSERT OR IGNORE INTO provides (feature, item) VALUES (?, ?)",
+                (feature_id, item_id),
+            )?;
+        }
+        let requires = FeatureWrapper(&feature)
+            .requires()
+            .map_err(Error::Requires)?;
+        for req in requires {
+            tx.execute(
+                "INSERT OR IGNORE INTO requires (feature, item_key, fact_kind, fact_key, ordered, validator) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    feature_id,
+                    serde_json::to_string(&req.key).map_err(Error::GraphSerde)?,
+                    req.key.fact_kind(),
+                    req.key.to_fact_key().as_ref(),
+                    req.ordered,
+                    serde_json::to_string(&req.validator).map_err(Error::GraphSerde)?,
+                ),
+            )?;
+        }
+
+        tx.commit()?;
+        Ok(self)
+    }
+
+    /// Fixup graph edges so that any requirements pointing to a path get
+    /// duplicated with an edge that points to the final, canonical path (after
+    /// resolving any symlinks)
+    fn fixup_symlinks(&mut self) -> Result<()> {
+        let tx = self.memdb.as_mut().transaction()?;
+        for row in tx
+            .prepare(
+                r#"
+            SELECT requires.item_key, requires.validator, requires.feature, requires.ordered
+            FROM requires
+            INNER JOIN feature
+                ON feature.id=requires.feature
+            WHERE
+                feature.pending=1
+                AND requires.fact_kind=?1
+        "#,
+            )?
+            .query_and_then((DirEntry::kind(),), |row| {
+                let item_key: ItemKey = serde_json::from_str(
+                    row.get_ref("item_key")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                let validator: String = row.get("validator")?;
+                let feature: i64 = row.get("feature")?;
+                let ordered: bool = row.get("ordered")?;
+                Result::Ok((item_key, validator, feature, ordered))
+            })?
+            .collect::<Result<Vec<_>>>()?
+        {
+            let (item_key, validator, feature, ordered) = row;
+            if let ItemKey::Path(path) = &item_key {
+                if let Some(canonical) = resolve::resolve(path, &tx)? {
+                    let fact_key = DirEntry::key(&canonical);
+                    let canonical_item_key = ItemKey::Path(canonical.clone());
+
+                    let bare_item: Option<Item> = match tx
+                        .query_row(
+                            r#"SELECT value FROM item WHERE item.key=?"#,
+                            [serde_json::to_string(&item_key).map_err(Error::GraphSerde)?],
+                            |row| row.get::<_, String>("value"),
+                        )
+                        .optional()?
+                        .map(|s| serde_json::from_str(&s).map_err(Error::GraphSerde))
+                        .transpose()?
+                    {
+                        Some(item) => Some(item),
+                        None => antlir2_facts::get_with_connection(&tx, DirEntry::key(path))?
+                            .map(|de: DirEntry| Item::Path(de.to_item())),
+                    };
+
+                    // if the requirement points directly to a symlink, keep
+                    // a requirement for it, but also add another
+                    // requirement against the target
+                    if matches!(bare_item, Some(Item::Path(PathItem::Symlink { .. }))) {
+                        tx.execute(
+                            "INSERT INTO requires (item_key, fact_kind, fact_key, validator, feature, ordered) VALUES (?, ?, ?, ?, ?, ?)",
+                            (
+                                serde_json::to_string(&canonical_item_key)
+                                    .map_err(Error::GraphSerde)?,
+                                DirEntry::kind(),
+                                fact_key.as_ref(),
+                                validator,
+                                feature,
+                                ordered,
+                            ))?;
+                        // replace the existing requirement validator with a
+                        // simple "exists" so that actual logic does not get
+                        // attempted on the symlink
+                        tx.execute(
+                            "UPDATE requires SET validator=? WHERE item_key=?",
+                            (
+                                serde_json::to_string(&Validator::Exists)
+                                    .map_err(Error::GraphSerde)?,
+                                serde_json::to_string(&item_key).map_err(Error::GraphSerde)?,
+                            ),
+                        )?;
+                    } else {
+                        // otherwise just point directly to the symlink's target
+                        tx.execute(
+                            "UPDATE requires SET item_key=?, fact_key=? WHERE item_key=?",
+                            (
+                                serde_json::to_string(&canonical_item_key)
+                                    .map_err(Error::GraphSerde)?,
+                                fact_key.as_ref(),
+                                serde_json::to_string(&item_key).map_err(Error::GraphSerde)?,
+                            ),
+                        )?;
                     }
-                    None
                 } else {
-                    None
+                    warn!("failed to canonicalize path '{}'", path.display());
                 }
             }
         }
+        tx.commit()?;
+        Ok(())
     }
 
-    fn add_item(&mut self, item: Item) -> node::ItemNodeIndex {
-        let key = item.key();
-        *self
-            .items
-            .entry(key)
-            .or_insert_with(|| self.g.add_node_typed(item))
+    fn verify_no_missing_deps(&self) -> Result<()> {
+        // TODO: we can easily detect multiple errors, but the interface in this
+        // crate is to only return one, so just limit it to one error
+        if let Some((key, feature)) = self
+            .memdb
+            .as_ref()
+            .prepare(
+                r#"
+                SELECT feature.value AS feature, requires.item_key, requires.fact_kind, requires.fact_key
+                    FROM feature
+                    INNER JOIN requires ON feature.id=requires.feature
+                    LEFT JOIN item ON item.key=requires.item_key
+                    LEFT JOIN facts ON (
+                        facts.kind=requires.fact_kind
+                        AND facts.key=requires.fact_key
+                    )
+                    WHERE
+                        feature.pending=1
+                        AND (
+                            -- dependency can be satisfied by either fact or item
+                            item.id IS NULL
+                            AND facts.key IS NULL
+                        )
+                    LIMIT 1
+                "#,
+            )?
+            .query_and_then([], |row| {
+                let feature: Feature = serde_json::from_str(
+                    row.get_ref("feature")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                let item_key: ItemKey = serde_json::from_str(
+                    row.get_ref("item_key")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                Result::Ok((item_key, feature))
+            })?
+            .next()
+            .transpose()?
+        {
+            Err(Error::MissingItem {
+                key,
+                required_by: feature,
+            })
+        } else {
+            Ok(())
+        }
     }
 
-    pub fn add_feature(&mut self, feature: Feature) -> &mut Self {
-        let feature_nx = self.g.add_node_typed(feature);
+    fn verify_no_invalid_deps(&self) -> Result<()> {
+        for row in self
+            .memdb
+            .as_ref()
+            .prepare(
+                r#"
+                SELECT item.value AS item, requires.validator, feature.value AS feature
+                    FROM feature
+                    INNER JOIN requires ON feature.id=requires.feature
+                    INNER JOIN item ON requires.item_key=item.key
+                    WHERE feature.pending=1
+                "#,
+            )?
+            .query_and_then([], |row| {
+                let item: Item = serde_json::from_str(
+                    row.get_ref("item")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                let validator: Validator = serde_json::from_str(
+                    row.get_ref("validator")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                let feature: Feature = serde_json::from_str(
+                    row.get_ref("feature")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                Result::Ok((item, validator, feature))
+            })?
+        {
+            let (item, validator, feature) = row?;
+            if !validator.satisfies(&item) {
+                // TODO: we can easily detect multiple errors, but the interface
+                // in this crate is to only return one
+                return Err(Error::Unsatisfied {
+                    item,
+                    validator,
+                    required_by: feature,
+                });
+            }
+        }
+        Ok(())
+    }
 
-        // make sure all features are reachable from the root node
-        self.g.update_edge(*self.root, *feature_nx, Edge::After);
+    fn verify_no_conflicts(&self) -> Result<()> {
+        // TODO: this does not detect conflicts in dynamically provided items
+        // (such as files from rpms), but this is a long-standing bug not a new
+        // regression
+        let mut conflicts: FxHashMap<ItemKey, (BTreeSet<Item>, BTreeSet<Feature>)> =
+            FxHashMap::default();
+        for row in self
+            .memdb
+            .as_ref()
+            .prepare(
+                r#"
+                SELECT i.key AS item_key, i.item, feature.value AS feature
+                FROM (
+                    SELECT id, key, value AS item, COUNT(*) AS cnt
+                    FROM item
+                    GROUP BY key
+                    HAVING cnt > 1
+                ) i
+                INNER JOIN item i2 ON i2.key=i.key
+                INNER JOIN provides ON i2.id=provides.item
+                INNER JOIN feature ON provides.feature=feature.id
+                "#,
+            )?
+            .query_and_then([], |row| {
+                let item_key: ItemKey = serde_json::from_str(
+                    row.get_ref("item_key")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                let item: Item = serde_json::from_str(
+                    row.get_ref("item")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                let feature: Feature = serde_json::from_str(
+                    row.get_ref("feature")?
+                        .as_str()
+                        .map_err(rusqlite::Error::from)?,
+                )
+                .map_err(Error::GraphSerde)?;
+                Result::Ok((item_key, item, feature))
+            })?
+        {
+            let (item_key, item, feature) = row?;
+            let conflict = conflicts.entry(item_key).or_default();
+            conflict.0.insert(item);
+            conflict.1.insert(feature);
+        }
+        for (items, features) in conflicts.into_values() {
+            let mut items = items.into_iter();
+            let item = items.next().expect("must have at least one item");
+            // true if all the items are equivalent
+            let only_one_version = items.next().is_none();
+            if let Item::Path(PathItem::Entry(fse)) = &item {
+                // Two distinct features are allowed to provide the same
+                // directory as long as the PathItem::Entry's are equivalent,
+                // since that covers the filesystem metadata we care about
+                if fse.file_type == FileType::Directory && only_one_version {
+                    continue;
+                }
+            }
+            // features that have completely identical data are a bit of an
+            // anti-pattern, but not considered a conflict since they will do
+            // the exact same thing
+            let feature_datas: Vec<_> = features.iter().map(|f| &f.data).collect();
+            if feature_datas.iter().all(|d| d == &feature_datas[0]) {
+                continue;
+            }
 
-        self.pending_features.push(feature_nx);
-        self
+            return Err(Error::Conflict { item, features });
+        }
+        Ok(())
     }
 
     pub fn build(mut self) -> Result<Graph> {
-        // Add all the nodes provided by our pending features
-        for (feature_nx, provides) in self
-            .pending_features
-            .par_iter()
-            .map(|feature_nx| {
-                let f = &self.g[*feature_nx];
-                tracing::trace!("getting provides from {f:?}");
-                let provides = FeatureWrapper(f).provides().map_err(Error::Provides)?;
-                Ok((*feature_nx, provides))
-            })
-            .collect::<Result<Vec<_>>>()?
-        {
-            for prov in provides {
-                let prov_nx = self.add_item(prov);
-                self.g.update_edge(*feature_nx, *prov_nx, Edge::Provides);
-            }
-        }
-
-        let requires: Vec<_> = self
-            .pending_features
-            .par_iter()
-            .map(|feature_nx| {
-                let f = &self.g[*feature_nx];
-                tracing::trace!("getting requires from {f:?}");
-                let reqs = FeatureWrapper(f).requires().map_err(Error::Requires)?;
-                Ok((*feature_nx, reqs))
-            })
-            .collect::<Result<_>>()?;
-        // Add all the ordered requirements edges after all provided items are
-        // added so that we know if a required item is missing or just not
-        // encountered yet.
-        for (feature_nx, requires) in &requires {
-            for req in requires.iter().filter(|r| r.ordered) {
-                let req_nx = match self.item(&req.key) {
-                    Some(nx) => nx.into_untyped(),
-                    None => self.g.add_node(Node::MissingItem(req.key.clone())),
-                };
-                self.g
-                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator.clone()));
-            }
-        }
-
-        // topo sort should not include edges within any parent features,
-        // otherwise (un)ordered requirements could cause a cycle
-        let mut topo_sortable_g = self.g.clone();
-        topo_sortable_g.retain_edges(|g, ex| {
-            if let Some((a, b)) = g.edge_endpoints(ex) {
-                if let Node::ParentFeature(_) = &self.g[a] {
-                    false
-                } else if let Node::ParentFeature(_) = &self.g[b] {
-                    false
-                } else {
-                    true
-                }
-            } else {
-                true
-            }
-        });
-
-        let topo = match petgraph::algo::toposort(&topo_sortable_g, None) {
-            Ok(topo) => topo,
-            Err(node_in_cycle) => {
-                // there might be multiple cycles, we really only need to find
-                // one though
-                let mut cycle = vec![node_in_cycle.node_id()];
-                let mut dfs = Dfs::new(&self.g, node_in_cycle.node_id());
-                while let Some(nx) = dfs.next(&self.g) {
-                    cycle.push(nx);
-                    if self.g.neighbors(nx).contains(&node_in_cycle.node_id()) {
-                        let mut cycle: Vec<_> = cycle
-                            .into_iter()
-                            .filter_map(|nx| match &self.g[nx] {
-                                // only include pending features so that the user is not overwhelmed
-                                Node::PendingFeature(f) => Some(f.clone()),
-                                _ => None,
-                            })
-                            .collect();
-                        // Rotate the cycle so that the "minimum value" feature
-                        // is first. This is semantically meaningless but does
-                        // guarantee that cycle error messages are deterministic
-                        if let Some(min_idx) = cycle
-                            .iter()
-                            .enumerate()
-                            .min_by(|(_, a), (_, b)| a.cmp(b))
-                            .map(|(idx, _)| idx)
-                        {
-                            cycle.rotate_left(min_idx);
-                        }
-                        return Err(Error::Cycle(Cycle(cycle)));
-                    }
-                }
-                unreachable!()
-            }
-        };
-
-        // Now add unordered requirements. It's still useful to have an edge
-        // between features when there are unordered requirements (eg:
-        // validators take the same path), but we need to do it after the
-        // topological sort to avoid any cycles. If this proves to be a bad idea
-        // (unlikely, since we don't really care if it's truly a DAG after
-        // toposort) we can come up with some other way to represent "weak"
-        // edges like these.
-        for (feature_nx, requires) in &requires {
-            for req in requires.iter().filter(|r| !r.ordered) {
-                let req_nx = match self.item(&req.key) {
-                    Some(nx) => nx.into_untyped(),
-                    None => self.g.add_node(Node::MissingItem(req.key.clone())),
-                };
-                self.g
-                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator.clone()));
-            }
-        }
-
-        for nx in self.g.node_indices() {
-            match &self.g[nx] {
-                // If multiple nodes provide the same item, fail now
-                Node::Item(item) => {
-                    let features_that_provide: Vec<_> = self
-                        .g
-                        .neighbors_directed(nx, Direction::Incoming)
-                        .filter_map(|nx| match &self.g[nx] {
-                            Node::PendingFeature(f) => Some((true, f)),
-                            Node::ParentFeature(f) => Some((false, f)),
-                            _ => None,
-                        })
-                        .collect();
-
-                    if features_that_provide.len() > 1 {
-                        // [Item::Path] fully describes a directory, so if all the
-                        // provided [Item]s are identical, it's not a conflict
-                        if matches!(
-                            item,
-                            Item::Path(item::Path::Entry(item::FsEntry {
-                                file_type: item::FileType::Directory,
-                                ..
-                            }))
-                        ) {
-                            tracing::trace!(
-                                "directory item is provided by multiple features: {features_that_provide:?}"
-                            );
-                            let mut feature_items = FxHashSet::default();
-                            for feat in features_that_provide
-                                .iter()
-                                // Only pending features need to be checked.
-                                // Parent features have already been checked for
-                                // conflicts in the layer they were defined in.
-                                // It is impossible to re-analyze the
-                                // ParentFeature at this point, because the
-                                // input artifacts are not materialized when
-                                // analyzing this layer
-                                .filter_map(|(pending, feature)| match pending {
-                                    true => Some(feature),
-                                    false => None,
-                                })
-                            {
-                                feature_items.extend(
-                                    FeatureWrapper(feat)
-                                        .provides()
-                                        .map_err(Error::Provides)?
-                                        .into_iter()
-                                        .filter(|fi| fi.key() == item.key()),
-                                );
-                            }
-                            if feature_items.len() > 1 {
-                                tracing::error!(
-                                    "directory items are not identical: {feature_items:?}"
-                                );
-                                return Err(Error::Conflict {
-                                    item: item.clone(),
-                                    features: features_that_provide
-                                        .into_iter()
-                                        .map(|(_, feature)| feature)
-                                        .cloned()
-                                        .collect(),
-                                });
-                            }
-                        } else {
-                            // Any other features with equivalent Data are allowed (we
-                            // should prune it from the graph before passing it off to
-                            // antlir2_compile, but that's an optimization for later).
-                            // Anything that is not completely equivalent is considered
-                            // a conflict and will cause a build failure.
-                            if features_that_provide
-                                .iter()
-                                .map(|(_, feature)| feature)
-                                .any(|f| f.data != features_that_provide[0].1.data)
-                            {
-                                return Err(Error::Conflict {
-                                    item: item.clone(),
-                                    features: features_that_provide
-                                        .into_iter()
-                                        .map(|(_, feature)| feature)
-                                        .cloned()
-                                        .collect(),
-                                });
-                            }
-                        }
-                    }
-                }
-                _ => (),
-            }
-        }
-        // If there are any items that exist but fail validation rules, return
-        // an Err now
-        for edge in self.g.edge_indices() {
-            match self.g.edge_weight(edge).expect("definitely exists") {
-                Edge::Requires(validator) => {
-                    let (item, feature) = self.g.edge_endpoints(edge).expect("definitely exists");
-                    match &self.g[item] {
-                        Node::Item(item) => {
-                            let item = match item {
-                                // if the item is a symlink (and we can find it
-                                // in the graph), check validators against the
-                                // target path, not the symlink itself
-                                Item::Path(item::Path::Symlink { target, link }) => {
-                                    // target may be a relative path, in which
-                                    // case we need to resolve it relative to
-                                    // the link
-                                    let target = match target.is_absolute() {
-                                        true => target.clone(),
-                                        false => link
-                                            .parent()
-                                            .expect("the link cannot itself be /")
-                                            .join(target),
-                                    };
-                                    match self.item(&ItemKey::Path(target)) {
-                                        Some(target_item_nx) => &self.g[target_item_nx],
-                                        None => item,
-                                    }
-                                }
-                                _ => item,
-                            };
-                            if !validator.satisfies(item) {
-                                return Err(Error::Unsatisfied {
-                                    item: item.clone(),
-                                    validator: validator.clone(),
-                                    required_by: self.g[feature]
-                                        .as_feature()
-                                        .expect("endpoint is always feature")
-                                        .clone(),
-                                });
-                            }
-                        }
-                        Node::MissingItem(key) => {
-                            return Err(Error::MissingItem {
-                                key: key.clone(),
-                                required_by: self.g[feature]
-                                    .as_feature()
-                                    .expect("endpoint is always feature")
-                                    .clone(),
-                            });
-                        }
-                        _ => unreachable!("Requires edges cannot exist on anything but Items"),
-                    }
-                }
-                _ => (),
-            }
-        }
+        self.fixup_symlinks()?;
+        self.verify_no_missing_deps()?;
+        self.verify_no_invalid_deps()?;
+        self.verify_no_conflicts()?;
+        // doing the topological sort ensures that there aren't any cycles
+        toposort::toposort(self.memdb.as_ref())?;
 
         Ok(Graph {
-            g: self.g,
-            root: self.root,
-            items: self.items,
-            topo,
+            db: self.memdb.to_readonly()?,
         })
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Graph {
-    g: StableGraph<Node, Edge>,
-    root: node::RootNodeIndex,
-    #[serde(with = "serde_items")]
-    items: FxHashMap<ItemKey, node::ItemNodeIndex>,
-    topo: Vec<NodeIndex<DefaultIx>>,
-}
-
-mod serde_items {
-    use rustc_hash::FxHasher;
-    use serde::de::Deserializer;
-    use serde::ser::SerializeSeq;
-    use serde::ser::Serializer;
-
-    use super::*;
-
-    pub fn deserialize<'de, D>(
-        deserializer: D,
-    ) -> std::result::Result<FxHashMap<ItemKey, node::ItemNodeIndex>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let vec: Vec<(ItemKey, node::ItemNodeIndex)> = Deserialize::deserialize(deserializer)?;
-        let mut items = FxHashMap::with_capacity_and_hasher(
-            vec.len(),
-            std::hash::BuildHasherDefault::<FxHasher>::default(),
-        );
-        for (key, nx) in vec {
-            items.insert(key, nx);
-        }
-        Ok(items)
-    }
-
-    pub fn serialize<S>(
-        items: &FxHashMap<ItemKey, node::ItemNodeIndex>,
-        serializer: S,
-    ) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut seq = serializer.serialize_seq(Some(items.len()))?;
-        for (key, nx) in items {
-            seq.serialize_element(&(key, nx))?;
-        }
-        seq.end()
-    }
+    db: RoDatabase,
 }
 
 impl Graph {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let conn = rusqlite::Connection::open(path)?;
-        conn.query_row_and_then("SELECT json FROM depgraph", [], |row| {
-            serde_json::from_slice(
-                row.get_ref(0)?
-                    .as_bytes()
-                    .expect("column is definitely BLOB"),
-            )
-            .map_err(Error::GraphSerde)
-        })
-        .map_err(Error::from)
+        let db = RoDatabase::open(path)?;
+        Ok(Self { db })
     }
 
-    pub fn builder(parent: Option<Self>) -> GraphBuilder {
+    pub fn builder(parent: Option<Self>) -> Result<GraphBuilder> {
         GraphBuilder::new(parent)
     }
 
     /// Iterate over features in topographical order (dependencies sorted before the
     /// features that require them).
-    pub fn pending_features(&self) -> impl Iterator<Item = &Feature> {
-        self.topo.iter().filter_map(|nx| match &self.g[*nx] {
-            Node::PendingFeature(f) => Some(f),
-            _ => None,
-        })
-    }
-
-    /// There are many image features that produce items that we cannot
-    /// reasonably know ahead-of-time (for example, rpm installation). This
-    /// method will add [Item] nodes for anything newly discovered in the
-    /// filesystem and add it to the end of the graph since we don't know where
-    /// it came from.
-    pub fn populate_dynamic_items(&mut self, db: &RoDatabase) -> Result<()> {
-        let mut seen_paths = FxHashSet::default();
-        for dir_entry in db.iter::<DirEntry>()? {
-            seen_paths.insert(dir_entry.path().to_owned());
-            let key = ItemKey::Path(dir_entry.path().to_owned());
-            if let std::collections::hash_map::Entry::Vacant(e) = self.items.entry(key) {
-                let path_item = match dir_entry {
-                    DirEntry::Symlink(sym) => item::Path::Symlink {
-                        target: sym.target().to_owned(),
-                        link: sym.path().to_owned(),
-                    },
-                    _ => item::Path::Entry(item::FsEntry {
-                        path: dir_entry.path().to_owned(),
-                        mode: dir_entry.mode(),
-                        file_type: FileType::from_mode(dir_entry.mode())
-                            .expect("invalid file type in mode"),
-                    }),
-                };
-                let nx = self.g.add_node_typed(Item::Path(path_item));
-                e.insert(nx);
-            }
-        }
-        // remove any items from the depgraph if they refer to paths that are no
-        // longer in the actual filesystem
-        self.g.retain_nodes(|graph, nx| match &graph[nx] {
-            Node::Item(item) => {
-                if let ItemKey::Path(p) = item.key() {
-                    seen_paths.contains(p.as_path())
-                } else {
-                    true
-                }
-            }
-            _ => true,
-        });
-        self.items.retain(|key, _val| match key {
-            ItemKey::Path(p) => seen_paths.contains(p.as_path()),
-            _ => true,
-        });
-
-        for user in db.iter::<antlir2_facts::fact::user::User>()? {
-            if let std::collections::hash_map::Entry::Vacant(e) =
-                self.items.entry(ItemKey::User(user.name().to_owned()))
-            {
-                let nx = self.g.add_node_typed(Item::User(item::User {
-                    name: user.name().to_owned(),
-                }));
-                e.insert(nx);
-            }
-        }
-        for group in db.iter::<antlir2_facts::fact::user::Group>()? {
-            if let std::collections::hash_map::Entry::Vacant(e) =
-                self.items.entry(ItemKey::Group(group.name().to_owned()))
-            {
-                let nx = self.g.add_node_typed(Item::Group(item::Group {
-                    name: group.name().to_owned(),
-                }));
-                e.insert(nx);
-            }
-        }
-        Ok(())
+    pub fn pending_features(&self) -> Result<impl Iterator<Item = Feature>> {
+        let features = toposort::toposort(self.db.as_ref())?;
+        Ok(features.into_iter())
     }
 
     pub fn write_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
-        let conn = rusqlite::Connection::open(path)?;
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS depgraph (json BLOB NOT NULL)",
-            [],
-        )?;
-        conn.execute("DELETE FROM depgraph", [])?;
-        conn.execute(
-            "INSERT INTO depgraph VALUES (?)",
-            [&serde_json::to_vec(&self).map_err(Error::GraphSerde)?],
-        )?;
-        Ok(())
+        self.db
+            .as_ref()
+            .backup(DatabaseName::Main, path, None)
+            .map_err(Error::from)
     }
 }

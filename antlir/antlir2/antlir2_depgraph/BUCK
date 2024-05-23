@@ -5,13 +5,15 @@ oncall("antlir")
 rust_library(
     name = "antlir2_depgraph",
     srcs = glob(["src/**/*.rs"]),
+    test_deps = [
+        "tracing-test",
+    ],
     deps = [
+        "fxhash",
         "itertools",
         "libloading",
         "petgraph",
-        "rayon",
         "rusqlite",
-        "rustc-hash",
         "serde",
         "serde_json",
         "thiserror",

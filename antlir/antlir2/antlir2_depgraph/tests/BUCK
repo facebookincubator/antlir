@@ -30,6 +30,10 @@ bad_depgraph(
             dst = "/etc/passwd",
             user = "antlir",
         ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/etc/group",
+        ),
     ],
 )
 
@@ -125,6 +129,32 @@ good_depgraph(
         # already created as subdirectory of installed `/foo/bar`
         feature.ensure_dirs_exist(dirs = "/foo/bar/qux"),
     ],
+)
+
+good_depgraph(
+    name = "symlinks-do-not-conflict-parent",
+    features = [
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo",
+        ),
+        feature.ensure_file_symlink(
+            link = "/bar",
+            target = "/foo",
+        ),
+    ],
+)
+
+# Have to put in a separate layer so that the feature hashing does not dedupe
+good_depgraph(
+    name = "symlinks-do-not-conflict",
+    features = [
+        feature.ensure_file_symlink(
+            link = "/bar",
+            target = "/foo",
+        ),
+    ],
+    parent_layer = ":symlinks-do-not-conflict-parent",
 )
 
 bad_depgraph(
