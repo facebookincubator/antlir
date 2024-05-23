@@ -69,14 +69,6 @@ python_library(
 )
 
 antlir_rust_extension(
-    name = "signed_source",
-    srcs = ["signed_source.rs"],
-    crate_root = "signed_source.rs",
-    typestub = "signed_source.pyi",
-    deps = ["//antlir/signedsource:signedsource"],
-)
-
-antlir_rust_extension(
     name = "artifacts_dir",
     srcs = ["artifacts_dir.rs"],
     crate_root = "artifacts_dir.rs",
