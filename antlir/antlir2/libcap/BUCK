@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_bindgen_library", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "internal_external", "rust_bindgen_library", "rust_library")
 
 oncall("antlir")
 
@@ -8,7 +8,10 @@ rust_bindgen_library(
         "ovr_config//os:linux",
     ],
     cpp_deps = [
-        "third-party//libcap:cap",
+        internal_external(
+            fb = "third-party//libcap:cap",
+            oss = "//third-party/cxx/system:libcap",
+        ),
     ],
     generate = ("types", "functions", "vars"),
     header = "bridge.h",

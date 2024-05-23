@@ -18,7 +18,6 @@ use anyhow::Context;
 use anyhow::Result;
 use chrono::prelude::*;
 use itertools::Itertools;
-#[cfg(libcap)]
 use libcap::FileExt as _;
 use serde::Deserialize;
 use tempfile::NamedTempFile;
@@ -199,7 +198,6 @@ AutoProv: {autoprov}
                 if relpath == Path::new("/") {
                     continue;
                 }
-                #[cfg(libcap)]
                 if let Some(caps) =
                     std::fs::File::open(entry.path()).and_then(|f| f.get_capabilities())?
                 {
