@@ -32,15 +32,12 @@ use antlir2_users::GroupId;
 use antlir2_users::Id;
 use antlir2_users::UserId;
 use anyhow::Context;
-#[cfg(feature = "setcap")]
 use libcap::Capabilities;
-#[cfg(feature = "setcap")]
 use libcap::FileExt as _;
 use serde::de::Deserializer;
 use serde::de::Error as _;
 use serde::Deserialize;
 use serde_with::serde_as;
-#[cfg(feature = "setcap")]
 use serde_with::DisplayFromStr;
 use tracing::debug;
 use walkdir::WalkDir;
@@ -58,7 +55,6 @@ pub struct Install {
     pub user: UserName,
     pub binary_info: Option<BinaryInfo>,
     pub xattrs: HashMap<String, XattrValue>,
-    #[cfg(feature = "setcap")]
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub setcap: Option<Capabilities>,
     pub always_use_gnu_debuglink: bool,
@@ -435,7 +431,6 @@ impl antlir2_compile::CompileFeature for Install {
                 for (key, val) in &self.xattrs {
                     dst_file.set_xattr(key, &val.0)?;
                 }
-                #[cfg(feature = "setcap")]
                 if let Some(cap) = self.setcap.as_ref() {
                     // Technically we could just use self.setcap directly, but
                     // then that would still result in a syscall to clear the
