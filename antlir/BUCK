@@ -169,13 +169,3 @@ buck_sh_binary(
     main = "empty.sh",
     visibility = ["PUBLIC"],
 )
-
-python_binary(
-    name = "vcs",
-    srcs = ["vcs.py"],
-    main_function = "antlir.vcs.main",
-    deps = [
-        ":artifacts_dir",
-        ":fs_utils",
-    ],
-)
