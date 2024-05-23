@@ -56,7 +56,7 @@ def _map_image(
     In other words, this is a mapping function of 'image A -> A1'
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
-    out = ctx.actions.declare_output("subvol-" + identifier)
+    out = ctx.actions.declare_output(identifier, "subvol")
     cmd = cmd_args(
         cmd_args("sudo") if not rootless else cmd_args(),
         antlir2,
@@ -127,9 +127,6 @@ def _impl(ctx: AnalysisContext) -> Promise:
         feature_rule,
         feature_anon_kwargs,
     ).promise.map(partial(_impl_with_features, ctx = ctx))
-
-def _identifier_prefix(prefix: str) -> str:
-    return prefix
 
 def _extra_repo_name_to_repo(repo_name: str, flavor_info: FlavorInfo) -> Dependency | None:
     default_repos = flavor_info.dnf_info.default_repo_set[RepoSetInfo].repos
@@ -280,7 +277,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         build_cmd = []
         logs = {}
 
-        identifier_prefix = _identifier_prefix(phase.value + "_")
+        identifier = phase.value
+        identifier_prefix = phase.value + "_"
 
         # Cross-cell enum type comparisons can fail, so compare .value
         verify_build_phases([i.analysis.build_phase for i in all_features])
@@ -302,7 +300,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         features = regroup_features(ctx.label, features)
 
         # JSON file for only the features that are part of this BuildPhase
-        features_json_artifact = ctx.actions.declare_output(identifier_prefix + "features.json")
+        features_json_artifact = ctx.actions.declare_output(identifier, "features.json")
         features_json = ctx.actions.write_json(
             features_json_artifact,
             [{
@@ -325,7 +323,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         facts_db = build_depgraph(
             ctx = ctx,
             features_json = features_json,
-            identifier_prefix = identifier_prefix,
+            identifier = identifier,
             parent = facts_db,
         )
 
@@ -337,8 +335,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
-            plan = ctx.actions.declare_output(identifier_prefix + "plan.json")
-            logs["plan"] = ctx.actions.declare_output(identifier_prefix + "plan.log")
+            plan = ctx.actions.declare_output(identifier, "plan.json")
+            logs["plan"] = ctx.actions.declare_output(identifier, "plan.log")
             cmd, _ = _map_image(
                 build_appliance = build_appliance[BuildApplianceInfo],
                 cmd = cmd_args(
@@ -369,7 +367,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             # TODO(T179081948): this should also be an anon_target
             dnf_repos_dir = compiler_plan_to_local_repos(
                 ctx,
-                identifier_prefix,
+                identifier,
                 [r[RepoInfo] for r in dnf_available_repos],
                 plan,
                 flavor_info.dnf_info.reflink_flavor,
@@ -379,7 +377,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 available_fbpkgs = ctx.attrs.available_fbpkgs[SnapshottedFbpkgSetInfo]
                 (resolved_fbpkgs_json, resolved_fbpkgs_dir) = compiler_plan_to_chef_fbpkgs(
                     ctx,
-                    identifier_prefix,
+                    identifier,
                     available_fbpkgs,
                     plan,
                 )
@@ -393,7 +391,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             resolved_fbpkgs_dir = chef_plan_results["resolved_fbpkgs_dir"]
         else:
             plan = None
-            dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
+            dnf_repos_dir = ctx.actions.declare_output(identifier, "empty-dnf-repos", dir = True)
+            ctx.actions.symlinked_dir(dnf_repos_dir, {})
             resolved_fbpkgs_json = None
             resolved_fbpkgs_dir = None
 
@@ -402,7 +401,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             chef_plan_results["resolved_fbpkgs_json"] = resolved_fbpkgs_json
             chef_plan_results["resolved_fbpkgs_dir"] = resolved_fbpkgs_dir
 
-        logs["compile"] = ctx.actions.declare_output(identifier_prefix + "compile.log")
+        logs["compile"] = ctx.actions.declare_output(identifier + "compile.log")
         if resolved_fbpkgs_dir:
             compile_feature_hidden_deps.append(resolved_fbpkgs_dir)
 
@@ -442,7 +441,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             features = features,
             parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
         )
-        all_logs = ctx.actions.declare_output(identifier_prefix + "logs", dir = True)
+        all_logs = ctx.actions.declare_output(identifier, "logs", dir = True)
         ctx.actions.symlinked_dir(all_logs, {key + ".log": artifact for key, artifact in logs.items()})
         debug_sub_targets[phase.value] = [
             DefaultInfo(
