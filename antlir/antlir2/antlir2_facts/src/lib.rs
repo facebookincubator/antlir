@@ -46,6 +46,7 @@ impl RwDatabase {
         P: AsRef<std::path::Path>,
     {
         let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+        db.pragma_update(None, "foreign_keys", "ON")?;
         Ok(Self { db })
     }
 
@@ -55,6 +56,7 @@ impl RwDatabase {
         P: AsRef<std::path::Path>,
     {
         let db = Connection::open(path)?;
+        db.pragma_update(None, "foreign_keys", "ON")?;
         Self::setup_new_db(&db)?;
         Ok(Self { db })
     }
@@ -83,6 +85,11 @@ impl RwDatabase {
         let tx = self.db.transaction()?;
         Ok(Transaction { tx })
     }
+
+    pub fn to_readonly(self) -> Result<RoDatabase> {
+        self.db.pragma_update(None, "query_only", "1")?;
+        Ok(RoDatabase { db: self.db })
+    }
 }
 
 impl RoDatabase {
@@ -91,6 +98,7 @@ impl RoDatabase {
         P: AsRef<std::path::Path>,
     {
         let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+        db.pragma_update(None, "foreign_keys", "ON")?;
         Ok(Self { db })
     }
 
@@ -100,6 +108,24 @@ impl RoDatabase {
     {
         Self::open(path)
     }
+
+    pub fn from_connection(connection: Connection) -> Self {
+        Self { db: connection }
+    }
+}
+
+// Exposed for antlir2_depgraph, but should be made private once again after
+// fully merging the data structures used
+#[doc(hidden)]
+pub fn get_with_connection<F>(db: &Connection, key: impl Into<Key>) -> Result<Option<F>>
+where
+    F: Fact,
+{
+    let key: Key = key.into();
+    let mut stmt = db.prepare("SELECT value FROM facts WHERE kind=? AND key=?")?;
+    stmt.query_row((F::kind(), key.as_ref()), row_to_fact)
+        .optional()
+        .map_err(Error::from)
 }
 
 impl<const RW: bool> Database<{ RW }> {
@@ -173,6 +199,18 @@ impl<const RW: bool> Database<{ RW }> {
             .map(|res| res.map_err(Error::from))
             .collect::<Result<_>>()?;
         Ok(KeyIter(keys.into_iter()))
+    }
+}
+
+impl<const RW: bool> AsRef<Connection> for Database<{ RW }> {
+    fn as_ref(&self) -> &Connection {
+        &self.db
+    }
+}
+
+impl AsMut<Connection> for RwDatabase {
+    fn as_mut(&mut self) -> &mut Connection {
+        &mut self.db
     }
 }
 

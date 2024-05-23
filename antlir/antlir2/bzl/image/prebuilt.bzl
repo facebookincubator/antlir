@@ -8,7 +8,6 @@ load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
-load(":depgraph.bzl", "build_depgraph")
 load(":facts.bzl", "facts")
 
 PrebuiltImageInfo = provider(fields = [
@@ -108,13 +107,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         new_facts_db = ctx.attrs._new_facts_db[RunInfo],
         phase = None,
         rootless = ctx.attrs._rootless,
-    )
-
-    facts_db = build_depgraph(
-        ctx = ctx,
-        parent = None,
-        features_json = None,
-        add_items_from_facts_db = facts_db,
     )
 
     return [

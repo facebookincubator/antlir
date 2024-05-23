@@ -25,20 +25,24 @@ struct Args {
     error_regex: Regex,
 }
 
-fn main() -> Result<()> {
-    let args = Args::parse();
+fn build(args: Args) -> antlir2_depgraph::Result<Graph> {
     let parent = args.parent.map(Graph::open).transpose()?;
-    let mut builder = Graph::builder(parent);
+    let mut builder = Graph::builder(parent)?;
     for feature in args.features.into_iter().flat_map(JsonFile::into_inner) {
         eprintln!("adding feature {feature:?}");
-        builder.add_feature(feature);
+        builder.add_feature(feature)?;
     }
-    let result = builder.build();
-    match result {
+    builder.build()
+}
+
+fn main() -> Result<()> {
+    let args = Args::parse();
+    let error_regex = args.error_regex.clone();
+    match build(args) {
         Ok(_) => Err(anyhow!("graph built successfully but shouldn't have")),
         Err(err) => {
-            if !args.error_regex.is_match(&err.to_string()) {
-                Err(anyhow!("'{err}' did not match '{}'", args.error_regex))
+            if !error_regex.is_match(&err.to_string()) {
+                Err(anyhow!("'{err}' did not match '{}'", error_regex))
             } else {
                 Ok(())
             }

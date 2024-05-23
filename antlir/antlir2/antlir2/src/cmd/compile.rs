@@ -43,7 +43,7 @@ impl Compile {
             .compiler_context(self.external.plan.map(JsonFile::into_inner))?;
         let root_guard = rootless.map(|r| r.escalate()).transpose()?;
         let depgraph = Graph::open(self.compileish.external.depgraph)?;
-        for feature in depgraph.pending_features() {
+        for feature in depgraph.pending_features()? {
             feature.compile(&ctx)?;
         }
         drop(root_guard);
