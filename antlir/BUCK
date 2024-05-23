@@ -179,10 +179,3 @@ python_binary(
         ":fs_utils",
     ],
 )
-
-# Keep around until D53708598 pushes to Sandcastle
-export_file(
-    name = "compiler",
-    src = "empty",
-    visibility = ["PUBLIC"],
-)
