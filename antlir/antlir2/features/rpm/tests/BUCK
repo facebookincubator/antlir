@@ -461,20 +461,12 @@ test_binaries_with_file_capabilities_layer = test_rpms(
         "libcap",  # getcap cli
         "antlir2-with-capability",
     ])],
-    labels = internal_external(
-        fb = [],
-        oss = ["disabled"],
-    ),
     parent_layer = simple,
 )
 
 image_python_test(
     name = "test-binaries-with-file-capabilities",
     srcs = ["test_binaries_with_file_capabilities.py"],
-    labels = internal_external(
-        fb = [],
-        oss = ["disabled"],
-    ),
     layer = test_binaries_with_file_capabilities_layer,
 )
 

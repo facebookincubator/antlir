@@ -26,13 +26,13 @@ feature_impl(
             ":no-setcap": [],
             "DEFAULT": ["setcap"],
         }),
-        oss = [],
+        oss = ["setcap"],
     ),
     deps = internal_external(
         fb = select({
             ":no-setcap": _base_deps,
             "DEFAULT": _base_deps + ["//antlir/antlir2/libcap:libcap"],
         }),
-        oss = _base_deps,
+        oss = _base_deps + ["//antlir/antlir2/libcap:libcap"],
     ),
 )
