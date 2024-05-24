@@ -49,7 +49,7 @@ def _map_image(
         build_appliance: BuildApplianceInfo | Provider,
         parent: Artifact | None,
         logs: Artifact,
-        rootless: bool) -> (cmd_args, Artifact):
+        rootless: bool) -> Artifact:
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
     produce a new image.
@@ -57,21 +57,20 @@ def _map_image(
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
     out = ctx.actions.declare_output(identifier, "subvol")
-    cmd = cmd_args(
-        cmd_args("sudo") if not rootless else cmd_args(),
-        antlir2,
-        cmd_args(logs.as_output(), format = "--logs={}"),
-        "map",
-        "--working-dir=antlir2-out",
-        cmd_args(build_appliance.dir, format = "--build-appliance={}"),
-        cmd_args(str(ctx.label), format = "--label={}"),
-        cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
-        cmd_args(out.as_output(), format = "--output={}"),
-        cmd_args("--rootless") if rootless else cmd_args(),
-        cmd,
-    )
     ctx.actions.run(
-        cmd,
+        cmd_args(
+            cmd_args("sudo") if not rootless else cmd_args(),
+            antlir2,
+            cmd_args(logs.as_output(), format = "--logs={}"),
+            "map",
+            "--working-dir=antlir2-out",
+            cmd_args(build_appliance.dir, format = "--build-appliance={}"),
+            cmd_args(str(ctx.label), format = "--label={}"),
+            cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
+            cmd_args(out.as_output(), format = "--output={}"),
+            cmd_args("--rootless") if rootless else cmd_args(),
+            cmd,
+        ),
         category = "antlir2_map",
         env = {
             "RUST_LOG": "antlir2=trace",
@@ -83,7 +82,7 @@ def _map_image(
         no_outputs_cleanup = True,
     )
 
-    return cmd, out
+    return out
 
 def _container_sub_target(
         binary: Dependency | None,
@@ -274,7 +273,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     for phase in BuildPhase.values():
         phase = BuildPhase(phase)
-        build_cmd = []
         logs = {}
 
         identifier = phase.value
@@ -337,7 +335,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
             plan = ctx.actions.declare_output(identifier, "plan.json")
             logs["plan"] = ctx.actions.declare_output(identifier, "plan.log")
-            cmd, _ = _map_image(
+            _map_image(
                 build_appliance = build_appliance[BuildApplianceInfo],
                 cmd = cmd_args(
                     cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
@@ -357,7 +355,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 logs = logs["plan"],
                 rootless = ctx.attrs._rootless,
             )
-            build_cmd.append(cmd)
 
             # Part of the compiler plan is any possible dnf transaction resolution,
             # which lets us know what rpms we will need. We can have buck download them
@@ -405,7 +402,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         if resolved_fbpkgs_dir:
             compile_feature_hidden_deps.append(resolved_fbpkgs_dir)
 
-        cmd, subvol = _map_image(
+        subvol = _map_image(
             build_appliance = build_appliance[BuildApplianceInfo],
             cmd = cmd_args(
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
@@ -425,7 +422,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             logs = logs["compile"],
             rootless = ctx.attrs._rootless,
         )
-        build_cmd.append(cmd)
 
         facts_db = facts.new_facts_db(
             actions = ctx.actions,
