@@ -19,6 +19,7 @@ rust_binary(
         "thiserror",
         "tracing",
         "tracing-subscriber",
+        "uuid",
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/testing/image_test:image_test_lib",
