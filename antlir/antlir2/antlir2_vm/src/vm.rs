@@ -31,6 +31,7 @@ use thiserror::Error;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
+use uuid::Uuid;
 
 use crate::disk::QCow2DiskError;
 use crate::disk::QCow2Disks;
@@ -76,6 +77,8 @@ pub(crate) struct VM<S: Share> {
     sidecar_handles: Vec<JoinHandle<Result<ExitStatus>>>,
     /// TPM device
     tpm: Option<TPMDevice>,
+    /// Uuid for this VM. Randomly generated to aid debugging when multiple VMs are running
+    identifier: String,
 }
 
 #[derive(Error, Debug)]
@@ -136,6 +139,7 @@ impl<S: Share> VM<S> {
             true => Some(TPMDevice::new(&state_dir)?),
             false => None,
         };
+        let identifier = Uuid::new_v4().to_string();
 
         Ok(VM {
             machine,
@@ -147,6 +151,7 @@ impl<S: Share> VM<S> {
             state_dir,
             sidecar_handles: vec![],
             tpm,
+            identifier,
         })
     }
 
@@ -236,7 +241,8 @@ impl<S: Share> VM<S> {
     }
 
     fn notify_file(&self) -> PathBuf {
-        self.state_dir.join("vmtest_notify.sock")
+        self.state_dir
+            .join(format!("vmtest_notify-{}.sock", self.identifier))
     }
 
     fn ssh_command(&self) -> Result<Command> {
@@ -822,6 +828,7 @@ mod test {
             state_dir: PathBuf::from("/test/path"),
             sidecar_handles: vec![],
             tpm: None,
+            identifier: "one".to_string(),
         }
     }
 
@@ -864,7 +871,7 @@ mod test {
         assert!(common_args.contains("-smp 1"));
         assert!(common_args.contains("-m 1024M"));
         assert!(common_args.contains(&format!(
-            "-chardev socket,path={}/vmtest_notify.sock,id=notify,server=on",
+            "-chardev socket,path={}/vmtest_notify-one.sock,id=notify,server=on",
             vm.state_dir.to_str().expect("Invalid tempdir path"),
         )));
         assert!(
