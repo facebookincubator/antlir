@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "3803919eed267652836ae7e59a8e4f16c230e711",
+    rev = "f408d11adf2b518358a7fa2cc86c3267354b33d0",
     visibility = [],
 )
 
@@ -772,7 +772,7 @@ cargo.rust_library(
     deps = [
         ":bitflags-2.5.0",
         ":cexpr-0.6.0",
-        ":clang-sys-1.7.0",
+        ":clang-sys-1.8.0",
         ":itertools-0.12.1",
         ":lazy_static-1.4.0",
         ":lazycell-1.3.0",
@@ -1395,26 +1395,26 @@ cargo.rust_library(
 
 alias(
     name = "clang-sys",
-    actual = ":clang-sys-1.7.0",
+    actual = ":clang-sys-1.8.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "clang-sys-1.7.0.crate",
-    sha256 = "67523a3b4be3ce1989d607a828d036249522dd9c1c8de7f4dd2dae43a37369d1",
-    strip_prefix = "clang-sys-1.7.0",
-    urls = ["https://static.crates.io/crates/clang-sys/1.7.0/download"],
+    name = "clang-sys-1.8.0.crate",
+    sha256 = "a483f3cbf7cec2e153d424d0e92329d816becc6421389bd494375c6065921b9b",
+    strip_prefix = "clang-sys-1.8.0",
+    urls = ["https://static.crates.io/crates/clang-sys/1.8.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "clang-sys-1.7.0",
-    srcs = [":clang-sys-1.7.0.crate"],
+    name = "clang-sys-1.8.0",
+    srcs = [":clang-sys-1.8.0.crate"],
     crate = "clang_sys",
-    crate_root = "clang-sys-1.7.0.crate/src/lib.rs",
-    edition = "2015",
+    crate_root = "clang-sys-1.8.0.crate/src/lib.rs",
+    edition = "2021",
     env = {
-        "OUT_DIR": "$(location :clang-sys-1.7.0-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :clang-sys-1.8.0-build-script-run[out_dir])",
     },
     features = [
         "clang_10_0",
@@ -1434,7 +1434,7 @@ cargo.rust_library(
         "libloading",
         "runtime",
     ],
-    rustc_flags = ["@$(location :clang-sys-1.7.0-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :clang-sys-1.8.0-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":glob-0.3.1",
@@ -1444,11 +1444,11 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "clang-sys-1.7.0-build-script-build",
-    srcs = [":clang-sys-1.7.0.crate"],
+    name = "clang-sys-1.8.0-build-script-build",
+    srcs = [":clang-sys-1.8.0.crate"],
     crate = "build_script_build",
-    crate_root = "clang-sys-1.7.0.crate/build.rs",
-    edition = "2015",
+    crate_root = "clang-sys-1.8.0.crate/build.rs",
+    edition = "2021",
     features = [
         "clang_10_0",
         "clang_11_0",
@@ -1472,9 +1472,9 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "clang-sys-1.7.0-build-script-run",
+    name = "clang-sys-1.8.0-build-script-run",
     package_name = "clang-sys",
-    buildscript_rule = ":clang-sys-1.7.0-build-script-build",
+    buildscript_rule = ":clang-sys-1.8.0-build-script-build",
     features = [
         "clang_10_0",
         "clang_11_0",
@@ -1493,7 +1493,7 @@ buildscript_run(
         "libloading",
         "runtime",
     ],
-    version = "1.7.0",
+    version = "1.8.0",
 )
 
 http_archive(
