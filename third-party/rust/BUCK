@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "f408d11adf2b518358a7fa2cc86c3267354b33d0",
+    rev = "6d9bd9d021ccfa1410d795ab0e262830cce7cc54",
     visibility = [],
 )
 
@@ -1372,6 +1372,60 @@ buildscript_run(
 )
 
 http_archive(
+    name = "chrono-tz-0.9.0.crate",
+    sha256 = "93698b29de5e97ad0ae26447b344c482a7284c737d9ddc5f9e52b74a336671bb",
+    strip_prefix = "chrono-tz-0.9.0",
+    urls = ["https://static.crates.io/crates/chrono-tz/0.9.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "chrono-tz-0.9.0",
+    srcs = [":chrono-tz-0.9.0.crate"],
+    crate = "chrono_tz",
+    crate_root = "chrono-tz-0.9.0.crate/src/lib.rs",
+    edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :chrono-tz-0.9.0-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    rustc_flags = ["@$(location :chrono-tz-0.9.0-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [
+        ":chrono-0.4.38",
+        ":phf-0.11.2",
+    ],
+)
+
+cargo.rust_binary(
+    name = "chrono-tz-0.9.0-build-script-build",
+    srcs = [":chrono-tz-0.9.0.crate"],
+    crate = "build_script_build",
+    crate_root = "chrono-tz-0.9.0.crate/build.rs",
+    edition = "2021",
+    features = [
+        "default",
+        "std",
+    ],
+    visibility = [],
+    deps = [":chrono-tz-build-0.3.0"],
+)
+
+buildscript_run(
+    name = "chrono-tz-0.9.0-build-script-run",
+    package_name = "chrono-tz",
+    buildscript_rule = ":chrono-tz-0.9.0-build-script-build",
+    features = [
+        "default",
+        "std",
+    ],
+    version = "0.9.0",
+)
+
+http_archive(
     name = "chrono-tz-build-0.2.1.crate",
     sha256 = "433e39f13c9a060046954e0592a8d0a4bcb1040125cbf91cb8ee58964cfb350f",
     strip_prefix = "chrono-tz-build-0.2.1",
@@ -1384,6 +1438,28 @@ cargo.rust_library(
     srcs = [":chrono-tz-build-0.2.1.crate"],
     crate = "chrono_tz_build",
     crate_root = "chrono-tz-build-0.2.1.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [
+        ":parse-zoneinfo-0.3.1",
+        ":phf-0.11.2",
+        ":phf_codegen-0.11.2",
+    ],
+)
+
+http_archive(
+    name = "chrono-tz-build-0.3.0.crate",
+    sha256 = "0c088aee841df9c3041febbb73934cfc39708749bf96dc827e3359cd39ef11b1",
+    strip_prefix = "chrono-tz-build-0.3.0",
+    urls = ["https://static.crates.io/crates/chrono-tz-build/0.3.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "chrono-tz-build-0.3.0",
+    srcs = [":chrono-tz-build-0.3.0.crate"],
+    crate = "chrono_tz_build",
+    crate_root = "chrono-tz-build-0.3.0.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
     deps = [
@@ -4594,6 +4670,28 @@ cargo.rust_library(
     ],
 )
 
+http_archive(
+    name = "globwalk-0.9.1.crate",
+    sha256 = "0bf760ebf69878d9fd8f110c89703d90ce35095324d1f1edcb595c63945ee757",
+    strip_prefix = "globwalk-0.9.1",
+    urls = ["https://static.crates.io/crates/globwalk/0.9.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "globwalk-0.9.1",
+    srcs = [":globwalk-0.9.1.crate"],
+    crate = "globwalk",
+    crate_root = "globwalk-0.9.1.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [
+        ":bitflags-2.5.0",
+        ":ignore-0.4.22",
+        ":walkdir-2.5.0",
+    ],
+)
+
 alias(
     name = "goblin",
     actual = ":goblin-0.5.4",
@@ -5168,7 +5266,7 @@ cargo.rust_library(
     deps = [
         ":bytes-1.6.0",
         ":hyper-0.14.28",
-        ":native-tls-0.2.11",
+        ":native-tls-0.2.12",
         ":tokio-1.37.0",
         ":tokio-native-tls-0.3.1",
     ],
@@ -6921,26 +7019,26 @@ cargo.rust_library(
 
 alias(
     name = "native-tls",
-    actual = ":native-tls-0.2.11",
+    actual = ":native-tls-0.2.12",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "native-tls-0.2.11.crate",
-    sha256 = "07226173c32f2926027b63cce4bcd8076c3552846cbe7925f3aaffeac0a3b92e",
-    strip_prefix = "native-tls-0.2.11",
-    urls = ["https://static.crates.io/crates/native-tls/0.2.11/download"],
+    name = "native-tls-0.2.12.crate",
+    sha256 = "a8614eb2c83d59d1c8cc974dd3f920198647674a0a035e1af1fa58707e317466",
+    strip_prefix = "native-tls-0.2.12",
+    urls = ["https://static.crates.io/crates/native-tls/0.2.12/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "native-tls-0.2.11",
-    srcs = [":native-tls-0.2.11.crate"],
+    name = "native-tls-0.2.12",
+    srcs = [":native-tls-0.2.12.crate"],
     crate = "native_tls",
-    crate_root = "native-tls-0.2.11.crate/src/lib.rs",
+    crate_root = "native-tls-0.2.12.crate/src/lib.rs",
     edition = "2015",
     env = {
-        "OUT_DIR": "$(location :native-tls-0.2.11-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :native-tls-0.2.12-build-script-run[out_dir])",
     },
     platform = {
         "linux-arm64": dict(
@@ -6961,7 +7059,6 @@ cargo.rust_library(
         ),
         "macos-arm64": dict(
             deps = [
-                ":lazy_static-1.4.0",
                 ":libc-0.2.155",
                 ":security-framework-2.11.0",
                 ":security-framework-sys-2.11.0",
@@ -6970,7 +7067,6 @@ cargo.rust_library(
         ),
         "macos-x86_64": dict(
             deps = [
-                ":lazy_static-1.4.0",
                 ":libc-0.2.155",
                 ":security-framework-2.11.0",
                 ":security-framework-sys-2.11.0",
@@ -6984,24 +7080,24 @@ cargo.rust_library(
             deps = [":schannel-0.1.23"],
         ),
     },
-    rustc_flags = ["@$(location :native-tls-0.2.11-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :native-tls-0.2.12-build-script-run[rustc_flags])"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "native-tls-0.2.11-build-script-build",
-    srcs = [":native-tls-0.2.11.crate"],
+    name = "native-tls-0.2.12-build-script-build",
+    srcs = [":native-tls-0.2.12.crate"],
     crate = "build_script_build",
-    crate_root = "native-tls-0.2.11.crate/build.rs",
+    crate_root = "native-tls-0.2.12.crate/build.rs",
     edition = "2015",
     visibility = [],
 )
 
 buildscript_run(
-    name = "native-tls-0.2.11-build-script-run",
+    name = "native-tls-0.2.12-build-script-run",
     package_name = "native-tls",
-    buildscript_rule = ":native-tls-0.2.11-build-script-build",
-    version = "0.2.11",
+    buildscript_rule = ":native-tls-0.2.12-build-script-build",
+    version = "0.2.12",
 )
 
 http_archive(
@@ -12602,23 +12698,23 @@ cargo.rust_library(
 
 alias(
     name = "tera",
-    actual = ":tera-1.19.1",
+    actual = ":tera-1.20.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tera-1.19.1.crate",
-    sha256 = "970dff17c11e884a4a09bc76e3a17ef71e01bb13447a11e85226e254fe6d10b8",
-    strip_prefix = "tera-1.19.1",
-    urls = ["https://static.crates.io/crates/tera/1.19.1/download"],
+    name = "tera-1.20.0.crate",
+    sha256 = "ab9d851b45e865f178319da0abdbfe6acbc4328759ff18dafc3a41c16b4cd2ee",
+    strip_prefix = "tera-1.20.0",
+    urls = ["https://static.crates.io/crates/tera/1.20.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tera-1.19.1",
-    srcs = [":tera-1.19.1.crate"],
+    name = "tera-1.20.0",
+    srcs = [":tera-1.20.0.crate"],
     crate = "tera",
-    crate_root = "tera-1.19.1.crate/src/lib.rs",
+    crate_root = "tera-1.20.0.crate/src/lib.rs",
     edition = "2018",
     features = [
         "builtins",
@@ -12634,8 +12730,8 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":chrono-0.4.38",
-        ":chrono-tz-0.8.6",
-        ":globwalk-0.8.1",
+        ":chrono-tz-0.9.0",
+        ":globwalk-0.9.1",
         ":humansize-2.1.3",
         ":lazy_static-1.4.0",
         ":percent-encoding-2.3.1",
@@ -13310,7 +13406,7 @@ cargo.rust_library(
     edition = "2018",
     visibility = [],
     deps = [
-        ":native-tls-0.2.11",
+        ":native-tls-0.2.12",
         ":tokio-1.37.0",
     ],
 )
