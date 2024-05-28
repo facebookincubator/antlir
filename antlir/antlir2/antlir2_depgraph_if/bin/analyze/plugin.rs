@@ -11,9 +11,8 @@ use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::RequiresProvides;
 use antlir2_features::Feature;
-
-use crate::Error;
-use crate::Result;
+use anyhow::Context;
+use anyhow::Result;
 
 /// PluginExt indirects the implementation of [RequiresProvides] through a .so
 /// plugin. The underlying crates all provide a type that implements
@@ -34,8 +33,7 @@ impl PluginExt for antlir2_features::Plugin {
         libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn RequiresProvides>>>,
     > {
         self.get_symbol(b"as_requires_provides\0")
-            .map_err(antlir2_features::Error::from)
-            .map_err(Error::from)
+            .context("while getting 'as_requires_provides' symbol")
     }
 }
 
@@ -49,7 +47,7 @@ impl<'a> Debug for FeatureWrapper<'a> {
 
 impl<'a> RequiresProvides for FeatureWrapper<'a> {
     #[tracing::instrument]
-    fn provides(&self) -> std::result::Result<Vec<Item>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         let func = self
             .0
             .plugin()
@@ -61,7 +59,7 @@ impl<'a> RequiresProvides for FeatureWrapper<'a> {
     }
 
     #[tracing::instrument]
-    fn requires(&self) -> std::result::Result<Vec<Requirement>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let func = self
             .0
             .plugin()

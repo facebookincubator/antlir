@@ -10,7 +10,7 @@ rust_binary(
         "clap",
         "regex",
         "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
-        "//antlir/antlir2/antlir2_features:antlir2_features",
+        "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )

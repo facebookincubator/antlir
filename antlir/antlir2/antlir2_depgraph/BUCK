@@ -11,7 +11,6 @@ rust_library(
     deps = [
         "fxhash",
         "itertools",
-        "libloading",
         "petgraph",
         "rusqlite",
         "serde",

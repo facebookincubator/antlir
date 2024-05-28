@@ -16,7 +16,7 @@ use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::Path as PathItem;
-use antlir2_depgraph_if::RequiresProvides as _;
+use antlir2_depgraph_if::AnalyzedFeature;
 use antlir2_depgraph_if::Validator;
 use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::Fact as _;
@@ -34,10 +34,8 @@ use tracing::warn;
 mod fact_interop;
 use fact_interop::FactExt as _;
 use fact_interop::ItemKeyExt as _;
-mod plugin;
 mod resolve;
 mod toposort;
-use plugin::FeatureWrapper;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Edge {
@@ -215,20 +213,17 @@ impl GraphBuilder {
         Ok(Self { memdb })
     }
 
-    pub fn add_feature(&mut self, feature: Feature) -> Result<&mut Self> {
+    pub fn add_feature(&mut self, feature: AnalyzedFeature) -> Result<&mut Self> {
         let tx = self.memdb.as_mut().transaction()?;
         tx.execute(
             "INSERT INTO feature (value, pending) VALUES (?, ?)",
             (
-                serde_json::to_string(&feature).map_err(Error::GraphSerde)?,
+                serde_json::to_string(feature.feature()).map_err(Error::GraphSerde)?,
                 true,
             ),
         )?;
         let feature_id = tx.last_insert_rowid();
-        let provides = FeatureWrapper(&feature)
-            .provides()
-            .map_err(Error::Provides)?;
-        for item in provides {
+        for item in feature.provides() {
             let key = item.key();
             tx.execute(
                 "INSERT INTO item (key, value, fact_kind, fact_key) VALUES (?, ?, ?, ?)",
@@ -245,10 +240,7 @@ impl GraphBuilder {
                 (feature_id, item_id),
             )?;
         }
-        let requires = FeatureWrapper(&feature)
-            .requires()
-            .map_err(Error::Requires)?;
-        for req in requires {
+        for req in feature.requires() {
             tx.execute(
                 "INSERT OR IGNORE INTO requires (feature, item_key, fact_kind, fact_key, ordered, validator) VALUES (?, ?, ?, ?, ?, ?)",
                 (

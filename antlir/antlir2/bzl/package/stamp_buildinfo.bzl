@@ -17,6 +17,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "name": str(ctx.label.raw_target()),
         "parent_layer": ctx.attrs.layer,
         "target_arch": ctx.attrs._target_arch,
+        "_analyze_feature": ctx.attrs._analyze_feature,
         "_feature_features": [ctx.attrs._dot_meta_feature],
         "_new_facts_db": ctx.attrs._new_facts_db,
         "_rootless": ctx.attrs._rootless,
@@ -28,6 +29,7 @@ stamp_buildinfo_rule = rule(
     impl = _impl,
     attrs = {
                 "layer": attrs.dep(providers = [LayerInfo]),
+                "_analyze_feature": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_depgraph_if:analyze")),
                 "_antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
                 "_dot_meta_feature": attrs.dep(default = antlir2_dep("//antlir/antlir2/bzl/package:dot-meta")),
                 "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
