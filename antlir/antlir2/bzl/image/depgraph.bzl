@@ -12,7 +12,7 @@ load(
     "LayerInfo",  # @unused Used as type
 )
 load(
-    "//antlir/antlir2/bzl/feature:feature.bzl",
+    "//antlir/antlir2/features:feature_info.bzl",
     "feature_record",  # @unused Used as type
 )
 

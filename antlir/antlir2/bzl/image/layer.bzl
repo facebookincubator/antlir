@@ -12,7 +12,7 @@ load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
-load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
+load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
 
 load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-enable
 # @oss-disable
@@ -293,9 +293,9 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         if not features and not (phase == BuildPhase("compile") and subvol == None):
             continue
 
-        # TODO(vmagro): when we introduce other package managers, this will need
-        # to be more generic
-        features = regroup_features(ctx.label, features)
+        # Some feature types must be reduced to one instance per phase (eg
+        # package managers)
+        features = reduce_features(features)
 
         # facts_db also holds the depgraph
         facts_db = build_depgraph(

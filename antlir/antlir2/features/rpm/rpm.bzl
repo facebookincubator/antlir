@@ -10,8 +10,10 @@ load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
     "ParseTimeFeature",
+    "feature_record",
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
+load("//antlir/bzl:structs.bzl", "structs")
 
 # a fully qualified rpm nevra with epoch will contain a ':' so we have to be a
 # little more particular than just checking "if ':' in s"
@@ -219,6 +221,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             requires_planning = True,
             build_phase = BuildPhase("package_manager"),
             plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            reduce_fn = _reduce_rpm_features,
         ),
     ]
 
@@ -233,3 +236,13 @@ rpms_rule = rule(
         "unnamed_deps_or_srcs": attrs.list(attrs.one_of(attrs.dep(), attrs.source()), default = []),
     },
 )
+
+def _reduce_rpm_features(left: feature_record | typing.Any, right: feature_record | typing.Any):
+    f = structs.to_dict(left)
+    f["analysis"] = structs.to_dict(left.analysis)
+    f["analysis"]["data"] = structs.to_dict(f["analysis"]["data"])
+    f["analysis"]["data"]["items"] = f["analysis"]["data"]["items"] + right.analysis.data.items
+    f["analysis"]["data"] = rpms_record(**f["analysis"]["data"])
+    f["analysis"]["required_artifacts"] = f["analysis"]["required_artifacts"] + right.analysis.required_artifacts
+    f["analysis"] = FeatureAnalysis(**f["analysis"])
+    return feature_record(**f)

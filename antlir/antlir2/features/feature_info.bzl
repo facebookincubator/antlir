@@ -70,6 +70,12 @@ FeatureAnalysis = provider(fields = {
     "feature_type": provider_field(str),
     # Binary plugin implementation of this feature
     "plugin": provider_field(FeaturePluginInfo | Provider),
+    # Some features must be folded into one feature that acts on all the inputs
+    # at once (typically package manager features) for performance, correctness
+    # or both. This function will be called with two arguments, both of type
+    # `feature_record` and the return result should be a single, merged
+    # `feature_record` that represents the combination of both
+    "reduce_fn": provider_field(typing.Any, default = None),
     # Artifacts that are needed to build this feature. Antlir does not
     # automatically attach any dependencies to features based on the input,
     # feature implementations must always specify it exactly (this prevents
@@ -86,6 +92,13 @@ FeatureAnalysis = provider(fields = {
 MultiFeatureAnalysis = provider(fields = {
     "features": provider_field(list[FeatureAnalysis]),
 })
+
+feature_record = record(
+    feature_type = str,
+    label = TargetLabel,
+    analysis = FeatureAnalysis,
+    plugin = FeaturePluginInfo | Provider,
+)
 
 def data_only_feature_rule(
         feature_attrs: dict[str, typing.Any],

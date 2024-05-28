@@ -54,7 +54,7 @@ function must then be added to the `_anon_rules` map in this file.
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
-load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis")
+load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis", "feature_record")
 load("//antlir/antlir2/features/clone:clone.bzl", "clone_rule")
 load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta_rule")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_dir_exists_rule")
@@ -71,24 +71,16 @@ load("//antlir/antlir2/features/install:install.bzl", "install_rule")
 load("//antlir/antlir2/features/mount:mount.bzl", "mount_rule")
 load("//antlir/antlir2/features/remove:remove.bzl", "remove_rule")
 load("//antlir/antlir2/features/requires:requires.bzl", "requires_rule")
-load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_record", "rpms_rule")
+load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_rule")
 load("//antlir/antlir2/features/symlink:symlink.bzl", "ensure_dir_symlink_rule", "ensure_file_symlink_rule")
 load("//antlir/antlir2/features/tarball:tarball.bzl", "tarball_rule")
 load("//antlir/antlir2/features/test_only_features/trace:trace.bzl", "trace_rule")
 load("//antlir/antlir2/features/user:user.bzl", "user_rule")
 load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod_rule")
 load("//antlir/bzl:flatten.bzl", "flatten")
-load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:types.bzl", "types")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":cfg.bzl", "feature_cfg")
-
-feature_record = record(
-    feature_type = str,
-    label = TargetLabel,
-    analysis = FeatureAnalysis,
-    plugin = FeaturePluginInfo | Provider,
-)
 
 def verify_feature_records(features: list[feature_record | typing.Any]) -> None:
     if (
@@ -325,42 +317,29 @@ def feature(
         **kwargs
     )
 
-def regroup_features(label: Label, features: list[feature_record | typing.Any]) -> list[feature_record | typing.Any]:
+def reduce_features(features: list[feature_record | typing.Any]) -> list[feature_record | typing.Any]:
     """
-    Some features must be grouped at buck time so that the compiler can act on
-    them as a single unit for performance reasons.
+    Some features must be reduced to one instance at buck time so that the
+    compiler can act on them as a single unit for performance reasons.
 
     Currently this is only true of the RPM features, but will likely be true of
     any future package managers as well.
     """
-    ungrouped_features = []
+    output = []
     verify_feature_records(features)
 
-    # keep all the extra junk (like run_info) attached to the rpm feature
-    any_rpm_feature = None
-    rpm_required_artifacts = []
-    rpm_items = []
-    for feat in features:
-        if feat.feature_type == "rpm":
-            rpm_items.extend(feat.analysis.data.items)
-            rpm_required_artifacts.extend(feat.analysis.required_artifacts)
-            any_rpm_feature = feat
+    reducing = {}
+
+    for feature in features:
+        if feature.analysis.reduce_fn:
+            if feature.feature_type not in reducing:
+                reducing[feature.feature_type] = feature
+            else:
+                reducing[feature.feature_type] = feature.analysis.reduce_fn(
+                    reducing[feature.feature_type],
+                    feature,
+                )
         else:
-            ungrouped_features.append(feat)
+            output.append(feature)
 
-    if any_rpm_feature:
-        # records are immutable, so we have to do this crazy dance to just
-        # mutate the rpm feature data
-        rpm_feature = structs.to_dict(any_rpm_feature)
-        rpm_feature["analysis"] = structs.to_dict(rpm_feature["analysis"])
-        rpm_feature["analysis"]["data"] = structs.to_dict(rpm_feature["analysis"]["data"])
-        rpm_feature["analysis"]["data"]["items"] = rpm_items
-        rpm_feature["analysis"]["data"] = rpms_record(**rpm_feature["analysis"]["data"])
-        rpm_feature["analysis"]["required_artifacts"] = rpm_required_artifacts
-        rpm_feature["analysis"] = FeatureAnalysis(**rpm_feature["analysis"])
-        rpm_feature["label"] = label.raw_target()
-        rpm_feature = feature_record(**rpm_feature)
-    else:
-        rpm_feature = None
-
-    return ungrouped_features + ([rpm_feature] if rpm_feature else [])
+    return output + reducing.values()
