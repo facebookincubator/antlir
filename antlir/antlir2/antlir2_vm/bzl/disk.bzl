@@ -64,7 +64,8 @@ def _create_disk_from_package(
         logical_block_size: int = 512,
         physical_block_size: int = 512,
         serial: str | None = None,
-        visibility: list[str] | None = None):
+        visibility: list[str] | None = None,
+        **kwargs):
     """This functions take image targets and wrap them with desired properties
     to create a VM disk target that can be used by VM. `image` is expected to
     be in a disk file format that can be directly consumed by qemu. It will be
@@ -81,6 +82,7 @@ def _create_disk_from_package(
         physical_block_size = physical_block_size,
         serial = serial,
         visibility = visibility,
+        **kwargs
     )
     return ":" + name
 
