@@ -5,7 +5,8 @@
 
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_record", "verify_feature_records")
+load("//antlir/antlir2/bzl/feature:feature.bzl", "verify_feature_records")
+load("//antlir/antlir2/features:feature_info.bzl", "feature_record")
 load("//antlir/bzl:types.bzl", "types")
 load(":mount_types.bzl", "host_mount_record", "layer_mount_record", "mount_record")
 
