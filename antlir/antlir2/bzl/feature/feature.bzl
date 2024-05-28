@@ -102,15 +102,6 @@ def verify_feature_records(features: list[feature_record | typing.Any]) -> None:
 
     [_assert_feature_record(i) for i in features]  # buildifier: disable=no-effect
 
-def feature_as_json(feat: feature_record | typing.Any) -> struct:
-    verify_feature_records([feat])
-    return struct(
-        feature_type = feat.feature_type,
-        label = feat.label,
-        data = feat.analysis.data,
-        plugin = feat.plugin,
-    )
-
 _anon_rules = {
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
@@ -187,15 +178,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         features = anon_features + inline_features
         for dep in feature_deps:
             features.extend(dep[FeatureInfo].features)
-        features_json = [feature_as_json(f) for f in features]
-
-        json_file = ctx.actions.write_json("features.json", features_json)
 
         return [
             FeatureInfo(
                 features = features,
             ),
-            DefaultInfo(json_file),
+            DefaultInfo(),
         ]
 
     if anon_features:
