@@ -289,19 +289,6 @@ bad_depgraph(
     parent = ":simple-install",
 )
 
-bad_depgraph(
-    name = "clone-with-missing-src",
-    error_regex = "src path '/bar' does not exist",
-    features = [
-        feature.ensure_dirs_exist(dirs = "/cloned"),
-        feature.clone(
-            dst_path = "/cloned/bar",
-            src_layer = ":simple-install",
-            src_path = "/bar",
-        ),
-    ],
-)
-
 good_depgraph(
     name = "clone-dir-src",
     features = [

@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 use antlir2_depgraph::Graph;
-use antlir2_features::Feature;
+use antlir2_depgraph_if::AnalyzedFeature;
 use anyhow::anyhow;
 use anyhow::Result;
 use clap::Parser;
@@ -17,8 +17,8 @@ use regex::Regex;
 
 #[derive(Debug, Parser)]
 struct Args {
-    #[clap(long = "feature-json")]
-    features: Vec<JsonFile<Vec<Feature>>>,
+    #[clap(long = "feature")]
+    features: Vec<JsonFile<AnalyzedFeature>>,
     #[clap(long)]
     parent: Option<PathBuf>,
     #[clap(long)]
@@ -28,7 +28,7 @@ struct Args {
 fn build(args: Args) -> antlir2_depgraph::Result<Graph> {
     let parent = args.parent.map(Graph::open).transpose()?;
     let mut builder = Graph::builder(parent)?;
-    for feature in args.features.into_iter().flat_map(JsonFile::into_inner) {
+    for feature in args.features.into_iter().map(JsonFile::into_inner) {
         eprintln!("adding feature {feature:?}");
         builder.add_feature(feature)?;
     }

@@ -23,6 +23,7 @@ common_attrs = {
 
 # Attrs that will only ever be used as default_only
 default_attrs = {
+    "_analyze_feature": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_depgraph_if:analyze")),
     "_antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
     "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
     "_dot_meta_feature": attrs.dep(default = antlir2_dep("//antlir/antlir2/bzl/package:dot-meta")),
@@ -93,6 +94,7 @@ def _generic_impl(
             "flavor": ctx.attrs.flavor,
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
+            "_analyze_feature": ctx.attrs._analyze_feature,
             "_antlir2": ctx.attrs._antlir2,
             "_dot_meta_feature": ctx.attrs._dot_meta_feature,
             "_new_facts_db": ctx.attrs._new_facts_db,

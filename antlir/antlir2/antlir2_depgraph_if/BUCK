@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("antlir")
 
@@ -9,5 +9,22 @@ rust_library(
         "nix",
         "serde",
         "static_assertions",
+        "//antlir/antlir2/antlir2_features:antlir2_features",
+    ],
+)
+
+rust_binary(
+    name = "analyze",
+    srcs = glob(["bin/analyze/**/*.rs"]),
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "libloading",
+        "serde_json",
+        "tracing",
+        ":antlir2_depgraph_if",
+        "//antlir/antlir2/antlir2_features:antlir2_features",
+        "//antlir/util/cli/json_arg:json_arg",
     ],
 )

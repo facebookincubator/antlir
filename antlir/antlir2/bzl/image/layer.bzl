@@ -297,32 +297,13 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         # to be more generic
         features = regroup_features(ctx.label, features)
 
-        # JSON file for only the features that are part of this BuildPhase
-        features_json_artifact = ctx.actions.declare_output(identifier, "features.json")
-        features_json = ctx.actions.write_json(
-            features_json_artifact,
-            [{
-                "data": f.analysis.data,
-                "feature_type": f.feature_type,
-                "label": f.label,
-                "plugin": f.plugin,
-            } for f in features],
-            with_inputs = True,
-        )
-
-        # deps that are needed for compiling the features, but not for depgraph
-        # analysis, so are not included in `features_json`
-        compile_feature_hidden_deps = [
-            [feat.analysis.required_artifacts for feat in features],
-            [feat.analysis.required_run_infos for feat in features],
-        ]
-
         # facts_db also holds the depgraph
         facts_db = build_depgraph(
             ctx = ctx,
-            features_json = features_json,
+            features = features,
             identifier = identifier,
             parent = facts_db,
+            phase = phase,
         )
 
         target_arch = ctx.attrs._selected_target_arch
@@ -330,6 +311,27 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         compileish_args = cmd_args(
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(facts_db, format = "--depgraph={}"),
+        )
+
+        # All deps that are needed for *compiling* the features (but not
+        # depgraph analysis)
+        compile_feature_hidden_deps = [
+            [feat.analysis.required_artifacts for feat in features],
+            [feat.analysis.required_run_infos for feat in features],
+            [feat.plugin.plugin for feat in features],
+            [feat.plugin.libs for feat in features],
+        ]
+
+        # Cover all the other inputs needed for compiling a feature by writing
+        # it to a json file. This is just an easy way to just traverse the
+        # structure to find any artifacts, but this json file is not directly
+        # read anywhere
+        compile_feature_hidden_deps.append(
+            ctx.actions.write_json(
+                ctx.actions.declare_output(identifier, "features.json"),
+                [f.analysis.data for f in features],
+                with_inputs = True,
+            ),
         )
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
@@ -348,7 +350,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                     "plan",
                     compileish_args,
                     cmd_args(plan.as_output(), format = "--plan={}"),
-                ).hidden(features_json, compile_feature_hidden_deps),
+                ).hidden(compile_feature_hidden_deps),
                 ctx = ctx,
                 identifier = identifier_prefix + "plan",
                 parent = subvol,
@@ -415,13 +417,17 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 "compile",
                 compileish_args,
                 cmd_args(plan, format = "--plan={}") if plan else cmd_args(),
-            ).hidden(features_json, compile_feature_hidden_deps),
+            ).hidden(compile_feature_hidden_deps),
             ctx = ctx,
             identifier = identifier_prefix + "compile",
             parent = subvol,
             logs = logs["compile"],
             rootless = ctx.attrs._rootless,
         )
+
+        phase_sub_targets = {
+            "depgraph": [DefaultInfo(facts_db)],
+        }
 
         facts_db = facts.new_facts_db(
             actions = ctx.actions,
@@ -433,18 +439,22 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             rootless = ctx.attrs._rootless,
         )
 
-        phase_mounts = all_mounts(
-            features = features,
-            parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+        phase_sub_targets["container"] = _container_sub_target(
+            ctx.attrs._run_container,
+            subvol,
+            mounts = all_mounts(
+                features = features,
+                parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+            ),
+            rootless = ctx.attrs._rootless,
         )
         all_logs = ctx.actions.declare_output(identifier, "logs", dir = True)
         ctx.actions.symlinked_dir(all_logs, {key + ".log": artifact for key, artifact in logs.items()})
+
         debug_sub_targets[phase.value] = [
             DefaultInfo(
-                sub_targets = {
-                    "container": _container_sub_target(ctx.attrs._run_container, subvol, mounts = phase_mounts, rootless = ctx.attrs._rootless),
+                sub_targets = phase_sub_targets | {
                     "facts": [DefaultInfo(facts_db)],
-                    "features": [DefaultInfo(features_json_artifact)],
                     "logs": [DefaultInfo(all_logs, sub_targets = {
                         key: [DefaultInfo(artifact)]
                         for key, artifact in logs.items()
@@ -544,6 +554,7 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
+    "_analyze_feature": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_depgraph_if:analyze")),
     "_dnf_auto_additional_repos": attrs.list(
         attrs.one_of(
             attrs.dep(providers = [RepoInfo]),
