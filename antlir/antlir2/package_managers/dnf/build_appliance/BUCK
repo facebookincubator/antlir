@@ -10,6 +10,7 @@ feature.new(
     features = [
         feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/cache"),
         feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/repos"),
+        feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/plugins"),
         feature.install(
             src = "dnf.antlir.conf",
             dst = "/__antlir2__/dnf/dnf.conf",
@@ -26,6 +27,10 @@ feature.new(
             src = "driver.py",
             dst = "/__antlir2__/dnf/driver",
             mode = "a+rx",
+        ),
+        feature.install(
+            src = "plugin.py",
+            dst = "/__antlir2__/dnf/plugins/antlir.py",
         ),
         feature.install(
             src = "empty-versionlock.json",
