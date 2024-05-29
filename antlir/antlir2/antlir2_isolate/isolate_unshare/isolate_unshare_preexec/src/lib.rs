@@ -22,6 +22,7 @@
 
 #![feature(io_error_more)]
 
+use std::ffi::OsString;
 use std::fs::create_dir;
 use std::fs::create_dir_all;
 use std::fs::File;
@@ -58,6 +59,7 @@ pub struct Args {
     pub file_binds: Vec<Bind>,
     pub tmpfs: Vec<PathBuf>,
     pub devtmpfs: Vec<PathBuf>,
+    pub tmpfs_overlay: Vec<TmpfsOverlay>,
     pub working_dir: PathBuf,
     pub hostname: Option<String>,
     pub uid: u32,
@@ -69,6 +71,13 @@ pub struct Bind {
     pub src: PathBuf,
     pub dst: PathBuf,
     pub ro: bool,
+}
+
+pub struct TmpfsOverlay {
+    pub dst: PathBuf,
+    pub upper: PathBuf,
+    pub work: PathBuf,
+    pub data: OsString,
 }
 
 pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
@@ -228,6 +237,19 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
                 // made readonly for whatever reason
             }
         }
+    }
+
+    create_dir("/tmp/__antlir2__/tmpfs_overlay")?;
+    for overlay in &args.tmpfs_overlay {
+        create_dir(&overlay.upper)?;
+        create_dir(&overlay.work)?;
+        mount(
+            Some("overlay"),
+            &overlay.dst,
+            Some("overlay"),
+            MsFlags::empty(),
+            Some(overlay.data.as_os_str()),
+        )?;
     }
 
     if let Some(hostname) = &args.hostname {

@@ -9,6 +9,7 @@
 compile_error!("only supported on linux");
 
 use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::io::ErrorKind;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
@@ -52,6 +53,7 @@ impl<'a> IsolatedContext<'a> {
             ephemeral,
             tmpfs,
             devtmpfs,
+            tmpfs_overlay,
             hostname,
             readonly,
         } = &self.0;
@@ -162,6 +164,31 @@ impl<'a> IsolatedContext<'a> {
                     Path::new(isolate_unshare_preexec::NEWROOT)
                         .join(t.strip_prefix("/").unwrap_or(t))
                         .to_owned()
+                })
+                .collect(),
+            tmpfs_overlay: tmpfs_overlay
+                .iter()
+                .enumerate()
+                .map(|(idx, t)| {
+                    let dst = Path::new(isolate_unshare_preexec::NEWROOT)
+                        .join(t.strip_prefix("/").unwrap_or(t))
+                        .to_owned();
+                    let upper =
+                        Path::new("/tmp/__antlir2__/tmpfs_overlay").join(format!("upper_{idx}"));
+                    let work =
+                        Path::new("/tmp/__antlir2__/tmpfs_overlay").join(format!("work_{idx}"));
+                    let mut data: OsString = "lowerdir=".into();
+                    data.push(&dst);
+                    data.push(",upperdir=");
+                    data.push(&upper);
+                    data.push(",workdir=");
+                    data.push(&work);
+                    isolate_unshare_preexec::TmpfsOverlay {
+                        dst,
+                        upper,
+                        work,
+                        data,
+                    }
                 })
                 .collect(),
             working_dir: working_directory
