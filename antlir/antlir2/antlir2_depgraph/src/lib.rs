@@ -25,7 +25,6 @@ use antlir2_facts::RwDatabase;
 use antlir2_features::Feature;
 use fxhash::FxHashMap;
 use rusqlite::backup::Backup;
-use rusqlite::DatabaseName;
 use rusqlite::OptionalExtension as _;
 use serde::Deserialize;
 use serde::Serialize;
@@ -571,9 +570,17 @@ impl Graph {
     }
 
     pub fn write_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
+        let _ = std::fs::remove_file(path.as_ref());
+        self.db.as_ref().pragma_update(None, "query_only", "0")?;
         self.db
             .as_ref()
-            .backup(DatabaseName::Main, path, None)
-            .map_err(Error::from)
+            .prepare("VACUUM INTO ?")?
+            .execute([path
+                .as_ref()
+                .to_str()
+                .ok_or_else(|| rusqlite::Error::InvalidPath(path.as_ref().to_owned()))?])
+            .map(|_| ())?;
+        self.db.as_ref().pragma_update(None, "query_only", "1")?;
+        Ok(())
     }
 }
