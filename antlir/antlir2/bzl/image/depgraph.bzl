@@ -11,6 +11,7 @@ load(
     "//antlir/antlir2/bzl:types.bzl",
     "LayerInfo",  # @unused Used as type
 )
+load("//antlir/antlir2/bzl/feature:feature.bzl", "as_json_for_depgraph")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "feature_record",  # @unused Used as type
@@ -39,15 +40,7 @@ def analyze_features(
                 identifier + "/features/" + phase.value,
                 "{}[{}].json".format(feature.feature_type, idx),
             ),
-            struct(
-                # serializing feature.analysis as a whole would cause tons of
-                # unnecessary inputs to be materialized, so only analysis.data
-                # is included
-                data = feature.analysis.data,
-                feature_type = feature.feature_type,
-                label = feature.label,
-                plugin = feature.plugin,
-            ),
+            as_json_for_depgraph(feature),
             with_inputs = True,
         )
         out = ctx.actions.declare_output(
