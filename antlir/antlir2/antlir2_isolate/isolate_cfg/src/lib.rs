@@ -44,6 +44,8 @@ pub struct IsolationContext<'a> {
     pub tmpfs: BTreeSet<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::devtmpfs]
     pub devtmpfs: BTreeSet<Cow<'a, Path>>,
+    /// See [IsolationContextBuilder::tmpfs_overlay]
+    pub tmpfs_overlay: BTreeSet<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::hostname]
     pub hostname: Option<Cow<'a, str>>,
     /// See [IsolationContextBuilder::readonly]
@@ -91,6 +93,7 @@ impl<'a> IsolationContext<'a> {
                 ephemeral: true,
                 tmpfs: Default::default(),
                 devtmpfs: Default::default(),
+                tmpfs_overlay: Default::default(),
                 hostname: None,
                 readonly: false,
             },
@@ -180,6 +183,14 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Path to mount a devtmpfs into.
     pub fn devtmpfs<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
         self.ctx.devtmpfs.insert(path.into());
+        self
+    }
+
+    /// Mount a unique tmpfs as the top layer of an overlayfs over this
+    /// directory (in other words, make this directory read/write with ephemeral
+    /// changes).
+    pub fn tmpfs_overlay<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
+        self.ctx.tmpfs_overlay.insert(path.into());
         self
     }
 

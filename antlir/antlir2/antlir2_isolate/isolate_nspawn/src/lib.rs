@@ -100,11 +100,15 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         ephemeral,
         tmpfs,
         devtmpfs,
+        tmpfs_overlay,
         hostname,
         readonly,
     } = ctx;
     if !devtmpfs.is_empty() && devtmpfs.len() > 1 && !devtmpfs.contains(Path::new("/dev")) {
         return Err(Error::Unsupported("devtmpfs"));
+    }
+    if !tmpfs_overlay.is_empty() {
+        return Err(Error::Unsupported("tmpfs_overlay"));
     }
 
     let mut nspawn_args = Vec::<OsString>::new();
