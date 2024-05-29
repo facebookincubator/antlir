@@ -26,6 +26,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use serde::de::DeserializeOwned;
+use serde::de::Error as _;
 use serde::Deserialize;
 
 pub trait DeserializeReader<T> {
@@ -161,6 +163,28 @@ where
                 deser: PhantomData,
             })
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+    }
+}
+
+impl<'de, T, D2> Deserialize<'de> for SerdeFile<T, D2>
+where
+    T: DeserializeOwned,
+    D2: DeserializeReader<T>,
+    D2::Error: Display,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let path = PathBuf::deserialize(deserializer)?;
+        let f = std::io::BufReader::new(std::fs::File::open(&path).map_err(D::Error::custom)?);
+        D2::deserialize(f)
+            .map(|value| Self {
+                path,
+                value,
+                deser: PhantomData,
+            })
+            .map_err(D::Error::custom)
     }
 }
 
@@ -312,12 +336,19 @@ mod tests {
         bar: u32,
     }
 
+    #[derive(Debug, Clone, Deserialize)]
+    struct HoldsExample {
+        example: JsonFile<Example>,
+    }
+
     #[derive(Debug, Parser)]
     struct Args {
         #[clap(long)]
         inline: Option<Json<Example>>,
         #[clap(long)]
         file: Option<JsonFile<Example>>,
+        #[clap(long)]
+        holds_example: Option<JsonFile<HoldsExample>>,
     }
 
     #[test]
@@ -345,5 +376,32 @@ mod tests {
             tmp.path().as_os_str(),
         ]);
         assert_eq!(args.file.expect("definitely here"), example);
+    }
+
+    #[test]
+    fn deserialize() {
+        let example = Example {
+            foo: "baz".into(),
+            bar: 42,
+        };
+        let mut tmp = NamedTempFile::new().expect("failed to create tmp file");
+        serde_json::to_writer(&mut tmp, &example).expect("failed to serialize");
+
+        let mut outer = NamedTempFile::new().expect("failed to create outer tmp file");
+        serde_json::to_writer(&mut outer, &serde_json::json!({"example": tmp.path()}))
+            .expect("failed to write");
+
+        let args = Args::parse_from(vec![
+            OsStr::new("holds_example"),
+            OsStr::new("--holds-example"),
+            outer.path().as_os_str(),
+        ]);
+        assert_eq!(
+            args.holds_example
+                .expect("definitely here")
+                .example
+                .as_inner(),
+            &example
+        );
     }
 }
