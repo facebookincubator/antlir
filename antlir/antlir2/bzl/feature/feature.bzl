@@ -171,11 +171,16 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         for dep in feature_deps:
             features.extend(dep[FeatureInfo].features)
 
+        json_file = ctx.actions.write_json(
+            "features.json",
+            [as_json_for_depgraph(feature) for feature in features],
+        )
+
         return [
             FeatureInfo(
                 features = features,
             ),
-            DefaultInfo(),
+            DefaultInfo(json_file),
         ]
 
     if anon_features:
@@ -343,3 +348,14 @@ def reduce_features(features: list[feature_record | typing.Any]) -> list[feature
             output.append(feature)
 
     return output + reducing.values()
+
+def as_json_for_depgraph(feature: feature_record | typing.Any) -> struct:
+    return struct(
+        # serializing feature.analysis as a whole would cause tons of
+        # unnecessary inputs to be materialized, so only analysis.data
+        # is included
+        data = feature.analysis.data,
+        feature_type = feature.feature_type,
+        label = feature.label,
+        plugin = feature.plugin,
+    )
