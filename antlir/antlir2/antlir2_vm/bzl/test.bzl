@@ -219,6 +219,8 @@ def _implicit_vm_test(
         first_boot_command = first_boot_command,
         expect_failure = expect_failure,
         postmortem = postmortem,
+        compatible_with = kwargs.get("compatible_with"),
+        target_compatible_with = kwargs.get("target_compatible_with"),
     )
 
 vm_cpp_test = partial(
