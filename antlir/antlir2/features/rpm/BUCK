@@ -4,10 +4,12 @@ oncall("antlir")
 
 feature_impl(
     name = "rpm",
+    extra_srcs = ["driver.py"],
     deps = [
         "anyhow",
         "memfd",
         "serde_json",
+        "tempfile",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/buck/buck_label:buck_label",
     ],
