@@ -7,7 +7,6 @@
 
 use std::collections::BTreeSet;
 use std::fmt::Debug;
-use std::fmt::Display;
 use std::path::Path;
 use std::time::Duration;
 
@@ -33,8 +32,12 @@ use tracing::warn;
 mod fact_interop;
 use fact_interop::FactExt as _;
 use fact_interop::ItemKeyExt as _;
+mod error;
 mod resolve;
 mod toposort;
+use error::ContextExt;
+pub use error::Cycle;
+pub use error::Error;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Edge {
@@ -45,54 +48,6 @@ pub enum Edge {
     Requires(Validator),
     /// Simple ordering edge that does not require any additional checks
     After,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(transparent)]
-pub struct Cycle(Vec<Feature>);
-
-impl Display for Cycle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for feature in &self.0 {
-            writeln!(f, "  {feature:?}")?;
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("cycle in dependency graph:\n{0}")]
-    Cycle(Cycle),
-    #[error("{item:?} is provided by multiple features: {features:#?}")]
-    Conflict {
-        item: Item,
-        features: BTreeSet<Feature>,
-    },
-    #[error("{key:?} is required by {required_by:#?} but was never provided")]
-    MissingItem { key: ItemKey, required_by: Feature },
-    #[error(
-        "{item:?} does not satisfy the validation rules: {validator:?} as required by {required_by:#?}"
-    )]
-    Unsatisfied {
-        item: Item,
-        validator: Validator,
-        required_by: Feature,
-    },
-    #[error("failure determining 'provides': {0}")]
-    Provides(String),
-    #[error("failure determining 'requires': {0}")]
-    Requires(String),
-    #[error("failed to deserialize feature data: {0}")]
-    DeserializeFeature(serde_json::Error),
-    #[error("failed to (de)serialize graph data: {0}")]
-    GraphSerde(serde_json::Error),
-    #[error(transparent)]
-    Plugin(#[from] antlir2_features::Error),
-    #[error("facts db error: {0}")]
-    Facts(#[from] antlir2_facts::Error),
-    #[error("sqlite error: {0}")]
-    Sqlite(#[from] rusqlite::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -106,17 +61,16 @@ impl GraphBuilder {
         // use an in-memory database for the temporary graph changes
         let mut memdb = RwDatabase::create(":memory:")?;
         if let Some(parent) = parent {
-            Backup::new(parent.db.as_ref(), memdb.as_mut())?.run_to_completion(
-                128,
-                Duration::from_millis(0),
-                None,
-            )?;
+            Backup::new(parent.db.as_ref(), memdb.as_mut())
+                .context("while starting backup to :memory:")?
+                .run_to_completion(128, Duration::from_millis(0), None)
+                .context("while backing up to :memory:")?;
         }
         let conn = memdb.as_mut();
         conn.execute(
             "CREATE TABLE IF NOT EXISTS feature (id INTEGER PRIMARY KEY, value TEXT NOT NULL, pending BOOLEAN NOT NULL)",
             [],
-        )?;
+        ).context("while creating feature table")?;
         conn.execute(
             r#"CREATE TABLE IF NOT EXISTS item (
                 id INTEGER PRIMARY KEY,
@@ -128,7 +82,8 @@ impl GraphBuilder {
                 fact_key BLOB NOT NULL
             )"#,
             [],
-        )?;
+        )
+        .context("while creating item table")?;
         conn.execute(
             r#"CREATE TABLE IF NOT EXISTS provides (
                 feature INTEGER NOT NULL,
@@ -137,7 +92,8 @@ impl GraphBuilder {
                 FOREIGN KEY(item) REFERENCES item ON DELETE CASCADE
             )"#,
             [],
-        )?;
+        )
+        .context("while creating provides table")?;
         conn.execute(
             r#"CREATE TABLE IF NOT EXISTS requires (
                 feature INTEGER NOT NULL,
@@ -151,11 +107,13 @@ impl GraphBuilder {
                 -- fact_{kind|key} is not a FOREIGN key because it may not actually exist
             )"#,
             [],
-        )?;
+        )
+        .context("while creating requires table")?;
 
-        let tx = conn.transaction()?;
+        let tx = conn.transaction().context("while starting transaction")?;
         // mark parent features as complete
-        tx.execute("UPDATE feature SET pending = FALSE", [])?;
+        tx.execute("UPDATE feature SET pending = FALSE", [])
+            .context("while marking parent's pending features as complete")?;
         // remove any parent items where the facts have been deleted rendering
         // any existing requires/provides links obsolete
         tx.execute(
@@ -171,7 +129,8 @@ impl GraphBuilder {
                 )
             "#,
             [],
-        )?;
+        )
+        .context("while deleting orphaned items")?;
 
         // Some items are always available, since they are a property of the
         // operating system. Add them to the graph now so that the dependency
@@ -206,21 +165,27 @@ impl GraphBuilder {
                     key.fact_kind(),
                     key.to_fact_key().as_ref(),
                 ),
-            )?;
+            )
+        .context("while inserting ambient item")?;
         }
-        tx.commit()?;
+        tx.commit().context("while committing setup transaction")?;
         Ok(Self { memdb })
     }
 
     pub fn add_feature(&mut self, feature: AnalyzedFeature) -> Result<&mut Self> {
-        let tx = self.memdb.as_mut().transaction()?;
+        let tx = self
+            .memdb
+            .as_mut()
+            .transaction()
+            .context("while starting feature add transaction")?;
         tx.execute(
             "INSERT INTO feature (value, pending) VALUES (?, ?)",
             (
                 serde_json::to_string(feature.feature()).map_err(Error::GraphSerde)?,
                 true,
             ),
-        )?;
+        )
+        .context("while inserting feature")?;
         let feature_id = tx.last_insert_rowid();
         for item in feature.provides() {
             let key = item.key();
@@ -232,12 +197,14 @@ impl GraphBuilder {
                     key.fact_kind(),
                     key.to_fact_key().as_ref(),
                 ),
-            )?;
+            )
+            .context("while inserting feature provides item")?;
             let item_id = tx.last_insert_rowid();
             tx.execute(
                 "INSERT OR IGNORE INTO provides (feature, item) VALUES (?, ?)",
                 (feature_id, item_id),
-            )?;
+            )
+            .context("while inserting feature provides edge")?;
         }
         for req in feature.requires() {
             tx.execute(
@@ -250,10 +217,12 @@ impl GraphBuilder {
                     req.ordered,
                     serde_json::to_string(&req.validator).map_err(Error::GraphSerde)?,
                 ),
-            )?;
+            )
+            .context("while inserting feature requires edge")?;
         }
 
-        tx.commit()?;
+        tx.commit()
+            .context("while committing feature add transaction")?;
         Ok(self)
     }
 
@@ -571,16 +540,24 @@ impl Graph {
 
     pub fn write_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
         let _ = std::fs::remove_file(path.as_ref());
-        self.db.as_ref().pragma_update(None, "query_only", "0")?;
         self.db
             .as_ref()
-            .prepare("VACUUM INTO ?")?
+            .pragma_update(None, "query_only", "0")
+            .context("while disabling query_only mode")?;
+        self.db
+            .as_ref()
+            .prepare("VACUUM INTO ?")
+            .context("while preparing VACUUM statement")?
             .execute([path
                 .as_ref()
                 .to_str()
                 .ok_or_else(|| rusqlite::Error::InvalidPath(path.as_ref().to_owned()))?])
-            .map(|_| ())?;
-        self.db.as_ref().pragma_update(None, "query_only", "1")?;
+            .map(|_| ())
+            .with_context(|| format!("while vacuuming into {}", path.as_ref().display()))?;
+        self.db
+            .as_ref()
+            .pragma_update(None, "query_only", "1")
+            .context("while re-enabling query_only mode")?;
         Ok(())
     }
 }
