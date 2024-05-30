@@ -25,6 +25,7 @@ def test_rpms(
         features: list[typing.Any] = [],
         parent_layer: str | None = None,
         dnf_additional_repos: list[str] = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
+        dnf_available_repos: str | None = None,
         dnf_versionlock: str | None = None,
         dnf_versionlock_extend: dict[str, str] | None = None,
         dnf_excluded_rpms: list[str] | None = None,
@@ -45,6 +46,7 @@ def test_rpms(
         dnf_versionlock = dnf_versionlock,
         dnf_versionlock_extend = dnf_versionlock_extend,
         dnf_excluded_rpms = dnf_excluded_rpms,
+        dnf_available_repos = dnf_available_repos,
     )
     image_sh_test(
         name = name,
