@@ -30,6 +30,7 @@ import hawkey
 import libdnf
 import rpm as librpm
 from dnf.i18n import ucd
+from dnf.module.module_base import ModuleBase
 
 spec = importlib.util.spec_from_file_location(
     "antlir2_dnf_base", "/__antlir2__/dnf/base.py"
@@ -214,6 +215,14 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
         sack=base.sack, versionlock=versionlock
     )
 
+    module_base = ModuleBase(base)
+    module_enable = []
+    for item in spec["items"]:
+        if item["action"] == "module_enable":
+            module_spec = item["rpm"]["subject"]
+            module_base.enable([module_spec])
+            module_enable.append(module_spec)
+
     for item in spec["items"]:
         action = item["action"]
         rpm = item["rpm"]
@@ -265,6 +274,9 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
                 # anything
                 pass
             explicitly_removed_package_names.add(rpm["subject"])
+        elif action == "module_enable":
+            # The modules have already been enabled at this point
+            pass
         else:
             raise RuntimeError(f"unknown action '{action}'")
 
@@ -313,6 +325,7 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
                         }
                     ],
                     "remove": [package_struct(p) for p in base.transaction.remove_set],
+                    "module_enable": module_enable,
                 }
             },
             o,
@@ -402,6 +415,9 @@ def driver(spec) -> None:
     assert mode == "run"
     assert "resolved_transaction" in spec
 
+    module_base = ModuleBase(base)
+    for module_spec in spec["resolved_transaction"]["module_enable"]:
+        module_base.enable([module_spec])
     for install in spec["resolved_transaction"]["install"]:
         base.install(
             install["nevra"],

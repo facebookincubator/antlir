@@ -55,6 +55,7 @@ pub enum Action {
     Upgrade,
     Remove,
     RemoveIfExists,
+    ModuleEnable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
@@ -177,19 +178,22 @@ impl antlir2_compile::CompileFeature for Rpm {
             return Err(Error::msg("expected exactly one event in resolve-only mode").into());
         }
         match &events[0] {
-            DriverEvent::TransactionResolved { install, remove } => {
-                Ok(vec![plan::Item::DnfTransaction(DnfTransaction {
-                    install: install
-                        .iter()
-                        .map(|ip| plan::InstallPackage {
-                            nevra: ip.package.nevra(),
-                            repo: ip.repo.clone(),
-                            reason: ip.reason,
-                        })
-                        .collect(),
-                    remove: remove.iter().map(|p| p.nevra()).collect(),
-                })])
-            }
+            DriverEvent::TransactionResolved {
+                install,
+                remove,
+                module_enable,
+            } => Ok(vec![plan::Item::DnfTransaction(DnfTransaction {
+                install: install
+                    .iter()
+                    .map(|ip| plan::InstallPackage {
+                        nevra: ip.package.nevra(),
+                        repo: ip.repo.clone(),
+                        reason: ip.reason,
+                    })
+                    .collect(),
+                remove: remove.iter().map(|p| p.nevra()).collect(),
+                module_enable: module_enable.clone(),
+            })]),
             _ => Err(Error::msg("resolve-only event should have been TransactionResolved").into()),
         }
     }
@@ -273,12 +277,13 @@ struct InstallPackage {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 #[allow(dead_code)] // I want to log structured data
 enum DriverEvent {
     TransactionResolved {
         install: BTreeSet<InstallPackage>,
         remove: BTreeSet<Package>,
+        module_enable: BTreeSet<String>,
     },
     TxItem {
         package: Package,
