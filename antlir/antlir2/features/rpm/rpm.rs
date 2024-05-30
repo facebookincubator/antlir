@@ -8,7 +8,10 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::fs::Permissions;
 use std::io::Seek;
+use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -30,6 +33,7 @@ use serde::de::Error as _;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Deserializer;
+use tempfile::NamedTempFile;
 use tracing::trace;
 
 pub type Feature = Rpm;
@@ -355,6 +359,12 @@ fn run_dnf_driver(
         .context("while serializing dnf-driver input")?;
     mfd.as_file().rewind()?;
 
+    let mut driver = NamedTempFile::new()?;
+    driver
+        .as_file()
+        .set_permissions(Permissions::from_mode(0o555))?;
+    driver.write_all(include_bytes!("./driver.py"))?;
+
     let isol = IsolationContext::builder(ctx.build_appliance())
         .ephemeral(false)
         .readonly()
@@ -375,10 +385,12 @@ fn run_dnf_driver(
         // even though the build appliance is mounted readonly, python is still
         // somehow writing .pyc cache files, just ban it
         .setenv(("PYTHONDONTWRITEBYTECODE", "1"))
+        .inputs((Path::new("/tmp/dnf-driver"), driver.path()))
         .build();
     let isol = unshare(isol)?;
 
-    let mut cmd = isol.command("/__antlir2__/dnf/driver")?;
+    let mut cmd = isol.command("/usr/libexec/platform-python")?;
+    cmd.arg("/tmp/dnf-driver");
     trace!("dnf driver command: {cmd:#?}");
 
     let mut child = cmd
