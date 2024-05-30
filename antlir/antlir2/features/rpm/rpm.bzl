@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -164,11 +165,31 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
         },
     )
 
+def dnf_module_enable(*, name: str | Select, stream: str | Select):
+    """
+    Enable this DNF module before resolving the DNF transaction
+
+    See this page for more details about modules
+    https://docs.fedoraproject.org/en-US/modularity/using-modules/
+    """
+    return ParseTimeFeature(
+        feature_type = "rpm",
+        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
+        kwargs = {
+            "action": "module_enable",
+            "subjects": [selects.apply(
+                selects.join(name = name, stream = stream),
+                lambda sels: ":".join([sels.name, sels.stream]),
+            )],
+        },
+    )
+
 action_enum = enum(
     "install",
     "remove",
     "remove_if_exists",
     "upgrade",
+    "module_enable",
 )
 
 rpm_source_record = record(
@@ -228,7 +249,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 rpms_rule = rule(
     impl = _impl,
     attrs = {
-        "action": attrs.enum(["install", "remove", "remove_if_exists", "upgrade"]),
+        "action": attrs.enum(["install", "remove", "remove_if_exists", "upgrade", "module_enable"]),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "subjects": attrs.list(attrs.string()),
         "subjects_src": attrs.option(attrs.source(), default = None),

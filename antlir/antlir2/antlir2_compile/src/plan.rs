@@ -104,6 +104,7 @@ pub enum RpmReason {
 pub struct DnfTransaction {
     pub install: BTreeSet<InstallPackage>,
     pub remove: BTreeSet<Nevra>,
+    pub module_enable: BTreeSet<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

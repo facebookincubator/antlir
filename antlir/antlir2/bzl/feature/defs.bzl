@@ -16,7 +16,7 @@ load("//antlir/antlir2/features/install:install.bzl", "install", "install_text")
 load("//antlir/antlir2/features/mount:mount.bzl", "host_mount", "layer_mount")
 load("//antlir/antlir2/features/remove:remove.bzl", "remove")
 load("//antlir/antlir2/features/requires:requires.bzl", "requires")
-load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_install", "rpms_remove", "rpms_remove_if_exists", "rpms_upgrade")
+load("//antlir/antlir2/features/rpm:rpm.bzl", "dnf_module_enable", "rpms_install", "rpms_remove", "rpms_remove_if_exists", "rpms_upgrade")
 load("//antlir/antlir2/features/symlink:symlink.bzl", "ensure_dir_symlink", "ensure_file_symlink")
 load("//antlir/antlir2/features/tarball:tarball.bzl", "tarball")
 load("//antlir/antlir2/features/user:user.bzl", "standard_user", "user_add")
@@ -41,6 +41,7 @@ feature = struct(
     rpms_remove = rpms_remove,
     rpms_remove_if_exists = rpms_remove_if_exists,
     rpms_upgrade = rpms_upgrade,
+    dnf_module_enable = dnf_module_enable,
     ensure_file_symlink = ensure_file_symlink,
     ensure_dir_symlink = ensure_dir_symlink,
     tarball = tarball,
