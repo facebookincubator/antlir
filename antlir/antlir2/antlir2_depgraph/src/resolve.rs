@@ -33,8 +33,7 @@ fn get_path_item(conn: &Connection, path: &Path) -> Result<Option<PathItem>> {
                 .as_str()],
             |row| row.get::<_, String>("value"),
         )
-        .optional()
-        .map_err(Error::Sqlite)?;
+        .optional()?;
     match json {
         Some(json) => serde_json::from_str::<Item>(&json)
             .map_err(Error::GraphSerde)

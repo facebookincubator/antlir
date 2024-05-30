@@ -12,6 +12,7 @@ use petgraph::graph::DiGraph;
 use petgraph::visit::Dfs;
 use rusqlite::Connection;
 
+use crate::error::ContextExt;
 use crate::Cycle;
 use crate::Error;
 use crate::Result;
@@ -38,12 +39,14 @@ pub(crate) fn toposort(db: &Connection) -> Result<Vec<Feature>> {
                 f.pending=1
             ORDER BY id ASC
         "#,
-        )?
+        )
+        .context("while preparing toposort query")?
         .query_map([], |row| {
             let feature: i64 = row.get("id")?;
             let requires_feature: Option<i64> = row.get("requires_feature")?;
             Ok((feature, requires_feature))
-        })?
+        })
+        .context("while executing toposort query")?
     {
         let (feature, requires_feature) = row?;
         let feature = *nodes
@@ -56,26 +59,26 @@ pub(crate) fn toposort(db: &Connection) -> Result<Vec<Feature>> {
             graph.update_edge(requires_feature, feature, ());
         }
     }
+    let mut features: FxHashMap<_, _> = db
+        .prepare("SELECT id, value FROM feature WHERE pending=1")
+        .context("while preparing toposort load query")?
+        .query_and_then([], |row| {
+            let id: i64 = row.get("id")?;
+            let feature: Feature = serde_json::from_str(
+                row.get_ref("value")?
+                    .as_str()
+                    .map_err(rusqlite::Error::from)?,
+            )
+            .map_err(Error::GraphSerde)?;
+            Ok((id, feature))
+        })
+        .context("while executing toposort load query")?
+        .collect::<Result<_>>()?;
     match petgraph::algo::toposort(&graph, None) {
-        Ok(sorted) => {
-            let mut features: FxHashMap<_, _> = db
-                .prepare("SELECT id, value FROM feature WHERE pending=1")?
-                .query_and_then([], |row| {
-                    let id: i64 = row.get("id")?;
-                    let feature: Feature = serde_json::from_str(
-                        row.get_ref("value")?
-                            .as_str()
-                            .map_err(rusqlite::Error::from)?,
-                    )
-                    .map_err(Error::GraphSerde)?;
-                    Ok((id, feature))
-                })?
-                .collect::<Result<_>>()?;
-            Ok(sorted
-                .into_iter()
-                .filter_map(|nx| features.remove(&graph[nx]))
-                .collect())
-        }
+        Ok(sorted) => Ok(sorted
+            .into_iter()
+            .filter_map(|nx| features.remove(&graph[nx]))
+            .collect()),
         Err(node_in_cycle) => {
             // there might be multiple cycles, we really only need to find
             // one though
@@ -95,19 +98,6 @@ pub(crate) fn toposort(db: &Connection) -> Result<Vec<Feature>> {
                     {
                         cycle.rotate_left(min_idx);
                     }
-                    let mut features: FxHashMap<_, _> = db
-                        .prepare("SELECT id, value FROM feature WHERE pending=1")?
-                        .query_and_then([], |row| {
-                            let id: i64 = row.get("id")?;
-                            let feature: Feature = serde_json::from_str(
-                                row.get_ref("value")?
-                                    .as_str()
-                                    .map_err(rusqlite::Error::from)?,
-                            )
-                            .map_err(Error::GraphSerde)?;
-                            Ok((id, feature))
-                        })?
-                        .collect::<Result<_>>()?;
                     return Err(Error::Cycle(Cycle(
                         cycle
                             .into_iter()
