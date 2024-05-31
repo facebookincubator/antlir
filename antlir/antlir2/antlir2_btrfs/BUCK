@@ -48,6 +48,7 @@ image_rust_test(
     layer = ":test-layer",
     rootless = False,
     target_compatible_with = [
+        "ovr_config//cpu:x86_64",
         "ovr_config//os:linux",
         "//antlir/antlir2/antlir2_rootless:rooted",
     ],
@@ -62,6 +63,7 @@ image_rust_test(
     run_as_user = "nobody",
     rustc_flags = ["--cfg=unprivileged"],
     target_compatible_with = [
+        "ovr_config//cpu:x86_64",
         "ovr_config//os:linux",
         "//antlir/antlir2/antlir2_rootless:rooted",
     ],
