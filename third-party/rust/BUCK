@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "a74e8a74bc3407b5444d6a3d2ba39422aad5a25b",
+    rev = "3854633a400e2aa6f59c7d8b8102ef45de70c7bc",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "638f3034230580eb556ab0515c8da88394e4dff6",
+    rev = "a28a4399772ca7dc77ea80541f3cb6dd7d2998a5",
     visibility = [],
 )
 
@@ -772,7 +772,7 @@ cargo.rust_library(
     deps = [
         ":bitflags-2.5.0",
         ":cexpr-0.6.0",
-        ":clang-sys-1.8.2",
+        ":clang-sys-1.8.1",
         ":itertools-0.12.1",
         ":lazy_static-1.4.0",
         ":lazycell-1.3.0",
@@ -1471,26 +1471,26 @@ cargo.rust_library(
 
 alias(
     name = "clang-sys",
-    actual = ":clang-sys-1.8.2",
+    actual = ":clang-sys-1.8.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "clang-sys-1.8.2.crate",
-    sha256 = "f803f94ecf597339c7a34eed2036ef83f86aaba937f001f7c5b5e251f043f1f9",
-    strip_prefix = "clang-sys-1.8.2",
-    urls = ["https://static.crates.io/crates/clang-sys/1.8.2/download"],
+    name = "clang-sys-1.8.1.crate",
+    sha256 = "0b023947811758c97c59bf9d1c188fd619ad4718dcaa767947df1cadb14f39f4",
+    strip_prefix = "clang-sys-1.8.1",
+    urls = ["https://static.crates.io/crates/clang-sys/1.8.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "clang-sys-1.8.2",
-    srcs = [":clang-sys-1.8.2.crate"],
+    name = "clang-sys-1.8.1",
+    srcs = [":clang-sys-1.8.1.crate"],
     crate = "clang_sys",
-    crate_root = "clang-sys-1.8.2.crate/src/lib.rs",
+    crate_root = "clang-sys-1.8.1.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :clang-sys-1.8.2-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :clang-sys-1.8.1-build-script-run[out_dir])",
     },
     features = [
         "clang_10_0",
@@ -1510,7 +1510,7 @@ cargo.rust_library(
         "libloading",
         "runtime",
     ],
-    rustc_flags = ["@$(location :clang-sys-1.8.2-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :clang-sys-1.8.1-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":glob-0.3.1",
@@ -1520,10 +1520,10 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "clang-sys-1.8.2-build-script-build",
-    srcs = [":clang-sys-1.8.2.crate"],
+    name = "clang-sys-1.8.1-build-script-build",
+    srcs = [":clang-sys-1.8.1.crate"],
     crate = "build_script_build",
-    crate_root = "clang-sys-1.8.2.crate/build.rs",
+    crate_root = "clang-sys-1.8.1.crate/build.rs",
     edition = "2021",
     features = [
         "clang_10_0",
@@ -1548,9 +1548,9 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "clang-sys-1.8.2-build-script-run",
+    name = "clang-sys-1.8.1-build-script-run",
     package_name = "clang-sys",
-    buildscript_rule = ":clang-sys-1.8.2-build-script-build",
+    buildscript_rule = ":clang-sys-1.8.1-build-script-build",
     features = [
         "clang_10_0",
         "clang_11_0",
@@ -1569,7 +1569,7 @@ buildscript_run(
         "libloading",
         "runtime",
     ],
-    version = "1.8.2",
+    version = "1.8.1",
 )
 
 http_archive(
@@ -4787,7 +4787,7 @@ cargo.rust_library(
         ":http-0.2.12",
         ":indexmap-2.2.6",
         ":slab-0.4.9",
-        ":tokio-1.37.0",
+        ":tokio-1.38.0",
         ":tokio-util-0.7.11",
         ":tracing-0.1.40",
     ],
@@ -5235,7 +5235,7 @@ cargo.rust_library(
         ":itoa-1.0.11",
         ":pin-project-lite-0.2.14",
         ":socket2-0.5.7",
-        ":tokio-1.37.0",
+        ":tokio-1.38.0",
         ":tower-service-0.3.2",
         ":tracing-0.1.40",
         ":want-0.3.1",
@@ -5267,7 +5267,7 @@ cargo.rust_library(
         ":bytes-1.6.0",
         ":hyper-0.14.28",
         ":native-tls-0.2.12",
-        ":tokio-1.37.0",
+        ":tokio-1.38.0",
         ":tokio-native-tls-0.3.1",
     ],
 )
@@ -13270,23 +13270,23 @@ cargo.rust_library(
 
 alias(
     name = "tokio",
-    actual = ":tokio-1.37.0",
+    actual = ":tokio-1.38.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tokio-1.37.0.crate",
-    sha256 = "1adbebffeca75fcfd058afa480fb6c0b81e165a0323f9c9d39c9697e37c46787",
-    strip_prefix = "tokio-1.37.0",
-    urls = ["https://static.crates.io/crates/tokio/1.37.0/download"],
+    name = "tokio-1.38.0.crate",
+    sha256 = "ba4f4a02a7a80d6f274636f0aa95c7e383b912d41fe721a31f29e29698585a4a",
+    strip_prefix = "tokio-1.38.0",
+    urls = ["https://static.crates.io/crates/tokio/1.38.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tokio-1.37.0",
-    srcs = [":tokio-1.37.0.crate"],
+    name = "tokio-1.38.0",
+    srcs = [":tokio-1.38.0.crate"],
     crate = "tokio",
-    crate_root = "tokio-1.37.0.crate/src/lib.rs",
+    crate_root = "tokio-1.38.0.crate/src/lib.rs",
     edition = "2021",
     features = [
         "bytes",
@@ -13363,23 +13363,23 @@ cargo.rust_library(
         ":num_cpus-1.16.0",
         ":parking_lot-0.12.3",
         ":pin-project-lite-0.2.14",
-        ":tokio-macros-2.2.0",
+        ":tokio-macros-2.3.0",
     ],
 )
 
 http_archive(
-    name = "tokio-macros-2.2.0.crate",
-    sha256 = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b",
-    strip_prefix = "tokio-macros-2.2.0",
-    urls = ["https://static.crates.io/crates/tokio-macros/2.2.0/download"],
+    name = "tokio-macros-2.3.0.crate",
+    sha256 = "5f5ae998a069d4b5aba8ee9dad856af7d520c3699e6159b185c2acd48155d39a",
+    strip_prefix = "tokio-macros-2.3.0",
+    urls = ["https://static.crates.io/crates/tokio-macros/2.3.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tokio-macros-2.2.0",
-    srcs = [":tokio-macros-2.2.0.crate"],
+    name = "tokio-macros-2.3.0",
+    srcs = [":tokio-macros-2.3.0.crate"],
     crate = "tokio_macros",
-    crate_root = "tokio-macros-2.2.0.crate/src/lib.rs",
+    crate_root = "tokio-macros-2.3.0.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
@@ -13407,7 +13407,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":native-tls-0.2.12",
-        ":tokio-1.37.0",
+        ":tokio-1.38.0",
     ],
 )
 
@@ -13455,7 +13455,7 @@ cargo.rust_library(
         ":futures-util-0.3.30",
         ":pin-project-lite-0.2.14",
         ":slab-0.4.9",
-        ":tokio-1.37.0",
+        ":tokio-1.38.0",
     ],
 )
 
