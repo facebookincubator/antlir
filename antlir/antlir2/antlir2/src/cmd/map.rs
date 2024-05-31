@@ -22,8 +22,6 @@ use tracing::warn;
 
 use super::compile::Compile;
 use super::compile::CompileExternal;
-use super::plan::Plan;
-use super::plan::PlanExternal;
 use super::Compileish;
 use super::CompileishExternal;
 use crate::Result;
@@ -37,8 +35,6 @@ pub(crate) struct Map {
     label: Label,
     #[clap(flatten)]
     setup: SetupArgs,
-    #[clap(long)]
-    build_appliance: PathBuf,
     #[clap(long)]
     /// Use an unprivileged usernamespace
     rootless: bool,
@@ -58,11 +54,6 @@ struct SetupArgs {
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
-    #[clap(flatten)]
-    dnf: super::DnfCompileishArgs,
-    #[cfg(facebook)]
-    #[clap(flatten)]
-    fbpkg: super::FbpkgCompileishArgs,
 }
 
 #[derive(Parser, Debug)]
@@ -72,12 +63,6 @@ enum Subcommand {
         compileish: CompileishExternal,
         #[clap(flatten)]
         external: CompileExternal,
-    },
-    Plan {
-        #[clap(flatten)]
-        compileish: CompileishExternal,
-        #[clap(flatten)]
-        external: PlanExternal,
     },
 }
 
@@ -141,6 +126,8 @@ impl Map {
         drop(root_guard);
 
         match self.subcommand {
+            // TODO: refactor the surrounding code now that there is only one
+            // subcommand
             Subcommand::Compile {
                 compileish,
                 external,
@@ -148,27 +135,7 @@ impl Map {
                 compileish: Compileish {
                     label: self.label,
                     root: subvol.path().to_owned(),
-                    build_appliance: self.build_appliance,
                     external: compileish,
-                    dnf: self.setup.dnf,
-                    #[cfg(facebook)]
-                    fbpkg: self.setup.fbpkg,
-                },
-                external,
-            }
-            .run(rootless),
-            Subcommand::Plan {
-                compileish,
-                external,
-            } => Plan {
-                compileish: Compileish {
-                    label: self.label,
-                    root: subvol.path().to_owned(),
-                    build_appliance: self.build_appliance,
-                    external: compileish,
-                    dnf: self.setup.dnf,
-                    #[cfg(facebook)]
-                    fbpkg: self.setup.fbpkg,
                 },
                 external,
             }

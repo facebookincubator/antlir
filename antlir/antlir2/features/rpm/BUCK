@@ -1,4 +1,5 @@
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 oncall("antlir")
 
@@ -12,5 +13,24 @@ feature_impl(
         "tempfile",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/buck/buck_label:buck_label",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
+
+rust_binary(
+    name = "plan",
+    srcs = ["plan.rs"],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "serde_json",
+        "tracing",
+        "tracing-subscriber",
+        ":rpm.lib",
+        "//antlir/antlir2/antlir2_compile:antlir2_compile",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/buck/buck_label:buck_label",
+        "//antlir/util/cli/json_arg:json_arg",
     ],
 )

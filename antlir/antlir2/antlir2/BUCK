@@ -14,7 +14,6 @@ rust_binary(
         "anyhow",
         "clap",
         "colored",
-        "itertools",
         "nix",
         "serde_json",
         "thiserror",

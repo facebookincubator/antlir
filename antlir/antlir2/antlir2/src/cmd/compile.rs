@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use antlir2_compile::plan::Plan;
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use antlir2_compile::CompileFeature;
 use antlir2_depgraph::Graph;
 use antlir2_rootless::Rootless;
@@ -32,16 +34,27 @@ pub(crate) struct Compile {
 /// 'isolate' subcommand.
 pub(super) struct CompileExternal {
     #[clap(long)]
-    /// Pre-computed plan for this compilation phase
-    plan: Option<JsonFile<Plan>>,
+    /// Pre-computed plans for this compilation phase
+    plans: JsonFile<HashMap<String, PathBuf>>,
 }
 
 impl Compile {
-    #[tracing::instrument(name = "compile", skip(self), ret, err)]
+    #[tracing::instrument(name = "compile", skip(self, rootless), ret, err)]
     pub(crate) fn run(self, rootless: Option<Rootless>) -> Result<()> {
-        let ctx = self
-            .compileish
-            .compiler_context(self.external.plan.map(JsonFile::into_inner))?;
+        let plans = self
+            .external
+            .plans
+            .into_inner()
+            .into_iter()
+            .map(|(id, path)| {
+                let plan = std::fs::read_to_string(&path)
+                    .with_context(|| format!("while reading plan '{}'", path.display()))?;
+                let plan = serde_json::from_str(&plan)
+                    .with_context(|| format!("while parsing plan '{}'", path.display()))?;
+                Ok((id, plan))
+            })
+            .collect::<Result<_>>()?;
+        let ctx = self.compileish.compiler_context(plans)?;
         let root_guard = rootless.map(|r| r.escalate()).transpose()?;
         let depgraph =
             Graph::open(self.compileish.external.depgraph).context("while opening depgraph")?;

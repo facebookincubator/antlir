@@ -73,14 +73,15 @@ def _possible_rpm_artifacts(*, rpm_info: RpmInfo | Provider, reflink_flavor: str
     return artifacts
 
 def compiler_plan_to_local_repos(
+        *,
         ctx: AnalysisContext,
         identifier: str,
         dnf_available_repos: list[RepoInfo | Provider],
-        compiler_plan: Artifact,
+        tx: Artifact,
         reflink_flavor: str | None) -> Artifact:
     """
-    Use the compiler plan to build a directory of all the RPM repodata and RPM
-    blobs we need to perform the dnf installations in the image.
+    Use the planned dnf transaction to build a directory of all the RPM repodata
+    and RPM blobs we need to perform the dnf installations in the image.
     """
     dir = ctx.actions.declare_output(identifier, "dnf_repos", dir = True)
 
@@ -91,9 +92,8 @@ def compiler_plan_to_local_repos(
         for rpm_info in repo_info.all_rpms:
             by_repo[repo_info.id]["nevras"][nevra_to_string(rpm_info.nevra)] = rpm_info
 
-    def _dyn(ctx, artifacts, outputs, plan = compiler_plan, by_repo = by_repo, dir = dir):
-        plan = artifacts[plan].read_json()
-        tx = plan.get("dnf_transaction", {"install": []})
+    def _dyn(ctx, artifacts, outputs, tx = tx, by_repo = by_repo, dir = dir):
+        tx = artifacts[tx].read_json()
         tree = {}
 
         # all repodata is made available even if there are no rpms being
@@ -116,15 +116,19 @@ def compiler_plan_to_local_repos(
             if install["repo"] == None:
                 continue
 
+            nevra = "{name}-{epoch}:{version}-{release}.{arch}".format(
+                **install["package"]
+            )
+
             # The same exact NEVRA may appear in multiple repositories, and then
             # we have no guarantee that dnf will resolve the transaction the
             # same way, so we must look in every repo in addition to the one
             # that was initially recorded
             for repo in by_repo.values():
-                if install["nevra"] in repo["nevras"]:
+                if nevra in repo["nevras"]:
                     repo_i = repo["repo_info"]
-                    rpm_i = repo["nevras"][install["nevra"]]
-                    tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = _best_rpm_artifact(
+                    rpm_i = repo["nevras"][nevra]
+                    tree[paths.join(repo_i.id, package_href(nevra, rpm_i.pkgid))] = _best_rpm_artifact(
                         rpm_info = rpm_i,
                         reflink_flavor = reflink_flavor,
                     )
@@ -135,7 +139,7 @@ def compiler_plan_to_local_repos(
                 # possible so jot that down) because the dnf transaction
                 # resolution will fail before we even get to this, but format a
                 # nice warning anyway.
-                fail("'{}' does not appear in any repos".format(install["nevra"]))
+                fail("'{}' does not appear in any repos".format(nevra))
 
         # copied_dir instead of symlink_dir so that this can be directly bind
         # mounted into the container
@@ -155,7 +159,7 @@ def compiler_plan_to_local_repos(
 
     ctx.actions.dynamic_output(
         # the dynamic action reads this
-        dynamic = [compiler_plan],
+        dynamic = [tx],
         inputs = inputs,
         # to produce this, a directory that contains a (partial, but complete
         # for the transaction) copy of the repos needed to do the installation

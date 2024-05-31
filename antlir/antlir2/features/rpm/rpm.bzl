@@ -6,6 +6,10 @@
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
+load(
+    "//antlir/antlir2/bzl:types.bzl",
+    "BuildApplianceInfo",  # @unused Used as type
+)
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -15,6 +19,7 @@ load(
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:structs.bzl", "structs")
+load(":plan.bzl", "rpm_planner")
 
 # a fully qualified rpm nevra with epoch will contain a ':' so we have to be a
 # little more particular than just checking "if ':' in s"
@@ -72,6 +77,9 @@ def _install_common(
         kwargs = {
             "action": action,
             "subjects": subjects,
+        },
+        exec_deps = {
+            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
         },
     )
 
@@ -141,6 +149,9 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
             "action": "remove_if_exists",
             "subjects": rpms,
         },
+        exec_deps = {
+            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
+        },
     )
 
 def rpms_remove(*, rpms: list[str | Select] | Select):
@@ -163,6 +174,9 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
             "action": "remove",
             "subjects": rpms,
         },
+        exec_deps = {
+            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
+        },
     )
 
 def dnf_module_enable(*, name: str | Select, stream: str | Select):
@@ -181,6 +195,9 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
                 selects.join(name = name, stream = stream),
                 lambda sels: ":".join([sels.name, sels.stream]),
             )],
+        },
+        exec_deps = {
+            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
         },
     )
 
@@ -239,10 +256,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 ],
             ),
             required_artifacts = artifacts,
-            requires_planning = True,
             build_phase = BuildPhase("package_manager"),
             plugin = ctx.attrs.plugin[FeaturePluginInfo],
             reduce_fn = _reduce_rpm_features,
+            planner = rpm_planner(plan = ctx.attrs.plan),
         ),
     ]
 
@@ -250,6 +267,7 @@ rpms_rule = rule(
     impl = _impl,
     attrs = {
         "action": attrs.enum(["install", "remove", "remove_if_exists", "upgrade", "module_enable"]),
+        "plan": attrs.exec_dep(providers = [RunInfo]),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "subjects": attrs.list(attrs.string()),
         "subjects_src": attrs.option(attrs.source(), default = None),
