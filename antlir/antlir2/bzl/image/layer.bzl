@@ -7,17 +7,15 @@ load("@prelude//utils:expect.bzl", "expect")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
-load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerInfo")
-load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
 
 load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-enable
 # @oss-disable
 
-load("//antlir/bzl:oss_shim.bzl", fb_attrs = "empty_dict", fb_defaults = "empty_dict") # @oss-enable
+load("//antlir/bzl:oss_shim.bzl", fb_defaults = "empty_dict") # @oss-enable
 # @oss-disable
 load(
     "//antlir/antlir2/features/mount:mount.bzl",
@@ -28,9 +26,6 @@ load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSe
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:types.bzl", "types")
-
-load("//antlir/bzl:oss_shim.bzl", SnapshottedFbpkgSetInfo = "none", compiler_plan_to_chef_fbpkgs = "ret_none") # @oss-enable
-# @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
@@ -42,11 +37,10 @@ load(
     "container_mount_args",
 )
 
-def _map_image(
+def _compile(
         ctx: AnalysisContext,
         cmd: cmd_args,
         identifier: str,
-        build_appliance: BuildApplianceInfo | Provider,
         parent: Artifact | None,
         logs: Artifact,
         rootless: bool) -> Artifact:
@@ -64,14 +58,13 @@ def _map_image(
             cmd_args(logs.as_output(), format = "--logs={}"),
             "map",
             "--working-dir=antlir2-out",
-            cmd_args(build_appliance.dir, format = "--build-appliance={}"),
             cmd_args(str(ctx.label), format = "--label={}"),
             cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
             cmd_args(out.as_output(), format = "--output={}"),
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd,
         ),
-        category = "antlir2_map",
+        category = "antlir2",
         env = {
             "RUST_LOG": "antlir2=trace",
         },
@@ -223,11 +216,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             ))
         dnf_available_repos.remove(to_remove)
 
-    dnf_repodatas = ctx.actions.anon_target(repodata_only_local_repos, {
-        "repos": dnf_available_repos,
-    }).artifact("repodatas")
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
-
     dnf_excluded_rpms = list(ctx.attrs.dnf_excluded_rpms) if ctx.attrs.dnf_excluded_rpms != None else list(flavor_info.dnf_info.default_excluded_rpms)
 
     # rpmsign is missing a dependency: /usr/lib64/libtss2-rc.so.0
@@ -239,11 +228,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # anywhere, just exclude it
     if "aziot-identity-service" not in dnf_excluded_rpms:
         dnf_excluded_rpms.append("aziot-identity-service")
-
-    if dnf_excluded_rpms:
-        dnf_excluded_rpms = ctx.actions.write_json("excluded_rpms.json", dnf_excluded_rpms)
-    else:
-        dnf_excluded_rpms = None
 
     # The image build is split into phases based on features' `build_phase`
     # property.
@@ -265,18 +249,14 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
     debug_sub_targets = {}
 
-    # Dirty hack to provide pre-computed dnf repos to multiple phases that
-    # comprise chef-solo image builds. Chef is full of things that require dirty
-    # hacks, and it's not worth the effort to make this gross thing be fully
-    # supported in a non-hacky manner
-    chef_plan_results = {}
+    # See Planner.previous_phase_plans for rationale
+    previous_phase_plans = {}
 
     for phase in BuildPhase.values():
         phase = BuildPhase(phase)
         logs = {}
 
         identifier = phase.value
-        identifier_prefix = phase.value + "_"
 
         # Cross-cell enum type comparisons can fail, so compare .value
         verify_build_phases([i.analysis.build_phase for i in all_features])
@@ -308,11 +288,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         target_arch = ctx.attrs._selected_target_arch
 
-        compileish_args = cmd_args(
-            cmd_args(target_arch, format = "--target-arch={}"),
-            cmd_args(facts_db, format = "--depgraph={}"),
-        )
-
         # All deps that are needed for *compiling* the features (but not
         # depgraph analysis)
         compile_feature_hidden_deps = [
@@ -334,92 +309,66 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             ),
         )
 
-        if lazy.any(lambda feat: feat.analysis.requires_planning, features):
-            plan = ctx.actions.declare_output(identifier, "plan.json")
-            logs["plan"] = ctx.actions.declare_output(identifier, "plan.log")
-            _map_image(
-                build_appliance = build_appliance[BuildApplianceInfo],
-                cmd = cmd_args(
-                    cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
-                    cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
-                    cmd_args(
-                        json.encode(ctx.attrs.dnf_versionlock_extend),
-                        format = "--dnf-versionlock-extend={}",
-                    ),
-                    cmd_args(dnf_excluded_rpms, format = "--dnf-excluded-rpms={}") if dnf_excluded_rpms else cmd_args(),
-                    "plan",
-                    compileish_args,
-                    cmd_args(plan.as_output(), format = "--plan={}"),
-                ).hidden(compile_feature_hidden_deps),
-                ctx = ctx,
-                identifier = identifier_prefix + "plan",
-                parent = subvol,
-                logs = logs["plan"],
-                rootless = ctx.attrs._rootless,
-            )
+        plans = {}
+        for feature in features:
+            planner = feature.analysis.planner
+            if planner:
+                kwargs = {}
+                if planner.label:
+                    kwargs["label"] = ctx.label
+                if planner.flavor:
+                    kwargs["flavor"] = flavor_info
+                if planner.build_appliance:
+                    kwargs["build_appliance"] = build_appliance[BuildApplianceInfo]
+                if planner.target_arch:
+                    kwargs["target_arch"] = target_arch
+                if planner.parent_subvol_symlink:
+                    kwargs["parent_subvol_symlink"] = subvol
+                if planner.dnf:
+                    kwargs |= {
+                        "dnf_available_repos": dnf_available_repos,
+                        "dnf_excluded_rpms": dnf_excluded_rpms,
+                        "dnf_versionlock": dnf_versionlock,
+                        "dnf_versionlock_extend": ctx.attrs.dnf_versionlock_extend,
+                    }
+                for id in planner.previous_phase_plans:
+                    if id not in previous_phase_plans:
+                        fail("previous_phase_plan '{}' does not exist".format(id))
+                    kwargs["previous_phase_plan_{}".format(id)] = previous_phase_plans[id]
 
-            # Part of the compiler plan is any possible dnf transaction resolution,
-            # which lets us know what rpms we will need. We can have buck download them
-            # and mount in a pre-built directory of all repositories for
-            # completely-offline dnf installation (which is MUCH faster and more
-            # reliable)
-            # TODO(T179081948): this should also be an anon_target
-            dnf_repos_dir = compiler_plan_to_local_repos(
-                ctx,
-                identifier,
-                [r[RepoInfo] for r in dnf_available_repos],
-                plan,
-                flavor_info.dnf_info.reflink_flavor,
-            )
-
-            if is_facebook:
-                available_fbpkgs = ctx.attrs.available_fbpkgs[SnapshottedFbpkgSetInfo]
-                (resolved_fbpkgs_json, resolved_fbpkgs_dir) = compiler_plan_to_chef_fbpkgs(
-                    ctx,
-                    identifier,
-                    available_fbpkgs,
-                    plan,
+                plan_infos = planner.fn(
+                    ctx = ctx,
+                    identifier = identifier,
+                    rootless = ctx.attrs._rootless,
+                    feature = feature,
+                    **(kwargs | planner.kwargs)
                 )
-            else:
-                resolved_fbpkgs_json = None
-                resolved_fbpkgs_dir = None
-        elif phase == BuildPhase("chef"):
-            plan = None
-            dnf_repos_dir = chef_plan_results["dnf_repos_dir"]
-            resolved_fbpkgs_json = chef_plan_results["resolved_fbpkgs_json"]
-            resolved_fbpkgs_dir = chef_plan_results["resolved_fbpkgs_dir"]
-        else:
-            plan = None
-            dnf_repos_dir = ctx.actions.declare_output(identifier, "empty-dnf-repos", dir = True)
-            ctx.actions.symlinked_dir(dnf_repos_dir, {})
-            resolved_fbpkgs_json = None
-            resolved_fbpkgs_dir = None
+                for pi in plan_infos:
+                    if pi.id in plans:
+                        fail("plan ids should be unique, but got '{}' multiple times".format(pi.id))
+                    plans[pi.id] = pi
+                    compile_feature_hidden_deps.append(pi.hidden)
+                    if pi.log:
+                        logs["plan_" + pi.id] = pi.log
+        previous_phase_plans = plans
 
-        if phase == BuildPhase("chef_package_manager"):
-            chef_plan_results["dnf_repos_dir"] = dnf_repos_dir
-            chef_plan_results["resolved_fbpkgs_json"] = resolved_fbpkgs_json
-            chef_plan_results["resolved_fbpkgs_dir"] = resolved_fbpkgs_dir
+        logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
 
-        logs["compile"] = ctx.actions.declare_output(identifier + "compile.log")
-        if resolved_fbpkgs_dir:
-            compile_feature_hidden_deps.append(resolved_fbpkgs_dir)
+        plans = ctx.actions.write_json(
+            ctx.actions.declare_output(identifier, "plans.json"),
+            {id: pi.output for id, pi in plans.items()},
+            with_inputs = True,
+        )
 
-        subvol = _map_image(
-            build_appliance = build_appliance[BuildApplianceInfo],
+        subvol = _compile(
             cmd = cmd_args(
-                cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
-                cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
-                cmd_args(
-                    json.encode(ctx.attrs.dnf_versionlock_extend),
-                    format = "--dnf-versionlock-extend={}",
-                ),
-                # @oss-disable
                 "compile",
-                compileish_args,
-                cmd_args(plan, format = "--plan={}") if plan else cmd_args(),
+                cmd_args(target_arch, format = "--target-arch={}"),
+                cmd_args(facts_db, format = "--depgraph={}"),
+                cmd_args(plans, format = "--plans={}"),
             ).hidden(compile_feature_hidden_deps),
             ctx = ctx,
-            identifier = identifier_prefix + "compile",
+            identifier = identifier,
             parent = subvol,
             logs = logs["compile"],
             rootless = ctx.attrs._rootless,
@@ -590,8 +539,6 @@ _layer_attrs.update(
     },
 )
 
-# @oss-disable
-
 layer_rule = rule(
     impl = _impl,
     attrs = _layer_attrs,
@@ -634,18 +581,8 @@ def layer(
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
     if is_facebook:
-        # available_fbpkgs is logically an optional dep, but to make it truly
-        # optional for using layers in anon_targets, we must just set the
-        # default at the macro layer
-        # TODO(vmagro): the best fix is to introduce this dep only on the
-        # chef_solo feature itself, but that's trickier to accomplish
-        kwargs.setdefault(
-            "available_fbpkgs",
-            "fbcode//bot_generated/antlir/fbpkg/db/main_db:snapshotted_fbpkgs",
-        )
-
-        # Likewise here, set it as a default in the macro layer so that it
-        # doesn't need to be set for anon layers
+        # Set this as a default in the macro layer so that it doesn't need to be
+        # set for anon layers
         kwargs.setdefault(
             "_dnf_auto_additional_repos",
             fb_defaults["_dnf_auto_additional_repos"],

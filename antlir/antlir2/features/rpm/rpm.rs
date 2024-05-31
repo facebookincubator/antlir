@@ -8,16 +8,18 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::fs::Permissions;
+use std::io::BufReader;
+use std::io::BufWriter;
 use std::io::Seek;
 use std::io::Write;
+use std::ops::Deref;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_compile::plan;
-use antlir2_compile::plan::DnfTransaction;
 use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph_if::item::Item;
@@ -29,11 +31,15 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use buck_label::Label;
+use json_arg::JsonFile;
 use serde::de::Error as _;
+use serde::ser::SerializeStruct;
+use serde::ser::Serializer;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Deserializer;
 use tempfile::NamedTempFile;
+use tempfile::TempDir;
 use tracing::trace;
 
 pub type Feature = Rpm;
@@ -116,6 +122,7 @@ pub struct RpmItem {
     Serialize,
     Default
 )]
+#[serde(deny_unknown_fields)]
 pub struct Rpm {
     pub items: Vec<RpmItem>,
     #[serde(skip_deserializing)]
@@ -138,6 +145,18 @@ pub struct InternalOnlyOptions {
     pub ignore_scriptlet_errors: bool,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Plan {
+    #[serde(rename = "tx_file")]
+    tx: JsonFile<ResolvedTransaction>,
+    build_appliance: PathBuf,
+    repos: PathBuf,
+    versionlock: Option<JsonFile<HashMap<String, String>>>,
+    versionlock_extend: HashMap<String, String>,
+    excluded_rpms: BTreeSet<String>,
+}
+
 impl antlir2_depgraph_if::RequiresProvides for Rpm {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
@@ -149,52 +168,67 @@ impl antlir2_depgraph_if::RequiresProvides for Rpm {
 }
 
 impl antlir2_compile::CompileFeature for Rpm {
-    #[tracing::instrument(name = "rpms", skip(self, ctx), ret, err)]
+    #[tracing::instrument(name = "rpms", skip(self, ctx), ret, err(Debug))]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
+        let plan: Plan = ctx
+            .plan("rpm")
+            .context("rpm feature was not planned")?
+            .context("while loading rpm plan")?;
         run_dnf_driver(
-            ctx,
+            DriverContext::Compile {
+                ctx,
+                build_appliance: plan.build_appliance,
+                repos: plan.repos,
+                versionlock: plan
+                    .versionlock
+                    .map(JsonFile::into_inner)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .chain(plan.versionlock_extend.into_iter())
+                    .collect(),
+                excluded_rpms: plan.excluded_rpms,
+            },
             &self.items,
             DriverMode::Run,
-            ctx.plan()
-                .expect("rpms feature is always planned")
-                .dnf_transaction()
-                .cloned(),
+            Some(plan.tx.into_inner()),
             &self.internal_only_options,
         )
         .map(|_| ())
         .map_err(antlir2_compile::Error::from)
     }
+}
 
-    #[tracing::instrument(name = "rpms[plan]", skip(self, ctx), ret, err)]
-    fn plan(&self, ctx: &CompilerContext) -> antlir2_compile::Result<Vec<plan::Item>> {
-        let events = run_dnf_driver(
+impl Rpm {
+    #[tracing::instrument(skip_all)]
+    pub fn plan(&self, ctx: DriverContext) -> anyhow::Result<ResolvedTransaction, Error> {
+        let mut events = run_dnf_driver(
             ctx,
+            #[allow(unreachable_code)]
             &self.items,
             DriverMode::Resolve,
             None,
-            &self.internal_only_options,
+            &Default::default(),
         )?;
         if events.len() != 1 {
-            return Err(Error::msg("expected exactly one event in resolve-only mode").into());
+            return Err(Error::msg(
+                "expected exactly one event in resolve-only mode",
+            ));
         }
-        match &events[0] {
-            DriverEvent::TransactionResolved {
+        if let DriverEvent::TransactionResolved {
+            install,
+            remove,
+            module_enable,
+        } = events.remove(0)
+        {
+            Ok(ResolvedTransaction {
                 install,
-                remove,
+                remove: remove.iter().map(Package::nevra).collect(),
                 module_enable,
-            } => Ok(vec![plan::Item::DnfTransaction(DnfTransaction {
-                install: install
-                    .iter()
-                    .map(|ip| plan::InstallPackage {
-                        nevra: ip.package.nevra(),
-                        repo: ip.repo.clone(),
-                        reason: ip.reason,
-                    })
-                    .collect(),
-                remove: remove.iter().map(|p| p.nevra()).collect(),
-                module_enable: module_enable.clone(),
-            })]),
-            _ => Err(Error::msg("resolve-only event should have been TransactionResolved").into()),
+            })
+        } else {
+            Err(Error::msg(
+                "resolve-only event should have been TransactionResolved",
+            ))
         }
     }
 }
@@ -207,15 +241,15 @@ struct DriverSpec<'a> {
     mode: DriverMode,
     arch: Arch,
     versionlock: &'a BTreeMap<String, String>,
-    excluded_rpms: Option<&'a BTreeSet<String>>,
-    resolved_transaction: Option<DnfTransaction>,
+    excluded_rpms: &'a BTreeSet<String>,
+    resolved_transaction: Option<ResolvedTransaction>,
     ignore_scriptlet_errors: bool,
     layer_label: Label,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
 #[serde(rename_all = "kebab-case")]
-enum DriverMode {
+pub enum DriverMode {
     Resolve,
     Run,
 }
@@ -251,7 +285,7 @@ enum TransactionOperation {
     Scriptlet,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 struct Package {
     name: String,
     epoch: i32,
@@ -269,11 +303,46 @@ impl Package {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum Reason {
+    Clean,
+    Dependency,
+    Group,
+    Unknown,
+    User,
+    WeakDependency,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 struct InstallPackage {
     package: Package,
     repo: Option<String>,
-    reason: plan::RpmReason,
+    reason: Reason,
+}
+
+impl Serialize for InstallPackage {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("InstallPackage", 4)?;
+        state.serialize_field("nevra", &self.package.nevra())?;
+        state.serialize_field("package", &self.package)?;
+        state.serialize_field("repo", &self.repo)?;
+        state.serialize_field("reason", &self.reason)?;
+        state.end()
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -302,11 +371,135 @@ enum DriverEvent {
     PackageNotInstalled(String),
 }
 
+pub enum DriverContext<'a> {
+    Compile {
+        ctx: &'a CompilerContext,
+        build_appliance: PathBuf,
+        repos: PathBuf,
+        versionlock: BTreeMap<String, String>,
+        excluded_rpms: BTreeSet<String>,
+    },
+    Plan {
+        label: Label,
+        root: Option<PathBuf>,
+        build_appliance: PathBuf,
+        repos: PathBuf,
+        target_arch: Arch,
+        versionlock: BTreeMap<String, String>,
+        excluded_rpms: BTreeSet<String>,
+    },
+}
+
+impl DriverContext<'_> {
+    pub fn plan(
+        label: Label,
+        root: Option<PathBuf>,
+        build_appliance: PathBuf,
+        repos: PathBuf,
+        target_arch: Arch,
+        versionlock: BTreeMap<String, String>,
+        excluded_rpms: BTreeSet<String>,
+    ) -> Self {
+        Self::Plan {
+            label,
+            root,
+            build_appliance,
+            repos,
+            target_arch,
+            versionlock,
+            excluded_rpms,
+        }
+    }
+
+    fn label(&self) -> &Label {
+        match self {
+            Self::Plan { label, .. } => label,
+            Self::Compile { ctx, .. } => ctx.label(),
+        }
+    }
+
+    fn build_appliance(&self) -> &Path {
+        match self {
+            Self::Plan {
+                build_appliance, ..
+            } => build_appliance,
+            Self::Compile {
+                build_appliance, ..
+            } => build_appliance,
+        }
+    }
+
+    fn repos(&self) -> &Path {
+        match self {
+            Self::Plan { repos, .. } => repos,
+            Self::Compile { repos, .. } => repos,
+        }
+    }
+
+    fn target_arch(&self) -> Arch {
+        match self {
+            Self::Plan { target_arch, .. } => *target_arch,
+            Self::Compile { ctx, .. } => ctx.target_arch(),
+        }
+    }
+
+    fn root(&self) -> Option<&Path> {
+        match self {
+            Self::Plan { root, .. } => root.as_deref(),
+            Self::Compile { ctx, .. } => Some(ctx.root()),
+        }
+    }
+
+    fn versionlock(&self) -> &BTreeMap<String, String> {
+        match self {
+            Self::Plan { versionlock, .. } => versionlock,
+            Self::Compile { versionlock, .. } => versionlock,
+        }
+    }
+
+    fn excluded_rpms(&self) -> &BTreeSet<String> {
+        match self {
+            Self::Plan { excluded_rpms, .. } => excluded_rpms,
+            Self::Compile { excluded_rpms, .. } => excluded_rpms,
+        }
+    }
+
+    fn is_planning(&self) -> bool {
+        match self {
+            Self::Plan { .. } => true,
+            _ => false,
+        }
+    }
+}
+
+enum Root {
+    Empty(TempDir),
+    Root(PathBuf),
+}
+
+impl Deref for Root {
+    type Target = Path;
+
+    fn deref(&self) -> &Path {
+        match self {
+            Self::Empty(tmp) => tmp.path(),
+            Self::Root(root) => root,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ResolvedTransaction {
+    install: BTreeSet<InstallPackage>,
+    remove: BTreeSet<String>,
+    module_enable: BTreeSet<String>,
+}
+
 fn run_dnf_driver(
-    ctx: &CompilerContext,
+    ctx: DriverContext,
     items: &[RpmItem],
     mode: DriverMode,
-    resolved_transaction: Option<DnfTransaction>,
+    resolved_transaction: Option<ResolvedTransaction>,
     internal_only_options: &InternalOnlyOptions,
 ) -> Result<Vec<DriverEvent>> {
     let items = items
@@ -329,38 +522,50 @@ fn run_dnf_driver(
         .flatten()
         .collect::<Vec<_>>();
     let spec = DriverSpec {
-        repos: Some(ctx.dnf().repos()),
+        repos: Some(ctx.repos()),
         install_root: Path::new("/__antlir2__/root"),
         items: &items,
         mode,
         arch: ctx.target_arch(),
-        versionlock: ctx.dnf().versionlock(),
-        excluded_rpms: Some(ctx.dnf().excluded_rpms()),
+        versionlock: ctx.versionlock(),
+        excluded_rpms: ctx.excluded_rpms(),
         resolved_transaction,
         ignore_scriptlet_errors: internal_only_options.ignore_scriptlet_errors,
         layer_label: ctx.label().clone(),
     };
 
-    // We can have per-OS rpm macros to change the database backend that must be
-    // copied into the built image.
-    let ba_macros = ctx.build_appliance().join("etc/rpm/macros.db");
-    if ba_macros.exists() {
-        let db_macro_path = ctx.dst_path("/etc/rpm/macros.db")?;
-        // If the macros.db file already exists, just use it as-is. Most likely
-        // it will have come from antlir2 in a parent_layer, but we also want to
-        // allow images to override it if they want
-        if !db_macro_path.exists() {
-            std::fs::create_dir_all(db_macro_path.parent().expect("always has parent"))
-                .with_context(|| format!("while creating dir for {}", db_macro_path.display()))?;
-            std::fs::copy(ba_macros, &db_macro_path).with_context(|| {
-                format!("while installing db macro {}", db_macro_path.display())
-            })?;
+    let root = match ctx.root() {
+        Some(r) => Root::Root(r.to_owned()),
+        None => Root::Empty(TempDir::new().context("while creating empty root dir")?),
+    };
+
+    // Don't mess with db macros while planning a transaction, we should instead
+    // only use what is already there (plus, during planning the installroot is
+    // readonly and we can't actually create this)
+    if !ctx.is_planning() {
+        // We can have per-OS rpm macros to change the database backend that must be
+        // copied into the built image.
+        let ba_macros = ctx.build_appliance().join("etc/rpm/macros.db");
+        if ba_macros.exists() {
+            let db_macro_path = root.join("etc/rpm/macros.db");
+            // If the macros.db file already exists, just use it as-is. Most likely
+            // it will have come from antlir2 in a parent_layer, but we also want to
+            // allow images to override it if they want
+            if !db_macro_path.exists() {
+                std::fs::create_dir_all(db_macro_path.parent().expect("always has parent"))
+                    .with_context(|| {
+                        format!("while creating dir for {}", db_macro_path.display())
+                    })?;
+                std::fs::copy(ba_macros, &db_macro_path).with_context(|| {
+                    format!("while installing db macro {}", db_macro_path.display())
+                })?;
+            }
         }
     }
 
     let opts = memfd::MemfdOptions::default().close_on_exec(false);
     let mfd = opts.create("input").context("while creating memfd")?;
-    serde_json::to_writer(&mut mfd.as_file(), &spec)
+    serde_json::to_writer(BufWriter::new(mfd.as_file()), &spec)
         .context("while serializing dnf-driver input")?;
     mfd.as_file().rewind()?;
 
@@ -370,8 +575,8 @@ fn run_dnf_driver(
         .set_permissions(Permissions::from_mode(0o555))?;
     driver.write_all(include_bytes!("./driver.py"))?;
 
-    let isol = IsolationContext::builder(ctx.build_appliance())
-        .ephemeral(false)
+    let mut isol = IsolationContext::builder(ctx.build_appliance());
+    isol.ephemeral(false)
         .readonly()
         // random buck-out paths that might be being used (for installing .rpms)
         .inputs((
@@ -379,7 +584,6 @@ fn run_dnf_driver(
             std::env::current_dir()?,
         ))
         .working_directory(Path::new("/__antlir2__/working_directory"))
-        .outputs((Path::new("/__antlir2__/root"), ctx.root()))
         .tmpfs(Path::new("/__antlir2__/dnf/cache"))
         .tmpfs(Path::new("/var/log"))
         .tmpfs(Path::new("/dev"))
@@ -392,7 +596,14 @@ fn run_dnf_driver(
         .setenv(("PYTHONDONTWRITEBYTECODE", "1"))
         .inputs((Path::new("/tmp/dnf-driver"), driver.path()))
         .build();
-    let isol = unshare(isol)?;
+    if ctx.is_planning() {
+        isol.inputs((Path::new("/__antlir2__/root"), root.deref()))
+            .tmpfs_overlay(Path::new("/__antlir2__/root"));
+    } else {
+        isol.outputs((Path::new("/__antlir2__/root"), root.deref()));
+    }
+
+    let isol = unshare(isol.build())?;
 
     let mut cmd = isol.command("/usr/libexec/platform-python")?;
     cmd.arg("/tmp/dnf-driver");
@@ -405,7 +616,8 @@ fn run_dnf_driver(
         .inspect_err(|e| trace!("Spawning dnf-driver failed: {e}"))
         .context("while spawning dnf-driver")?;
 
-    let deser = Deserializer::from_reader(child.stdout.take().expect("this is a pipe"));
+    let deser =
+        Deserializer::from_reader(BufReader::new(child.stdout.take().expect("this is a pipe")));
     let mut events = Vec::new();
     for event in deser.into_iter::<DriverEvent>() {
         let event = event.context("while deserializing event from dnf-driver")?;

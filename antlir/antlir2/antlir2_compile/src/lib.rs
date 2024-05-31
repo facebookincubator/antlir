@@ -7,8 +7,7 @@
 
 #![feature(io_error_more)]
 
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::os::fd::AsRawFd;
 use std::path::Path;
@@ -24,13 +23,10 @@ use nix::sys::stat::Mode;
 use openat2::openat2;
 use openat2::OpenHow;
 use openat2::ResolveFlags;
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[cfg(facebook)]
-pub mod facebook;
-
-pub mod plan;
 pub mod util;
 
 #[derive(Debug, thiserror::Error)]
@@ -92,53 +88,9 @@ pub struct CompilerContext {
     target_arch: Arch,
     /// Path to the root of the image being built
     root_path: PathBuf,
-    /// Build appliance tree with tools that might be necessary
-    build_appliance: PathBuf,
     /// Open fd to the image root directory
     root: Dir,
-    /// Setup information for dnf repos
-    dnf: DnfContext,
-    /// Pre-computed plan for this compilation phase
-    plan: Option<plan::Plan>,
-    #[cfg(facebook)]
-    /// Resolved fbpkgs from plan
-    fbpkg: facebook::FbpkgContext,
-}
-
-#[derive(Debug, Clone)]
-pub struct DnfContext {
-    /// Root directory where dnf repos are mounted
-    repos: PathBuf,
-    /// Versionlock of package name -> EVRA
-    versionlock: BTreeMap<String, String>,
-    /// Rpms to exclude from all operations
-    excluded_rpms: BTreeSet<String>,
-}
-
-impl DnfContext {
-    pub fn new(
-        repos: PathBuf,
-        versionlock: BTreeMap<String, String>,
-        excluded_rpms: BTreeSet<String>,
-    ) -> Self {
-        Self {
-            repos,
-            versionlock,
-            excluded_rpms,
-        }
-    }
-
-    pub fn repos(&self) -> &Path {
-        &self.repos
-    }
-
-    pub fn versionlock(&self) -> &BTreeMap<String, String> {
-        &self.versionlock
-    }
-
-    pub fn excluded_rpms(&self) -> &BTreeSet<String> {
-        &self.excluded_rpms
-    }
+    plans: HashMap<String, serde_json::Value>,
 }
 
 fn parse_file<T, E>(path: &Path) -> Option<Result<T>>
@@ -160,10 +112,7 @@ impl CompilerContext {
         label: Label,
         target_arch: Arch,
         root: PathBuf,
-        build_appliance: PathBuf,
-        dnf: DnfContext,
-        plan: Option<plan::Plan>,
-        #[cfg(facebook)] fbpkg: facebook::FbpkgContext,
+        plans: HashMap<String, serde_json::Value>,
     ) -> Result<Self> {
         let root_fd =
             Dir::open(&root, OFlag::O_DIRECTORY, Mode::empty()).map_err(|e| Error::IO(e.into()))?;
@@ -172,11 +121,7 @@ impl CompilerContext {
             target_arch,
             root_path: root,
             root: root_fd,
-            build_appliance,
-            dnf,
-            plan,
-            #[cfg(facebook)]
-            fbpkg,
+            plans,
         })
     }
 
@@ -193,21 +138,11 @@ impl CompilerContext {
         &self.root_path
     }
 
-    pub fn build_appliance(&self) -> &Path {
-        &self.build_appliance
-    }
-
-    pub fn dnf(&self) -> &DnfContext {
-        &self.dnf
-    }
-
-    #[cfg(facebook)]
-    pub fn fbpkg(&self) -> &facebook::FbpkgContext {
-        &self.fbpkg
-    }
-
-    pub fn plan(&self) -> Option<&plan::Plan> {
-        self.plan.as_ref()
+    pub fn plan<T>(&self, id: &str) -> Option<serde_json::Result<T>>
+    where
+        T: DeserializeOwned,
+    {
+        self.plans.get(id).cloned().map(serde_json::from_value)
     }
 
     /// Join a (possibly absolute) path with the root directory of the image
@@ -325,11 +260,6 @@ enum ResolveMode {
 
 pub trait CompileFeature {
     fn compile(&self, ctx: &CompilerContext) -> Result<()>;
-
-    /// Add details about this [Feature] to the compiler [plan::Plan].
-    fn plan(&self, _ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
-        Ok(Default::default())
-    }
 }
 
 static_assertions::assert_obj_safe!(CompileFeature);
@@ -360,11 +290,5 @@ impl CompileFeature for Feature {
         let func = self.plugin()?.as_compile_feature_fn()?;
         let feat = func(self)?;
         feat.compile(ctx)
-    }
-
-    fn plan(&self, ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
-        let func = self.plugin()?.as_compile_feature_fn()?;
-        let feat = func(self)?;
-        feat.plan(ctx)
     }
 }

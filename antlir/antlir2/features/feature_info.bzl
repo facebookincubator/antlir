@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//utils:arglike.bzl", "ArgLike")
 load("@prelude//utils:utils.bzl", "map_val")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
@@ -53,6 +54,32 @@ def ParseTimeFeature(
         args or {},
     )
 
+Planner = record(
+    # the function to be called to do the plan operation
+    fn = field(typing.Any),
+    # Additional kwrgs to pass to 'fn'
+    kwargs = field(dict[str, typing.Any], default = {}),
+    # plan requires access to the layer label
+    label = field(bool, default = False),
+    # plan requires access to the layer's FlavorInfo
+    flavor = field(bool, default = False),
+    # plan requires access to the layer up to this point
+    parent_subvol_symlink = field(bool, default = False),
+    # plan requires access to dnf repos available to this layer
+    dnf = field(bool, default = False),
+    # plan requires access to the build appliance for this layer
+    build_appliance = field(bool, default = False),
+    # plan requires access to the layer's target_arch (x86_64, aarch64)
+    target_arch = field(bool, default = False),
+    # THAR BE DRAGONS
+    # This is a hack to allow a feature planner to get access to plan results
+    # from the previous phase. This exists *only* for chef_solo, and should be
+    # *VERY* carefully considered before adopting in any other use case. It only
+    # exists for chef so that the previously materialized repos in the
+    # package-installation phase can be made available to the full chef run
+    previous_phase_plans = field(list[str], default = []),
+)
+
 # Produced by the feature implementation, this tells the rule how to build it
 FeatureAnalysis = provider(fields = {
     # Arbitrary data that is available during buck2 analysis but is not
@@ -68,6 +95,9 @@ FeatureAnalysis = provider(fields = {
     # deserialize this)
     "data": provider_field(typing.Any),
     "feature_type": provider_field(str),
+    # This feature requires running some logic within the feature's plugin
+    # implementation to inform buck of dynamic dependencies.
+    "planner": provider_field(Planner | None, default = None),
     # Binary plugin implementation of this feature
     "plugin": provider_field(FeaturePluginInfo | Provider),
     # Some features must be folded into one feature that acts on all the inputs
@@ -83,14 +113,19 @@ FeatureAnalysis = provider(fields = {
     "required_artifacts": provider_field(list[Artifact], default = []),
     # Runnable binaries required to build this feature.
     "required_run_infos": provider_field(list[RunInfo], default = []),
-    # This feature requires running 'antlir2' binaries to inform buck of dynamic
-    # dependencies. If no feature requires planning, the entire step can be
-    # skipped and save a few seconds of build time
-    "requires_planning": provider_field(bool, default = False),
 })
 
 MultiFeatureAnalysis = provider(fields = {
     "features": provider_field(list[FeatureAnalysis]),
+})
+
+PlanInfo = provider(fields = {
+    "hidden": provider_field(ArgLike),
+    # Unique string identifying this plan artifact for retrieval by the feature
+    # that produced it
+    "id": provider_field(str),
+    "log": provider_field(Artifact | None, default = None),
+    "output": provider_field(Artifact),
 })
 
 feature_record = record(
