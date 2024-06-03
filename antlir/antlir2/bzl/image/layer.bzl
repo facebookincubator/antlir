@@ -255,6 +255,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     for phase in BuildPhase.values():
         phase = BuildPhase(phase)
         logs = {}
+        phase_sub_targets = {}
 
         identifier = phase.value
 
@@ -310,6 +311,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
 
         plans = {}
+        plan_sub_targets = {}
         for feature in features:
             planner = feature.analysis.planner
             if planner:
@@ -348,9 +350,14 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                         fail("plan ids should be unique, but got '{}' multiple times".format(pi.id))
                     plans[pi.id] = pi
                     compile_feature_hidden_deps.append(pi.hidden)
-                    if pi.log:
-                        logs["plan_" + pi.id] = pi.log
+                    if pi.sub_artifacts:
+                        plan_sub_targets[pi.id] = [DefaultInfo(sub_targets = {
+                            key: [DefaultInfo(artifact)]
+                            for key, artifact in pi.sub_artifacts.items()
+                        })]
         previous_phase_plans = plans
+
+        phase_sub_targets["plan"] = [DefaultInfo(sub_targets = plan_sub_targets)]
 
         logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
 
@@ -374,9 +381,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             rootless = ctx.attrs._rootless,
         )
 
-        phase_sub_targets = {
-            "depgraph": [DefaultInfo(facts_db)],
-        }
+        phase_sub_targets["depgraph"] = [DefaultInfo(facts_db)]
 
         facts_db = facts.new_facts_db(
             actions = ctx.actions,

@@ -33,11 +33,18 @@ def _plan_fn(
         dnf_available_repos = dnf_available_repos,
         **kwargs
     )
-    return [PlanInfo(
+    return [plan_info(res)]
+
+# Turn the result of the 'plan' function into a PlanInfo
+def plan_info(res: struct) -> PlanInfo:
+    return PlanInfo(
         id = "rpm",
         output = res.plan_json,
         hidden = res.hidden,
-    )]
+        sub_artifacts = {
+            "tx": res.tx_file,
+        },
+    )
 
 def plan(
         *,
@@ -109,6 +116,7 @@ def plan(
         repos = repos,
         plan_json = plan_json,
         hidden = [out],
+        tx_file = tx,
     )
 
 def rpm_planner(*, plan: Dependency) -> Planner:
