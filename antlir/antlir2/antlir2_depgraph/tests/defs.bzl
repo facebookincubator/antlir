@@ -71,7 +71,7 @@ def _good_impl(ctx: AnalysisContext) -> list[Provider]:
         ExternalRunnerTestInfo(
             # force the layer to be built for the test to be considered a
             # success
-            command = [cmd_args("true").hidden([ctx.attrs.layer[LayerInfo].subvol_symlink])],
+            command = [cmd_args("true", hidden = [ctx.attrs.layer[LayerInfo].subvol_symlink])],
             type = "custom",
         ),
     ]

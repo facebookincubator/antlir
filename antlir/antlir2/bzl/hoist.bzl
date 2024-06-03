@@ -41,7 +41,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         delimiter = "\n",
     ), is_executable = True)
     ctx.actions.run(
-        cmd_args(script).hidden(out.as_output(), ctx.attrs.layer[LayerInfo].subvol_symlink),
+        cmd_args(
+            script,
+            hidden = [out.as_output(), ctx.attrs.layer[LayerInfo].subvol_symlink],
+        ),
         category = "hoist",
         local_only = True,  # local subvol
     )

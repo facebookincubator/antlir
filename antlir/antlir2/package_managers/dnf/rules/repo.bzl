@@ -103,9 +103,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "plain_repodata": [DefaultInfo(default_outputs = [plain_repodata])],
             "repodata": [DefaultInfo(default_outputs = [repodata])],
             "serve": [DefaultInfo(), RunInfo(
-                args = cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", combined_proxy_config)
-                    .hidden(repodata)
-                    .hidden([offline] if offline_only_repo else []),
+                args = cmd_args(
+                    ctx.attrs.repo_proxy[RunInfo],
+                    "--repos-json",
+                    combined_proxy_config,
+                    hidden = [repodata] + ([offline] if offline_only_repo else []),
+                ),
             )],
         }),
         RepoInfo(
@@ -194,12 +197,14 @@ def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
     )
 
     proxy_cmd = (
-        cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", proxy_config)
-            .hidden([repo[RepoInfo].repodata for repo in repos.values()])
-            .hidden(
-            # repos that are offline_only (not backed by a remote store &
-            # urlgen) must be materialized locally before serving this repo_set
-            [repo[RepoInfo].offline for repo in repos.values() if repo[RepoInfo].proxy_config["offline_only"]],
+        cmd_args(
+            ctx.attrs.repo_proxy[RunInfo],
+            "--repos-json",
+            proxy_config,
+            hidden = [repo[RepoInfo].repodata for repo in repos.values()] +
+                     # repos that are offline_only (not backed by a remote store &
+                     # urlgen) must be materialized locally before serving this repo_set
+                     [repo[RepoInfo].offline for repo in repos.values() if repo[RepoInfo].proxy_config["offline_only"]],
         )
     )
 

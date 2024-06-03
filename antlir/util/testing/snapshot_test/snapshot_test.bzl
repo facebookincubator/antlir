@@ -25,7 +25,8 @@ def _dir_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(extra_args),
         cmd_args(inputs, format = "{}/snapshot"),
         cmd_args(inputs, format = "{}/actual"),
-    ).hidden(inputs)
+        hidden = inputs,
+    )
 
     return [
         DefaultInfo(default_outputs = [inputs]),
@@ -81,7 +82,8 @@ def _file_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(extra_args),
         cmd_args(inputs, format = "{}/snapshot"),
         cmd_args(inputs, format = "{}/actual"),
-    ).hidden(inputs)
+        hidden = inputs,
+    )
     return [
         DefaultInfo(default_outputs = [inputs]),
         ExternalRunnerTestInfo(
