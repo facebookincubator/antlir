@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "93e7a65a6b3f0eb2df26e871e0f13419e66fc73d",
+    rev = "28ac8a615e284c7ad41cd1eaf97206982619a7b6",
     visibility = [],
 )
 
@@ -13837,53 +13837,51 @@ cargo.rust_library(
 
 alias(
     name = "tracing-test",
-    actual = ":tracing-test-0.2.4",
+    actual = ":tracing-test-0.2.5",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tracing-test-0.2.4.crate",
-    sha256 = "3a2c0ff408fe918a94c428a3f2ad04e4afd5c95bbc08fcf868eff750c15728a4",
-    strip_prefix = "tracing-test-0.2.4",
-    urls = ["https://static.crates.io/crates/tracing-test/0.2.4/download"],
+    name = "tracing-test-0.2.5.crate",
+    sha256 = "557b891436fe0d5e0e363427fc7f217abf9ccd510d5136549847bdcbcd011d68",
+    strip_prefix = "tracing-test-0.2.5",
+    urls = ["https://static.crates.io/crates/tracing-test/0.2.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tracing-test-0.2.4",
-    srcs = [":tracing-test-0.2.4.crate"],
+    name = "tracing-test-0.2.5",
+    srcs = [":tracing-test-0.2.5.crate"],
     crate = "tracing_test",
-    crate_root = "tracing-test-0.2.4.crate/src/lib.rs",
+    crate_root = "tracing-test-0.2.5.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
     deps = [
-        ":lazy_static-1.4.0",
         ":tracing-core-0.1.32",
         ":tracing-subscriber-0.3.18",
-        ":tracing-test-macro-0.2.4",
+        ":tracing-test-macro-0.2.5",
     ],
 )
 
 http_archive(
-    name = "tracing-test-macro-0.2.4.crate",
-    sha256 = "258bc1c4f8e2e73a977812ab339d503e6feeb92700f6d07a6de4d321522d5c08",
-    strip_prefix = "tracing-test-macro-0.2.4",
-    urls = ["https://static.crates.io/crates/tracing-test-macro/0.2.4/download"],
+    name = "tracing-test-macro-0.2.5.crate",
+    sha256 = "04659ddb06c87d233c566112c1c9c5b9e98256d9af50ec3bc9c8327f873a7568",
+    strip_prefix = "tracing-test-macro-0.2.5",
+    urls = ["https://static.crates.io/crates/tracing-test-macro/0.2.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tracing-test-macro-0.2.4",
-    srcs = [":tracing-test-macro-0.2.4.crate"],
+    name = "tracing-test-macro-0.2.5",
+    srcs = [":tracing-test-macro-0.2.5.crate"],
     crate = "tracing_test_macro",
-    crate_root = "tracing-test-macro-0.2.4.crate/src/lib.rs",
+    crate_root = "tracing-test-macro-0.2.5.crate/src/lib.rs",
     edition = "2018",
     proc_macro = True,
     visibility = [],
     deps = [
-        ":lazy_static-1.4.0",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-2.0.66",
     ],
 )
 
