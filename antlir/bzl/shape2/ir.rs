@@ -43,6 +43,7 @@
 //! ```
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use derive_more::Deref;
@@ -140,6 +141,14 @@ impl TryFrom<&str> for Target {
 
     fn try_from(s: &str) -> anyhow::Result<Self> {
         s.to_owned().try_into()
+    }
+}
+
+impl FromStr for Target {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        Target::try_from(s)
     }
 }
 

@@ -1,0 +1,9 @@
+load("//antlir/bzl:build_defs.bzl", "buck_filegroup")
+
+oncall("antlir")
+
+buck_filegroup(
+    name = "templates",
+    srcs = glob(["*.handlebars"]),
+    visibility = ["PUBLIC"],
+)

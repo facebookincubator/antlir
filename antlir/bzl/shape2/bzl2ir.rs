@@ -17,8 +17,10 @@ use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use clap::Parser;
 use derive_more::Deref;
 use derive_more::Display;
+use json_arg::JsonFile;
 use serde::Deserialize;
 use slotmap::SlotMap;
 use starlark::any::ProvidesStaticType;
@@ -45,7 +47,6 @@ use starlark::values::StringValue;
 use starlark::values::UnpackValue;
 use starlark::values::Value;
 use starlark::values::ValueLike;
-use structopt::StructOpt;
 
 fn bzl_globals() -> GlobalsBuilder {
     GlobalsBuilder::extended_by(&[
@@ -402,7 +403,7 @@ fn shape(builder: &mut GlobalsBuilder) {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
 struct Dependencies(BTreeMap<ir::Target, PathBuf>);
@@ -507,17 +508,20 @@ fn starlark_to_ir(
     })
 }
 
-#[derive(StructOpt)]
+#[derive(Debug, Parser)]
 struct Opts {
-    #[structopt(parse(try_from_str = ir::Target::try_from))]
+    #[clap(long)]
     target: ir::Target,
+    #[clap(long)]
     entrypoint: PathBuf,
-    #[structopt(parse(try_from_str = serde_json::from_str))]
-    deps: Dependencies,
+    #[clap(long)]
+    deps: JsonFile<Dependencies>,
+    #[clap(long)]
+    out: PathBuf,
 }
 
 fn main() -> Result<()> {
-    let opts = Opts::from_args();
+    let opts = Opts::parse();
     let dialect = Dialect {
         enable_load_reexport: false,
         ..Dialect::Extended
@@ -529,10 +533,11 @@ fn main() -> Result<()> {
 
     let module =
         starlark_to_ir(f, types, opts.target).context("while converting to high-level IR")?;
-    println!(
-        "{}",
-        serde_json::to_string_pretty(&module).expect("failed to serialize IR")
-    );
+    std::fs::write(
+        &opts.out,
+        serde_json::to_string_pretty(&module).expect("failed to serialize IR"),
+    )
+    .context("while writing output")?;
     Ok(())
 }
 

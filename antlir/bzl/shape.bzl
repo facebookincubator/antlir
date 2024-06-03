@@ -110,7 +110,8 @@ mount = mount_t(
 See tests/shape_test.bzl for full example usage and selftests.
 """
 
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_library", "rust_library", "target_utils", "third_party")
+load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "python_library", "rust_library", "target_utils", "third_party")
 load(":shell.bzl", "shell")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
@@ -228,12 +229,88 @@ def _shape(__thrift = None, **fields):
 
     return record(**fields)
 
+ShapeInfo = provider(fields = {
+    "ir": provider_field(Artifact),
+})
+
+def _shape_rule_impl(ctx: AnalysisContext) -> list[Provider]:
+    ir = ctx.actions.declare_output("ir.json")
+    deps = {
+        dep.label.raw_target(): dep[ShapeInfo].ir
+        for dep in ctx.attrs.deps
+    }
+    deps.update({
+        # TODO(T191003667): assuming everything is in one cell is pretty much OK for
+        # how we actually use shapes, but it's not technically "correct"
+        "//" + dep.label.package + ":" + dep.label.name: dep[ShapeInfo].ir
+        for dep in ctx.attrs.deps
+    })
+    deps = ctx.actions.write_json(
+        "deps.json",
+        deps,
+        with_inputs = True,
+    )
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._bzl2ir[RunInfo],
+            cmd_args(ctx.label.raw_target(), format = "--target={}"),
+            cmd_args(ctx.attrs.bzl, format = "--entrypoint={}"),
+            cmd_args(deps, format = "--deps={}"),
+            cmd_args(ir.as_output(), format = "--out={}"),
+        ),
+        category = "bzl2ir",
+    )
+    generated_srcs = {}
+    for lang, format in [("python", "pydantic"), ("rust", "rust")]:
+        src = ctx.actions.declare_output("impl." + lang)
+        ctx.actions.run(
+            cmd_args(
+                ctx.attrs._ir2code[RunInfo],
+                cmd_args(ctx.attrs._ir2code_templates, format = "--templates={}"),
+                cmd_args(format, format = "--format={}"),
+                cmd_args(ir, format = "--ir={}"),
+                cmd_args(src.as_output(), format = "--out={}"),
+            ),
+            category = "ir2code",
+            identifier = lang,
+        )
+        generated_srcs[lang] = src
+    return [
+        DefaultInfo(sub_targets = {
+            "src": [DefaultInfo(sub_targets = {
+                lang: [DefaultInfo(src)]
+                for lang, src in generated_srcs.items()
+            })],
+        }),
+        ShapeInfo(
+            ir = ir,
+        ),
+    ]
+
+_shape_rule = rule(
+    impl = _shape_rule_impl,
+    attrs = {
+        "bzl": attrs.source(),
+        "deps": attrs.list(attrs.dep(providers = [ShapeInfo]), default = []),
+        "_bzl2ir": attrs.exec_dep(providers = [RunInfo]),
+        "_ir2code": attrs.default_only(
+            attrs.exec_dep(
+                providers = [RunInfo],
+                default = antlir_dep("bzl/shape2:ir2code"),
+            ),
+        ),
+        "_ir2code_templates": attrs.default_only(
+            attrs.source(
+                allow_directory = True,
+                default = antlir_dep("bzl/shape2/templates:templates"),
+            ),
+        ),
+    },
+)
+
 def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False, **kwargs):  # pragma: no cover
     if not name.endswith(".shape"):
         fail("shape.impl target must be named with a .shape suffix")
-    export_file(
-        name = name + ".bzl",
-    )
 
     # @oss-disable
 
@@ -241,40 +318,32 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
     if test_only_rc_bzl2_ir:
         bzl2ir = antlir_dep("bzl/shape2:bzl2ir")
 
-    buck_genrule(
+    # TODO: go back to MSDK preserved binary after building these changes
+    bzl2ir = antlir_dep("bzl/shape2:bzl2ir")
+
+    visibility = get_visibility(visibility)
+
+    _shape_rule(
         name = name,
-        cmd = """
-            $(exe {}) {} $(location :{}.bzl) {} > $OUT
-        """.format(
-            bzl2ir,
-            normalize_target(":" + name),
-            name,
-            shell.quote(repr({d: "$(location {})".format(d) for d in deps})),
-        ),
+        deps = deps,
+        bzl = name + ".bzl",
+        visibility = visibility,
+        _bzl2ir = bzl2ir,
+        **default_target_platform_kwargs()
     )
 
-    ir2code_prefix = "$(exe {}) --templates $(location {})/templates".format(antlir_dep("bzl/shape2:ir2code"), antlir_dep("bzl/shape2:templates"))
-
-    buck_genrule(
-        name = "{}.py".format(name),
-        cmd = "{} pydantic $(location :{}) > $OUT".format(ir2code_prefix, name),
-    )
     python_library(
         name = "{}-python".format(name),
-        srcs = {":{}.py".format(name): "__init__.py"},
+        srcs = {":{}[src][python]".format(name): "__init__.py"},
         base_module = native.package_name() + "." + name.replace(".shape", ""),
         deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
         visibility = visibility,
         **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
     )
-    buck_genrule(
-        name = "{}.rs".format(name),
-        cmd = "{} rust $(location :{}) > $OUT".format(ir2code_prefix, name),
-    )
     rust_library(
         name = "{}-rust".format(name),
         crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
-        mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
+        mapped_srcs = {":{}[src][rust]".format(name): "src/lib.rs"},
         deps = ["{}-rust".format(d) for d in deps] + [antlir_dep("bzl/shape2:shape")] + third_party.libraries(
             [
                 "anyhow",

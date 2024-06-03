@@ -51,10 +51,13 @@ enum RenderFormat {
 struct Opts {
     #[clap(long)]
     templates: PathBuf,
-    #[clap(value_enum)]
+    #[clap(long, value_enum)]
     format: RenderFormat,
     // path to json-serialized IR
+    #[clap(long)]
     ir: PathBuf,
+    #[clap(long)]
+    out: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -80,7 +83,7 @@ pub fn main() -> Result<()> {
         RenderFormat::Rust => render::<Rust>(&ir, &templates),
     }
     .context("failed to render code")?;
-    println!("{}", code);
+    std::fs::write(&opts.out, &code).context("while writing output")?;
     Ok(())
 }
 
