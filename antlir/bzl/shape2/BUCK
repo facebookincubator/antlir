@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "buck_filegroup", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("antlir")
 
@@ -21,17 +21,19 @@ rust_binary(
     test_deps = ["maplit"],
     visibility = [
         "PUBLIC", # @oss-enable
+        "PUBLIC",
     ],
     deps = [
         "allocative",
         "anyhow",
+        "clap",
         "derive_more",
         "serde",
         "serde_json",
         "slotmap",
         "starlark",
-        "structopt",
         ":ir",
+        "//antlir/util/cli/json_arg:json_arg",
     ],
 )
 
@@ -49,12 +51,6 @@ rust_binary(
         "serde_json",
         ":ir",
     ],
-)
-
-buck_filegroup(
-    name = "templates",
-    srcs = glob(["templates/*.handlebars"]),
-    visibility = ["PUBLIC"],
 )
 
 rust_library(
