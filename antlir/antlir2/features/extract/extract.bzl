@@ -164,7 +164,8 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(manifest.as_output(), format = "--manifest={}"),
             cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
-        ).hidden(ctx.attrs.src[RunInfo]),
+            hidden = ctx.attrs.src[RunInfo],
+        ),
         category = "extract_buck_binary",
         # RE seems to not have aarch64 cross stuff set up, so for now just force
         # aarch64 extracts to run locally
