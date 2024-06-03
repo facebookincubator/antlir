@@ -4,83 +4,124 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "python_binary", "python_library")
-load(":shell.bzl", "shell")
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
+load("//antlir/bzl:build_defs.bzl", "get_visibility")
+load(":target_helpers.bzl", "antlir_dep")
 
-def template(
-        name,
-        srcs,
-        root = None,
-        deps = None,
-        visibility = None):
-    """
-Compile a set of jinja2 template files to a library that can be imported by
-other templates, as well as a `$name-render` binary that can render the given
-root template from JSON data provided on stdin.
-"""
+TemplateInfo = provider(fields = {
+    "compiled_srcs": Artifact,
+    "root": str,
+    "templates": dict[str, Artifact],
+})
 
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     # attempt to determine a root template in some common cases
+    root = ctx.attrs.root
     if not root:
-        if len(srcs) == 1:
-            root = srcs[0]
+        if len(ctx.attrs.srcs) == 1:
+            root = ctx.attrs.srcs[0]
         else:
-            for src in srcs:
-                if src == name or src == name + ".jinja2":
+            for src in ctx.attrs.srcs:
+                if src.basename == ctx.label.name or src.basename == ctx.label.name + ".jinja2":
                     root = src
         if not root:
-            fail("could not infer 'root' template, please set `root` kwarg", attr = "root")
-    if not deps:
-        deps = []
+            fail("could not infer 'root' template, please set `root` attr", attr = "root")
 
     compiled_srcs = {}
-
-    for src in srcs:
-        raw_src = "{}__{}".format(name, src)
-        export_file(
-            name = raw_src,
-            src = src,
+    for src in ctx.attrs.srcs:
+        compiled = ctx.actions.declare_output(src.short_path + ".py")
+        ctx.actions.run(
+            cmd_args(
+                ctx.attrs._compile_template[RunInfo],
+                cmd_args(src, format = "--template={}"),
+                cmd_args(src.short_path, format = "--name={}"),
+                cmd_args(compiled.as_output(), format = "--out={}"),
+            ),
+            category = "compile_template",
+            identifier = src.short_path,
         )
-        compiled_src = "{}__{}.py".format(name, src)
-        python_file_name = "tmpl_{}".format(paths.replace_extension(src, ".py"))
+        compiled_srcs[src.short_path + ".py"] = compiled
 
-        buck_genrule(
-            name = compiled_src,
-            cmd = "$(exe //antlir:compile-template) $(location :{}) {} > $OUT".format(raw_src, src),
-            out = python_file_name,
-        )
-        compiled_srcs[":" + compiled_src] = python_file_name
+    for dep in ctx.attrs.deps:
+        for name, t in dep[TemplateInfo].templates.items():
+            compiled_srcs[paths.join(dep.label.package, dep.label.name + ":" + name)] = t
 
-    # The named output target of template() is a python_library so that it can
-    # be easily used in `deps` of other templates.
-    python_library(
-        name = name,
-        srcs = compiled_srcs,
-        base_module = "antlir.__compiled_templates__",
-        deps = deps,
+    templates = compiled_srcs
+
+    return [
+        DefaultInfo(),
+        TemplateInfo(
+            root = root.short_path,
+            templates = templates,
+            compiled_srcs = ctx.actions.copied_dir("compiled", templates),
+        ),
+    ]
+
+_template = rule(
+    impl = _impl,
+    attrs = {
+        "deps": attrs.list(attrs.dep(providers = [TemplateInfo]), default = []),
+        "root": attrs.option(attrs.source(), default = None),
+        "srcs": attrs.list(attrs.source()),
+        "_compile_template": attrs.default_only(attrs.exec_dep(
+            providers = [RunInfo],
+            default = antlir_dep(":compile-template"),
+        )),
+    },
+    doc = """
+        Compile a set of jinja2 template files to a target that can be run to
+        render the given root template from JSON data provided on stdin.
+    """,
+)
+
+_template_macro = rule_with_default_target_platform(_template)
+
+def template(visibility = None, **kwargs):
+    _template_macro(
         visibility = get_visibility(visibility),
+        **kwargs
     )
 
-    # Compile the name of the root template into the python_binary for
-    # rendering, so that it can be easily imported. It cannot be included in
-    # the python_library target above, or there would be collisions with any
-    # templates included in `deps`.
-    root_template_target = name + "__root_template_name"
-    buck_genrule(
-        name = root_template_target,
-        cmd = "printf {} > $OUT".format(shell.quote(paths.replace_extension(root, ""))),
-        visibility = [],
-    )
+def _render_impl(ctx: AnalysisContext) -> list[Provider]:
+    data_json = ctx.actions.write("data.json", ctx.attrs.data_json)
+    rendered = ctx.actions.declare_output("rendered")
+    tmpl = ctx.attrs.template[TemplateInfo]
 
-    python_binary(
-        name = name + "-render",
-        main_module = "antlir.render_template",
-        deps = [
-            ":" + name,
-            "//antlir:render_template",
-        ],
-        base_module = "antlir",
-        resources = {
-            ":" + root_template_target: "__root_template_name__",
-        },
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._render_template[RunInfo],
+            cmd_args(tmpl.root, format = "--root={}"),
+            cmd_args(tmpl.compiled_srcs, format = "--compiled-templates={}"),
+            cmd_args(data_json, format = "--json-file={}"),
+            cmd_args(rendered.as_output(), format = "--out={}"),
+        ),
+        category = "render",
+    )
+    return [
+        DefaultInfo(rendered),
+    ]
+
+_render = rule(
+    impl = _render_impl,
+    attrs = {
+        "data_json": attrs.string(),
+        "template": attrs.dep(providers = [TemplateInfo]),
+        "_render_template": attrs.default_only(attrs.exec_dep(
+            providers = [RunInfo],
+            default = antlir_dep(":render-template"),
+        )),
+    },
+    doc = """
+        Render a template to a file.
+    """,
+)
+
+_render_macro = rule_with_default_target_platform(_render)
+
+def render(*, instance: typing.Any, visibility = None, **kwargs):
+    _render_macro(
+        data_json = selects.apply(instance, json.encode),
         visibility = get_visibility(visibility),
+        **kwargs
     )
