@@ -115,20 +115,6 @@ _sendstream = anon_rule(
     attrs = _base_sendstream_args | layer_attrs,
 )
 
-def _v1_impl(ctx: AnalysisContext):
-    return [
-        DefaultInfo(
-            anon_v1_sendstream(ctx = ctx).artifact("anon_v1_sendstream"),
-            sub_targets = {"layer": ctx.attrs.layer.providers},
-        ),
-    ]
-
-_sendstream_v1 = rule(
-    impl = _v1_impl,
-    attrs = _base_sendstream_args | layer_attrs,
-    cfg = package_cfg,
-)
-
 def anon_v1_sendstream(
         *,
         ctx: AnalysisContext,
