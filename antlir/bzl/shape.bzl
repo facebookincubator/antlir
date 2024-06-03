@@ -228,7 +228,7 @@ def _shape(__thrift = None, **fields):
 
     return record(**fields)
 
-def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, test_only_rc_bzl2_ir: bool = False, **kwargs):  # pragma: no cover
+def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False, **kwargs):  # pragma: no cover
     if not name.endswith(".shape"):
         fail("shape.impl target must be named with a .shape suffix")
     export_file(
@@ -255,43 +255,42 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, t
 
     ir2code_prefix = "$(exe {}) --templates $(location {})/templates".format(antlir_dep("bzl/shape2:ir2code"), antlir_dep("bzl/shape2:templates"))
 
-    if not expert_only_custom_impl:
-        buck_genrule(
-            name = "{}.py".format(name),
-            cmd = "{} pydantic $(location :{}) > $OUT".format(ir2code_prefix, name),
-        )
-        python_library(
-            name = "{}-python".format(name),
-            srcs = {":{}.py".format(name): "__init__.py"},
-            base_module = native.package_name() + "." + name.replace(".shape", ""),
-            deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
-            visibility = visibility,
-            **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
-        )
-        buck_genrule(
-            name = "{}.rs".format(name),
-            cmd = "{} rust $(location :{}) > $OUT".format(ir2code_prefix, name),
-        )
-        rust_library(
-            name = "{}-rust".format(name),
-            crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
-            mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
-            deps = ["{}-rust".format(d) for d in deps] + [antlir_dep("bzl/shape2:shape")] + third_party.libraries(
-                [
-                    "anyhow",
-                    "fbthrift",
-                    "pyo3",
-                    "serde",
-                    "serde_json",
-                    "typed-builder",
-                ],
-                platform = "rust",
-            ),
-            visibility = visibility,
-            unittests = False,
-            allow_unused_crate_dependencies = True,
-            **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
-        )
+    buck_genrule(
+        name = "{}.py".format(name),
+        cmd = "{} pydantic $(location :{}) > $OUT".format(ir2code_prefix, name),
+    )
+    python_library(
+        name = "{}-python".format(name),
+        srcs = {":{}.py".format(name): "__init__.py"},
+        base_module = native.package_name() + "." + name.replace(".shape", ""),
+        deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
+        visibility = visibility,
+        **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
+    )
+    buck_genrule(
+        name = "{}.rs".format(name),
+        cmd = "{} rust $(location :{}) > $OUT".format(ir2code_prefix, name),
+    )
+    rust_library(
+        name = "{}-rust".format(name),
+        crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
+        mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
+        deps = ["{}-rust".format(d) for d in deps] + [antlir_dep("bzl/shape2:shape")] + third_party.libraries(
+            [
+                "anyhow",
+                "fbthrift",
+                "pyo3",
+                "serde",
+                "serde_json",
+                "typed-builder",
+            ],
+            platform = "rust",
+        ),
+        visibility = visibility,
+        unittests = False,
+        allow_unused_crate_dependencies = True,
+        **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
+    )
 
 def _json_string(instance):
     """
