@@ -9,8 +9,9 @@ import argparse
 from jinja2 import Environment
 
 parser = argparse.ArgumentParser()
-parser.add_argument("template")
-parser.add_argument("name")
+parser.add_argument("--template")
+parser.add_argument("--name")
+parser.add_argument("--out")
 
 
 def main() -> None:
@@ -19,9 +20,9 @@ def main() -> None:
         trim_blocks=True,
         lstrip_blocks=True,
     )
-    with open(args.template) as tmpl_file:
+    with open(args.template) as tmpl_file, open(args.out, "w") as out:
         tmpl = tmpl_file.read()
-        print(
+        out.write(
             env.compile(
                 tmpl,
                 name=args.name,

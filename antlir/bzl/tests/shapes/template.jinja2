@@ -1,4 +1,4 @@
-{{ name }} is a character that appears in episode(s) {{ appears_in|join(", ") }} of
+{{ name }} is a character that appears in episode(s){% include "antlir/bzl/tests/shapes/episodes:episodes.jinja2" %} of
 the Star Wars franchise and is friends with
 {%- for friend in friends %}
  {{friend.name -}}

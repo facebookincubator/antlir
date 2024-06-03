@@ -125,11 +125,12 @@ rust_binary(
     ],
 )
 
-python_library(
-    name = "render_template",
+python_binary(
+    name = "render-template",
     srcs = [
         "render_template.py",
     ],
+    main_function = "antlir.render_template.main",
     visibility = ["PUBLIC"],
     deps = [
         third_party.library(

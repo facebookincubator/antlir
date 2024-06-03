@@ -114,6 +114,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "python_library", "rust_library", "target_utils", "third_party")
 load(":shell.bzl", "shell")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
+load(":template.bzl", "render")
 
 _NO_DEFAULT = struct(no_default = True)
 
@@ -378,7 +379,7 @@ def _json_file(name, instance, visibility = None, labels = None):  # pragma: no 
     )
     return normalize_target(":" + name)
 
-def _render_template(name, instance, template, visibility = None):  # pragma: no cover
+def _render_template(name, **kwargs):  # pragma: no cover
     """
     Render the given Jinja2 template with the shape instance data to a file.
     """
@@ -387,12 +388,9 @@ def _render_template(name, instance, template, visibility = None):  # pragma: no
         # fired in at least one place. However, it's not a new bug, so keep it
         # papered over in D58021063 and address it in a later stacked diff.
         return normalize_target(":" + name)
-    buck_genrule(
+    render(
         name = name,
-        cmd = """
-            $(exe {}-render) > $OUT <<< {}
-        """.format(template, shell.quote(_json_string(instance))),
-        visibility = visibility,
+        **kwargs
     )
     return normalize_target(":" + name)
 

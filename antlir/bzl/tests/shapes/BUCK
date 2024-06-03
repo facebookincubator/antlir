@@ -160,6 +160,12 @@ python_unittest(
 template(
     name = "example-template",
     srcs = ["template.jinja2"],
+    deps = [":episodes"],
+)
+
+template(
+    name = "episodes",
+    srcs = ["episodes.jinja2"],
 )
 
 rust_unittest(

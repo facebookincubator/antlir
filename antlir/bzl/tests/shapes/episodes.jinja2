@@ -1,0 +1,5 @@
+{%- for ep in appears_in %}
+ {{ ep -}}
+    {% if loop.length > 2 and loop.revindex0 > 1 %},
+    {%- elif not loop.last %} and{%endif%}
+{%- endfor %}
