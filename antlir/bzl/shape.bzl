@@ -112,9 +112,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_library", "rust_library", "target_utils", "third_party")
 load(":shell.bzl", "shell")
-load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
-load(":types.bzl", "types")
 
 _NO_DEFAULT = struct(no_default = True)
 
@@ -299,7 +297,7 @@ def _json_string(instance):
     """
     Serialize the given shape instance to a JSON string.
     """
-    return json.encode(_as_dict_deep(instance))
+    return json.encode(instance)
 
 def _json_file(name, instance, visibility = None, labels = None):  # pragma: no cover
     """
@@ -319,13 +317,16 @@ def _render_template(name, instance, template, visibility = None):  # pragma: no
     """
     Render the given Jinja2 template with the shape instance data to a file.
     """
-    if native.rule_exists(name + "--data.json"):
+    if native.rule_exists(name):
+        # TODO(T191162975): this is a horrible footgun that has already been
+        # fired in at least one place. However, it's not a new bug, so keep it
+        # papered over in D58021063 and address it in a later stacked diff.
         return normalize_target(":" + name)
-    _json_file(name + "--data.json", instance)
-
     buck_genrule(
         name = name,
-        cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
+        cmd = """
+            $(exe {}-render) > $OUT <<< {}
+        """.format(template, shell.quote(_json_string(instance))),
         visibility = visibility,
     )
     return normalize_target(":" + name)
@@ -401,30 +402,10 @@ def _python_data(
     )
     return normalize_target(":" + name)
 
-# Converts a shape to a dict, as you would expected (field names are keys,
-# values are scalars & collections as in the shape -- and nested shapes are
-# also dicts).
-def _as_dict_deep(val):
-    if type(val) == "record":
-        d = {
-            k: _as_dict_deep(getattr(val, k))
-            for k in dir(val)
-        }
-        return d
-    if structs.is_struct(val):
-        val = structs.to_dict(val)
-    if types.is_dict(val):
-        val = {k: _as_dict_deep(v) for k, v in val.items()}
-    if types.is_list(val):
-        val = [_as_dict_deep(item) for item in val]
-
-    return val
-
 shape = struct(
     # generate implementation of various client libraries
     impl = _impl,
     # output target macros and other conversion helpers
-    as_serializable_dict = _as_dict_deep,
     dict = _dict,
     json_string = _json_string,
     enum = _enum,
