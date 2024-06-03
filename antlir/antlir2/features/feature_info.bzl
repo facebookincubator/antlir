@@ -124,8 +124,9 @@ PlanInfo = provider(fields = {
     # Unique string identifying this plan artifact for retrieval by the feature
     # that produced it
     "id": provider_field(str),
-    "log": provider_field(Artifact | None, default = None),
     "output": provider_field(Artifact),
+    # Expose some artifacts as debug subtargets
+    "sub_artifacts": provider_field(dict[str, Artifact], default = {}),
 })
 
 feature_record = record(
