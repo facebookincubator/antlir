@@ -46,7 +46,7 @@ impl RwDatabase {
         P: AsRef<std::path::Path>,
     {
         let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
-        db.pragma_update(None, "foreign_keys", "ON")?;
+        Self::rw_db_pragmas(&db)?;
         Ok(Self { db })
     }
 
@@ -56,9 +56,19 @@ impl RwDatabase {
         P: AsRef<std::path::Path>,
     {
         let db = Connection::open(path)?;
-        db.pragma_update(None, "foreign_keys", "ON")?;
+        Self::rw_db_pragmas(&db)?;
         Self::setup_new_db(&db)?;
         Ok(Self { db })
+    }
+
+    fn rw_db_pragmas(db: &Connection) -> Result<()> {
+        db.pragma_update(None, "foreign_keys", "ON")?;
+        // If any program writing to this database even exits non-zero, buck2
+        // will throw away the database, so we can use journal_mode=MEMORY and
+        // lose any in-progress writes. This should prevent the database from
+        // ever entering any kind of recovery mode.
+        db.pragma_update(None, "journal_mode", "MEMORY")?;
+        Ok(())
     }
 
     fn setup_new_db(db: &Connection) -> Result<()> {
