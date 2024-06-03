@@ -38,16 +38,18 @@ load(
 )
 
 def _compile(
+        *,
         ctx: AnalysisContext,
-        cmd: cmd_args,
         identifier: str,
         parent: Artifact | None,
-        logs: Artifact,
-        rootless: bool) -> Artifact:
+        logs: OutputArtifact,
+        rootless: bool,
+        target_arch: str,
+        depgraph: Artifact,
+        plans: typing.Any,
+        hidden_deps: typing.Any) -> Artifact:
     """
-    Take the 'parent' image, and run some command through 'antlir2 map' to
-    produce a new image.
-    In other words, this is a mapping function of 'image A -> A1'
+    Compile features into a new image layer
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
     out = ctx.actions.declare_output(identifier, "subvol")
@@ -55,14 +57,17 @@ def _compile(
         cmd_args(
             cmd_args("sudo") if not rootless else cmd_args(),
             antlir2,
-            cmd_args(logs.as_output(), format = "--logs={}"),
-            "map",
+            cmd_args(logs, format = "--logs={}"),
+            "compile",
             "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
             cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
             cmd_args(out.as_output(), format = "--output={}"),
             cmd_args("--rootless") if rootless else cmd_args(),
-            cmd,
+            cmd_args(target_arch, format = "--target-arch={}"),
+            cmd_args(depgraph, format = "--depgraph={}"),
+            cmd_args(plans, format = "--plans={}"),
+            hidden = hidden_deps,
         ),
         category = "antlir2",
         env = {
@@ -359,27 +364,23 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         phase_sub_targets["plan"] = [DefaultInfo(sub_targets = plan_sub_targets)]
 
-        logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
-
         plans = ctx.actions.write_json(
             ctx.actions.declare_output(identifier, "plans.json"),
             {id: pi.output for id, pi in plans.items()},
             with_inputs = True,
         )
 
+        logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
         subvol = _compile(
-            cmd = cmd_args(
-                "compile",
-                cmd_args(target_arch, format = "--target-arch={}"),
-                cmd_args(facts_db, format = "--depgraph={}"),
-                cmd_args(plans, format = "--plans={}"),
-                hidden = compile_feature_hidden_deps,
-            ),
             ctx = ctx,
             identifier = identifier,
             parent = subvol,
-            logs = logs["compile"],
+            logs = logs["compile"].as_output(),
             rootless = ctx.attrs._rootless,
+            target_arch = ctx.attrs._selected_target_arch,
+            depgraph = facts_db,
+            plans = plans,
+            hidden_deps = compile_feature_hidden_deps,
         )
 
         phase_sub_targets["depgraph"] = [DefaultInfo(facts_db)]
