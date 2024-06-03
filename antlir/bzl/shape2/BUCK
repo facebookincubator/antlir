@@ -21,7 +21,6 @@ rust_binary(
     test_deps = ["maplit"],
     visibility = [
         "PUBLIC", # @oss-enable
-        "PUBLIC",
     ],
     deps = [
         "allocative",

@@ -318,9 +318,6 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
     if test_only_rc_bzl2_ir:
         bzl2ir = antlir_dep("bzl/shape2:bzl2ir")
 
-    # TODO: go back to MSDK preserved binary after building these changes
-    bzl2ir = antlir_dep("bzl/shape2:bzl2ir")
-
     visibility = get_visibility(visibility)
 
     _shape_rule(
