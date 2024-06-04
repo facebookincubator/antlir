@@ -637,11 +637,12 @@ impl<S: Share> VM<S> {
         }
         let mut response = String::new();
         let mut f = BufReader::new(socket);
+        let desc = "Failed to read boot event from the notify socket. This
+        indicates the VM failed to boot to default target. Please check the
+        console log for further analysis"
+            .into();
         f.read_line(&mut response)
-            .map_err(|err| VMError::BootError {
-                desc: "Failed to read notify socket".into(),
-                err,
-            })?;
+            .map_err(|err| VMError::BootError { desc, err })?;
         info!(
             "Received boot event {} after {} seconds",
             response.trim(),
