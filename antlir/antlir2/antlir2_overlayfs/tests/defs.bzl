@@ -44,10 +44,22 @@ def _test_layer_impl(ctx: AnalysisContext) -> list[Provider]:
     )
     model = ctx.actions.write_json("model.json", fs, with_inputs = True)
 
+    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._materialize_to_subvol[RunInfo],
+            cmd_args(model, format = "--model={}"),
+            cmd_args(subvol_symlink.as_output(), format = "--subvol-symlink={}"),
+        ),
+        category = "materialize_subvol",
+        local_only = True,
+    )
+
     return [
         DefaultInfo(sub_targets = {
             "data_dir": [DefaultInfo(data_dir)],
             "manifest": [DefaultInfo(manifest)],
+            "subvol_symlink": [DefaultInfo(subvol_symlink)],
         }),
         TestLayerInfo(
             overlayfs = OverlayFs(
@@ -67,6 +79,7 @@ _test_layer = rule(
         "bash": attrs.arg(),
         "parent": attrs.option(attrs.dep(providers = [TestLayerInfo]), default = None),
         "_make_layer": attrs.exec_dep(default = "//antlir/antlir2/antlir2_overlayfs/tests:make-layer"),
+        "_materialize_to_subvol": attrs.exec_dep(default = "//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol"),
     },
 )
 

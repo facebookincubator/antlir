@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("antlir")
 
@@ -23,5 +23,30 @@ rust_library(
         "urlencoding",
         "walkdir",
         "xattr",
+    ],
+)
+
+rust_binary(
+    name = "materialize-to-subvol",
+    srcs = ["bin/materialize_to_subvol.rs"],
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
+    unittests = False,
+    visibility = [
+        "//antlir/...",
+    ],
+    deps = [
+        "anyhow",
+        "clap",
+        "nix",
+        "tracing",
+        "tracing-subscriber",
+        "walkdir",
+        ":antlir2_overlayfs",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
+        "//antlir/util/cli/json_arg:json_arg",
     ],
 )
