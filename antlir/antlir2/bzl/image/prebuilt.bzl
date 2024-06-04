@@ -4,10 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:selects.bzl", "selects")
+load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerContents", "LayerInfo")
 load(":facts.bzl", "facts")
 
 PrebuiltImageInfo = provider(fields = [
@@ -88,20 +89,23 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
             cmd_args("--rootless") if ctx.attrs._rootless else cmd_args(),
+            cmd_args("--working-format=overlayfs") if ctx.attrs._overlayfs else cmd_args(),
         ),
         category = "antlir2_prebuilt_layer",
         # needs local subvolumes
-        local_only = True,
+        local_only = not ctx.attrs._overlayfs,
         # the old output is used to clean up the local subvolume
-        no_outputs_cleanup = True,
+        no_outputs_cleanup = not ctx.attrs._overlayfs,
         env = {
             "RUST_LOG": "antlir2=trace",
         },
     )
 
+    contents = LayerContents(subvol_symlink = subvol_symlink)
+
     facts_db = facts.new_facts_db(
         actions = ctx.actions,
-        subvol_symlink = subvol_symlink,
+        layer = contents,
         parent_facts_db = None,
         build_appliance = None,
         new_facts_db = ctx.attrs._new_facts_db[RunInfo],
@@ -113,7 +117,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         LayerInfo(
             label = ctx.label,
             facts_db = facts_db,
-            subvol_symlink = subvol_symlink,
+            contents = contents,
             mounts = [],
             flavor = ctx.attrs.flavor,
         ),
@@ -134,6 +138,7 @@ _prebuilt = rule(
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
         "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
+        "_overlayfs": attrs.bool(default = False),
         "_rootless": attrs.default_only(attrs.bool(default = select({
             antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
             antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
@@ -157,6 +162,11 @@ def prebuilt(*args, **kwargs):
         "DEFAULT": [],
     }))
     kwargs["labels"] = labels
+
+    if get_antlir2_use_overlayfs():
+        kwargs["_overlayfs"] = True
+        kwargs["rootless"] = True
+
     _prebuilt_macro(
         *args,
         **kwargs

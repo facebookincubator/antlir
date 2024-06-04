@@ -37,7 +37,7 @@ def all_mounts(
                 mounts.append(mount_record(
                     layer = layer_mount_record(
                         mountpoint = mount.layer.mountpoint,
-                        subvol_symlink = layer_mount.layer[LayerInfo].subvol_symlink,
+                        subvol_symlink = layer_mount.layer[LayerInfo].contents.subvol_symlink,
                     ),
                     host = None,
                 ))

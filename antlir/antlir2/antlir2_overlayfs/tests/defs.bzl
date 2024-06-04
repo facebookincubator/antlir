@@ -42,7 +42,8 @@ def _test_layer_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         layers = parent_layers,
     )
-    model = ctx.actions.write_json("model.json", fs, with_inputs = True)
+    model_json = ctx.actions.declare_output("model.json")
+    model = ctx.actions.write_json(model_json, fs, with_inputs = True)
 
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     ctx.actions.run(
@@ -68,7 +69,8 @@ def _test_layer_impl(ctx: AnalysisContext) -> list[Provider]:
                     manifest = manifest,
                 ),
                 layers = parent_layers,
-                json_file = model,
+                json_file = model_json,
+                json_file_with_inputs = model,
             ),
         ),
     ]

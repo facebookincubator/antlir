@@ -1,0 +1,26 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+
+oncall("antlir")
+
+image.layer(
+    name = "example",
+    default_os = "centos9",
+    features = [
+        feature.rpms_install(rpms = [
+            "basesystem",
+            "bash",
+            "util-linux",
+            "rpm",
+        ]),
+        feature.install_text(
+            dst = "/hello",
+            text = "I am antlir\n",
+        ),
+    ],
+    target_compatible_with = [
+        # TODO(T156455885): RE builds for ARM must be scheduled on an ARM
+        # worker, but it's not clear if that's possible.
+        "ovr_config//cpu:x86_64",
+    ],
+)

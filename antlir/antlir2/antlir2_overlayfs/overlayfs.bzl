@@ -15,5 +15,18 @@ OverlayFs = record(
     # left-to-right lowest-to-highest
     layers = field(list[OverlayLayer], default = []),
     # {top, layers} serialized as a json file (with_inputs = True)
-    json_file = typing.Any,
+    json_file_with_inputs = typing.Any,
+    # Same file as above, but without associated inputs
+    json_file = Artifact | None,
 )
+
+_KEY = "antlir2.overlayfs"
+
+def set_antlir2_use_overlayfs():
+    write_package_value(
+        _KEY,
+        True,
+    )
+
+def get_antlir2_use_overlayfs() -> bool:
+    return read_package_value(_KEY) or False

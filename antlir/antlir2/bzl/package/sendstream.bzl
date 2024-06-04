@@ -79,7 +79,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "spec.json",
         {"sendstream": {
             "incremental_parent": ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink if ctx.attrs.incremental_parent else None,
-            "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
+            "layer": ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
             "subvol_symlink": subvol_symlink.as_output(),
             "volume_name": ctx.attrs.volume_name,
         }},

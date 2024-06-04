@@ -24,6 +24,7 @@ rust_binary(
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
         "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
+        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
         "//antlir/buck/buck_label:buck_label",

@@ -34,7 +34,7 @@ rust_binary(
     ],
     unittests = False,
     visibility = [
-        "//antlir/...",
+        "PUBLIC",
     ],
     deps = [
         "anyhow",

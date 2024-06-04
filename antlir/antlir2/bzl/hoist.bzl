@@ -24,7 +24,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "--recursive" if ctx.attrs.dir else cmd_args(),
             "--reflink=auto",
             cmd_args(
-                ctx.attrs.layer[LayerInfo].subvol_symlink,
+                ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
                 format = "{{}}/{}".format(ctx.attrs.path.lstrip("/")),
             ),
             out.as_output(),
@@ -43,7 +43,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     ctx.actions.run(
         cmd_args(
             script,
-            hidden = [out.as_output(), ctx.attrs.layer[LayerInfo].subvol_symlink],
+            hidden = [out.as_output(), ctx.attrs.layer[LayerInfo].contents.subvol_symlink],
         ),
         category = "hoist",
         local_only = True,  # local subvol

@@ -22,6 +22,7 @@ use antlir2_facts::RwDatabase;
 use antlir2_facts::Transaction;
 use antlir2_isolate::sys::unshare;
 use antlir2_isolate::IsolationContext;
+use antlir2_overlayfs::OverlayFs;
 use antlir2_systemd::UnitFile;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
@@ -32,14 +33,21 @@ use anyhow::Result;
 use clap::Parser;
 use fxhash::FxHashSet;
 use itertools::Itertools;
+use json_arg::JsonFile;
 use jwalk::WalkDir;
+use nix::mount::mount;
+use nix::mount::MsFlags;
+use nix::sched::unshare as unshare2;
+use nix::sched::CloneFlags;
 use tracing::trace;
 use tracing::warn;
 
 #[derive(Parser)]
 struct Args {
-    #[clap(long)]
-    root: PathBuf,
+    #[clap(long, conflicts_with = "overlayfs")]
+    subvol_symlink: Option<PathBuf>,
+    #[clap(long, conflicts_with = "subvol_symlink")]
+    overlayfs: Option<JsonFile<antlir2_overlayfs::BuckModel>>,
     #[clap(long)]
     parent: Option<PathBuf>,
     #[clap(long)]
@@ -266,6 +274,20 @@ fn populate_systemd_units(tx: &mut Transaction, root: &Path) -> Result<()> {
     Ok(())
 }
 
+enum Root {
+    Subvol(PathBuf),
+    Overlayfs(OverlayFs),
+}
+
+impl Root {
+    fn path(&self) -> &Path {
+        match self {
+            Self::Subvol(p) => p,
+            Self::Overlayfs(fs) => fs.mountpoint(),
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     tracing_subscriber::fmt()
@@ -299,7 +321,42 @@ fn main() -> Result<()> {
     let gid = nix::unistd::Gid::effective().as_raw();
 
     let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-    populate(&mut tx, &args.root, args.build_appliance.as_deref())?;
+
+    // Be careful to isolate this process from the host mount namespace in
+    // case anything weird is going on
+    unshare2(CloneFlags::CLONE_NEWNS).context("while unsharing mount")?;
+
+    // Remount / as private so that we don't let any changes escape back
+    // to the parent mount namespace (basically equivalent to `mount
+    // --make-rprivate /`)
+    mount(
+        None::<&str>,
+        "/",
+        None::<&str>,
+        MsFlags::MS_REC | MsFlags::MS_PRIVATE,
+        None::<&str>,
+    )
+    .context("while making mount ns private")?;
+
+    let root = match (args.subvol_symlink, args.overlayfs) {
+        (Some(subvol_symlink), None) => Root::Subvol(subvol_symlink),
+        (None, Some(model)) => Root::Overlayfs(
+            // TODO: we ideally should be able to generate changes to the db
+            // incrementally just by looking at the upper layer, but we still
+            // need to run `rpm -q` (unless we want to record it as part of
+            // feature.rpm and feature.chef_solo which seems very error-prone),
+            // so just mount the overlayfs and treat it the same as a subvol
+            OverlayFs::mount(
+                antlir2_overlayfs::Opts::builder()
+                    .model(model.into_inner())
+                    .build(),
+            )
+            .context("while mounting overlayfs")?,
+        ),
+        _ => bail!("impossible combination"),
+    };
+
+    populate(&mut tx, root.path(), args.build_appliance.as_deref())?;
 
     // make sure all the output files are owned by the unprivileged user
     std::os::unix::fs::lchown(&args.db, Some(uid), Some(gid))

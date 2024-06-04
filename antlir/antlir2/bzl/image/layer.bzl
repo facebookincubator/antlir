@@ -5,11 +5,12 @@
 
 load("@prelude//utils:expect.bzl", "expect")
 load("@prelude//utils:selects.bzl", "selects")
+load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
-load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
 
 load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-enable
@@ -41,18 +42,51 @@ def _compile(
         *,
         ctx: AnalysisContext,
         identifier: str,
-        parent: Artifact | None,
+        parent: LayerContents | None,
         logs: OutputArtifact,
         rootless: bool,
         target_arch: str,
         depgraph: Artifact,
         plans: typing.Any,
-        hidden_deps: typing.Any) -> Artifact:
+        hidden_deps: typing.Any) -> LayerContents:
     """
     Compile features into a new image layer
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
-    out = ctx.actions.declare_output(identifier, "subvol")
+    if ctx.attrs._overlayfs:
+        parent_layers = (parent.overlayfs.layers + [parent.overlayfs.top]) if parent else []
+        overlayfs_model_out = ctx.actions.declare_output(identifier, "overlayfs-out.json")
+        data_dir = ctx.actions.declare_output(identifier, "overlayfs-data-dir", dir = True)
+        manifest = ctx.actions.declare_output(identifier, "overlayfs-manifest.json")
+        overlayfs_model_out = ctx.actions.write_json(overlayfs_model_out, struct(
+            top = OverlayLayer(
+                data_dir = data_dir.as_output(),
+                manifest = manifest.as_output(),
+            ),
+            layers = parent_layers,
+        ), with_inputs = True)
+        overlayfs_model = ctx.actions.declare_output(identifier, "overlayfs.json")
+        overlayfs_model_with_inputs = ctx.actions.write_json(overlayfs_model, struct(
+            top = OverlayLayer(
+                data_dir = data_dir,
+                manifest = manifest,
+            ),
+            layers = parent_layers,
+        ), with_inputs = True)
+        overlayfs = OverlayFs(
+            top = OverlayLayer(
+                data_dir = data_dir,
+                manifest = manifest,
+            ),
+            layers = parent_layers,
+            json_file_with_inputs = overlayfs_model_with_inputs,
+            json_file = overlayfs_model,
+        )
+        subvol_symlink = None
+    else:
+        overlayfs_model_out = None
+        overlayfs = None
+        subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink")
     ctx.actions.run(
         cmd_args(
             cmd_args("sudo") if not rootless else cmd_args(),
@@ -61,12 +95,16 @@ def _compile(
             "compile",
             "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
-            cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
-            cmd_args(out.as_output(), format = "--output={}"),
+            cmd_args(parent.subvol_symlink, format = "--parent={}") if parent and not ctx.attrs._overlayfs else cmd_args(),
+            cmd_args(
+                subvol_symlink.as_output() if not ctx.attrs._overlayfs else overlayfs_model_out,
+                format = "--output={}",
+            ),
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(depgraph, format = "--depgraph={}"),
             cmd_args(plans, format = "--plans={}"),
+            cmd_args("--working-format=overlayfs") if ctx.attrs._overlayfs else cmd_args(),
             hidden = hidden_deps,
         ),
         category = "antlir2",
@@ -75,16 +113,19 @@ def _compile(
         },
         identifier = identifier,
         # needs local subvolumes
-        local_only = True,
+        local_only = not ctx.attrs._overlayfs,
         # the old output is used to clean up the local subvolume
-        no_outputs_cleanup = True,
+        no_outputs_cleanup = not ctx.attrs._overlayfs,
     )
 
-    return out
+    return LayerContents(
+        overlayfs = overlayfs,
+        subvol_symlink = subvol_symlink,
+    )
 
 def _container_sub_target(
         binary: Dependency | None,
-        subvol: Artifact,
+        layer: LayerContents,
         mounts: list[mount_record],
         rootless: bool) -> list[Provider]:
     if not binary:
@@ -101,17 +142,19 @@ def _container_sub_target(
             "sudo" if not rootless else cmd_args(),
             binary[RunInfo],
             "--rootless" if rootless else cmd_args(),
-            cmd_args(subvol, format = "--subvol={}"),
+            cmd_args(layer.subvol_symlink, format = "--subvol={}"),
             cmd_args([container_mount_args(mount) for mount in mounts]),
             dev_mode_args,
         )),
     ]
 
-def _implicit_image_test(subvol: Artifact, implicit_image_test: ExternalRunnerTestInfo) -> ExternalRunnerTestInfo:
+def _implicit_image_test(layer: LayerContents, implicit_image_test: ExternalRunnerTestInfo) -> ExternalRunnerTestInfo:
     implicit_image_test = ExternalRunnerTestInfo(
         type = implicit_image_test.test_type,
         command = implicit_image_test.command,
-        env = (implicit_image_test.env or {}) | {"ANTLIR2_LAYER": subvol},
+        env = (implicit_image_test.env or {}) | {
+            "ANTLIR2_LAYER": (layer.overlayfs.json_file_with_inputs if layer.overlayfs else None) or layer.subvol_symlink,
+        },
         labels = [],
         run_from_project_root = True,
     )
@@ -250,7 +293,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # inconvenient for image authors, but is incredibly useful for everyone
     # involved, so we can do it for them implicitly.
 
-    subvol = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None
+    if ctx.attrs._overlayfs and not ctx.attrs._rootless:
+        fail("overlayfs is only supported with rootless")
+
+    layer = ctx.attrs.parent_layer[LayerInfo].contents if ctx.attrs.parent_layer else None
     facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
     debug_sub_targets = {}
 
@@ -276,7 +322,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         # this is the final phase and nothing has been built yet, we need to
         # fall through and produce an empty subvolume so it can still be used as
         # a parent_layer and/or snapshot its own parent's contents
-        if not features and not (phase == BuildPhase("compile") and subvol == None):
+        if not features and not (phase == BuildPhase("compile") and layer == None):
             continue
 
         # Some feature types must be reduced to one instance per phase (eg
@@ -330,7 +376,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 if planner.target_arch:
                     kwargs["target_arch"] = target_arch
                 if planner.parent_subvol_symlink:
-                    kwargs["parent_subvol_symlink"] = subvol
+                    kwargs["parent_subvol_symlink"] = layer.subvol_symlink if layer else None
                 if planner.dnf:
                     kwargs |= {
                         "dnf_available_repos": dnf_available_repos,
@@ -371,10 +417,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
 
         logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
-        subvol = _compile(
+        layer = _compile(
             ctx = ctx,
             identifier = identifier,
-            parent = subvol,
+            parent = layer,
             logs = logs["compile"].as_output(),
             rootless = ctx.attrs._rootless,
             target_arch = ctx.attrs._selected_target_arch,
@@ -387,25 +433,30 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         facts_db = facts.new_facts_db(
             actions = ctx.actions,
-            subvol_symlink = subvol,
             parent_facts_db = facts_db,
+            layer = layer,
             build_appliance = build_appliance[BuildApplianceInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = phase,
             rootless = ctx.attrs._rootless,
         )
 
-        phase_sub_targets["container"] = _container_sub_target(
-            ctx.attrs._run_container,
-            subvol,
-            mounts = all_mounts(
-                features = features,
-                parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
-            ),
-            rootless = ctx.attrs._rootless,
-        )
         all_logs = ctx.actions.declare_output(identifier, "logs", dir = True)
         ctx.actions.symlinked_dir(all_logs, {key + ".log": artifact for key, artifact in logs.items()})
+        if layer.subvol_symlink:
+            phase_sub_targets["subvol_symlink"] = [DefaultInfo(layer.subvol_symlink)]
+            phase_sub_targets["container"] = _container_sub_target(
+                ctx.attrs._run_container,
+                layer,
+                mounts = all_mounts(
+                    features = features,
+                    parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+                ),
+                rootless = ctx.attrs._rootless,
+            )
+        if layer.overlayfs:
+            phase_sub_targets["overlayfs"] = [DefaultInfo(layer.overlayfs.json_file)]
+            # TODO: support [container] for overlayfs backed layers
 
         debug_sub_targets[phase.value] = [
             DefaultInfo(
@@ -415,24 +466,51 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                         key: [DefaultInfo(artifact)]
                         for key, artifact in logs.items()
                     })],
-                    "subvol": [DefaultInfo(subvol)],
                 },
             ),
         ]
 
     debug_sub_targets["facts"] = [DefaultInfo(facts_db)]
 
-    sub_targets["subvol_symlink"] = [DefaultInfo(subvol)]
-
     parent_layer_info = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None
     mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
     # @oss-disable
 
-    sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, subvol, mounts, ctx.attrs._rootless)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
+    if layer.subvol_symlink:
+        subvol_symlink = layer.subvol_symlink
+        sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, layer, mounts, ctx.attrs._rootless)
+    elif ctx.attrs._materialize_to_subvol:
+        subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+        ctx.actions.run(
+            cmd_args(
+                ctx.attrs._materialize_to_subvol[RunInfo],
+                cmd_args(layer.overlayfs.json_file_with_inputs, format = "--model={}"),
+                cmd_args(subvol_symlink.as_output(), format = "--subvol-symlink={}"),
+            ),
+            category = "materialize_to_subvol",
+            local_only = True,  # deals with local subvolumes
+        )
+        sub_targets["subvol_symlink"] = [DefaultInfo(subvol_symlink)]
+        sub_targets["container"] = _container_sub_target(
+            ctx.attrs._run_container,
+            LayerContents(subvol_symlink = subvol_symlink),
+            mounts,
+            ctx.attrs._rootless,
+        )
+    else:
+        # This won't happen until we migrate more complex targets, since this
+        # will only affect anon layers
+        fail("RE builds must be provided with _materialize_to_subvol")
+
+    sub_targets["subvol_symlink"] = [DefaultInfo(subvol_symlink)]
+
     providers = [
-        DefaultInfo(subvol, sub_targets = sub_targets),
+        DefaultInfo(
+            subvol_symlink,
+            sub_targets = sub_targets,
+        ),
         LayerInfo(
             build_appliance = build_appliance,
             facts_db = facts_db,
@@ -441,14 +519,15 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             label = ctx.label,
             mounts = mounts,
             parent = ctx.attrs.parent_layer,
-            subvol_symlink = subvol,
             features = all_features,
+            contents = layer,
+            subvol_symlink = subvol_symlink,
         ),
     ]
 
     if ctx.attrs._implicit_image_test:
         providers.append(
-            _implicit_image_test(subvol, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
+            _implicit_image_test(layer, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
         )
 
     if ctx.attrs.default_mountpoint:
@@ -527,7 +606,9 @@ _layer_attrs = {
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
     ),
+    "_materialize_to_subvol": attrs.option(attrs.exec_dep(), default = None),
     "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
+    "_overlayfs": attrs.bool(default = False),
     "_run_container": attrs.option(attrs.exec_dep(), default = None),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -600,6 +681,10 @@ def layer(
     if rootless == None:
         rootless = get_antlir2_rootless()
 
+    if get_antlir2_use_overlayfs():
+        kwargs["_overlayfs"] = True
+        rootless = True
+
     if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
 
@@ -611,5 +696,6 @@ def layer(
         visibility = get_visibility(visibility),
         _implicit_image_test = antlir2_dep("//antlir/antlir2/testing/implicit_image_test:implicit_image_test"),
         _run_container = antlir2_dep("//antlir/antlir2/container_subtarget:run"),
+        _materialize_to_subvol = antlir2_dep("//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol"),
         **kwargs
     )

@@ -46,7 +46,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 "sudo" if not ctx.attrs._rootless else cmd_args(),
                 ctx.attrs._genrule_in_image[RunInfo],
                 "--rootless" if ctx.attrs._rootless else cmd_args(),
-                cmd_args(layer[LayerInfo].subvol_symlink, format = "--layer={}"),
+                cmd_args(layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
                 "--dir" if out_is_dir else cmd_args(),
                 "--ephemeral" if ctx.attrs.ephemeral_root else cmd_args(),

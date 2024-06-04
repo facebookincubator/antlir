@@ -47,8 +47,10 @@ rust_binary(
         "tracing-subscriber",
         ":antlir2_facts",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
         "//antlir/antlir2/antlir2_users:antlir2_users",
+        "//antlir/util/cli/json_arg:json_arg",
     ],
 )

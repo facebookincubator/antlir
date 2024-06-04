@@ -10,12 +10,13 @@ load(
 load(
     "//antlir/antlir2/bzl:types.bzl",
     "BuildApplianceInfo",  # @unused Used as type
+    "LayerContents",  # @unused Used as type
 )
 
 def _new_facts_db(
         *,
         actions: AnalysisActions,
-        subvol_symlink: Artifact,
+        layer: LayerContents,
         parent_facts_db: Artifact | None,
         build_appliance: BuildApplianceInfo | Provider | None,
         new_facts_db: RunInfo,
@@ -26,12 +27,20 @@ def _new_facts_db(
         output = actions.declare_output(prefix, "facts")
     else:
         output = actions.declare_output("facts")
+
+    # Inspecting already-built images often requires root privileges
+    sudo = True
+    if rootless:  # rootless builds must avoid sudo
+        sudo = False
+    if layer.overlayfs:  # overlayfs layers have metadata accessible without root
+        sudo = False
+
     actions.run(
         cmd_args(
-            # Inspecting already-built images often requires root privileges
-            "sudo" if not rootless else cmd_args(),
+            "sudo" if sudo else cmd_args(),
             new_facts_db,
-            cmd_args(subvol_symlink, format = "--root={}"),
+            cmd_args(layer.subvol_symlink, format = "--subvol-symlink={}") if layer.subvol_symlink else cmd_args(),
+            cmd_args(layer.overlayfs.json_file_with_inputs, format = "--overlayfs={}") if layer.overlayfs else cmd_args(),
             cmd_args(parent_facts_db, format = "--parent={}") if parent_facts_db else cmd_args(),
             cmd_args(build_appliance.dir, format = "--build-appliance={}") if build_appliance else cmd_args(),
             cmd_args(output.as_output(), format = "--db={}"),
@@ -39,7 +48,8 @@ def _new_facts_db(
         ),
         category = "antlir2_facts",
         identifier = prefix,
-        local_only = True,  # needs local subvol
+        # needs local subvol if not overlayfs
+        local_only = not layer.overlayfs,
         env = {
             "RUST_LOG": "populate=trace",
         },

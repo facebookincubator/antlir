@@ -9,6 +9,7 @@ load(
 )
 load(
     "//antlir/antlir2/bzl:types.bzl",
+    "LayerContents",  # @unused Used as type
     "LayerInfo",  # @unused Used as type
 )
 load("//antlir/antlir2/bzl/feature:feature.bzl", "as_json_for_depgraph")

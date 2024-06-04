@@ -25,6 +25,6 @@ def layer_dep_analyze(layer: Dependency) -> layer_dep:
     return layer_dep(
         label = info.label,
         facts_db = info.facts_db,
-        subvol_symlink = info.subvol_symlink,
+        subvol_symlink = info.contents.subvol_symlink,
         mounts = info.mounts,
     )
