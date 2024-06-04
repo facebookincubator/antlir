@@ -1,0 +1,29 @@
+load("//antlir/antlir2/antlir2_overlayfs/tests:defs.bzl", "overlay_sh_test", "test_layer")
+load("//antlir/bzl:build_defs.bzl", "export_file")
+
+oncall("antlir")
+
+CHAIN_LEN = 30
+
+[
+    test_layer(
+        name = "long-chain-{}".format(idx),
+        bash = """
+            echo Long chain member {idx} > {idx}
+        """.format(idx = idx),
+        parent = ":long-chain-{}".format(idx - 1) if idx > 0 else None,
+    )
+    for idx in range(CHAIN_LEN)
+]
+
+export_file(
+    name = "test_long_chain.py",
+)
+
+overlay_sh_test(
+    name = "long-chain-of-overlays",
+    bash = """
+        $(location :test_long_chain.py) {}
+    """.format(CHAIN_LEN),
+    layer = ":long-chain-{}".format(CHAIN_LEN - 1),
+)
