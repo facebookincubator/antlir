@@ -3,13 +3,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file", "internal_external")
 
 oncall("antlir")
 
 buck_sh_binary(
     name = "makecache",
-    main = "makecache.py",
+    main = internal_external(
+        fb = "fbcode//antlir/antlir2/package_managers/dnf/rules/makecache/facebook:msdk",
+        oss = "makecache.py",
+    ),
 )
 
 export_file(
