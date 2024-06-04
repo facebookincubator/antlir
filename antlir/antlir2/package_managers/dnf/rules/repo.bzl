@@ -53,7 +53,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         repodata = ctx.actions.declare_output("repodata_with_solv", dir = True)
         ctx.actions.run(
             cmd_args(
-                ctx.attrs.build_solv[RunInfo],
+                ctx.attrs.makecache[RunInfo],
                 repo_id,
                 plain_repodata,
                 repodata.as_output(),
@@ -133,7 +133,6 @@ repo_attrs = {
         default = None,
     ),
     "bucket": attrs.option(attrs.string(doc = "manifold bucket"), default = None),
-    "build_solv": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:build-solv")),
     "compress": attrs.enum(["none", "gzip"], default = "gzip"),
     "deleted_base_key": attrs.option(
         attrs.string(),
@@ -143,6 +142,7 @@ repo_attrs = {
     "dnf_conf": attrs.dict(attrs.string(), attrs.string(), default = {}),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
     "logical_id": attrs.option(attrs.string(), doc = "repo name as in dnf.conf", default = None),
+    "makecache": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules/makecache:makecache")),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules/makerepo:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),
     "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
