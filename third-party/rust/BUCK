@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "28ac8a615e284c7ad41cd1eaf97206982619a7b6",
+    rev = "51ac78d16b66f73cac0c7f54d2a8f1fd0e500893",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "4a018e817c845d3dfc177e4e2e915bc8940050f8",
+    rev = "798149eb3d4f601ce935a2465792e8212715d947",
     visibility = [],
 )
 
@@ -5193,23 +5193,23 @@ cargo.rust_library(
 
 alias(
     name = "hyper",
-    actual = ":hyper-0.14.28",
+    actual = ":hyper-0.14.29",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "hyper-0.14.28.crate",
-    sha256 = "bf96e135eb83a2a8ddf766e426a841d8ddd7449d5f00d34ea02b41d2f19eef80",
-    strip_prefix = "hyper-0.14.28",
-    urls = ["https://static.crates.io/crates/hyper/0.14.28/download"],
+    name = "hyper-0.14.29.crate",
+    sha256 = "f361cde2f109281a220d4307746cdfd5ee3f410da58a70377762396775634b33",
+    strip_prefix = "hyper-0.14.29",
+    urls = ["https://static.crates.io/crates/hyper/0.14.29/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "hyper-0.14.28",
-    srcs = [":hyper-0.14.28.crate"],
+    name = "hyper-0.14.29",
+    srcs = [":hyper-0.14.29.crate"],
     crate = "hyper",
-    crate_root = "hyper-0.14.28.crate/src/lib.rs",
+    crate_root = "hyper-0.14.29.crate/src/lib.rs",
     edition = "2018",
     features = [
         "client",
@@ -5265,7 +5265,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":bytes-1.6.0",
-        ":hyper-0.14.28",
+        ":hyper-0.14.29",
         ":native-tls-0.2.12",
         ":tokio-1.38.0",
         ":tokio-native-tls-0.3.1",
@@ -13461,23 +13461,23 @@ cargo.rust_library(
 
 alias(
     name = "toml",
-    actual = ":toml-0.8.13",
+    actual = ":toml-0.8.14",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "toml-0.8.13.crate",
-    sha256 = "a4e43f8cc456c9704c851ae29c67e17ef65d2c30017c17a9765b89c382dc8bba",
-    strip_prefix = "toml-0.8.13",
-    urls = ["https://static.crates.io/crates/toml/0.8.13/download"],
+    name = "toml-0.8.14.crate",
+    sha256 = "6f49eb2ab21d2f26bd6db7bf383edc527a7ebaee412d17af4d40fdccd442f335",
+    strip_prefix = "toml-0.8.14",
+    urls = ["https://static.crates.io/crates/toml/0.8.14/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "toml-0.8.13",
-    srcs = [":toml-0.8.13.crate"],
+    name = "toml-0.8.14",
+    srcs = [":toml-0.8.14.crate"],
     crate = "toml",
-    crate_root = "toml-0.8.13.crate/src/lib.rs",
+    crate_root = "toml-0.8.14.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -13489,7 +13489,7 @@ cargo.rust_library(
         ":serde-1.0.203",
         ":serde_spanned-0.6.6",
         ":toml_datetime-0.6.6",
-        ":toml_edit-0.22.13",
+        ":toml_edit-0.22.14",
     ],
 )
 
@@ -13547,18 +13547,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "toml_edit-0.22.13.crate",
-    sha256 = "c127785850e8c20836d49732ae6abfa47616e60bf9d9f57c43c250361a9db96c",
-    strip_prefix = "toml_edit-0.22.13",
-    urls = ["https://static.crates.io/crates/toml_edit/0.22.13/download"],
+    name = "toml_edit-0.22.14.crate",
+    sha256 = "f21c7aaf97f1bd9ca9d4f9e73b0a6c74bd5afef56f2bc931943a6e1c37e04e38",
+    strip_prefix = "toml_edit-0.22.14",
+    urls = ["https://static.crates.io/crates/toml_edit/0.22.14/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "toml_edit-0.22.13",
-    srcs = [":toml_edit-0.22.13.crate"],
+    name = "toml_edit-0.22.14",
+    srcs = [":toml_edit-0.22.14.crate"],
     crate = "toml_edit",
-    crate_root = "toml_edit-0.22.13.crate/src/lib.rs",
+    crate_root = "toml_edit-0.22.14.crate/src/lib.rs",
     edition = "2021",
     features = [
         "display",
@@ -13571,7 +13571,7 @@ cargo.rust_library(
         ":serde-1.0.203",
         ":serde_spanned-0.6.6",
         ":toml_datetime-0.6.6",
-        ":winnow-0.6.9",
+        ":winnow-0.6.11",
     ],
 )
 
@@ -15112,18 +15112,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "winnow-0.6.9.crate",
-    sha256 = "86c949fede1d13936a99f14fafd3e76fd642b556dd2ce96287fbe2e0151bfac6",
-    strip_prefix = "winnow-0.6.9",
-    urls = ["https://static.crates.io/crates/winnow/0.6.9/download"],
+    name = "winnow-0.6.11.crate",
+    sha256 = "56c52728401e1dc672a56e81e593e912aa54c78f40246869f78359a2bf24d29d",
+    strip_prefix = "winnow-0.6.11",
+    urls = ["https://static.crates.io/crates/winnow/0.6.11/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "winnow-0.6.9",
-    srcs = [":winnow-0.6.9.crate"],
+    name = "winnow-0.6.11",
+    srcs = [":winnow-0.6.11.crate"],
     crate = "winnow",
-    crate_root = "winnow-0.6.9.crate/src/lib.rs",
+    crate_root = "winnow-0.6.11.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
