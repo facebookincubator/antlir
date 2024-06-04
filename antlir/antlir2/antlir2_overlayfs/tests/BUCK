@@ -1,0 +1,110 @@
+load("//antlir/bzl:build_defs.bzl", "export_file", "rust_binary")
+load(":defs.bzl", "overlay_sh_test", "test_layer")
+
+oncall("antlir")
+
+rust_binary(
+    name = "make-layer",
+    srcs = ["make_layer.rs"],
+    visibility = [],
+    deps = [
+        "anyhow",
+        "clap",
+        "nix",
+        "tracing",
+        "tracing-subscriber",
+        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
+
+rust_binary(
+    name = "run-test",
+    srcs = ["run_test.rs"],
+    visibility = [],
+    deps = [
+        "anyhow",
+        "clap",
+        "nix",
+        "tracing",
+        "tracing-subscriber",
+        "uuid",
+        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
+
+test_layer(
+    name = "root",
+    bash = """
+        mkdir foo
+        echo bar > foo/bar
+        echo baz > foo/baz
+        chown 123:456 foo/bar
+        chown 42:43 .
+        mkfifo fifo
+    """,
+)
+
+test_layer(
+    name = "child",
+    bash = """
+        if [ ! -f foo/bar ]; then
+            echo "foo/bar should exist!"
+            exit 1
+        fi
+        rm foo/bar
+        echo baz >> foo/baz
+        echo qux > foo/qux
+    """,
+    parent = ":root",
+)
+
+overlay_sh_test(
+    name = "test-child",
+    bash = """
+        if [ -f foo/bar ]; then
+            echo "foo/bar should not exist!"
+            exit 1
+        fi
+        baz="\\$(cat foo/baz)"
+        if [ "$baz" != "baz\nbaz" ]; then
+            echo "foo/baz missing some contents"
+            exit 1
+        fi
+        qux="\\$(cat foo/qux)"
+        if [ "$qux" != "qux" ]; then
+            echo "foo/qux has incorrect contents"
+            exit 1
+        fi
+        fifo="\\$(file fifo)"
+        if [ "$fifo" != "fifo: fifo (named pipe)" ]; then
+            echo "fifo was not a fifo"
+            exit 1
+        fi
+    """,
+    layer = ":child",
+)
+
+test_layer(
+    name = "path-with-backslash",
+    bash = """
+        touch system-systemd\\\\x2dcryptsetup.slice
+    """,
+)
+
+# This needs to be python because buck2 is really weird about \\ escaping in
+# shell scripts
+export_file(
+    name = "test_path_with_backslash.py",
+)
+
+overlay_sh_test(
+    name = "test-path-with-backslash",
+    bash = """
+        $(location :test_path_with_backslash.py)
+    """,
+    layer = ":path-with-backslash",
+)
