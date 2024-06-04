@@ -50,7 +50,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "wants_units": boot_wants_units,
             } if ctx.attrs.boot else None,
             "hostname": ctx.attrs.hostname,
-            "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
+            "layer": ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
             "mounts": mounts,
             "pass_env": ctx.attrs.test[ExternalRunnerTestInfo].env.keys(),
             "rootless": ctx.attrs._rootless,

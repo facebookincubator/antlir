@@ -26,7 +26,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "subvols": {
                     path: {
                         # needs access to the layer for size calculations :(
-                        "layer": subvol["layer"][LayerInfo].subvol_symlink,
+                        "layer": subvol["layer"][LayerInfo].contents.subvol_symlink,
                         "sendstream": anon_v1_sendstream(
                             ctx = ctx,
                             layer = subvol["layer"],

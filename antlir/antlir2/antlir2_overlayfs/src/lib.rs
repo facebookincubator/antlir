@@ -57,6 +57,7 @@ fn default_scratch_root() -> Option<PathBuf> {
     std::env::var_os("BUCK_SCRATCH_PATH").map(PathBuf::from)
 }
 
+#[derive(Debug)]
 pub struct OverlayFs {
     model: BuckModel,
     scratch: Scratch,

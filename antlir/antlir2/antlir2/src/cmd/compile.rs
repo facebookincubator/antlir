@@ -6,6 +6,7 @@
  */
 
 use std::collections::HashMap;
+use std::path::Path;
 use std::path::PathBuf;
 
 use antlir2_btrfs::Subvolume;
@@ -13,11 +14,14 @@ use antlir2_compile::Arch;
 use antlir2_compile::CompileFeature;
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph::Graph;
+use antlir2_overlayfs::OverlayFs;
 use antlir2_rootless::Rootless;
 use antlir2_working_volume::WorkingVolume;
+use anyhow::anyhow;
 use anyhow::Context;
 use buck_label::Label;
 use clap::Parser;
+use clap::ValueEnum;
 use json_arg::JsonFile;
 use nix::mount::mount;
 use nix::mount::MsFlags;
@@ -50,6 +54,10 @@ pub(crate) struct Compile {
     /// buck-out path to store the reference to this volume
     output: PathBuf,
 
+    #[clap(value_enum, long, default_value_t=WorkingFormat::Btrfs)]
+    /// On-disk format of the layer storage
+    working_format: WorkingFormat,
+
     #[clap(long)]
     /// Architecture of the image being built
     target_arch: Arch,
@@ -63,9 +71,39 @@ pub(crate) struct Compile {
     plans: JsonFile<HashMap<String, PathBuf>>,
 }
 
+#[derive(Debug, ValueEnum, Clone, Copy)]
+enum WorkingFormat {
+    Btrfs,
+    Overlayfs,
+}
+
+#[derive(Debug)]
+enum WorkingLayer {
+    Btrfs(Subvolume),
+    OverlayFs(OverlayFs),
+}
+
+impl WorkingLayer {
+    fn path(&self) -> &Path {
+        match self {
+            WorkingLayer::Btrfs(subvol) => subvol.path(),
+            WorkingLayer::OverlayFs(fs) => fs.mountpoint(),
+        }
+    }
+}
+
 impl Compile {
     #[tracing::instrument(name = "compile", skip(self, rootless), ret, err)]
     pub(crate) fn run(self, rootless: Rootless) -> Result<()> {
+        // this must happen before unshare
+        let working_volume = match self.working_format {
+            WorkingFormat::Btrfs => Some(
+                WorkingVolume::ensure(self.working_dir.clone())
+                    .context("while setting up WorkingVolume")?,
+            ),
+            WorkingFormat::Overlayfs => None,
+        };
+
         let rootless = match self.rootless {
             true => None,
             false => Some(rootless),
@@ -74,11 +112,6 @@ impl Compile {
         if self.rootless {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
         }
-
-        let working_volume = WorkingVolume::ensure(self.working_dir.clone())
-            .context("while setting up WorkingVolume")?;
-
-        let mut subvol = self.create_new_subvol(&working_volume, &rootless)?;
 
         let root_guard = rootless.map(|r| r.escalate()).transpose()?;
 
@@ -98,6 +131,8 @@ impl Compile {
         )
         .context("while making mount ns private")?;
 
+        let layer = self.create_new_layer(working_volume.as_ref(), &rootless)?;
+
         drop(root_guard);
 
         let plans = self
@@ -112,7 +147,7 @@ impl Compile {
                 Result::Ok((id.to_owned(), plan))
             })
             .collect::<Result<_>>()?;
-        let ctx = self.compiler_context(subvol.path().to_owned(), plans)?;
+        let ctx = self.compiler_context(layer.path().to_owned(), plans)?;
 
         let depgraph = Graph::open(self.depgraph).context("while opening depgraph")?;
 
@@ -125,47 +160,55 @@ impl Compile {
         }
         drop(root_guard);
 
-        debug!("compile finished, making subvol {subvol:?} readonly");
-
-        let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-
-        if self.output.exists() {
-            trace!("removing existing output {}", self.output.display());
-            // Don't fail if the old subvol couldn't be deleted, just print
-            // a warning. We really don't want to fail someone's build if
-            // the only thing that went wrong is not being able to delete
-            // the last version of it.
-            match Subvolume::open(&self.output) {
-                Ok(old_subvol) => {
-                    if let Err(e) = old_subvol.delete() {
-                        warn!(
-                            "couldn't delete old subvol '{}': {e:?}",
-                            self.output.display()
-                        );
+        match layer {
+            WorkingLayer::Btrfs(mut subvol) => {
+                let root_guard = rootless.map(|r| r.escalate()).transpose()?;
+                if self.output.exists() {
+                    trace!("removing existing output {}", self.output.display());
+                    // Don't fail if the old subvol couldn't be deleted, just print
+                    // a warning. We really don't want to fail someone's build if
+                    // the only thing that went wrong is not being able to delete
+                    // the last version of it.
+                    match Subvolume::open(&self.output) {
+                        Ok(old_subvol) => {
+                            if let Err(e) = old_subvol.delete() {
+                                warn!(
+                                    "couldn't delete old subvol '{}': {e:?}",
+                                    self.output.display()
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            warn!(
+                                "couldn't open old subvol '{}': {e:?}",
+                                self.output.display()
+                            );
+                        }
                     }
                 }
-                Err(e) => {
-                    warn!(
-                        "couldn't open old subvol '{}': {e:?}",
-                        self.output.display()
-                    );
-                }
+
+                debug!("compile finished, making subvol {subvol:?} readonly");
+
+                subvol
+                    .set_readonly(true)
+                    .context("while making subvol r/o")?;
+
+                debug!(
+                    "linking {} -> {}",
+                    self.output.display(),
+                    subvol.path().display(),
+                );
+                drop(root_guard);
+
+                let _ = std::fs::remove_file(&self.output);
+                std::os::unix::fs::symlink(subvol.path(), &self.output)
+                    .context("while making symlink")?;
+            }
+            WorkingLayer::OverlayFs(fs) => {
+                drop(ctx);
+                fs.finalize().context("while finalizing overlayfs")?;
             }
         }
-
-        subvol
-            .set_readonly(true)
-            .context("while making subvol r/o")?;
-
-        debug!(
-            "linking {} -> {}",
-            self.output.display(),
-            subvol.path().display(),
-        );
-        drop(root_guard);
-
-        let _ = std::fs::remove_file(&self.output);
-        std::os::unix::fs::symlink(subvol.path(), &self.output).context("while making symlink")?;
 
         Ok(())
     }
@@ -181,24 +224,41 @@ impl Compile {
 
     /// Create a new mutable subvolume
     #[tracing::instrument(skip(self), ret, err)]
-    fn create_new_subvol(
+    fn create_new_layer(
         &self,
-        working_volume: &WorkingVolume,
+        working_volume: Option<&WorkingVolume>,
         rootless: &Option<antlir2_rootless::Rootless>,
-    ) -> Result<Subvolume> {
-        let dst = working_volume
-            .allocate_new_path()
-            .context("while allocating new path for subvol")?;
-        let _guard = rootless.map(|r| r.escalate()).transpose()?;
-        let subvol = match &self.parent {
-            Some(parent) => {
-                trace!("snapshotting parent {parent:?}");
-                let parent = Subvolume::open(parent)?;
-                parent.snapshot(&dst, Default::default())?
+    ) -> Result<WorkingLayer> {
+        match self.working_format {
+            WorkingFormat::Btrfs => {
+                let dst = working_volume
+                    .context("working_volume must have been created for btrfs")?
+                    .allocate_new_path()
+                    .context("while allocating new path for subvol")?;
+                let _guard = rootless.map(|r| r.escalate()).transpose()?;
+                let subvol = match &self.parent {
+                    Some(parent) => {
+                        trace!("snapshotting parent {parent:?}");
+                        let parent = Subvolume::open(parent)?;
+                        parent.snapshot(&dst, Default::default())?
+                    }
+                    None => Subvolume::create(&dst).context("while creating new subvol")?,
+                };
+                debug!("produced r/w subvol '{subvol:?}'");
+                Ok(WorkingLayer::Btrfs(subvol))
             }
-            None => Subvolume::create(&dst).context("while creating new subvol")?,
-        };
-        debug!("produced r/w subvol '{subvol:?}'");
-        Ok(subvol)
+            WorkingFormat::Overlayfs => {
+                if self.parent.is_some() {
+                    return Err(anyhow!("overlayfs encodes parent in --output").into());
+                }
+
+                let model =
+                    std::fs::read_to_string(&self.output).context("while reading model json")?;
+                let model = serde_json::from_str(&model).context("while parsing model json")?;
+                let opts = antlir2_overlayfs::Opts::builder().model(model).build();
+                let fs = OverlayFs::mount(opts).context("while mounting overlayfs")?;
+                Ok(WorkingLayer::OverlayFs(fs))
+            }
+        }
     }
 }

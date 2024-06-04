@@ -26,6 +26,7 @@ use crate::manifest::Manifest;
 /// are held by overlayfs. After finalizing the layer, this gets dehydrated into
 /// a `manifest` and corresponding `data_dir` that gets moved into the final
 /// output locations that buck is expecting.
+#[derive(Debug)]
 pub struct Scratch {
     root: PathBuf,
     mountpoint: PathBuf,
