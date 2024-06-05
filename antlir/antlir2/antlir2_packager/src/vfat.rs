@@ -6,9 +6,6 @@
  */
 
 use std::fs::File;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -34,11 +31,9 @@ pub struct Vfat {
 
 impl PackageFormat for Vfat {
     fn build(&self, out: &Path) -> Result<()> {
-        let mut file = File::create(out).context("failed to create output file")?;
-        file.seek(SeekFrom::Start(self.size_mb * 1024 * 1024))
-            .context("failed to seek output to specified size")?;
-        file.write_all(&[0])
-            .context("Failed to write dummy byte at end of file")?;
+        let file = File::create(out).context("failed to create output file")?;
+        file.set_len(self.size_mb * 1024 * 1024)
+            .context("failed to set output to specified size")?;
         file.sync_all()
             .context("Failed to sync output file to disk")?;
         drop(file);
