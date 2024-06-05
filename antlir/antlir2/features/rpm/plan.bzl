@@ -7,6 +7,7 @@ load(
     "//antlir/antlir2/bzl:types.bzl",
     "BuildApplianceInfo",  # @unused Used as type
     "FlavorInfo",  # @unused Used as type
+    "LayerContents",  # @unused Used as type
 )
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load(
@@ -55,7 +56,7 @@ def plan(
         label: Label,
         flavor: FlavorInfo,
         build_appliance: BuildApplianceInfo | typing.Any,
-        parent_subvol_symlink: Artifact | None,
+        parent_layer_contents: LayerContents | None,
         dnf_available_repos: list[Dependency],
         dnf_versionlock: Artifact | None,
         dnf_versionlock_extend: dict[str, str],
@@ -68,13 +69,18 @@ def plan(
         "repos": dnf_available_repos,
     }).artifact("repodatas")
 
+    # Run without root if either explicitly configured to do so, or there is no
+    # parent layer that we may need permission to read from
+    rootless = rootless or not parent_layer_contents
+
     ctx.actions.run(
         cmd_args(
             "sudo" if not rootless else cmd_args(),
             plan[RunInfo],
             cmd_args(label, format = "--label={}"),
             "--rootless" if rootless else cmd_args(),
-            cmd_args(parent_subvol_symlink, format = "--parent-subvol-symlink={}") if parent_subvol_symlink else cmd_args(),
+            cmd_args(parent_layer_contents.overlayfs.json_file_with_inputs, format = "--parent-overlayfs={}") if parent_layer_contents and parent_layer_contents.overlayfs else cmd_args(),
+            cmd_args(parent_layer_contents.subvol_symlink, format = "--parent-subvol-symlink={}") if parent_layer_contents and parent_layer_contents.subvol_symlink else cmd_args(),
             cmd_args(build_appliance.dir, format = "--build-appliance={}"),
             cmd_args(dnf_repodatas, format = "--repodatas={}"),
             cmd_args(dnf_versionlock, format = "--versionlock={}") if dnf_versionlock else cmd_args(),
@@ -86,7 +92,13 @@ def plan(
         ),
         category = "rpm_plan",
         identifier = identifier,
-        local_only = True,  # needs local subvol
+        # TODO(T156455885): this should be able to run on an aarch64 RE worker,
+        # but it's complicated, so for now just force local_only execution where
+        # we will be able to do binfmt user mode emulation if necessary. When
+        # that works, uncomment the below two lines.
+        # # local_only if the parent is only available as a subvol
+        # local_only = bool(parent_layer_contents and not parent_layer_contents.overlayfs),
+        local_only = True,
     )
 
     repos = compiler_plan_to_local_repos(
@@ -122,7 +134,7 @@ def plan(
 def rpm_planner(*, plan: Dependency) -> Planner:
     return Planner(
         fn = _plan_fn,
-        parent_subvol_symlink = True,
+        parent_layer_contents = True,
         build_appliance = True,
         dnf = True,
         label = True,

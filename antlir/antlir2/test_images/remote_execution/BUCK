@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_names")
 
 oncall("antlir")
 
@@ -23,4 +24,19 @@ image.layer(
         # worker, but it's not clear if that's possible.
         "ovr_config//cpu:x86_64",
     ],
+)
+
+image.layer(
+    name = "child-that-installs-rpms",
+    features = [
+        feature.rpms_install(rpms = ["systemd"]),
+    ],
+    parent_layer = ":example",
+)
+
+image_test_rpm_names(
+    name = "test-rpms-installed",
+    src = "rpms.txt",
+    layer = ":child-that-installs-rpms",
+    rootless = True,
 )

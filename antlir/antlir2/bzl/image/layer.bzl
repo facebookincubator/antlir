@@ -376,8 +376,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                     kwargs["build_appliance"] = build_appliance[BuildApplianceInfo]
                 if planner.target_arch:
                     kwargs["target_arch"] = target_arch
-                if planner.parent_subvol_symlink:
-                    kwargs["parent_subvol_symlink"] = layer.subvol_symlink if layer else None
+                if planner.parent_layer_contents:
+                    kwargs["parent_layer_contents"] = layer
                 if planner.dnf:
                     kwargs |= {
                         "dnf_available_repos": dnf_available_repos,
