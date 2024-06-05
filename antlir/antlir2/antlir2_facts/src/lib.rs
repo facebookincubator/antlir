@@ -68,6 +68,9 @@ impl RwDatabase {
         // lose any in-progress writes. This should prevent the database from
         // ever entering any kind of recovery mode.
         db.pragma_update(None, "journal_mode", "MEMORY")?;
+        // Likewise, use temp_store=MEMORY to avoid creating any temporary files
+        // on disk that could be lost during RE upload
+        db.pragma_update(None, "temp_store", "MEMORY")?;
         Ok(())
     }
 
