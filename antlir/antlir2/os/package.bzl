@@ -6,29 +6,29 @@
 _DEFAULT_OS_KEY = "antlir2.default_os"
 _ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY = "antlir2.all_images_in_package_use_default_os"
 
-def _write_package_value(*args, **kwargs):
+def write_package_value(*args, **kwargs):
     write_package_value = getattr(native, "write_package_value", None)
     if write_package_value != None:
         write_package_value(*args, **kwargs)
 
-def _read_package_value(*args, **kwargs):
+def read_package_value(*args, **kwargs):
     read_package_value = getattr(native, "read_package_value", None)
     if read_package_value != None:
         return read_package_value(*args, **kwargs)
     return None
 
 def set_default_os_for_package(*, default_os: str):
-    _write_package_value(_DEFAULT_OS_KEY, default_os, overwrite = True)
+    write_package_value(_DEFAULT_OS_KEY, default_os, overwrite = True)
 
 def get_default_os_for_package() -> str:
-    return _read_package_value(_DEFAULT_OS_KEY) or "centos9"
+    return read_package_value(_DEFAULT_OS_KEY) or "centos9"
 
 def all_images_in_package_use_default_os(yes: bool = True):
-    _write_package_value(
+    write_package_value(
         _ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY,
         yes,
         overwrite = True,
     )
 
 def should_all_images_in_package_use_default_os() -> bool:
-    return _read_package_value(_ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY) or False
+    return read_package_value(_ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY) or False
