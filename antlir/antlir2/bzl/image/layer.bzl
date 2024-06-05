@@ -23,6 +23,7 @@ load(
     "DefaultMountpointInfo",
 )
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
+# @oss-disable
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
