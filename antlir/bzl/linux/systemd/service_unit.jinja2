@@ -1,19 +1,20 @@
-[Unit]
-Description={{ description }}
-{% if after %}
-After={{ after }}
-{% endif %}
-{% if service_requires %}
-Requires={{ service_requires }}
-{% endif %}
+{% extends "antlir/bzl/linux/systemd/unit:unit.jinja2" %}
 
+{% block settings %}
 [Service]
-Type=oneshot
+Type={{ type }}
+{% if slice %}
 Slice={{ slice }}
+{% endif %}
 {% if environment_file %}
 EnvironmentFile={{ environment_file }}
 {% endif %}
+{% for cmd in exec_start %}
 ExecStart={{ cmd }}
+{% endfor %}
 TimeoutStartSec=15min
 TimeoutStopSec=90s
-StandardOutput={{ stdout_file }}
+{% if standard_output %}
+StandardOutput={{ standard_output }}
+{% endif %}
+{% endblock %}

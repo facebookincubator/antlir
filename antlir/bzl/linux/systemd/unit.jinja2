@@ -1,7 +1,13 @@
 [Unit]
 Description={{ unit.description }}
+{% if unit.requires %}
 Requires={{ unit.requires|join(" ") }}
+{% endif %}
+{% if unit.after %}
 After={{ unit.after|join(" ") }}
+{% endif %}
+{% if unit.before %}
 Before={{ unit.before|join(" ") }}
+{% endif %}
 
 {% block settings %}{% endblock %}
