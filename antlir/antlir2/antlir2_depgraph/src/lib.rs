@@ -538,7 +538,7 @@ impl Graph {
         Ok(features.into_iter())
     }
 
-    pub fn write_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
+    pub fn write_to_file(self, path: impl AsRef<Path>) -> Result<()> {
         let _ = std::fs::remove_file(path.as_ref());
         self.db
             .as_ref()
@@ -554,10 +554,6 @@ impl Graph {
                 .ok_or_else(|| rusqlite::Error::InvalidPath(path.as_ref().to_owned()))?])
             .map(|_| ())
             .with_context(|| format!("while vacuuming into {}", path.as_ref().display()))?;
-        self.db
-            .as_ref()
-            .pragma_update(None, "query_only", "1")
-            .context("while re-enabling query_only mode")?;
         Ok(())
     }
 }
