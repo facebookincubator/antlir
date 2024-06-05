@@ -1,19 +1,26 @@
-[Unit]
-Description={{ description }}
-{% if timer_requires %}
-Requires={{ timer_requires }}
-{% endif %}
-{% if after %}
-After={{ after }}
-{% endif %}
+{% extends "antlir/bzl/linux/systemd/unit:unit.jinja2" %}
 
+{% block settings %}
 [Install]
 WantedBy=timers.target
 
 [Timer]
+{% if on_calendar %}
 OnCalendar={{ on_calendar }}
-AccuracySec={{ accuracy_sec }}
-OnBootSec={{ on_boot_sec}}
+{% endif %}
+{% if accuracy %}
+AccuracySec={{ accuracy }}
+{% endif %}
+{% if on_boot %}
+OnBootSec={{ on_boot }}
+{% endif %}
+{% if persistent %}
 Persistent=true
-RandomizedDelaySec={{ randomized_delay_sec}}
-Unit={{ service_unit_name }}
+{% endif %}
+{% if randomized_delay %}
+RandomizedDelaySec={{ randomized_delay }}
+{% endif %}
+{% if unit_name %}
+Unit={{ unit_name }}
+{% endif %}
+{% endblock %}

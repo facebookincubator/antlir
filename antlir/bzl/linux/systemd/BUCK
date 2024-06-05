@@ -28,6 +28,7 @@ template(
         "//metalos/...",
         "//netos/...",
     ],
+    deps = [":unit"],
 )
 
 template(
@@ -37,4 +38,5 @@ template(
         "//metalos/...",
         "//netos/...",
     ],
+    deps = [":unit"],
 )
