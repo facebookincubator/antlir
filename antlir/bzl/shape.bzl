@@ -383,11 +383,6 @@ def _render_template(name, **kwargs):  # pragma: no cover
     """
     Render the given Jinja2 template with the shape instance data to a file.
     """
-    if native.rule_exists(name):
-        # TODO(T191162975): this is a horrible footgun that has already been
-        # fired in at least one place. However, it's not a new bug, so keep it
-        # papered over in D58021063 and address it in a later stacked diff.
-        return normalize_target(":" + name)
     render(
         name = name,
         **kwargs
