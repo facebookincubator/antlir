@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "51ac78d16b66f73cac0c7f54d2a8f1fd0e500893",
+    rev = "924117dddfb0ad7da1aaf5d2281be73825864e07",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "798149eb3d4f601ce935a2465792e8212715d947",
+    rev = "ca13f170d40c81ed4c78fcb9c3e515a01b1730ed",
     visibility = [],
 )
 
@@ -293,7 +293,7 @@ cargo.rust_library(
     edition = "2018",
     features = ["default"],
     visibility = [],
-    deps = [":unicode-width-0.1.12"],
+    deps = [":unicode-width-0.1.13"],
 )
 
 alias(
@@ -364,7 +364,7 @@ cargo.rust_library(
     deps = [
         ":anstyle-1.0.7",
         ":anstyle-parse-0.2.4",
-        ":anstyle-query-1.0.3",
+        ":anstyle-query-1.1.0",
         ":colorchoice-1.0.1",
         ":is_terminal_polyfill-1.70.0",
         ":utf8parse-0.2.1",
@@ -421,18 +421,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "anstyle-query-1.0.3.crate",
-    sha256 = "a64c907d4e79225ac72e2a354c9ce84d50ebb4586dee56c82b3ee73004f537f5",
-    strip_prefix = "anstyle-query-1.0.3",
-    urls = ["https://static.crates.io/crates/anstyle-query/1.0.3/download"],
+    name = "anstyle-query-1.1.0.crate",
+    sha256 = "ad186efb764318d35165f1758e7dcef3b10628e26d41a44bc5550652e6804391",
+    strip_prefix = "anstyle-query-1.1.0",
+    urls = ["https://static.crates.io/crates/anstyle-query/1.1.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "anstyle-query-1.0.3",
-    srcs = [":anstyle-query-1.0.3.crate"],
+    name = "anstyle-query-1.1.0",
+    srcs = [":anstyle-query-1.1.0.crate"],
     crate = "anstyle_query",
-    crate_root = "anstyle-query-1.0.3.crate/src/lib.rs",
+    crate_root = "anstyle-query-1.1.0.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "windows-gnu": dict(
@@ -1615,7 +1615,7 @@ cargo.rust_library(
         ":bitflags-1.3.2",
         ":strsim-0.8.0",
         ":textwrap-0.11.0",
-        ":unicode-width-0.1.12",
+        ":unicode-width-0.1.13",
         ":vec_map-0.8.2",
     ],
 )
@@ -1750,7 +1750,7 @@ cargo.rust_library(
         ":strsim-0.11.1",
         ":terminal_size-0.3.0",
         ":unicase-2.7.0",
-        ":unicode-width-0.1.12",
+        ":unicode-width-0.1.13",
     ],
 )
 
@@ -1905,7 +1905,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":termcolor-1.4.1",
-        ":unicode-width-0.1.12",
+        ":unicode-width-0.1.13",
     ],
 )
 
@@ -2054,7 +2054,7 @@ cargo.rust_library(
     deps = [
         ":lazy_static-1.4.0",
         ":libc-0.2.155",
-        ":unicode-width-0.1.12",
+        ":unicode-width-0.1.13",
     ],
 )
 
@@ -7575,14 +7575,72 @@ cargo.rust_library(
     crate = "num_rational",
     crate_root = "num-rational-0.2.4.crate/src/lib.rs",
     edition = "2015",
+    env = {
+        "OUT_DIR": "$(location :num-rational-0.2.4-build-script-run[out_dir])",
+    },
+    features = [
+        "bigint",
+        "num-bigint",
+        "std",
+    ],
+    rustc_flags = ["@$(location :num-rational-0.2.4-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [
+        ":num-bigint-0.2.6",
+        ":num-integer-0.1.46",
+        ":num-traits-0.2.19",
+    ],
+)
+
+cargo.rust_binary(
+    name = "num-rational-0.2.4-build-script-build",
+    srcs = [":num-rational-0.2.4.crate"],
+    crate = "build_script_build",
+    crate_root = "num-rational-0.2.4.crate/build.rs",
+    edition = "2015",
     features = [
         "bigint",
         "num-bigint",
         "std",
     ],
     visibility = [],
+    deps = [":autocfg-1.3.0"],
+)
+
+buildscript_run(
+    name = "num-rational-0.2.4-build-script-run",
+    package_name = "num-rational",
+    buildscript_rule = ":num-rational-0.2.4-build-script-build",
+    features = [
+        "bigint",
+        "num-bigint",
+        "std",
+    ],
+    version = "0.2.4",
+)
+
+alias(
+    name = "num-rational",
+    actual = ":num-rational-0.4.2",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "num-rational-0.4.2.crate",
+    sha256 = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824",
+    strip_prefix = "num-rational-0.4.2",
+    urls = ["https://static.crates.io/crates/num-rational/0.4.2/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "num-rational-0.4.2",
+    srcs = [":num-rational-0.4.2.crate"],
+    crate = "num_rational",
+    crate_root = "num-rational-0.4.2.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
     deps = [
-        ":num-bigint-0.2.6",
         ":num-integer-0.1.46",
         ":num-traits-0.2.19",
     ],
@@ -10539,7 +10597,7 @@ cargo.rust_library(
         ":radix_trie-0.2.1",
         ":rustyline-derive-0.8.0",
         ":unicode-segmentation-1.11.0",
-        ":unicode-width-0.1.12",
+        ":unicode-width-0.1.13",
     ],
 )
 
@@ -12579,24 +12637,24 @@ cargo.rust_library(
 
 alias(
     name = "tar",
-    actual = ":tar-0.4.40",
+    actual = ":tar-0.4.41",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tar-0.4.40.crate",
-    sha256 = "b16afcea1f22891c49a00c751c7b63b2233284064f11a200fc624137c51e2ddb",
-    strip_prefix = "tar-0.4.40",
-    urls = ["https://static.crates.io/crates/tar/0.4.40/download"],
+    name = "tar-0.4.41.crate",
+    sha256 = "cb797dad5fb5b76fcf519e702f4a589483b5ef06567f160c392832c1f5e44909",
+    strip_prefix = "tar-0.4.41",
+    urls = ["https://static.crates.io/crates/tar/0.4.41/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tar-0.4.40",
-    srcs = [":tar-0.4.40.crate"],
+    name = "tar-0.4.41",
+    srcs = [":tar-0.4.41.crate"],
     crate = "tar",
-    crate_root = "tar-0.4.40.crate/src/lib.rs",
-    edition = "2018",
+    crate_root = "tar-0.4.41.crate/src/lib.rs",
+    edition = "2021",
     features = [
         "default",
         "xattr",
@@ -12966,7 +13024,7 @@ cargo.rust_library(
     crate_root = "textwrap-0.11.0.crate/src/lib.rs",
     edition = "2015",
     visibility = [],
-    deps = [":unicode-width-0.1.12"],
+    deps = [":unicode-width-0.1.13"],
 )
 
 alias(
@@ -13001,7 +13059,7 @@ cargo.rust_library(
         ":smawk-0.3.2",
         ":terminal_size-0.2.6",
         ":unicode-linebreak-0.1.5",
-        ":unicode-width-0.1.12",
+        ":unicode-width-0.1.13",
     ],
 )
 
@@ -14338,23 +14396,23 @@ cargo.rust_library(
 
 alias(
     name = "unicode-width",
-    actual = ":unicode-width-0.1.12",
+    actual = ":unicode-width-0.1.13",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "unicode-width-0.1.12.crate",
-    sha256 = "68f5e5f3158ecfd4b8ff6fe086db7c8467a2dfdac97fe420f2b7c4aa97af66d6",
-    strip_prefix = "unicode-width-0.1.12",
-    urls = ["https://static.crates.io/crates/unicode-width/0.1.12/download"],
+    name = "unicode-width-0.1.13.crate",
+    sha256 = "0336d538f7abc86d282a4189614dfaa90810dfc2c6f6427eaf88e16311dd225d",
+    strip_prefix = "unicode-width-0.1.13",
+    urls = ["https://static.crates.io/crates/unicode-width/0.1.13/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "unicode-width-0.1.12",
-    srcs = [":unicode-width-0.1.12.crate"],
+    name = "unicode-width-0.1.13",
+    srcs = [":unicode-width-0.1.13.crate"],
     crate = "unicode_width",
-    crate_root = "unicode-width-0.1.12.crate/src/lib.rs",
+    crate_root = "unicode-width-0.1.13.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
