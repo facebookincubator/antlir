@@ -64,7 +64,7 @@ Planner = record(
     # plan requires access to the layer's FlavorInfo
     flavor = field(bool, default = False),
     # plan requires access to the layer up to this point
-    parent_subvol_symlink = field(bool, default = False),
+    parent_layer_contents = field(bool, default = False),
     # plan requires access to dnf repos available to this layer
     dnf = field(bool, default = False),
     # plan requires access to the build appliance for this layer

@@ -24,11 +24,13 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "nix",
         "serde_json",
         "tracing",
         "tracing-subscriber",
         ":rpm.lib",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
+        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/buck/buck_label:buck_label",
         "//antlir/util/cli/json_arg:json_arg",
