@@ -13,7 +13,7 @@ use antlir2_btrfs::Subvolume;
 use antlir2_compile::Arch;
 use antlir2_compile::CompileFeature;
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph::Graph;
+use antlir2_features::Feature;
 use antlir2_overlayfs::OverlayFs;
 use antlir2_rootless::Rootless;
 use antlir2_working_volume::WorkingVolume;
@@ -63,8 +63,8 @@ pub(crate) struct Compile {
     target_arch: Arch,
 
     #[clap(long)]
-    /// Path to input depgraph with features to include in this image
-    depgraph: PathBuf,
+    /// Path to features to build into this image
+    features: JsonFile<Vec<Feature>>,
 
     #[clap(long)]
     /// Pre-computed plans for this compilation phase
@@ -149,13 +149,8 @@ impl Compile {
             .collect::<Result<_>>()?;
         let ctx = self.compiler_context(layer.path().to_owned(), plans)?;
 
-        let depgraph = Graph::open(self.depgraph).context("while opening depgraph")?;
-
         let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-        for feature in depgraph
-            .pending_features()
-            .context("while fetching pending features")?
-        {
+        for feature in self.features.as_inner() {
             feature.compile(&ctx)?;
         }
         drop(root_guard);

@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fs::File;
+use std::io::BufWriter;
 use std::path::PathBuf;
 
 use antlir2_depgraph::Graph;
@@ -27,7 +29,9 @@ pub(crate) struct Depgraph {
     /// Add dynamically built items from this facts database
     add_built_items: Option<PathBuf>,
     #[clap(long)]
-    out: PathBuf,
+    db_out: PathBuf,
+    #[clap(long)]
+    topo_features_out: PathBuf,
 }
 
 impl Depgraph {
@@ -40,9 +44,18 @@ impl Depgraph {
         }
         let depgraph = depgraph.build()?;
 
+        let features: Vec<_> = depgraph.pending_features()?.collect();
+        let mut out = BufWriter::new(
+            File::create(&self.topo_features_out)
+                .context("while creating topological features file")?,
+        );
+        serde_json::to_writer(&mut out, &features)
+            .context("while writing out topologically-sorted features")?;
+
         depgraph
-            .write_to_file(&self.out)
+            .write_to_file(&self.db_out)
             .context("while serializing graph to file")?;
+
         Ok(())
     }
 }

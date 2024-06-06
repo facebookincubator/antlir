@@ -67,8 +67,9 @@ def build_depgraph(
         parent: Artifact | None,
         features: list[feature_record | typing.Any],
         identifier: str,
-        phase: BuildPhase) -> Artifact:
-    output = ctx.actions.declare_output(identifier, "depgraph")
+        phase: BuildPhase) -> (Artifact, Artifact):
+    db_output = ctx.actions.declare_output(identifier, "depgraph")
+    topo_features = ctx.actions.declare_output(identifier, "topo_features.json")
 
     analyzed_features = analyze_features(
         ctx = ctx,
@@ -83,7 +84,8 @@ def build_depgraph(
             "depgraph",
             cmd_args(analyzed_features, format = "--feature={}"),
             cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
-            cmd_args(output.as_output(), format = "--out={}"),
+            cmd_args(db_output.as_output(), format = "--db-out={}"),
+            cmd_args(topo_features.as_output(), format = "--topo-features-out={}"),
         ),
         category = "antlir2_depgraph",
         identifier = identifier,
@@ -91,4 +93,4 @@ def build_depgraph(
             "RUST_LOG": "antlir2=trace",
         },
     )
-    return output
+    return db_output, topo_features

@@ -47,7 +47,7 @@ def _compile(
         logs: OutputArtifact,
         rootless: bool,
         target_arch: str,
-        depgraph: Artifact,
+        topo_features: Artifact,
         plans: typing.Any,
         hidden_deps: typing.Any) -> LayerContents:
     """
@@ -103,7 +103,7 @@ def _compile(
             ),
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd_args(target_arch, format = "--target-arch={}"),
-            cmd_args(depgraph, format = "--depgraph={}"),
+            cmd_args(topo_features, format = "--features={}"),
             cmd_args(plans, format = "--plans={}"),
             cmd_args("--working-format=overlayfs") if ctx.attrs._overlayfs else cmd_args(),
             hidden = hidden_deps,
@@ -331,13 +331,15 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         features = reduce_features(features)
 
         # facts_db also holds the depgraph
-        facts_db = build_depgraph(
+        facts_db, topo_features = build_depgraph(
             ctx = ctx,
             features = features,
             identifier = identifier,
             parent = facts_db,
             phase = phase,
         )
+        phase_sub_targets["depgraph"] = [DefaultInfo(facts_db)]
+        phase_sub_targets["topo_features.json"] = [DefaultInfo(topo_features)]
 
         target_arch = ctx.attrs._selected_target_arch
 
@@ -425,12 +427,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             logs = logs["compile"].as_output(),
             rootless = ctx.attrs._rootless,
             target_arch = ctx.attrs._selected_target_arch,
-            depgraph = facts_db,
+            topo_features = topo_features,
             plans = plans,
             hidden_deps = compile_feature_hidden_deps,
         )
-
-        phase_sub_targets["depgraph"] = [DefaultInfo(facts_db)]
 
         facts_db = facts.new_facts_db(
             actions = ctx.actions,
