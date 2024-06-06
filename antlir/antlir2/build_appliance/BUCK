@@ -32,9 +32,33 @@ feature.new(
             into_dir = "/__antlir2__",
             subdirs_to_create = "out",
         ),
+        ":rpms",
         "//antlir/antlir2/package_managers/dnf/build_appliance:features",
     ],
     visibility = [
         "PUBLIC",
     ],
+)
+
+feature.new(
+    name = "rpms",
+    features = [
+        feature.rpms_install(rpms = [
+            "cpio",
+            "dnf",
+            "dosfstools",
+            "e2fsprogs",
+            "mtools",
+            "python3",
+            "python3-dnf",
+            "python3-hawkey",
+            "python3-libdnf",
+            "python3-rpm",
+            "rpm-build",
+            "rpm-sign",
+            "squashfs-tools",
+            "zstd",
+        ]),
+    ],
+    visibility = [],
 )
