@@ -81,6 +81,7 @@ def feature_impl(
             "-Zcrate-attr=feature({})".format(feat)
             for feat in unstable_features
         ]),
+        link_style = "static_pic",
         allow_unused_crate_dependencies = allow_unused_crate_dependencies,
         visibility = lib_visibility,
         deps = selects.apply(

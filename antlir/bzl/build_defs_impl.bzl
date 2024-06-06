@@ -206,6 +206,7 @@ def _rust_library(*, name: str, **kwargs):
         _rust_unittest(name = name + "-unittests", **kwargs)
     kwargs["name"] = name
     kwargs.pop("autocargo", None)
+    kwargs.pop("link_style", None)
     _wrap_internal(native.rust_library, [], kwargs)
 
 def _rust_bindgen_library(name: str, header: str, **kwargs):
