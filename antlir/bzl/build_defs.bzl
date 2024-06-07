@@ -218,6 +218,7 @@ def rust_library(**kwargs):
     _rust_implicit_test(kwargs, test_kwargs)
 
 def rust_binary(**kwargs):
+    kwargs.setdefault("link_style", "static")
     kwargs, test_kwargs = _split_rust_kwargs(kwargs)
     _rust_common(shim.rust_binary, **kwargs)
     _rust_implicit_test(kwargs, test_kwargs)
