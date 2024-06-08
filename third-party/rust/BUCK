@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "7db5a066e9d011c19e1df8b3e07aa37e3b7e9c99",
+    rev = "c182426479d9cb21f3d9422e79af6afb882fd50d",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "2778aeee4a54b0589560b324c85b80768187b0ce",
+    rev = "e58137caec123ae14a3bf0eae0cbf6b5eb1013ca",
     visibility = [],
 )
 
@@ -1150,18 +1150,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.0.98.crate",
-    sha256 = "41c270e7540d725e65ac7f1b212ac8ce349719624d7bcff99f8e2e488e8cf03f",
-    strip_prefix = "cc-1.0.98",
-    urls = ["https://static.crates.io/crates/cc/1.0.98/download"],
+    name = "cc-1.0.99.crate",
+    sha256 = "96c51067fd44124faa7f870b4b1c969379ad32b2ba805aa959430ceaa384f695",
+    strip_prefix = "cc-1.0.99",
+    urls = ["https://static.crates.io/crates/cc/1.0.99/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.0.98",
-    srcs = [":cc-1.0.98.crate"],
+    name = "cc-1.0.99",
+    srcs = [":cc-1.0.99.crate"],
     crate = "cc",
-    crate_root = "cc-1.0.98.crate/src/lib.rs",
+    crate_root = "cc-1.0.99.crate/src/lib.rs",
     edition = "2018",
     features = [
         "jobserver",
@@ -2576,7 +2576,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.0.98",
+        ":cc-1.0.99",
         ":cxxbridge-flags-1.0.123",
     ],
 )
@@ -6235,7 +6235,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.0.98",
+        ":cc-1.0.99",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -7931,7 +7931,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.0.98",
+        ":cc-1.0.99",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
