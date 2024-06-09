@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "c182426479d9cb21f3d9422e79af6afb882fd50d",
+    rev = "5252ccb9ee0cff36589b841e069518897419170a",
     visibility = [],
 )
 
@@ -367,7 +367,7 @@ cargo.rust_library(
         ":anstyle-query-1.1.0",
         ":colorchoice-1.0.1",
         ":is_terminal_polyfill-1.70.0",
-        ":utf8parse-0.2.1",
+        ":utf8parse-0.2.2",
     ],
 )
 
@@ -417,7 +417,7 @@ cargo.rust_library(
         "utf8",
     ],
     visibility = [],
-    deps = [":utf8parse-0.2.1"],
+    deps = [":utf8parse-0.2.2"],
 )
 
 http_archive(
@@ -10549,25 +10549,25 @@ cargo.rust_library(
         "linux-arm64": dict(
             deps = [
                 ":nix-0.26.4",
-                ":utf8parse-0.2.1",
+                ":utf8parse-0.2.2",
             ],
         ),
         "linux-x86_64": dict(
             deps = [
                 ":nix-0.26.4",
-                ":utf8parse-0.2.1",
+                ":utf8parse-0.2.2",
             ],
         ),
         "macos-arm64": dict(
             deps = [
                 ":nix-0.26.4",
-                ":utf8parse-0.2.1",
+                ":utf8parse-0.2.2",
             ],
         ),
         "macos-x86_64": dict(
             deps = [
                 ":nix-0.26.4",
-                ":utf8parse-0.2.1",
+                ":utf8parse-0.2.2",
             ],
         ),
         "windows-gnu": dict(
@@ -14510,18 +14510,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "utf8parse-0.2.1.crate",
-    sha256 = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a",
-    strip_prefix = "utf8parse-0.2.1",
-    urls = ["https://static.crates.io/crates/utf8parse/0.2.1/download"],
+    name = "utf8parse-0.2.2.crate",
+    sha256 = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821",
+    strip_prefix = "utf8parse-0.2.2",
+    urls = ["https://static.crates.io/crates/utf8parse/0.2.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "utf8parse-0.2.1",
-    srcs = [":utf8parse-0.2.1.crate"],
+    name = "utf8parse-0.2.2",
+    srcs = [":utf8parse-0.2.2.crate"],
     crate = "utf8parse",
-    crate_root = "utf8parse-0.2.1.crate/src/lib.rs",
+    crate_root = "utf8parse-0.2.2.crate/src/lib.rs",
     edition = "2018",
     features = ["default"],
     visibility = [],
