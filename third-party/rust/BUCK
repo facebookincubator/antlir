@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "5252ccb9ee0cff36589b841e069518897419170a",
+    rev = "ebb675327acafeb7deb7824ae6546038e7c909ab",
     visibility = [],
 )
 
@@ -41,7 +41,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":lazy_static-1.4.0",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
     ],
 )
 
@@ -780,7 +780,7 @@ cargo.rust_library(
         ":prettyplease-0.2.20",
         ":proc-macro2-1.0.85",
         ":quote-1.0.36",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":rustc-hash-1.1.0",
         ":shlex-1.3.0",
         ":syn-2.0.66",
@@ -990,7 +990,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":memchr-2.7.2",
-        ":regex-automata-0.4.6",
+        ":regex-automata-0.4.7",
         ":serde-1.0.203",
     ],
 )
@@ -1666,7 +1666,7 @@ cargo.rust_library(
         ":clap_lex-0.2.4",
         ":indexmap-1.9.3",
         ":once_cell-1.19.0",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":strsim-0.10.0",
         ":termcolor-1.4.1",
         ":terminal_size-0.2.6",
@@ -3499,7 +3499,7 @@ cargo.rust_library(
         ":humantime-2.1.0",
         ":is-terminal-0.4.12",
         ":log-0.4.21",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":termcolor-1.4.1",
     ],
 )
@@ -3522,7 +3522,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":log-0.4.21",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
     ],
 )
 
@@ -4636,8 +4636,8 @@ cargo.rust_library(
         ":aho-corasick-1.1.3",
         ":bstr-1.9.1",
         ":log-0.4.21",
-        ":regex-automata-0.4.6",
-        ":regex-syntax-0.8.3",
+        ":regex-automata-0.4.7",
+        ":regex-syntax-0.8.4",
         ":serde-1.0.203",
     ],
 )
@@ -5381,7 +5381,7 @@ cargo.rust_library(
         ":globset-0.4.14",
         ":log-0.4.21",
         ":memchr-2.7.2",
-        ":regex-automata-0.4.6",
+        ":regex-automata-0.4.7",
         ":same-file-1.0.6",
         ":walkdir-2.5.0",
     ],
@@ -5795,7 +5795,7 @@ cargo.rust_library(
         ":lalrpop-util-0.19.12",
         ":petgraph-0.6.5",
         ":pico-args-0.4.2",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":regex-syntax-0.6.29",
         ":string_cache-0.8.7",
         ":term-0.7.0",
@@ -5833,7 +5833,7 @@ cargo.rust_binary(
         ":lalrpop-util-0.19.12",
         ":petgraph-0.6.5",
         ":pico-args-0.4.2",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":regex-syntax-0.6.29",
         ":string_cache-0.8.7",
         ":term-0.7.0",
@@ -5869,7 +5869,7 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
-    deps = [":regex-1.10.4"],
+    deps = [":regex-1.10.5"],
 )
 
 alias(
@@ -8154,7 +8154,7 @@ cargo.rust_library(
     crate_root = "parse-zoneinfo-0.3.1.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":regex-1.10.4"],
+    deps = [":regex-1.10.5"],
 )
 
 http_archive(
@@ -8779,7 +8779,7 @@ cargo.rust_library(
         ":float-cmp-0.8.0",
         ":normalize-line-endings-0.3.0",
         ":predicates-core-1.0.6",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
     ],
 )
 
@@ -8811,7 +8811,7 @@ cargo.rust_library(
         ":itertools-0.10.5",
         ":normalize-line-endings-0.3.0",
         ":predicates-core-1.0.6",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
     ],
 )
 
@@ -9761,23 +9761,23 @@ cargo.rust_library(
 
 alias(
     name = "regex",
-    actual = ":regex-1.10.4",
+    actual = ":regex-1.10.5",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "regex-1.10.4.crate",
-    sha256 = "c117dbdfde9c8308975b6a18d71f3f385c89461f7b3fb054288ecf2a2058ba4c",
-    strip_prefix = "regex-1.10.4",
-    urls = ["https://static.crates.io/crates/regex/1.10.4/download"],
+    name = "regex-1.10.5.crate",
+    sha256 = "b91213439dad192326a0d7c6ee3955910425f441d7038e0d6933b0aec5c4517f",
+    strip_prefix = "regex-1.10.5",
+    urls = ["https://static.crates.io/crates/regex/1.10.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "regex-1.10.4",
-    srcs = [":regex-1.10.4.crate"],
+    name = "regex-1.10.5",
+    srcs = [":regex-1.10.5.crate"],
     crate = "regex",
-    crate_root = "regex-1.10.4.crate/src/lib.rs",
+    crate_root = "regex-1.10.5.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -9802,8 +9802,8 @@ cargo.rust_library(
     deps = [
         ":aho-corasick-1.1.3",
         ":memchr-2.7.2",
-        ":regex-automata-0.4.6",
-        ":regex-syntax-0.8.3",
+        ":regex-automata-0.4.7",
+        ":regex-syntax-0.8.4",
     ],
 )
 
@@ -9889,18 +9889,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "regex-automata-0.4.6.crate",
-    sha256 = "86b83b8b9847f9bf95ef68afb0b8e6cdb80f498442f5179a29fad448fcc1eaea",
-    strip_prefix = "regex-automata-0.4.6",
-    urls = ["https://static.crates.io/crates/regex-automata/0.4.6/download"],
+    name = "regex-automata-0.4.7.crate",
+    sha256 = "38caf58cc5ef2fed281f89292ef23f6365465ed9a41b7a7754eb4e26496c92df",
+    strip_prefix = "regex-automata-0.4.7",
+    urls = ["https://static.crates.io/crates/regex-automata/0.4.7/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "regex-automata-0.4.6",
-    srcs = [":regex-automata-0.4.6.crate"],
+    name = "regex-automata-0.4.7",
+    srcs = [":regex-automata-0.4.7.crate"],
     crate = "regex_automata",
-    crate_root = "regex-automata-0.4.6.crate/src/lib.rs",
+    crate_root = "regex-automata-0.4.7.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -9933,7 +9933,7 @@ cargo.rust_library(
     deps = [
         ":aho-corasick-1.1.3",
         ":memchr-2.7.2",
-        ":regex-syntax-0.8.3",
+        ":regex-syntax-0.8.4",
     ],
 )
 
@@ -10001,18 +10001,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "regex-syntax-0.8.3.crate",
-    sha256 = "adad44e29e4c806119491a7f06f03de4d1af22c3a680dd47f1e6e179439d1f56",
-    strip_prefix = "regex-syntax-0.8.3",
-    urls = ["https://static.crates.io/crates/regex-syntax/0.8.3/download"],
+    name = "regex-syntax-0.8.4.crate",
+    sha256 = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b",
+    strip_prefix = "regex-syntax-0.8.4",
+    urls = ["https://static.crates.io/crates/regex-syntax/0.8.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "regex-syntax-0.8.3",
-    srcs = [":regex-syntax-0.8.3.crate"],
+    name = "regex-syntax-0.8.4",
+    srcs = [":regex-syntax-0.8.4.crate"],
     crate = "regex_syntax",
-    crate_root = "regex-syntax-0.8.3.crate/src/lib.rs",
+    crate_root = "regex-syntax-0.8.4.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -10144,7 +10144,7 @@ cargo.rust_library(
         ":glob-0.3.1",
         ":proc-macro2-1.0.85",
         ":quote-1.0.36",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":relative-path-1.9.3",
         ":syn-2.0.66",
         ":unicode-ident-1.0.12",
@@ -11941,7 +11941,7 @@ cargo.rust_library(
         ":once_cell-1.19.0",
         ":paste-1.0.15",
         ":ref-cast-1.0.23",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":serde-1.0.203",
         ":serde_json-1.0.117",
         ":starlark_derive-0.12.0",
@@ -12796,7 +12796,7 @@ cargo.rust_library(
         ":pest-2.7.10",
         ":pest_derive-2.7.10",
         ":rand-0.8.5",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":serde-1.0.203",
         ":serde_json-1.0.117",
         ":slug-0.1.5",
@@ -13883,7 +13883,7 @@ cargo.rust_library(
         ":matchers-0.1.0",
         ":nu-ansi-term-0.46.0",
         ":once_cell-1.19.0",
-        ":regex-1.10.4",
+        ":regex-1.10.5",
         ":sharded-slab-0.1.7",
         ":smallvec-1.13.2",
         ":thread_local-1.1.8",
