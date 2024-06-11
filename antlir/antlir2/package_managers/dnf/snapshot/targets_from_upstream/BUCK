@@ -2,8 +2,6 @@ load("//antlir/bzl:build_defs.bzl", "python_binary", "third_party")
 
 oncall("antlir_oss")
 
-# @noautodeps
-
 python_binary(
     name = "targets-from-upstream",
     srcs = ["targets_from_upstream.py"],
