@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file", "python_binary", "python_library", "rust_binary", "rust_library", "third_party")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
@@ -34,6 +32,7 @@ python_library(
 )
 
 antlir_rust_extension(
+    # @autodeps-skip
     name = "fs_utils_rs",
     srcs = ["fs_utils_rs.rs"],
     # Doesn't compile on windows.
@@ -69,6 +68,7 @@ python_library(
 )
 
 antlir_rust_extension(
+    # @autodeps-skip
     name = "artifacts_dir",
     srcs = ["artifacts_dir.rs"],
     crate_root = "artifacts_dir.rs",
@@ -82,6 +82,7 @@ antlir_rust_extension(
 )
 
 rust_library(
+    # @autodeps-skip
     name = "find_root",
     srcs = ["find_root.rs"],
     crate_root = "find_root.rs",
@@ -116,6 +117,7 @@ python_library(
 )
 
 rust_binary(
+    # @autodeps-skip
     name = "repo-root",
     srcs = ["repo_root.rs"],
     crate_root = "repo_root.rs",
@@ -156,16 +158,19 @@ python_binary(
 )
 
 export_file(
+    # @autodeps-skip
     name = "empty",
     visibility = ["PUBLIC"],
 )
 
 export_file(
+    # @autodeps-skip
     name = "empty.json",
     visibility = ["PUBLIC"],
 )
 
 buck_sh_binary(
+    # @autodeps-skip
     name = "empty.bin",
     main = "empty.sh",
     visibility = ["PUBLIC"],
