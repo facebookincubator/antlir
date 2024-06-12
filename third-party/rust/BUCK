@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "109269b96bb8701fdb092d969d3b7504eecf0c25",
+    rev = "a8bf5f82eefd2c029b5b11792d27cb8b86ebbe4e",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "ea581bf9eafc54ad83dd23deaf9f047a34caf365",
+    rev = "10a397b33d861698a82eb4e8254417f478a9f5db",
     visibility = [],
 )
 
@@ -540,6 +540,29 @@ cargo.rust_library(
     crate = "arbitrary",
     crate_root = "arbitrary-1.3.2.crate/src/lib.rs",
     edition = "2021",
+    visibility = [],
+)
+
+alias(
+    name = "arc-swap",
+    actual = ":arc-swap-1.7.1",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "arc-swap-1.7.1.crate",
+    sha256 = "69f7f8c3906b62b754cd5326047894316021dcfe5a194c8ea52bdd94934a3457",
+    strip_prefix = "arc-swap-1.7.1",
+    urls = ["https://static.crates.io/crates/arc-swap/1.7.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "arc-swap-1.7.1",
+    srcs = [":arc-swap-1.7.1.crate"],
+    crate = "arc_swap",
+    crate_root = "arc-swap-1.7.1.crate/src/lib.rs",
+    edition = "2018",
     visibility = [],
 )
 
@@ -1988,23 +2011,23 @@ cargo.rust_library(
 
 alias(
     name = "configparser",
-    actual = ":configparser-3.0.4",
+    actual = ":configparser-3.1.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "configparser-3.0.4.crate",
-    sha256 = "4ec6d3da8e550377a85339063af6e3735f4b1d9392108da4e083a1b3b9820288",
-    strip_prefix = "configparser-3.0.4",
-    urls = ["https://static.crates.io/crates/configparser/3.0.4/download"],
+    name = "configparser-3.1.0.crate",
+    sha256 = "e57e3272f0190c3f1584272d613719ba5fc7df7f4942fe542e63d949cf3a649b",
+    strip_prefix = "configparser-3.1.0",
+    urls = ["https://static.crates.io/crates/configparser/3.1.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "configparser-3.0.4",
-    srcs = [":configparser-3.0.4.crate"],
+    name = "configparser-3.1.0",
+    srcs = [":configparser-3.1.0.crate"],
     crate = "configparser",
-    crate_root = "configparser-3.0.4.crate/src/lib.rs",
+    crate_root = "configparser-3.1.0.crate/src/lib.rs",
     edition = "2021",
     features = ["indexmap"],
     visibility = [],
@@ -5103,40 +5126,40 @@ cargo.rust_library(
 
 alias(
     name = "httparse",
-    actual = ":httparse-1.9.2",
+    actual = ":httparse-1.9.3",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "httparse-1.9.2.crate",
-    sha256 = "9f3935c160d00ac752e09787e6e6bfc26494c2183cc922f1bc678a60d4733bc2",
-    strip_prefix = "httparse-1.9.2",
-    urls = ["https://static.crates.io/crates/httparse/1.9.2/download"],
+    name = "httparse-1.9.3.crate",
+    sha256 = "d0e7a4dd27b9476dc40cb050d3632d3bba3a70ddbff012285f7f8559a1e7e545",
+    strip_prefix = "httparse-1.9.3",
+    urls = ["https://static.crates.io/crates/httparse/1.9.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "httparse-1.9.2",
-    srcs = [":httparse-1.9.2.crate"],
+    name = "httparse-1.9.3",
+    srcs = [":httparse-1.9.3.crate"],
     crate = "httparse",
-    crate_root = "httparse-1.9.2.crate/src/lib.rs",
+    crate_root = "httparse-1.9.3.crate/src/lib.rs",
     edition = "2018",
     env = {
-        "OUT_DIR": "$(location :httparse-1.9.2-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :httparse-1.9.3-build-script-run[out_dir])",
     },
     features = [
         "default",
         "std",
     ],
-    rustc_flags = ["@$(location :httparse-1.9.2-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :httparse-1.9.3-build-script-run[rustc_flags])"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "httparse-1.9.2-build-script-build",
-    srcs = [":httparse-1.9.2.crate"],
+    name = "httparse-1.9.3-build-script-build",
+    srcs = [":httparse-1.9.3.crate"],
     crate = "build_script_build",
-    crate_root = "httparse-1.9.2.crate/build.rs",
+    crate_root = "httparse-1.9.3.crate/build.rs",
     edition = "2018",
     features = [
         "default",
@@ -5146,14 +5169,14 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "httparse-1.9.2-build-script-run",
+    name = "httparse-1.9.3-build-script-run",
     package_name = "httparse",
-    buildscript_rule = ":httparse-1.9.2-build-script-build",
+    buildscript_rule = ":httparse-1.9.3-build-script-build",
     features = [
         "default",
         "std",
     ],
-    version = "1.9.2",
+    version = "1.9.3",
 )
 
 http_archive(
@@ -5253,7 +5276,7 @@ cargo.rust_library(
         ":h2-0.3.26",
         ":http-0.2.12",
         ":http-body-0.4.6",
-        ":httparse-1.9.2",
+        ":httparse-1.9.3",
         ":httpdate-1.0.3",
         ":itoa-1.0.11",
         ":pin-project-lite-0.2.14",
