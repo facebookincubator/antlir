@@ -8,6 +8,7 @@ load("//antlir/bzl:build_defs.bzl", "internal_external", "is_facebook")
 load(":defs.bzl", "OsVersionInfo")
 
 _OS_REFS = {
+    "os.centos10": antlir2_dep("//antlir/antlir2/os:centos10"),
     "os.centos8": antlir2_dep("//antlir/antlir2/os:centos8"),
     "os.centos9": antlir2_dep("//antlir/antlir2/os:centos9"),
     "os.eln": antlir2_dep("//antlir/antlir2/os:eln"),
