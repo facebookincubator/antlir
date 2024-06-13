@@ -14,13 +14,18 @@ PartitionType = enum("linux", "esp")
 def Partition(
         src: str,
         type: PartitionType = PartitionType("linux"),
-        label: str | None = None):
-    return (src, type.value, label, "_internal_came_from_package_fn")
+        label: str | None = None,
+        alignment: int | None = None):
+    return (src, type.value, label, alignment, "_internal_came_from_package_fn")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     partitions = []
-    for src, type, label, _token in ctx.attrs.partitions:
+    for src, type, label, alignment, _token in ctx.attrs.partitions:
+        if alignment == 0 or (alignment != None and alignment % ctx.attrs.block_size != 0):
+            fail("alignment must be a multiple of block size")
+
         partitions.append({
+            "alignment": alignment,
             "name": label,
             "src": src[GptPartitionSource].src,
             "type": type,
@@ -72,6 +77,7 @@ _gpt = rule(
                 attrs.dep(providers = [GptPartitionSource]),
                 attrs.enum(PartitionType.values(), default = "linux"),
                 attrs.option(attrs.string()),
+                attrs.option(attrs.int()),
                 attrs.enum(["_internal_came_from_package_fn"]),
             ),
         ),

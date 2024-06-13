@@ -12,6 +12,7 @@ use std::io::SeekFrom;
 use std::path::Path;
 use std::path::PathBuf;
 
+use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use bytesize::ByteSize;
@@ -77,6 +78,7 @@ struct Partition {
     #[serde(rename = "type")]
     partition_type: PartitionType,
     name: Option<String>,
+    alignment: Option<u64>,
 }
 
 impl PackageFormat for Gpt {
@@ -84,8 +86,14 @@ impl PackageFormat for Gpt {
         // 2mb of scratch space for gpt headers
         let mut total_size = ByteSize::mb(2);
         for partition in &self.partitions {
+            let alignment_bytes = partition.alignment.unwrap_or_default();
+            if alignment_bytes % self.block_size.as_u64() != 0 {
+                return Err(anyhow!("alignment must be a multiple of block size"));
+            }
+
             let src_size = ByteSize::b(partition.src.metadata()?.len());
-            total_size += src_size;
+            // misalignment can waste up to alignment_bytes bytes per partition
+            total_size += src_size + alignment_bytes;
         }
 
         // round total_size to a multiple of the block size
@@ -144,7 +152,9 @@ impl PackageFormat for Gpt {
                     src_size.as_u64(),
                     partition.partition_type.gpt_type(),
                     0,
-                    None,
+                    partition
+                        .alignment
+                        .map(|alignment| alignment / self.block_size.as_u64()),
                 )
                 .with_context(|| format!("while adding partition {partition:?}"))?;
             let part = gdisk
