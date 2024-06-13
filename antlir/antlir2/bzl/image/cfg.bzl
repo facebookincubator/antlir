@@ -54,6 +54,7 @@ def attrs_selected_by_cfg():
                 "DEFAULT": None,
             } | internal_external(
                 fb = {
+                    antlir2_dep("//antlir/antlir2/os:centos10"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos10:centos10"),
                     antlir2_dep("//antlir/antlir2/os:centos8"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos8:centos8"),
                     antlir2_dep("//antlir/antlir2/os:eln"): antlir2_dep("//antlir/antlir2/facebook/flavor/eln:eln"),
                     antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
