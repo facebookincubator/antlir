@@ -273,6 +273,7 @@ _rpm, _rpm_anon = _new_package_rule(
         "epoch": attrs.int(default = 0),
         "extra_files": attrs.list(attrs.string(), default = []),
         "license": attrs.string(),
+        "packager": attrs.option(attrs.string(), default = None),
         "post_install_script": attrs.option(attrs.string(), default = None),
         "provides": attrs.list(attrs.string(), default = []),
         "python_bytecompile": attrs.bool(default = True),

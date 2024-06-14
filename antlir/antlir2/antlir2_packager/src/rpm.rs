@@ -51,6 +51,7 @@ pub struct Rpm {
     #[serde(default)]
     conflicts: Vec<String>,
     description: Option<String>,
+    packager: Option<String>,
     post_install_script: Option<String>,
     sign_with_private_key: Option<PathBuf>,
     sign_digest_algo: Option<String>,
@@ -126,6 +127,7 @@ License: {license}
 AutoReq: {autoreq}
 AutoProv: {autoprov}
 
+{packager}
 {requires}
 {requires_post}
 {recommends}
@@ -156,6 +158,11 @@ AutoProv: {autoprov}
             supplements = supplements,
             conflicts = conflicts,
             description = self.description.as_deref().unwrap_or_default(),
+            packager = self
+                .packager
+                .as_ref()
+                .map(|s| format!("Packager: {s}\n"))
+                .unwrap_or_default(),
             post_install_script = self
                 .post_install_script
                 .as_ref()
