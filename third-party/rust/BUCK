@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "0d4395ea783b71c43b7c0c679c867d8602b2cc22",
+    rev = "77ba99c414af7185e0005d6f78549b2b60f90b00",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "950da5b44d47c2a03af6ae844f064158ce889463",
+    rev = "e302fc8a74a9002e5738ee7f61bdd465858b38a1",
     visibility = [],
 )
 
@@ -2579,18 +2579,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cxx-1.0.123.crate",
-    sha256 = "8194f089b6da4751d6c1da1ef37c17255df51f9346cdb160f8b096562ae4a85c",
-    strip_prefix = "cxx-1.0.123",
-    urls = ["https://static.crates.io/crates/cxx/1.0.123/download"],
+    name = "cxx-1.0.124.crate",
+    sha256 = "273dcfd3acd4e1e276af13ed2a43eea7001318823e7a726a6b3ed39b4acc0b82",
+    strip_prefix = "cxx-1.0.124",
+    urls = ["https://static.crates.io/crates/cxx/1.0.124/download"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "cxx-1.0.123-build-script-build",
-    srcs = [":cxx-1.0.123.crate"],
+    name = "cxx-1.0.124-build-script-build",
+    srcs = [":cxx-1.0.124.crate"],
     crate = "build_script_build",
-    crate_root = "cxx-1.0.123.crate/build.rs",
+    crate_root = "cxx-1.0.124.crate/build.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -2600,81 +2600,81 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":cc-1.0.99",
-        ":cxxbridge-flags-1.0.123",
+        ":cxxbridge-flags-1.0.124",
     ],
 )
 
 buildscript_run(
-    name = "cxx-1.0.123-build-script-run",
+    name = "cxx-1.0.124-build-script-run",
     package_name = "cxx",
-    buildscript_rule = ":cxx-1.0.123-build-script-build",
+    buildscript_rule = ":cxx-1.0.124-build-script-build",
     features = [
         "alloc",
         "default",
         "std",
     ],
-    version = "1.0.123",
+    version = "1.0.124",
 )
 
 alias(
     name = "cxx",
-    actual = ":cxx-1.0.123-cxx",
+    actual = ":cxx-1.0.124-cxx",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "cxx-1.0.123-cxx",
-    srcs = [":cxx-1.0.123.crate"],
+    name = "cxx-1.0.124-cxx",
+    srcs = [":cxx-1.0.124.crate"],
     crate = "cxx",
-    crate_root = "cxx-1.0.123.crate/src/lib.rs",
+    crate_root = "cxx-1.0.124.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :cxx-1.0.123-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :cxx-1.0.124-build-script-run[out_dir])",
     },
     features = [
         "alloc",
         "default",
         "std",
     ],
-    rustc_flags = ["@$(location :cxx-1.0.123-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :cxx-1.0.124-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
-        ":cxxbridge-macro-1.0.123",
+        ":cxxbridge-macro-1.0.124",
         ":link-cplusplus-1.0.9",
     ],
 )
 
 http_archive(
-    name = "cxxbridge-flags-1.0.123.crate",
-    sha256 = "25290be4751803672a70b98c68b51c1e7d0a640ab5a4377f240f9d2e70054cd1",
-    strip_prefix = "cxxbridge-flags-1.0.123",
-    urls = ["https://static.crates.io/crates/cxxbridge-flags/1.0.123/download"],
+    name = "cxxbridge-flags-1.0.124.crate",
+    sha256 = "839fcd5e43464614ffaa989eaf1c139ef1f0c51672a1ed08023307fa1b909ccd",
+    strip_prefix = "cxxbridge-flags-1.0.124",
+    urls = ["https://static.crates.io/crates/cxxbridge-flags/1.0.124/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cxxbridge-flags-1.0.123",
-    srcs = [":cxxbridge-flags-1.0.123.crate"],
+    name = "cxxbridge-flags-1.0.124",
+    srcs = [":cxxbridge-flags-1.0.124.crate"],
     crate = "cxxbridge_flags",
-    crate_root = "cxxbridge-flags-1.0.123.crate/src/lib.rs",
+    crate_root = "cxxbridge-flags-1.0.124.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
 )
 
 http_archive(
-    name = "cxxbridge-macro-1.0.123.crate",
-    sha256 = "b8cb317cb13604b4752416783bb25070381c36e844743e4146b7f8e55de7d140",
-    strip_prefix = "cxxbridge-macro-1.0.123",
-    urls = ["https://static.crates.io/crates/cxxbridge-macro/1.0.123/download"],
+    name = "cxxbridge-macro-1.0.124.crate",
+    sha256 = "4b2c1c1776b986979be68bb2285da855f8d8a35851a769fca8740df7c3d07877",
+    strip_prefix = "cxxbridge-macro-1.0.124",
+    urls = ["https://static.crates.io/crates/cxxbridge-macro/1.0.124/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cxxbridge-macro-1.0.123",
-    srcs = [":cxxbridge-macro-1.0.123.crate"],
+    name = "cxxbridge-macro-1.0.124",
+    srcs = [":cxxbridge-macro-1.0.124.crate"],
     crate = "cxxbridge_macro",
-    crate_root = "cxxbridge-macro-1.0.123.crate/src/lib.rs",
+    crate_root = "cxxbridge-macro-1.0.124.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
