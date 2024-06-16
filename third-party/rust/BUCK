@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "77ba99c414af7185e0005d6f78549b2b60f90b00",
+    rev = "6ec2024fb98174f218d20df9054f345307f6ec20",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "e302fc8a74a9002e5738ee7f61bdd465858b38a1",
+    rev = "abcbe76cf67ea339e5ec2d81697b7e67d4fda191",
     visibility = [],
 )
 
@@ -3092,23 +3092,23 @@ cargo.rust_library(
 
 alias(
     name = "derive_more",
-    actual = ":derive_more-0.99.17",
+    actual = ":derive_more-0.99.18",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "derive_more-0.99.17.crate",
-    sha256 = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321",
-    strip_prefix = "derive_more-0.99.17",
-    urls = ["https://static.crates.io/crates/derive_more/0.99.17/download"],
+    name = "derive_more-0.99.18.crate",
+    sha256 = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce",
+    strip_prefix = "derive_more-0.99.18",
+    urls = ["https://static.crates.io/crates/derive_more/0.99.18/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "derive_more-0.99.17",
-    srcs = [":derive_more-0.99.17.crate"],
+    name = "derive_more-0.99.18",
+    srcs = [":derive_more-0.99.18.crate"],
     crate = "derive_more",
-    crate_root = "derive_more-0.99.17.crate/src/lib.rs",
+    crate_root = "derive_more-0.99.18.crate/src/lib.rs",
     edition = "2018",
     features = [
         "add",
@@ -3144,7 +3144,7 @@ cargo.rust_library(
         ":convert_case-0.4.0",
         ":proc-macro2-1.0.85",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-2.0.66",
     ],
 )
 
@@ -12244,7 +12244,7 @@ cargo.rust_library(
         ":cmp_any-0.8.1",
         ":debugserver-types-0.5.0",
         ":derivative-2.2.0",
-        ":derive_more-0.99.17",
+        ":derive_more-0.99.18",
         ":display_container-0.9.0",
         ":dupe-0.9.0",
         ":either-1.12.0",
@@ -12333,7 +12333,7 @@ cargo.rust_library(
         ":annotate-snippets-0.9.2",
         ":anyhow-1.0.86",
         ":derivative-2.2.0",
-        ":derive_more-0.99.17",
+        ":derive_more-0.99.18",
         ":dupe-0.9.0",
         ":lalrpop-util-0.19.12",
         ":logos-0.12.1",
