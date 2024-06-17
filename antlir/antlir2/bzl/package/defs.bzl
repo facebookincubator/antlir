@@ -267,6 +267,7 @@ _rpm, _rpm_anon = _new_package_rule(
         ),
         "autoprov": attrs.bool(default = True),
         "autoreq": attrs.bool(default = True),
+        "binary_payload": attrs.option(attrs.string(), default = None),
         "changelog": attrs.option(attrs.string(), default = None),
         "conflicts": attrs.list(attrs.string(), default = []),
         "description": attrs.option(attrs.string(), default = None),

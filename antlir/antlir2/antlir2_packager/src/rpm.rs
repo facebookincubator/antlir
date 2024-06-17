@@ -64,6 +64,7 @@ pub struct Rpm {
     autoreq: bool,
     #[serde(default)]
     autoprov: bool,
+    binary_payload: Option<String>,
 }
 
 impl PackageFormat for Rpm {
@@ -177,6 +178,9 @@ AutoProv: {autoprov}
 
         if !self.python_bytecompile {
             spec.push_str("%define __brp_python_bytecompile %{nil}\n");
+        }
+        if let Some(binary_payload) = &self.binary_payload {
+            spec.push_str(&format!("%define _binary_payload {binary_payload}\n"));
         }
         // rpmbuild may silently change shebangs from /bin/bash to /usr/bin/bash (see
         // https://asamalik.fedorapeople.org/tmp-docs-preview/packaging-guidelines/#_shebang_lines).
