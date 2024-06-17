@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "6ec2024fb98174f218d20df9054f345307f6ec20",
+    rev = "66c786a8f27e93a6358726b8199d0f1617a8e02a",
     visibility = [],
 )
 
