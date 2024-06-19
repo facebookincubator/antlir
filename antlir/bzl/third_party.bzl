@@ -37,7 +37,8 @@ tar xzf {src} --strip-components=1
 
 # Patch sources
 for p in \\$(ls -A {patches_dir}); do
-    patch < {patches_dir}/$p;
+    test -f {patches_dir}/$p;
+    patch --strip=0 --verbose < {patches_dir}/$p;
 done
 
 export OUTPUT="{output_dir}/"
