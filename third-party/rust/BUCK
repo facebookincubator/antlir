@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "7b00e83780b5760e6dd91e48b6b14a3b328a8410",
+    rev = "972035aa822b1c382bd7e1de46a83e0311914fc4",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "898ccc878aed31f56a1497427ab9bf802da62ce3",
+    rev = "49c4f9d163997b7ac1a69ca2b9b44efee425a9ef",
     visibility = [],
 )
 
@@ -12291,23 +12291,23 @@ cargo.rust_library(
 
 alias(
     name = "subtle",
-    actual = ":subtle-2.5.0",
+    actual = ":subtle-2.6.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "subtle-2.5.0.crate",
-    sha256 = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc",
-    strip_prefix = "subtle-2.5.0",
-    urls = ["https://static.crates.io/crates/subtle/2.5.0/download"],
+    name = "subtle-2.6.0.crate",
+    sha256 = "0d0208408ba0c3df17ed26eb06992cb1a1268d41b2c0e12e65203fbe3972cee5",
+    strip_prefix = "subtle-2.6.0",
+    urls = ["https://static.crates.io/crates/subtle/2.6.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "subtle-2.5.0",
-    srcs = [":subtle-2.5.0.crate"],
+    name = "subtle-2.6.0",
+    srcs = [":subtle-2.6.0.crate"],
     crate = "subtle",
-    crate_root = "subtle-2.5.0.crate/src/lib.rs",
+    crate_root = "subtle-2.6.0.crate/src/lib.rs",
     edition = "2018",
     features = [
         "default",
