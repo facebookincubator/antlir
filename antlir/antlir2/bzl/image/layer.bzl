@@ -539,7 +539,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 _layer_attrs = {
     "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
     "build_appliance": attrs.option(
-        attrs.dep(providers = [BuildApplianceInfo]),
+        attrs.exec_dep(providers = [BuildApplianceInfo]),
         default = None,
     ),
     "default_mountpoint": attrs.option(attrs.string(), default = None),
