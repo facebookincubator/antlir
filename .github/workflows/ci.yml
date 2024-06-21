@@ -22,6 +22,7 @@ jobs:
           truncate -s 100G ${{ runner.temp }}/image.btrfs
           mkfs.btrfs ${{ runner.temp }}/image.btrfs
           sudo mount ${{ runner.temp }}/image.btrfs antlir2-out
+          sudo chown -R $(id -u):$(id -g) antlir2-out
       - name: Install deps
         run: |
           sudo apt install \

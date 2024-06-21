@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_names")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 
 oncall("antlir")
 
@@ -37,6 +38,10 @@ image.layer(
 image_test_rpm_names(
     name = "test-rpms-installed",
     src = "rpms.txt",
+    labels = internal_external(
+        fb = [],
+        oss = ["disabled"],
+    ),
     layer = ":child-that-installs-rpms",
     rootless = True,
 )
