@@ -3,7 +3,6 @@
     prelude = prelude
     toolchains = toolchains
     none = none
-    generated = generated
 
 [cell_aliases]
     config = prelude
@@ -24,3 +23,5 @@
 
 [buck2]
     file_watcher = watchman
+
+<file:.buckconfig.generated>
