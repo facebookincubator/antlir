@@ -9,7 +9,7 @@ load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorDnfInfo", "F
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoSetInfo")
 
 _flavor_attrs = {
-    "default_build_appliance": attrs.dep(providers = [BuildApplianceInfo]),
+    "default_build_appliance": attrs.exec_dep(providers = [BuildApplianceInfo]),
     "default_dnf_excluded_rpms": attrs.list(
         attrs.string(),
         default = [],
