@@ -44,6 +44,7 @@ _rpm_names_test = rule(
     impl = _rpm_names_test_impl,
     attrs = {
         "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
+        "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
         "not_installed": attrs.bool(default = False),
         "src": attrs.source(),
