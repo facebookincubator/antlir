@@ -26,9 +26,6 @@ pub(crate) struct Depgraph {
     /// Path to depgraph for the parent layer
     parent: Option<PathBuf>,
     #[clap(long)]
-    /// Add dynamically built items from this facts database
-    add_built_items: Option<PathBuf>,
-    #[clap(long)]
     db_out: PathBuf,
     #[clap(long)]
     topo_features_out: PathBuf,
