@@ -19,8 +19,6 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use clap::ValueEnum;
-use nix::sched::unshare;
-use nix::sched::CloneFlags;
 use tracing::trace;
 use tracing::warn;
 use tracing_subscriber::prelude::*;
@@ -85,7 +83,8 @@ impl Receive {
 
         let rootless = if self.rootless {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
-            unshare(CloneFlags::CLONE_NEWNS).context("while unsharing mount")?;
+            antlir2_isolate::unshare_and_privatize_mount_ns()
+                .context("while isolating mount ns")?;
             None
         } else {
             Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?)

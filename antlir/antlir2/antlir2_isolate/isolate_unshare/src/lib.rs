@@ -20,6 +20,8 @@ use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
 use isolate_unshare_preexec::isolate_unshare_preexec;
 
+pub mod mount;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("unsupported setting: {0}")]

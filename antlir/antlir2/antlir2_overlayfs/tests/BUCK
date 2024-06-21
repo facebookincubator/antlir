@@ -10,9 +10,9 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "nix",
         "tracing",
         "tracing-subscriber",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/util/cli/json_arg:json_arg",
@@ -26,10 +26,10 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "nix",
         "tracing",
         "tracing-subscriber",
         "uuid",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/util/cli/json_arg:json_arg",
