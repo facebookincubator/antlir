@@ -43,6 +43,7 @@ def plan_info(res: struct) -> PlanInfo:
         output = res.plan_json,
         hidden = res.hidden,
         sub_artifacts = {
+            "repodatas": res.repodatas,
             "tx": res.tx_file,
         },
     )
