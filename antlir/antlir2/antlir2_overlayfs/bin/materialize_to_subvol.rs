@@ -18,8 +18,6 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use json_arg::JsonFile;
-use nix::sched::unshare;
-use nix::sched::CloneFlags;
 use tracing::trace;
 use tracing::warn;
 use walkdir::WalkDir;
@@ -68,7 +66,7 @@ fn main() -> Result<()> {
     }
 
     antlir2_rootless::unshare_new_userns().context("while entering new userns")?;
-    unshare(CloneFlags::CLONE_NEWNS).context("while entering new mount ns")?;
+    antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
     let overlay = OverlayFs::mount(
         antlir2_overlayfs::Opts::builder()

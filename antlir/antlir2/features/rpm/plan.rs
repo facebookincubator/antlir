@@ -19,10 +19,6 @@ use buck_label::Label;
 use clap::Parser;
 use json_arg::Json;
 use json_arg::JsonFile;
-use nix::mount::mount;
-use nix::mount::MsFlags;
-use nix::sched::unshare;
-use nix::sched::CloneFlags;
 use rpm::DriverContext;
 use rpm::RpmItem;
 
@@ -81,21 +77,7 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
 
-    // Be careful to isolate this process from the host mount namespace in
-    // case anything weird is going on
-    unshare(CloneFlags::CLONE_NEWNS).context("while unsharing mount")?;
-
-    // Remount / as private so that we don't let any changes escape back
-    // to the parent mount namespace (basically equivalent to `mount
-    // --make-rprivate /`)
-    mount(
-        None::<&str>,
-        "/",
-        None::<&str>,
-        MsFlags::MS_REC | MsFlags::MS_PRIVATE,
-        None::<&str>,
-    )
-    .context("while making mount ns private")?;
+    antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
     let parent = match (args.parent_subvol_symlink, args.parent_overlayfs) {
         (Some(parent_subvol), None) => Parent::Subvol(parent_subvol),
