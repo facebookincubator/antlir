@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "80d7ec8f95ba1bda2e4a3b8f95118602a2040be4",
+    rev = "dbb83154d86729feebcb2bf501cfe6f53df61a19",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "49c4f9d163997b7ac1a69ca2b9b44efee425a9ef",
+    rev = "781a4643e82f012487f06085f8c5209bcfb493fe",
     visibility = [],
 )
 
@@ -40,7 +40,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":regex-1.10.5",
     ],
 )
@@ -797,7 +797,7 @@ cargo.rust_library(
         ":cexpr-0.6.0",
         ":clang-sys-1.8.1",
         ":itertools-0.12.1",
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":lazycell-1.3.0",
         ":log-0.4.21",
         ":prettyplease-0.2.20",
@@ -977,7 +977,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":memchr-2.7.4",
         ":regex-automata-0.1.10",
     ],
@@ -1978,7 +1978,7 @@ cargo.rust_library(
         ),
     },
     visibility = [],
-    deps = [":lazy_static-1.4.0"],
+    deps = [":lazy_static-1.5.0"],
 )
 
 alias(
@@ -2075,7 +2075,7 @@ cargo.rust_library(
     },
     visibility = [],
     deps = [
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":libc-0.2.155",
         ":unicode-width-0.1.13",
     ],
@@ -5897,23 +5897,23 @@ cargo.rust_library(
 
 alias(
     name = "lazy_static",
-    actual = ":lazy_static-1.4.0",
+    actual = ":lazy_static-1.5.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "lazy_static-1.4.0.crate",
-    sha256 = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646",
-    strip_prefix = "lazy_static-1.4.0",
-    urls = ["https://static.crates.io/crates/lazy_static/1.4.0/download"],
+    name = "lazy_static-1.5.0.crate",
+    sha256 = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe",
+    strip_prefix = "lazy_static-1.5.0",
+    urls = ["https://static.crates.io/crates/lazy_static/1.5.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "lazy_static-1.4.0",
-    srcs = [":lazy_static-1.4.0.crate"],
+    name = "lazy_static-1.5.0",
+    srcs = [":lazy_static-1.5.0.crate"],
     crate = "lazy_static",
-    crate_root = "lazy_static-1.4.0.crate/src/lib.rs",
+    crate_root = "lazy_static-1.5.0.crate/src/lib.rs",
     edition = "2015",
     visibility = [],
 )
@@ -7009,7 +7009,7 @@ cargo.rust_library(
         ":cfg-if-1.0.0",
         ":downcast-0.11.0",
         ":fragile-2.0.0",
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":mockall_derive-0.11.4",
         ":predicates-2.1.5",
         ":predicates-tree-1.0.9",
@@ -9125,7 +9125,7 @@ cargo.rust_library(
     edition = "2015",
     visibility = [],
     deps = [
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":partition-identity-0.2.8",
     ],
 )
@@ -11434,7 +11434,7 @@ cargo.rust_library(
     crate_root = "sharded-slab-0.1.7.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":lazy_static-1.4.0"],
+    deps = [":lazy_static-1.5.0"],
 )
 
 alias(
@@ -12206,7 +12206,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":clap-2.34.0",
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":structopt-derive-0.4.18",
     ],
 )
@@ -12823,7 +12823,7 @@ cargo.rust_library(
         ":chrono-tz-0.9.0",
         ":globwalk-0.9.1",
         ":humansize-2.1.3",
-        ":lazy_static-1.4.0",
+        ":lazy_static-1.5.0",
         ":percent-encoding-2.3.1",
         ":pest-2.7.10",
         ":pest_derive-2.7.10",
