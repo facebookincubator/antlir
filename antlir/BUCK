@@ -54,7 +54,7 @@ python_library(
         "//kernel/kernels:test_selection_lib",
         "//metalos/initrd/facebook/...",
         "//metalos/os/tests:gen-bind-antlir-dirs-library",
-        "//registry/builder/fbpkg/tests/...",
+        "//registry/builder/...",
         "//syseng/yard/installer/...",
         "//ti/platform/edgeos/...",
         "//tupperware/cm/...",
