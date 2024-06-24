@@ -8,7 +8,6 @@
 use std::collections::BTreeSet;
 use std::fmt::Debug;
 use std::path::Path;
-use std::time::Duration;
 
 use antlir2_depgraph_if::item;
 use antlir2_depgraph_if::item::FileType;
@@ -23,7 +22,6 @@ use antlir2_facts::RoDatabase;
 use antlir2_facts::RwDatabase;
 use antlir2_features::Feature;
 use fxhash::FxHashMap;
-use rusqlite::backup::Backup;
 use rusqlite::OptionalExtension as _;
 use serde::Deserialize;
 use serde::Serialize;
@@ -53,20 +51,12 @@ pub enum Edge {
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct GraphBuilder {
-    memdb: RwDatabase,
+    db: RwDatabase,
 }
 
 impl GraphBuilder {
-    pub fn new(parent: Option<Graph>) -> Result<Self> {
-        // use an in-memory database for the temporary graph changes
-        let mut memdb = RwDatabase::create(":memory:")?;
-        if let Some(parent) = parent {
-            Backup::new(parent.db.as_ref(), memdb.as_mut())
-                .context("while starting backup to :memory:")?
-                .run_to_completion(128, Duration::from_millis(0), None)
-                .context("while backing up to :memory:")?;
-        }
-        let conn = memdb.as_mut();
+    pub fn new(mut db: RwDatabase) -> Result<Self> {
+        let conn = db.as_mut();
         conn.execute(
             "CREATE TABLE IF NOT EXISTS feature (id INTEGER PRIMARY KEY, value TEXT NOT NULL, pending BOOLEAN NOT NULL)",
             [],
@@ -169,12 +159,12 @@ impl GraphBuilder {
         .context("while inserting ambient item")?;
         }
         tx.commit().context("while committing setup transaction")?;
-        Ok(Self { memdb })
+        Ok(Self { db })
     }
 
     pub fn add_feature(&mut self, feature: AnalyzedFeature) -> Result<&mut Self> {
         let tx = self
-            .memdb
+            .db
             .as_mut()
             .transaction()
             .context("while starting feature add transaction")?;
@@ -230,7 +220,7 @@ impl GraphBuilder {
     /// duplicated with an edge that points to the final, canonical path (after
     /// resolving any symlinks)
     fn fixup_symlinks(&mut self) -> Result<()> {
-        let tx = self.memdb.as_mut().transaction()?;
+        let tx = self.db.as_mut().transaction()?;
         for row in tx
             .prepare(
                 r#"
@@ -329,7 +319,7 @@ impl GraphBuilder {
         // TODO: we can easily detect multiple errors, but the interface in this
         // crate is to only return one, so just limit it to one error
         if let Some((key, feature)) = self
-            .memdb
+            .db
             .as_ref()
             .prepare(
                 r#"
@@ -380,7 +370,7 @@ impl GraphBuilder {
 
     fn verify_no_invalid_deps(&self) -> Result<()> {
         for row in self
-            .memdb
+            .db
             .as_ref()
             .prepare(
                 r#"
@@ -434,7 +424,7 @@ impl GraphBuilder {
         let mut conflicts: FxHashMap<ItemKey, (BTreeSet<Item>, BTreeSet<Feature>)> =
             FxHashMap::default();
         for row in self
-            .memdb
+            .db
             .as_ref()
             .prepare(
                 r#"
@@ -509,10 +499,10 @@ impl GraphBuilder {
         self.verify_no_invalid_deps()?;
         self.verify_no_conflicts()?;
         // doing the topological sort ensures that there aren't any cycles
-        toposort::toposort(self.memdb.as_ref())?;
+        toposort::toposort(self.db.as_ref())?;
 
         Ok(Graph {
-            db: self.memdb.to_readonly()?,
+            db: self.db.to_readonly()?,
         })
     }
 }
@@ -527,8 +517,8 @@ impl Graph {
         Ok(Self { db })
     }
 
-    pub fn builder(parent: Option<Self>) -> Result<GraphBuilder> {
-        GraphBuilder::new(parent)
+    pub fn builder(db: RwDatabase) -> Result<GraphBuilder> {
+        GraphBuilder::new(db)
     }
 
     /// Iterate over features in topographical order (dependencies sorted before the
@@ -537,23 +527,12 @@ impl Graph {
         let features = toposort::toposort(self.db.as_ref())?;
         Ok(features.into_iter())
     }
+}
 
-    pub fn write_to_file(self, path: impl AsRef<Path>) -> Result<()> {
-        let _ = std::fs::remove_file(path.as_ref());
-        self.db
-            .as_ref()
-            .pragma_update(None, "query_only", "0")
-            .context("while disabling query_only mode")?;
-        self.db
-            .as_ref()
-            .prepare("VACUUM INTO ?")
-            .context("while preparing VACUUM statement")?
-            .execute([path
-                .as_ref()
-                .to_str()
-                .ok_or_else(|| rusqlite::Error::InvalidPath(path.as_ref().to_owned()))?])
-            .map(|_| ())
-            .with_context(|| format!("while vacuuming into {}", path.as_ref().display()))?;
-        Ok(())
+#[cfg(test)]
+impl GraphBuilder {
+    fn new_in_memory() -> Result<Self> {
+        let db = RwDatabase::create(":memory:")?;
+        Self::new(db)
     }
 }
