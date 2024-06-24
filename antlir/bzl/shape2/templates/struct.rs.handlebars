@@ -132,17 +132,3 @@ impl Default for {{name}} {
     }
 }
 {{/if}}
-
-impl ::pyo3::conversion::IntoPy<::pyo3::PyObject> for &{{name}} {
-    fn into_py(self, py: ::pyo3::Python<'_>) -> ::pyo3::PyObject {
-        let json_str = ::serde_json::to_string(self)
-            .expect("this came from json, serialization cannot fail");
-        let module = ::pyo3::types::PyModule::import(py, crate::PYTHON_MODULE)
-            .unwrap_or_else(|_| panic!("py module '{}' not available", crate::PYTHON_MODULE));
-        let cls = module.getattr("{{name}}")
-            .expect("module did not contain class '{{name}}'");
-        cls.call_method1("parse_raw", (&json_str,))
-            .expect("this is a valid shape, pydantic must be able to deserialize it")
-            .into_py(py)
-    }
-}
