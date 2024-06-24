@@ -76,9 +76,6 @@ impl Display for Cycle {
 
 pub(crate) trait ContextExt<T>: Sized {
     fn context<S: Display>(self, context: S) -> Result<T>;
-    fn with_context<F: FnOnce() -> S, S: Display>(self, with_context: F) -> Result<T> {
-        self.context(with_context())
-    }
 }
 
 impl<T> ContextExt<T> for rusqlite::Result<T> {
@@ -86,13 +83,6 @@ impl<T> ContextExt<T> for rusqlite::Result<T> {
         self.map_err(|err| Error::Sqlite {
             err,
             context: context.to_string(),
-        })
-    }
-
-    fn with_context<F: FnOnce() -> S, S: Display>(self, with_context: F) -> Result<T> {
-        self.map_err(|err| Error::Sqlite {
-            err,
-            context: with_context().to_string(),
         })
     }
 }

@@ -6,11 +6,14 @@
  */
 
 use std::fs::File;
+use std::fs::Permissions;
 use std::io::BufWriter;
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 use antlir2_depgraph::Graph;
 use antlir2_depgraph_if::AnalyzedFeature;
+use antlir2_facts::RwDatabase;
 use anyhow::Context;
 use clap::Parser;
 use json_arg::JsonFile;
@@ -34,8 +37,18 @@ pub(crate) struct Depgraph {
 impl Depgraph {
     #[tracing::instrument(name = "depgraph", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
-        let parent = self.parent.as_deref().map(Graph::open).transpose()?;
-        let mut depgraph = Graph::builder(parent)?;
+        let db = match &self.parent {
+            Some(parent) => {
+                std::fs::copy(parent, &self.db_out).context("while copying parent db")?;
+                std::fs::set_permissions(&self.db_out, Permissions::from_mode(0o644))
+                    .context("while making db writable")?;
+                RwDatabase::open(&self.db_out)
+                    .with_context(|| format!("while opening db '{}'", self.db_out.display()))?
+            }
+            None => RwDatabase::create(&self.db_out)
+                .with_context(|| format!("while creating db '{}'", self.db_out.display()))?,
+        };
+        let mut depgraph = Graph::builder(db)?;
         for f in self.features.into_iter().map(JsonFile::into_inner) {
             depgraph.add_feature(f)?;
         }
@@ -48,10 +61,6 @@ impl Depgraph {
         );
         serde_json::to_writer(&mut out, &features)
             .context("while writing out topologically-sorted features")?;
-
-        depgraph
-            .write_to_file(&self.db_out)
-            .context("while serializing graph to file")?;
 
         Ok(())
     }

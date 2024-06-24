@@ -121,22 +121,21 @@ mod tests {
     #[traced_test]
     #[test]
     fn simple_direct_resolve() {
-        let mut graph = GraphBuilder::new(None).expect("failed to create GraphBuilder");
+        let mut graph = GraphBuilder::new_in_memory().expect("failed to create GraphBuilder");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::RegularFile(
                 FileCommon::new("/foo/bar".into(), 0, 0, 0o644).into(),
             ))
             .expect("failed to insert fact");
         assert_eq!(
-            resolve(Path::new("/foo/bar"), graph.memdb.as_ref())
-                .expect("failed to resolve /foo/bar"),
+            resolve(Path::new("/foo/bar"), graph.db.as_ref()).expect("failed to resolve /foo/bar"),
             Some("/foo/bar".into()),
         );
     }
@@ -144,34 +143,34 @@ mod tests {
     #[traced_test]
     #[test]
     fn chases_absolute_symlinks() {
-        let mut graph = GraphBuilder::new(None).expect("failed to create GraphBuilder");
+        let mut graph = GraphBuilder::new_in_memory().expect("failed to create GraphBuilder");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Symlink(Symlink::new(
                 FileCommon::new("/foo/bar".into(), 0, 0, 0o777),
                 "/baz".into(),
             )))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/baz".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::RegularFile(
                 FileCommon::new("/baz/qux".into(), 0, 0, 0o644).into(),
             ))
             .expect("failed to insert fact");
         assert_eq!(
-            resolve(Path::new("/foo/bar/qux"), graph.memdb.as_ref())
+            resolve(Path::new("/foo/bar/qux"), graph.db.as_ref())
                 .expect("failed to resolve /foo/bar/qux"),
             Some("/baz/qux".into()),
         );
@@ -180,34 +179,34 @@ mod tests {
     #[traced_test]
     #[test]
     fn chases_sibling_symlinks() {
-        let mut graph = GraphBuilder::new(None).expect("failed to create GraphBuilder");
+        let mut graph = GraphBuilder::new_in_memory().expect("failed to create GraphBuilder");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Symlink(Symlink::new(
                 FileCommon::new("/foo/bar".into(), 0, 0, 0o777),
                 "baz".into(),
             )))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo/baz".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::RegularFile(
                 FileCommon::new("/foo/baz/qux".into(), 0, 0, 0o644).into(),
             ))
             .expect("failed to insert fact");
         assert_eq!(
-            resolve(Path::new("/foo/bar/qux"), graph.memdb.as_ref())
+            resolve(Path::new("/foo/bar/qux"), graph.db.as_ref())
                 .expect("failed to resolve /foo/bar/qux"),
             Some("/foo/baz/qux".into())
         );
@@ -216,34 +215,34 @@ mod tests {
     #[traced_test]
     #[test]
     fn chases_parent_symlinks() {
-        let mut graph = GraphBuilder::new(None).expect("failed to create GraphBuilder");
+        let mut graph = GraphBuilder::new_in_memory().expect("failed to create GraphBuilder");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Symlink(Symlink::new(
                 FileCommon::new("/foo/bar".into(), 0, 0, 0o777),
                 "../baz".into(),
             )))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/baz".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::RegularFile(
                 FileCommon::new("/baz/qux".into(), 0, 0, 0o644).into(),
             ))
             .expect("failed to insert fact");
         assert_eq!(
-            resolve(Path::new("/foo/bar/qux"), graph.memdb.as_ref())
+            resolve(Path::new("/foo/bar/qux"), graph.db.as_ref())
                 .expect("failed to resolve /foo/bar/qux"),
             Some("/baz/qux".into())
         );
@@ -252,41 +251,41 @@ mod tests {
     #[traced_test]
     #[test]
     fn chases_chain_of_symlinks() {
-        let mut graph = GraphBuilder::new(None).expect("failed to create GraphBuilder");
+        let mut graph = GraphBuilder::new_in_memory().expect("failed to create GraphBuilder");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Symlink(Symlink::new(
                 FileCommon::new("/foo/bar".into(), 0, 0, 0o777),
                 "../baz".into(),
             )))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Symlink(Symlink::new(
                 FileCommon::new("/baz".into(), 0, 0, 0o777),
                 "qux".into(),
             )))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/qux".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::RegularFile(
                 FileCommon::new("/qux/corge".into(), 0, 0, 0o644).into(),
             ))
             .expect("failed to insert fact");
         assert_eq!(
-            resolve(Path::new("/foo/bar/corge"), graph.memdb.as_ref())
+            resolve(Path::new("/foo/bar/corge"), graph.db.as_ref())
                 .expect("failed to resolve /foo/bar/corge"),
             Some("/qux/corge".into())
         );
@@ -295,48 +294,47 @@ mod tests {
     #[traced_test]
     #[test]
     fn yet_another_convoluted_example() {
-        let mut graph = GraphBuilder::new(None).expect("failed to create GraphBuilder");
+        let mut graph = GraphBuilder::new_in_memory().expect("failed to create GraphBuilder");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo/bar".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Directory(
                 FileCommon::new("/foo/baz".into(), 0, 0, 0o755).into(),
             ))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Symlink(Symlink::new(
                 FileCommon::new("/qux".into(), 0, 0, 0o777),
                 "foo/bar".into(),
             )))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::Symlink(Symlink::new(
                 FileCommon::new("/foo/bar/oof".into(), 0, 0, 0o777),
                 "../baz".into(),
             )))
             .expect("failed to insert fact");
         graph
-            .memdb
+            .db
             .insert(&DirEntry::RegularFile(
                 FileCommon::new("/qux/oof".into(), 0, 0, 0o6444).into(),
             ))
             .expect("failed to insert fact");
         assert_eq!(
-            resolve(Path::new("/qux/oof"), graph.memdb.as_ref())
-                .expect("failed to resolve /qux/oof"),
+            resolve(Path::new("/qux/oof"), graph.db.as_ref()).expect("failed to resolve /qux/oof"),
             Some("/foo/baz".into())
         );
     }
