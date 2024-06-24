@@ -19,6 +19,12 @@ load("//antlir/bzl:build_defs.bzl", "internal_external")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:stat.bzl", "stat")
 
+default_permissions = record(
+    binary = field(int | None, default = None),
+    file = field(int | None, default = None),
+    directory = field(int | None, default = None),
+)
+
 def install(
         *,
         src: str | Select,
@@ -30,7 +36,8 @@ def install(
         never_use_dev_binary_symlink: bool = False,
         split_debuginfo: bool = True,
         always_use_gnu_debuglink: bool = False,
-        setcap: str | None = None):
+        setcap: str | None = None,
+        default_permissions: default_permissions = default_permissions()):
     """
     Install a file or directory into the image.
 
@@ -41,6 +48,9 @@ def install(
             In most cases this can be left unset and antlir2 will choose the
             most reasonable default based on the source.
             Buck-built binaries will automatically be marked as executable.
+            These defaults can be manually overriden by `default_permissions`.
+
+        default_permissions: Default fallback permissions when mode is unset
 
         user: owner of the installed contents
         group: owner of the installed contents
@@ -81,6 +91,9 @@ def install(
         },
         kwargs = {
             "always_use_gnu_debuglink": always_use_gnu_debuglink,
+            "default_binary_mode": default_permissions.binary,
+            "default_directory_mode": default_permissions.directory,
+            "default_file_mode": default_permissions.file,
             "dst": dst,
             "group": group,
             "mode": mode,
@@ -155,13 +168,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 # There is no need for the old buck1 `install_buck_runnable` stuff
                 # in buck2, since we put a dep on the binary directly onto the layer
                 # itself, which forces a rebuild when appropriate.
-                mode = 0o555
+                mode = ctx.attrs.default_binary_mode or 0o555
             elif ctx.attrs.dst.endswith("/"):
                 # If the user is installing a directory, we require they include
                 # a trailing '/' in `dst`
-                mode = 0o755
+                mode = ctx.attrs.default_directory_mode or 0o755
             else:
-                mode = 0o444
+                mode = ctx.attrs.default_file_mode or 0o444
 
         if RunInfo in src:
             # depending on the RunInfo ensures that all the dynamic library
@@ -238,6 +251,9 @@ install_rule = rule(
     attrs = {
         "always_use_gnu_debuglink": attrs.bool(default = True),
         "build_phase": attrs.enum(BuildPhase.values(), default = "compile"),
+        "default_binary_mode": attrs.option(attrs.int(), default = None),
+        "default_directory_mode": attrs.option(attrs.int(), default = None),
+        "default_file_mode": attrs.option(attrs.int(), default = None),
         "dst": attrs.string(),
         "group": attrs.string(default = "root"),
         "mode": attrs.option(attrs.int(), default = None),
