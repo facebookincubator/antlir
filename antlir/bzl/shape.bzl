@@ -346,7 +346,6 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
             [
                 "anyhow",
                 "fbthrift",
-                "pyo3",
                 "serde",
                 "serde_json",
                 "typed-builder",
