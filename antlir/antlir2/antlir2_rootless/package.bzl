@@ -20,4 +20,4 @@ def antlir2_rootless(*, rootless: bool):
     _write_package_value(_KEY, rootless, overwrite = True)
 
 def get_antlir2_rootless() -> bool:
-    return _read_package_value(_KEY) or False
+    return _read_package_value(_KEY) or bool(int(native.read_config("antlir2", "rootless", 0)))

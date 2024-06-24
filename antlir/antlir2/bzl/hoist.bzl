@@ -7,7 +7,7 @@ load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -62,6 +62,7 @@ _hoist = rule(
         "out": attrs.option(attrs.string(doc = "rename output file"), default = None),
         "path": attrs.string(),
     } | attrs_selected_by_cfg() | cfg_attrs(),
+    cfg = layer_cfg,
 )
 
 _hoist_macro = rule_with_default_target_platform(_hoist)
