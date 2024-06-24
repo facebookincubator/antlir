@@ -13,6 +13,7 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -42,6 +43,8 @@ struct Args {
     module_md: Option<PathBuf>,
     #[clap(long)]
     out: PathBuf,
+    #[clap(long)]
+    expected_rpm_count: Option<u32>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default, ValueEnum)]
@@ -267,6 +270,7 @@ fn main() -> Result<()> {
     let mut primary = XmlFile::new("primary", xml_paths.len(), &args.out, args.compress)?;
     let mut filelists = XmlFile::new("filelists", xml_paths.len(), &args.out, args.compress)?;
     let mut other = XmlFile::new("other", xml_paths.len(), &args.out, args.compress)?;
+    let rpm_count = xml_paths.len() as u32;
 
     for path in xml_paths {
         let package = std::fs::read_to_string(&path)
@@ -276,6 +280,15 @@ fn main() -> Result<()> {
         primary.write_package(&blobs.primary)?;
         filelists.write_package(&blobs.filelists)?;
         other.write_package(&blobs.other)?;
+    }
+
+    if let Some(expected_rpm_count) = args.expected_rpm_count {
+        ensure!(
+            expected_rpm_count == rpm_count,
+            "Expected rpm count {} doesn't match real one {}.",
+            expected_rpm_count,
+            rpm_count,
+        );
     }
 
     let primary = primary.finish()?;
