@@ -14,9 +14,7 @@ RepoInfo = provider(fields = [
     "gpg_keys",  # Optional artifact against which signatures will be checked
     "id",  # Repo name
     "offline",  # Complete offline archive of repodata and all RPMs
-    "proxy_config",  # proxy config for this repo
     "repodata",  # Populated repodata/ directory
-    "urlgen",  # URL generator for repo_proxy::RpmRepo
 ])
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -75,28 +73,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         offline_map[package_href(rpm.nevra, rpm.pkgid)] = rpm.raw_rpm
     ctx.actions.copied_dir(offline, offline_map)
 
-    # repos that are not backed by manifold must use the "offline" urlgen
-    # setting as well as setting the offline directory as a dependency of the
-    # `[serve]` sub-target
-    offline_only_repo = not ctx.attrs.bucket
-    urlgen_config = {
-        "Manifold": {
-            "api_key": ctx.attrs.api_key,
-            "bucket": ctx.attrs.bucket,
-            "snapshot_base": "flat/",
-        },
-    } if not offline_only_repo else {"Offline": None}
-    proxy_config = {
-        "gpg_keys": ctx.attrs.gpg_keys,
-        "offline_dir": offline,
-        "offline_only": offline_only_repo,
-        "repodata_dir": repodata,
-        "urlgen": urlgen_config,
-    }
-    combined_proxy_config = ctx.actions.write_json("proxy_config.json", {
-        ctx.label.name: proxy_config,
-    })
-
     dnf_conf_json = ctx.actions.write_json("dnf_conf.json", ctx.attrs.dnf_conf)
 
     return [
@@ -104,14 +80,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "offline": [DefaultInfo(default_outputs = [offline])],
             "plain_repodata": [DefaultInfo(default_outputs = [plain_repodata])],
             "repodata": [DefaultInfo(default_outputs = [repodata])],
-            "serve": [DefaultInfo(), RunInfo(
-                args = cmd_args(
-                    ctx.attrs.repo_proxy[RunInfo],
-                    "--repos-json",
-                    combined_proxy_config,
-                    hidden = [repodata] + ([offline] if offline_only_repo else []),
-                ),
-            )],
         }),
         RepoInfo(
             id = repo_id,
@@ -120,9 +88,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             gpg_keys = ctx.attrs.gpg_keys,
             offline = offline,
             base_url = ctx.attrs.base_url,
-            urlgen = urlgen_config,
             all_rpms = rpm_infos,
-            proxy_config = proxy_config,
             dnf_conf_json = dnf_conf_json,
         ),
     ]
@@ -147,7 +113,6 @@ repo_attrs = {
     "makecache": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules/makecache:makecache")),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules/makerepo:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),
-    "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
     "rpms": attrs.list(
         attrs.dep(providers = [RpmInfo]),
         doc = "All RPMs that should be included in this repo",
@@ -165,7 +130,7 @@ repo = rule(
     attrs = repo_attrs,
 )
 
-RepoSetInfo = provider(fields = ["repos", "proxy_cmd"])
+RepoSetInfo = provider(fields = ["repos"])
 
 def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
     combined_repodatas = ctx.actions.declare_output("repodatas", dir = True)
@@ -190,40 +155,13 @@ def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
         },
     )
 
-    proxy_config = ctx.actions.write_json(
-        "proxy_config.json",
-        {
-            id: repo[RepoInfo].proxy_config
-            for id, repo in repos.items()
-        },
-    )
-
-    proxy_cmd = (
-        cmd_args(
-            ctx.attrs.repo_proxy[RunInfo],
-            "--repos-json",
-            proxy_config,
-            hidden = [repo[RepoInfo].repodata for repo in repos.values()] +
-                     # repos that are offline_only (not backed by a remote store &
-                     # urlgen) must be materialized locally before serving this repo_set
-                     [repo[RepoInfo].offline for repo in repos.values() if repo[RepoInfo].proxy_config["offline_only"]],
-        )
-    )
-
     return [
         RepoSetInfo(
             repos = repos.values(),
-            proxy_cmd = proxy_cmd,
         ),
         DefaultInfo(
             combined_repodatas,
             sub_targets = {
-                "proxy": [
-                    DefaultInfo(),
-                    RunInfo(
-                        args = proxy_cmd,
-                    ),
-                ],
                 "repo": [DefaultInfo(sub_targets = {
                     repo[RepoInfo].logical_id or repo[RepoInfo].id: repo.providers
                     for repo in repos.values()
@@ -235,7 +173,6 @@ def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
 repo_set = rule(
     impl = _repo_set_impl,
     attrs = {
-        "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
         "repo_sets": attrs.list(attrs.dep(providers = [RepoSetInfo]), default = []),
         "repos": attrs.list(attrs.dep(providers = [RepoInfo]), default = []),
     },
