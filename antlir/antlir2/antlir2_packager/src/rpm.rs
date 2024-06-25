@@ -121,7 +121,6 @@ impl PackageFormat for Rpm {
 Epoch: {epoch}
 Version: {version}
 Release: {release}
-BuildArch: {arch}
 
 Summary: {summary}
 License: {license}
@@ -238,8 +237,7 @@ AutoProv: {autoprov}
 
         // create the arch-specific output dir explicitly so that it'll be
         // owned by the build user on the host, not root
-        std::fs::create_dir(output_dir.path().join(&self.arch))
-            .context("while creating output dir")?;
+        std::fs::create_dir(output_dir.path().join(arch)).context("while creating output dir")?;
 
         let mut isol_context = IsolationContext::builder(self.build_appliance.path());
         isol_context
@@ -264,6 +262,8 @@ AutoProv: {autoprov}
             unshare(isol_context.clone())?
                 .command("/bin/rpmbuild")?
                 .arg("-bb")
+                .arg("--target")
+                .arg(arch)
                 .arg("--define")
                 .arg("_rpmdir /__antlir2__/out")
                 .arg("--define")
@@ -277,7 +277,7 @@ AutoProv: {autoprov}
 
         let outputs: Vec<_> = output_dir
             .path()
-            .join(&self.arch)
+            .join(arch)
             .read_dir()
             .context("while reading rpm output dir")?
             .filter_map(Result::ok)
