@@ -40,6 +40,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(ctx.attrs.module_md, format = "--module-md={}") if ctx.attrs.module_md else cmd_args(),
             cmd_args(plain_repodata.as_output(), format = "--out={}"),
             "--compress={}".format(ctx.attrs.compress),
+            "--expected-rpm-count={}".format(len(ctx.attrs.rpms)),
             optional_args,
         ),
         allow_cache_upload = False,
