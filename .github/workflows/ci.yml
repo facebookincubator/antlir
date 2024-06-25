@@ -40,13 +40,27 @@ jobs:
       - name: Find tests
         run: |
           ./buck2 bxl //ci:find_tests.bxl:find_tests -- \
-            --pattern //antlir/antlir2/antlir2_facts/... \
-            --pattern //antlir/antlir2/features/... \
-            --pattern //antlir/antlir2/test_images/... \
+            --disable //antlir/antlir2/antlir2_btrfs/... \
+            --disable //antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir-image-test \
+            --disable //antlir/antlir2/antlir2_overlayfs/... \
+            --disable //antlir/antlir2/antlir2_vm:antlir2_vm-unittest \
+            --disable //antlir/antlir2/genrule_in_image/... \
+            --disable //antlir/antlir2/image_command_alias/... \
+            --disable //antlir/antlir2/sendstream_parser:sendstream_parser-unittest \
             --disable //antlir/antlir2/test_images/cfg/os/... \
             --disable //antlir/antlir2/test_images/cfg/target_arch/... \
             --disable //antlir/antlir2/test_images/package/ext3/... \
             --disable //antlir/antlir2/test_images/package/xar/... \
+            --disable //antlir/antlir2/testing/tests:booted-image-test-that-should-fail \
+            --disable //antlir/antlir2/testing/tests:test-sh-booted-requires-units \
+            --disable //antlir/bzl/linux/tests:test-os-release \
+            --disable //antlir/bzl/linux/tests:test-timezone-us-pacific \
+            --disable //antlir/bzl/linux/tests:test-timezone-utc \
+            --disable //antlir/bzl/shape2/... \
+            --disable //antlir/bzl/tests/shapes/... \
+            --disable //antlir/rust:gen-modules-bzl-unittest \
+            --disable //third-party/antlir/tests:hello_world.default.test \
+            --disable //third-party/antlir/tests:hello_world.patched.test \
             | tee ${{ runner.temp }}/tests.txt
 
       - name: Build tests
