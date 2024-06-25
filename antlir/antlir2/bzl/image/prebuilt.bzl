@@ -9,7 +9,7 @@ load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerContents", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load(":facts.bzl", "facts")
 
 PrebuiltImageInfo = provider(fields = [
@@ -108,7 +108,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         actions = ctx.actions,
         layer = contents,
         parent_facts_db = None,
-        build_appliance = None,
+        build_appliance = ctx.attrs.flavor[FlavorInfo].default_build_appliance[BuildApplianceInfo] if ctx.attrs.flavor and ctx.attrs.flavor[FlavorInfo].default_build_appliance else None,
         new_facts_db = ctx.attrs._new_facts_db[RunInfo],
         phase = None,
         rootless = ctx.attrs._rootless,
