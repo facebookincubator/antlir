@@ -15,7 +15,8 @@ def _split(
         debuginfo_name: str | None = None,
         flavor: str | None = None,
         default_os: str | None = None,
-        visibility: list[str] | None = None) -> struct:
+        visibility: list[str] | None = None,
+        rootless: bool | None = None) -> struct:
     """
     Given an OS-like image layer, split it into two images, one of which
     contains the original layer minus any debug symbols and the other _only_ the
@@ -35,6 +36,7 @@ def _split(
         ],
         parent_layer = layer,
         visibility = visibility,
+        rootless = rootless,
         **(default_os_kwarg | flavor_kwarg)
     )
     cfg_kwargs = {
@@ -52,6 +54,7 @@ def _split(
             ),
         ],
         visibility = visibility,
+        rootless = rootless,
         **cfg_kwargs
     )
     return struct(
