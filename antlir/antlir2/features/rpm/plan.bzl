@@ -55,7 +55,7 @@ def plan(
         rootless: bool,
         items: Artifact | typing.Any,
         label: Label,
-        flavor: FlavorInfo,
+        flavor: FlavorInfo | typing.Any,
         build_appliance: BuildApplianceInfo | typing.Any,
         parent_layer_contents: LayerContents | None,
         dnf_available_repos: list[Dependency],
