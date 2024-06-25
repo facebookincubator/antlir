@@ -25,8 +25,13 @@ elif [ "${BOOT}" == "True" ]; then
     # Easy way to check that the systemd manager is running as pid1
     systemctl is-active "sysinit.target"
 elif [ "${BOOT}" == "wait-default" ]; then
-    # This should report true by now because the test waits on default.target
-    if ! systemctl is-system-running; then
+    # systemctl is-system-running may still report 'activating' if other
+    # services have started but not yet activated, but we really only care
+    # about waiting on default.target (and everything it brings in directly)
+    if ! systemctl is-active default.target; then
+        # Run these commands to dump information that might be useful to debug a
+        # test failure
+        systemctl list-jobs
         systemctl --failed
         journalctl
         exit 1
