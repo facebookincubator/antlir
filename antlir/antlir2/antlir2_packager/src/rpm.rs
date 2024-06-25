@@ -65,6 +65,7 @@ pub struct Rpm {
     #[serde(default)]
     autoprov: bool,
     binary_payload: Option<String>,
+    disable_strip: bool,
 }
 
 impl PackageFormat for Rpm {
@@ -177,6 +178,9 @@ AutoProv: {autoprov}
 
         if !self.python_bytecompile {
             spec.push_str("%define __brp_python_bytecompile %{nil}\n");
+        }
+        if self.disable_strip {
+            spec.push_str("%define __strip /usr/bin/true\n");
         }
         if let Some(binary_payload) = &self.binary_payload {
             spec.push_str(&format!("%define _binary_payload {binary_payload}\n"));
