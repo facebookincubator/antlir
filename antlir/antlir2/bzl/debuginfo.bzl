@@ -103,7 +103,7 @@ subprocess.run(
 # Find the BuildID of the binary. This determines where it should go for gdb to
 # look it up under /usr/lib/debug
 # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
-buildid = subprocess.run(
+buildid_proc = subprocess.run(
     [
         args.objcopy,
         "--dump-section",
@@ -112,9 +112,14 @@ buildid = subprocess.run(
         args.objcopy_tmp,
     ],
     capture_output=True,
-    check=True,
-).stdout
-
+)
+if buildid_proc.returncode != 0:
+    raise RuntimeError("Failed to get build-id for {}:\\n{}\\n{}".format(
+        args.binary,
+        buildid_proc.stdout.decode("utf-8", errors = "surrogateescape"),
+        buildid_proc.stderr.decode("utf-8", errors = "surrogateescape"),
+    ))
+buildid = buildid_proc.stdout
 
 # Prefer to install the debug info by BuildID since it does not require another
 # objcopy invocation and is more standard
