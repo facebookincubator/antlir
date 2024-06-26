@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "f3401c474bb1f55c2b50c4654a2b4903fbeb9095",
+    rev = "cd82cb7171c13a77f936d38e597134f10bd9f373",
     visibility = [],
 )
 
@@ -1262,18 +1262,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.0.100.crate",
-    sha256 = "c891175c3fb232128f48de6590095e59198bbeb8620c310be349bfc3afd12c7b",
-    strip_prefix = "cc-1.0.100",
-    urls = ["https://static.crates.io/crates/cc/1.0.100/download"],
+    name = "cc-1.0.101.crate",
+    sha256 = "ac367972e516d45567c7eafc73d24e1c193dcf200a8d94e9db7b3d38b349572d",
+    strip_prefix = "cc-1.0.101",
+    urls = ["https://static.crates.io/crates/cc/1.0.101/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.0.100",
-    srcs = [":cc-1.0.100.crate"],
+    name = "cc-1.0.101",
+    srcs = [":cc-1.0.101.crate"],
     crate = "cc",
-    crate_root = "cc-1.0.100.crate/src/lib.rs",
+    crate_root = "cc-1.0.101.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -2658,7 +2658,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.0.100",
+        ":cc-1.0.101",
         ":cxxbridge-flags-1.0.124",
     ],
 )
@@ -3395,7 +3395,7 @@ cargo.rust_library(
     edition = "2021",
     visibility = [],
     deps = [
-        ":either-1.12.0",
+        ":either-1.13.0",
         ":indenter-0.3.3",
     ],
 )
@@ -3471,23 +3471,23 @@ cargo.rust_library(
 
 alias(
     name = "either",
-    actual = ":either-1.12.0",
+    actual = ":either-1.13.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "either-1.12.0.crate",
-    sha256 = "3dca9240753cf90908d7e4aac30f630662b02aebaa1b58a3cadabdb23385b58b",
-    strip_prefix = "either-1.12.0",
-    urls = ["https://static.crates.io/crates/either/1.12.0/download"],
+    name = "either-1.13.0.crate",
+    sha256 = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0",
+    strip_prefix = "either-1.13.0",
+    urls = ["https://static.crates.io/crates/either/1.13.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "either-1.12.0",
-    srcs = [":either-1.12.0.crate"],
+    name = "either-1.13.0",
+    srcs = [":either-1.13.0.crate"],
     crate = "either",
-    crate_root = "either-1.12.0.crate/src/lib.rs",
+    crate_root = "either-1.13.0.crate/src/lib.rs",
     edition = "2018",
     features = [
         "default",
@@ -5460,7 +5460,7 @@ cargo.rust_library(
         "use_std",
     ],
     visibility = [],
-    deps = [":either-1.12.0"],
+    deps = [":either-1.13.0"],
 )
 
 alias(
@@ -5489,7 +5489,7 @@ cargo.rust_library(
         "use_std",
     ],
     visibility = [],
-    deps = [":either-1.12.0"],
+    deps = [":either-1.13.0"],
 )
 
 http_archive(
@@ -5507,7 +5507,7 @@ cargo.rust_library(
     crate_root = "itertools-0.12.1.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":either-1.12.0"],
+    deps = [":either-1.13.0"],
 )
 
 http_archive(
@@ -6047,7 +6047,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.0.100",
+        ":cc-1.0.101",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -9304,7 +9304,7 @@ cargo.rust_library(
     edition = "2021",
     visibility = [],
     deps = [
-        ":either-1.12.0",
+        ":either-1.13.0",
         ":rayon-core-1.12.1",
     ],
 )
@@ -11501,7 +11501,7 @@ cargo.rust_library(
         ":derive_more-0.99.18",
         ":display_container-0.9.0",
         ":dupe-0.9.0",
-        ":either-1.12.0",
+        ":either-1.13.0",
         ":erased-serde-0.3.31",
         ":hashbrown-0.14.5",
         ":inventory-0.3.15",
@@ -14305,7 +14305,7 @@ cargo.rust_library(
     },
     visibility = [],
     deps = [
-        ":either-1.12.0",
+        ":either-1.13.0",
         ":rustix-0.38.34",
     ],
 )
