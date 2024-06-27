@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "cd82cb7171c13a77f936d38e597134f10bd9f373",
+    rev = "86b71e6975c1db14ac41fa8043c394b46c3f8691",
     visibility = [],
 )
 
@@ -812,7 +812,7 @@ cargo.rust_library(
         ":regex-1.10.5",
         ":rustc-hash-1.1.0",
         ":shlex-1.3.0",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -1883,7 +1883,7 @@ cargo.rust_library(
         ":proc-macro-error-1.0.4",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -2633,7 +2633,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -2850,7 +2850,7 @@ cargo.rust_library(
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
         ":strsim-0.10.0",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -2879,7 +2879,7 @@ cargo.rust_library(
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
         ":strsim-0.10.0",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -2931,7 +2931,7 @@ cargo.rust_library(
     deps = [
         ":darling_core-0.13.4",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -2954,7 +2954,7 @@ cargo.rust_library(
     deps = [
         ":darling_core-0.14.4",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -3073,7 +3073,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -3711,7 +3711,7 @@ cargo.rust_library(
         ":proc-macro-error-1.0.4",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
         ":synstructure-0.12.6",
     ],
 )
@@ -6295,7 +6295,7 @@ cargo.rust_library(
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
         ":regex-syntax-0.6.29",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -6845,7 +6845,7 @@ cargo.rust_library(
         ":cfg-if-1.0.0",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -7255,7 +7255,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -8588,7 +8588,7 @@ cargo.rust_library(
         ":proc-macro-error-attr-1.0.4",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -8804,7 +8804,7 @@ cargo.rust_library(
         ":itertools-0.10.5",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -10267,7 +10267,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -10343,7 +10343,7 @@ cargo.rust_library(
         ":serde_derive-1.0.203",
         ":serde_json-1.0.118",
         ":serde_repr-0.1.19",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -10391,7 +10391,7 @@ cargo.rust_library(
         ":serde-1.0.203",
         ":serde_derive-1.0.203",
         ":serde_json-1.0.118",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -10494,7 +10494,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -10891,7 +10891,7 @@ cargo.rust_library(
         ":darling-0.13.4",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -11792,7 +11792,7 @@ cargo.rust_library(
         ":proc-macro-error-1.0.4",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
@@ -12071,6 +12071,37 @@ http_archive(
     visibility = [],
 )
 
+cargo.rust_library(
+    name = "syn-1.0.109",
+    srcs = [":syn-1.0.109.crate"],
+    crate = "syn",
+    crate_root = "syn-1.0.109.crate/src/lib.rs",
+    edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :syn-1.0.109-build-script-run[out_dir])",
+    },
+    features = [
+        "clone-impls",
+        "default",
+        "derive",
+        "extra-traits",
+        "full",
+        "parsing",
+        "printing",
+        "proc-macro",
+        "quote",
+        "visit",
+        "visit-mut",
+    ],
+    rustc_flags = ["@$(location :syn-1.0.109-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.36",
+        ":unicode-ident-1.0.12",
+    ],
+)
+
 cargo.rust_binary(
     name = "syn-1.0.109-build-script-build",
     srcs = [":syn-1.0.109.crate"],
@@ -12082,7 +12113,6 @@ cargo.rust_binary(
         "default",
         "derive",
         "extra-traits",
-        "fold",
         "full",
         "parsing",
         "printing",
@@ -12103,7 +12133,6 @@ buildscript_run(
         "default",
         "derive",
         "extra-traits",
-        "fold",
         "full",
         "parsing",
         "printing",
@@ -12113,44 +12142,6 @@ buildscript_run(
         "visit-mut",
     ],
     version = "1.0.109",
-)
-
-alias(
-    name = "syn1",
-    actual = ":syn-1.0.109-syn1",
-    visibility = ["PUBLIC"],
-)
-
-cargo.rust_library(
-    name = "syn-1.0.109-syn1",
-    srcs = [":syn-1.0.109.crate"],
-    crate = "syn",
-    crate_root = "syn-1.0.109.crate/src/lib.rs",
-    edition = "2018",
-    env = {
-        "OUT_DIR": "$(location :syn-1.0.109-build-script-run[out_dir])",
-    },
-    features = [
-        "clone-impls",
-        "default",
-        "derive",
-        "extra-traits",
-        "fold",
-        "full",
-        "parsing",
-        "printing",
-        "proc-macro",
-        "quote",
-        "visit",
-        "visit-mut",
-    ],
-    rustc_flags = ["@$(location :syn-1.0.109-build-script-run[rustc_flags])"],
-    visibility = [],
-    deps = [
-        ":proc-macro2-1.0.86",
-        ":quote-1.0.36",
-        ":unicode-ident-1.0.12",
-    ],
 )
 
 alias(
@@ -12222,7 +12213,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
         ":unicode-xid-0.2.4",
     ],
 )
@@ -13537,7 +13528,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":syn-1.0.109-syn1",
+        ":syn-1.0.109",
     ],
 )
 
