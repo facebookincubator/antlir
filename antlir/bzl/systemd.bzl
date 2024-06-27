@@ -124,7 +124,7 @@ def _enable_impl(
         # systemctl enable getty@tty2.service creates a
         # getty.target.wants/getty@tty2.service link to getty@.service.
         name_prefix, suffix = paths.split_extension(unit)
-        unit_name, sep, instance_name = name_prefix.rpartition("@")
+        unit_name, sep, _instance_name = name_prefix.rpartition("@")
         link_target = unit_name + sep + suffix
     else:
         fail("unit contains too many @ characters: " + unit)
@@ -398,11 +398,11 @@ def _mount_unit_file(name, mount):
     return shape.render_template(
         name = name,
         instance = mount,
-        template = "//antlir/bzl/linux/systemd:mount",
+        template = "antlir//antlir/bzl/linux/systemd:mount",
     )
 
 def _skip_unit(unit, force = False):
-    return _install_dropin("//antlir/bzl:99-skip-unit.conf", unit, force = force)
+    return _install_dropin("antlir//antlir/bzl:99-skip-unit.conf", unit, force = force)
 
 def _unskip_unit(unit):
     return _remove_dropin(unit, "99-skip-unit.conf")
