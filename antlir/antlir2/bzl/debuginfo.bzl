@@ -77,18 +77,24 @@ if not is_elf:
     sys.exit(0)
 
 # Save debug symbols to a separate debuginfo file
-subprocess.run(
+proc = subprocess.run(
     [
         args.objcopy,
         "--only-keep-debug",
         args.binary,
         args.debuginfo,
     ],
-    check=True,
+    capture_output=True,
 )
+if proc.returncode != 0:
+    raise RuntimeError("Failed to extract debug symbols for {}:\\n{}\\n{}".format(
+        args.binary,
+        proc.stdout.decode("utf-8", errors = "surrogateescape"),
+        proc.stderr.decode("utf-8", errors = "surrogateescape"),
+    ))
 
 # Remove the debug symbols from the stripped binary
-subprocess.run(
+proc = subprocess.run(
     [
         args.objcopy,
         "--strip-debug",
@@ -97,8 +103,14 @@ subprocess.run(
         args.binary,
         args.stripped,
     ],
-    check=True,
+    capture_output=True,
 )
+if proc.returncode != 0:
+    raise RuntimeError("Failed to extract debug symbols for {}:\\n{}\\n{}".format(
+        args.binary,
+        proc.stdout.decode("utf-8", errors = "surrogateescape"),
+        proc.stderr.decode("utf-8", errors = "surrogateescape"),
+    ))
 
 # Find the BuildID of the binary. This determines where it should go for gdb to
 # look it up under /usr/lib/debug
