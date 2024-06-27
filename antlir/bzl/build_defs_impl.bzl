@@ -170,8 +170,6 @@ def _antlir_buck_env():
     return "buck2"
 
 def _python_unittest(*args, **kwargs):
-    main_module = kwargs.get("main_module")
-
     env = kwargs.get("env", {})
     env["ANTLIR_BUCK"] = _antlir_buck_env()
     kwargs["env"] = env
@@ -191,6 +189,7 @@ def _python_unittest(*args, **kwargs):
     _wrap_internal(native.python_test, args, kwargs)
 
 def _rust_unittest(*args, **kwargs):
+    kwargs.pop("nodefaultlibs", None)
     _wrap_internal(native.rust_test, args, kwargs)
 
 def _rust_binary(*, name: str, **kwargs):
@@ -198,6 +197,7 @@ def _rust_binary(*, name: str, **kwargs):
     if unittests:
         _rust_unittest(name = name + "-unittests", **kwargs)
     kwargs["name"] = name
+    kwargs.pop("nodefaultlibs", None)
     _wrap_internal(native.rust_binary, [], kwargs)
 
 def _rust_library(*, name: str, **kwargs):
