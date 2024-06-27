@@ -1,0 +1,11 @@
+# @generated
+[cells]
+    antlir = antlir
+
+[external_cells]
+    antlir = git
+
+[external_cell_antlir]
+    git_origin = https://github.com/facebookincubator/antlir
+    commit_hash = 49a29c6c62d5d019531337b524ecd1fdeee55370
+
