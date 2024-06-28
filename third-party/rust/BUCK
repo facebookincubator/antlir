@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "cf71641e7fd6dbcba3f4819f26eb2a765c970f90",
+    rev = "eec7fd23ea1294ca9561b77a057c83b057fec273",
     visibility = [],
 )
 
@@ -205,7 +205,7 @@ cargo.rust_library(
         ":bumpalo-3.16.0",
         ":ctor-0.1.26",
         ":hashbrown-0.14.5",
-        ":num-bigint-0.4.5",
+        ":num-bigint-0.4.6",
     ],
 )
 
@@ -871,7 +871,7 @@ cargo.rust_library(
         ":itertools-0.12.1",
         ":lazy_static-1.5.0",
         ":lazycell-1.3.0",
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":prettyplease-0.2.20",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
@@ -3511,7 +3511,7 @@ cargo.rust_library(
     crate_root = "ena-0.14.3.crate/src/lib.rs",
     edition = "2015",
     visibility = [],
-    deps = [":log-0.4.21"],
+    deps = [":log-0.4.22"],
 )
 
 http_archive(
@@ -3583,7 +3583,7 @@ cargo.rust_library(
     deps = [
         ":humantime-2.1.0",
         ":is-terminal-0.4.12",
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":regex-1.10.5",
         ":termcolor-1.4.1",
     ],
@@ -3606,7 +3606,7 @@ cargo.rust_library(
     features = ["regex"],
     visibility = [],
     deps = [
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":regex-1.10.5",
     ],
 )
@@ -4669,7 +4669,7 @@ cargo.rust_library(
     deps = [
         ":aho-corasick-1.1.3",
         ":bstr-1.9.1",
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":regex-automata-0.4.7",
         ":regex-syntax-0.8.4",
         ":serde-1.0.203",
@@ -4762,7 +4762,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":plain-0.2.3",
         ":scroll-0.11.0",
     ],
@@ -4792,7 +4792,7 @@ cargo.rust_library(
     deps = [
         ":bitflags-2.6.0",
         ":crc-3.2.1",
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":uuid-1.9.1",
     ],
 )
@@ -4828,7 +4828,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":pest-2.7.10",
         ":pest_derive-2.7.10",
         ":serde-1.0.203",
@@ -5205,7 +5205,7 @@ cargo.rust_library(
     deps = [
         ":crossbeam-deque-0.8.5",
         ":globset-0.4.14",
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":memchr-2.7.4",
         ":regex-automata-0.4.7",
         ":same-file-1.0.6",
@@ -6213,23 +6213,23 @@ buildscript_run(
 
 alias(
     name = "log",
-    actual = ":log-0.4.21",
+    actual = ":log-0.4.22",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "log-0.4.21.crate",
-    sha256 = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c",
-    strip_prefix = "log-0.4.21",
-    urls = ["https://static.crates.io/crates/log/0.4.21/download"],
+    name = "log-0.4.22.crate",
+    sha256 = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24",
+    strip_prefix = "log-0.4.22",
+    urls = ["https://static.crates.io/crates/log/0.4.22/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "log-0.4.21",
-    srcs = [":log-0.4.21.crate"],
+    name = "log-0.4.22",
+    srcs = [":log-0.4.22.crate"],
     crate = "log",
-    crate_root = "log-0.4.21.crate/src/lib.rs",
+    crate_root = "log-0.4.22.crate/src/lib.rs",
     edition = "2021",
     features = [
         "kv",
@@ -6730,7 +6730,7 @@ cargo.rust_library(
         ),
     },
     visibility = [],
-    deps = [":log-0.4.21"],
+    deps = [":log-0.4.22"],
 )
 
 http_archive(
@@ -7180,23 +7180,23 @@ buildscript_run(
 
 alias(
     name = "num-bigint",
-    actual = ":num-bigint-0.4.5",
+    actual = ":num-bigint-0.4.6",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "num-bigint-0.4.5.crate",
-    sha256 = "c165a9ab64cf766f73521c0dd2cfdff64f488b8f0b3e621face3462d3db536d7",
-    strip_prefix = "num-bigint-0.4.5",
-    urls = ["https://static.crates.io/crates/num-bigint/0.4.5/download"],
+    name = "num-bigint-0.4.6.crate",
+    sha256 = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9",
+    strip_prefix = "num-bigint-0.4.6",
+    urls = ["https://static.crates.io/crates/num-bigint/0.4.6/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "num-bigint-0.4.5",
-    srcs = [":num-bigint-0.4.5.crate"],
+    name = "num-bigint-0.4.6",
+    srcs = [":num-bigint-0.4.6.crate"],
     crate = "num_bigint",
-    crate_root = "num-bigint-0.4.5.crate/src/lib.rs",
+    crate_root = "num-bigint-0.4.6.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -9070,7 +9070,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":env_logger-0.8.4",
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":rand-0.8.5",
     ],
 )
@@ -10239,7 +10239,7 @@ cargo.rust_library(
         ":dirs-next-2.0.0",
         ":fd-lock-3.0.13",
         ":libc-0.2.155",
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":memchr-2.7.4",
         ":radix_trie-0.2.1",
         ":rustyline-derive-0.8.0",
@@ -10607,7 +10607,6 @@ cargo.rust_library(
         "alloc",
         "default",
         "derive",
-        "rc",
         "serde_derive",
         "std",
     ],
@@ -10626,7 +10625,6 @@ cargo.rust_binary(
         "alloc",
         "default",
         "derive",
-        "rc",
         "serde_derive",
         "std",
     ],
@@ -10641,7 +10639,6 @@ buildscript_run(
         "alloc",
         "default",
         "derive",
-        "rc",
         "serde_derive",
         "std",
     ],
@@ -11508,7 +11505,7 @@ cargo.rust_library(
         ":itertools-0.10.5",
         ":maplit-1.0.2",
         ":memoffset-0.6.5",
-        ":num-bigint-0.4.5",
+        ":num-bigint-0.4.6",
         ":num-traits-0.2.19",
         ":once_cell-1.19.0",
         ":paste-1.0.15",
@@ -11596,7 +11593,7 @@ cargo.rust_library(
         ":logos-0.12.1",
         ":lsp-types-0.94.1",
         ":memchr-2.7.4",
-        ":num-bigint-0.4.5",
+        ":num-bigint-0.4.6",
         ":num-traits-0.2.19",
         ":once_cell-1.19.0",
         ":starlark_map-0.12.0",
@@ -13299,7 +13296,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":log-0.4.21",
+        ":log-0.4.22",
         ":once_cell-1.19.0",
         ":tracing-core-0.1.32",
     ],
