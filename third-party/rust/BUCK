@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "eec7fd23ea1294ca9561b77a057c83b057fec273",
+    rev = "2e647ffa29361c9b715e753315027aa992758ad4",
     visibility = [],
 )
 
@@ -1783,24 +1783,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap-4.5.7.crate",
-    sha256 = "5db83dced34638ad474f39f250d7fea9598bdd239eaced1bdf45d597da0f433f",
-    strip_prefix = "clap-4.5.7",
-    urls = ["https://static.crates.io/crates/clap/4.5.7/download"],
+    name = "clap-4.5.8.crate",
+    sha256 = "84b3edb18336f4df585bc9aa31dd99c036dfa5dc5e9a2939a722a188f3a8970d",
+    strip_prefix = "clap-4.5.8",
+    urls = ["https://static.crates.io/crates/clap/4.5.8/download"],
     visibility = [],
 )
 
 alias(
     name = "clap",
-    actual = ":clap-4.5.7-clap",
+    actual = ":clap-4.5.8-clap",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap-4.5.7-clap",
-    srcs = [":clap-4.5.7.crate"],
+    name = "clap-4.5.8-clap",
+    srcs = [":clap-4.5.8.crate"],
     crate = "clap",
-    crate_root = "clap-4.5.7.crate/src/lib.rs",
+    crate_root = "clap-4.5.8.crate/src/lib.rs",
     edition = "2021",
     features = [
         "color",
@@ -1818,24 +1818,24 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":clap_builder-4.5.7",
-        ":clap_derive-4.5.5",
+        ":clap_builder-4.5.8",
+        ":clap_derive-4.5.8",
     ],
 )
 
 http_archive(
-    name = "clap_builder-4.5.7.crate",
-    sha256 = "f7e204572485eb3fbf28f871612191521df159bc3e15a9f5064c66dba3a8c05f",
-    strip_prefix = "clap_builder-4.5.7",
-    urls = ["https://static.crates.io/crates/clap_builder/4.5.7/download"],
+    name = "clap_builder-4.5.8.crate",
+    sha256 = "c1c09dd5ada6c6c78075d6fd0da3f90d8080651e2d6cc8eb2f1aaa4034ced708",
+    strip_prefix = "clap_builder-4.5.8",
+    urls = ["https://static.crates.io/crates/clap_builder/4.5.8/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "clap_builder-4.5.7",
-    srcs = [":clap_builder-4.5.7.crate"],
+    name = "clap_builder-4.5.8",
+    srcs = [":clap_builder-4.5.8.crate"],
     crate = "clap_builder",
-    crate_root = "clap_builder-4.5.7.crate/src/lib.rs",
+    crate_root = "clap_builder-4.5.8.crate/src/lib.rs",
     edition = "2021",
     features = [
         "color",
@@ -1888,18 +1888,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_derive-4.5.5.crate",
-    sha256 = "c780290ccf4fb26629baa7a1081e68ced113f1d3ec302fa5948f1c381ebf06c6",
-    strip_prefix = "clap_derive-4.5.5",
-    urls = ["https://static.crates.io/crates/clap_derive/4.5.5/download"],
+    name = "clap_derive-4.5.8.crate",
+    sha256 = "2bac35c6dafb060fd4d275d9a4ffae97917c13a6327903a8be2153cd964f7085",
+    strip_prefix = "clap_derive-4.5.8",
+    urls = ["https://static.crates.io/crates/clap_derive/4.5.8/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "clap_derive-4.5.5",
-    srcs = [":clap_derive-4.5.5.crate"],
+    name = "clap_derive-4.5.8",
+    srcs = [":clap_derive-4.5.8.crate"],
     crate = "clap_derive",
-    crate_root = "clap_derive-4.5.5.crate/src/lib.rs",
+    crate_root = "clap_derive-4.5.8.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     proc_macro = True,
