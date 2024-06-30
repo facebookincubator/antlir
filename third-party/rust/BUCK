@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "2e647ffa29361c9b715e753315027aa992758ad4",
+    rev = "adb128e8feb67354aa4bd626261ae262408c70a8",
     visibility = [],
 )
 
@@ -1262,18 +1262,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.0.101.crate",
-    sha256 = "ac367972e516d45567c7eafc73d24e1c193dcf200a8d94e9db7b3d38b349572d",
-    strip_prefix = "cc-1.0.101",
-    urls = ["https://static.crates.io/crates/cc/1.0.101/download"],
+    name = "cc-1.0.102.crate",
+    sha256 = "779e6b7d17797c0b42023d417228c02889300190e700cb074c3438d9c541d332",
+    strip_prefix = "cc-1.0.102",
+    urls = ["https://static.crates.io/crates/cc/1.0.102/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.0.101",
-    srcs = [":cc-1.0.101.crate"],
+    name = "cc-1.0.102",
+    srcs = [":cc-1.0.102.crate"],
     crate = "cc",
-    crate_root = "cc-1.0.101.crate/src/lib.rs",
+    crate_root = "cc-1.0.102.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -2658,7 +2658,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.0.101",
+        ":cc-1.0.102",
         ":cxxbridge-flags-1.0.124",
     ],
 )
@@ -6047,7 +6047,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.0.101",
+        ":cc-1.0.102",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
