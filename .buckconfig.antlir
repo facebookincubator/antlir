@@ -7,5 +7,5 @@
 
 [external_cell_antlir]
     git_origin = https://github.com/facebookincubator/antlir
-    commit_hash = 4b5a5a19ac912d89e5ab869e65f731496ff2ce1a
+    commit_hash = c6ff50ad754561eecc065f199ef7330b8276566e
 
