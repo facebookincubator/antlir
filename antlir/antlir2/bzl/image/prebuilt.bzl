@@ -10,6 +10,7 @@ load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerContents", "LayerInfo")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 load(":facts.bzl", "facts")
 
 PrebuiltImageInfo = provider(fields = [
@@ -87,6 +88,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ctx.attrs.antlir2_receive[RunInfo],
             "--working-dir=antlir2-out",
             cmd_args(format, format = "--format={}"),
+            cmd_args(ctx.attrs._btrfs[RunInfo], format = "--btrfs={}") if format == "sendstream" and ctx.attrs._btrfs else cmd_args(),
             cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
             cmd_args("--rootless") if ctx.attrs._rootless else cmd_args(),
@@ -138,6 +140,7 @@ _prebuilt = rule(
         "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
+        "_btrfs": attrs.option(attrs.exec_dep()),
         "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
         "_overlayfs": attrs.bool(default = False),
         "_rootless": attrs.default_only(attrs.bool(default = select({
@@ -162,6 +165,11 @@ def prebuilt(*args, **kwargs):
 
     if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
+
+    kwargs["_btrfs"] = internal_external(
+        fb = "fbsource//third-party/btrfs-progs:btrfs",
+        oss = None,
+    )
 
     _prebuilt_macro(
         *args,
