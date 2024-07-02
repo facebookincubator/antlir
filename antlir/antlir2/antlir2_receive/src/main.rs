@@ -43,6 +43,9 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// Use an unprivileged usernamespace
     rootless: bool,
+    #[clap(long, default_value = "btrfs")]
+    /// path to 'btrfs' command
+    btrfs: PathBuf,
 }
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
@@ -97,12 +100,15 @@ impl Receive {
         match self.format {
             Format::Sendstream => {
                 let recv_tmp = tempfile::tempdir_in(&self.setup.working_dir)?;
-                let mut cmd = Command::new("btrfs");
+                let mut cmd = Command::new(self.btrfs);
                 cmd.arg("--quiet")
                     .arg("receive")
                     .arg(recv_tmp.path())
                     .arg("-f")
                     .arg(&self.source);
+                if self.rootless {
+                    cmd.arg("--force-decompress");
+                }
                 trace!("receiving sendstream: {cmd:?}");
                 let res = cmd.spawn()?.wait()?;
                 ensure!(res.success(), "btrfs-receive failed");
