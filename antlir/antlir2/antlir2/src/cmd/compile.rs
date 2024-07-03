@@ -93,10 +93,7 @@ impl Compile {
     pub(crate) fn run(self, rootless: Rootless) -> Result<()> {
         // this must happen before unshare
         let working_volume = match self.working_format {
-            WorkingFormat::Btrfs => Some(
-                WorkingVolume::ensure(self.working_dir.clone())
-                    .context("while setting up WorkingVolume")?,
-            ),
+            WorkingFormat::Btrfs => Some(WorkingVolume::ensure(self.working_dir.clone())?),
             WorkingFormat::Overlayfs => None,
         };
 

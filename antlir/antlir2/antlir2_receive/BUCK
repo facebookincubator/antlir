@@ -13,11 +13,13 @@ rust_binary(
         # @oss-disable
         "tar",
         "tempfile",
+        "thiserror",
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
         "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
         "//antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir",
+        "//antlir/antlir2/antlir2_error_handler:antlir2_error_handler",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",

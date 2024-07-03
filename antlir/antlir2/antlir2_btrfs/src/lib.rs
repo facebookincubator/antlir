@@ -10,7 +10,9 @@
 
 use std::ffi::OsStr;
 use std::fmt::Debug;
+use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
+use std::os::fd::RawFd;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
@@ -77,8 +79,8 @@ fn name_bytes<const L: usize>(name: &OsStr) -> [u8; L] {
     buf
 }
 
-fn ensure_is_btrfs(dir: &Dir) -> Result<()> {
-    let statfs = fstatfs(dir).map_err(std::io::Error::from)?;
+fn ensure_is_btrfs(fd: &impl AsRawFd) -> Result<()> {
+    let statfs = fstatfs(fd).map_err(std::io::Error::from)?;
     if statfs.filesystem_type() != BTRFS_SUPER_MAGIC {
         return Err(Error::NotBtrfs);
     }
@@ -297,6 +299,11 @@ impl Debug for Info {
             .field("parent_uuid", &self.parent_uuid())
             .finish_non_exhaustive()
     }
+}
+
+pub fn ensure_path_is_on_btrfs(path: impl AsRef<Path>) -> Result<()> {
+    let fd = OpenOptions::new().read(true).open(path)?;
+    ensure_is_btrfs(&fd)
 }
 
 #[cfg(test)]
