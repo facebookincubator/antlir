@@ -60,19 +60,25 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             default_info,
         ]
 
-    return ctx.actions.anon_target(layer_rule, {
-        "antlir2": ctx.attrs._layer_antlir2,
-        "flavor": ctx.attrs.flavor,
-        "parent_layer": ctx.attrs.layer,
-        "rootless": ctx.attrs._rootless,
-        "target_arch": ctx.attrs._target_arch,
-        "_analyze_feature": ctx.attrs._layer_analyze_feature,
-        "_feature_features": [ctx.attrs._prep_feature],
-        "_new_facts_db": ctx.attrs._new_facts_db,
-        "_rootless": ctx.attrs._rootless,
-        "_run_container": None,
-        "_selected_target_arch": ctx.attrs._target_arch,
-    }).promise.map(_with_anon_layer)
+    if int(bool(ctx.attrs.layer)) + int(bool(ctx.attrs.exec_layer)) != 1:
+        fail("exactly one of layer or exec_layer must be specified")
+
+    if ctx.attrs.layer:
+        return ctx.actions.anon_target(layer_rule, {
+            "antlir2": ctx.attrs._layer_antlir2,
+            "flavor": ctx.attrs.flavor,
+            "parent_layer": ctx.attrs.layer,
+            "rootless": ctx.attrs._rootless,
+            "target_arch": ctx.attrs._target_arch,
+            "_analyze_feature": ctx.attrs._layer_analyze_feature,
+            "_feature_features": [ctx.attrs._prep_feature],
+            "_new_facts_db": ctx.attrs._new_facts_db,
+            "_rootless": ctx.attrs._rootless,
+            "_run_container": None,
+            "_selected_target_arch": ctx.attrs._target_arch,
+        }).promise.map(_with_anon_layer)
+    else:
+        return _with_anon_layer(ctx.attrs.exec_layer)
 
 _genrule_in_image = rule(
     impl = _impl,
@@ -80,7 +86,19 @@ _genrule_in_image = rule(
         "bash": attrs.arg(),
         "default_out": attrs.option(attrs.string(), default = None),
         "ephemeral_root": attrs.bool(default = False),
-        "layer": attrs.dep(providers = [LayerInfo]),
+        # TODO: exec_layer should probably be the default (which would make this
+        # behave more like a standard genrule)
+        "exec_layer": attrs.option(
+            attrs.exec_dep(providers = [LayerInfo]),
+            default = None,
+            doc = """
+                Layer in which to execute the command, but configure it to build
+                for the execution platform instead of the target.
+                'exec_layer' must be pre-configured with the prep feature
+                (//antlir/antlir2/genrule_in_image:prep)
+            """,
+        ),
+        "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "out": attrs.option(attrs.string(), default = None),
         "outs": attrs.option(attrs.dict(attrs.string(), attrs.string()), default = None),
         "_genrule_in_image": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/genrule_in_image:genrule_in_image"))),
