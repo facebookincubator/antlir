@@ -23,6 +23,17 @@ export_file(
     name = "kernelconfig.aarch64",
 )
 
+image.layer(
+    name = "build-appliance",
+    features = [
+        "//antlir/antlir2/genrule_in_image:prep",
+    ],
+    parent_layer = internal_external(
+        fb = "//kernel/build/image:_appliance.layer",
+        oss = ":appliance",
+    ),
+)
+
 genrule_in_image(
     name = "kernel",
     out = "vmlinuz",
@@ -36,21 +47,23 @@ genrule_in_image(
                 "ovr_config//cpu:arm64": ":kernelconfig.aarch64",
                 "ovr_config//cpu:x86_64": ":kernelconfig.x86_64",
             }),
+            make_arch = select({
+                "ovr_config//cpu:arm64": "arm64",
+                "ovr_config//cpu:x86_64": "x86_64",
+            }),
         ),
         lambda sel: """
             odir=`realpath $BUCK_SCRATCH_PATH`
             cp $(location {config}) "$odir/.config"
-            make O="$odir" -C $(location :kernel.git) -j`nproc`
+            make O="$odir" -C $(location :kernel.git) ARCH={arch} LLVM=1 -j`nproc`
             cp "$odir/{out}" $OUT
         """.format(
             out = sel.out,
+            arch = sel.make_arch,
             config = sel.config,
         ),
     ),
-    layer = internal_external(
-        fb = "//kernel/build/image:_appliance.layer",
-        oss = ":appliance",
-    ),
+    exec_layer = ":build-appliance",
 )
 
 image.layer(
