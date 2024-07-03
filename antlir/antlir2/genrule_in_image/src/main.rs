@@ -53,8 +53,6 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
 
-    std::thread::sleep(std::time::Duration::from_secs(10));
-
     let mut builder = IsolationContext::builder(&args.layer);
     builder.ephemeral(args.ephemeral);
     #[cfg(facebook)]
