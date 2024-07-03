@@ -1,0 +1,13 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("antlir")
+
+rust_library(
+    name = "antlir2_error_handler",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "serde",
+        "serde_json",
+        "typed-builder",
+    ],
+)
