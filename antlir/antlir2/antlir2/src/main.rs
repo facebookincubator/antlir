@@ -9,7 +9,6 @@
 
 use std::fs::File;
 use std::path::PathBuf;
-use std::process::ExitStatus;
 
 use anyhow::Context;
 use clap::Parser;
@@ -22,12 +21,12 @@ mod cmd;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("failed to setup working volume: {0}")]
+    WorkingVolume(#[from] antlir2_working_volume::Error),
     #[error(transparent)]
     Compile(#[from] antlir2_compile::Error),
     #[error(transparent)]
     Depgraph(#[from] antlir2_depgraph::Error),
-    #[error("subprocess exited with {0}")]
-    Subprocess(ExitStatus),
     #[error(transparent)]
     Btrfs(#[from] antlir2_btrfs::Error),
     #[error(transparent)]
@@ -90,6 +89,19 @@ enum Subcommand {
     Depgraph(cmd::Depgraph),
 }
 
+impl Error {
+    fn category(&self) -> Option<&'static str> {
+        match self {
+            Error::WorkingVolume(_) => Some("working_volume"),
+            Error::Compile(_) => Some("compile_feature"),
+            Error::Depgraph(_) => Some("depgraph"),
+            Error::Btrfs(_) => Some("btrfs"),
+            Error::Rootless(_) => Some("rootless"),
+            _ => None,
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -113,6 +125,13 @@ fn main() -> Result<()> {
         error!("{e:#?}");
         eprintln!("{}", format!("{e:#?}").red());
         eprintln!("{}", e.to_string().red());
+        if let Some(category) = e.category() {
+            antlir2_error_handler::SubError::builder()
+                .category(category)
+                .message(e)
+                .build()
+                .log();
+        }
         std::process::exit(1);
     }
     Ok(())

@@ -14,9 +14,7 @@ use antlir2_btrfs::Subvolume;
 use antlir2_cas_dir::CasDir;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::anyhow;
-use anyhow::ensure;
 use anyhow::Context;
-use anyhow::Result;
 use clap::Parser;
 use clap::ValueEnum;
 use tracing::trace;
@@ -65,14 +63,39 @@ struct SetupArgs {
     working_dir: PathBuf,
 }
 
+#[derive(Debug, thiserror::Error)]
+enum Error {
+    #[error("failed to setup working volume: {0}")]
+    WorkingVolume(#[from] antlir2_working_volume::Error),
+    #[error(transparent)]
+    Btrfs(#[from] antlir2_btrfs::Error),
+    #[error(transparent)]
+    Rootless(#[from] antlir2_rootless::Error),
+    #[error("{0:#?}")]
+    IO(#[from] std::io::Error),
+    #[error("{0:#?}")]
+    Uncategorized(#[from] anyhow::Error),
+}
+
+type Result<T> = std::result::Result<T, Error>;
+
+impl Error {
+    fn category(&self) -> Option<&'static str> {
+        match self {
+            Error::WorkingVolume(_) => Some("working_volume"),
+            Error::Btrfs(_) => Some("btrfs"),
+            Error::Rootless(_) => Some("rootless"),
+            _ => None,
+        }
+    }
+}
+
 impl Receive {
     /// Make sure that the working directory exists and clean up any existing
     /// version of the subvolume that we're receiving.
     #[tracing::instrument(skip(self), ret, err(Debug))]
     fn prepare_dst(&self, working_volume: &WorkingVolume) -> Result<PathBuf> {
-        let dst = working_volume
-            .allocate_new_path()
-            .context("while allocating new path for subvol")?;
+        let dst = working_volume.allocate_new_path()?;
         trace!("WorkingVolume gave us new path {}", dst.display());
 
         Ok(dst)
@@ -81,8 +104,7 @@ impl Receive {
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
         trace!("setting up WorkingVolume");
-        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
-            .context("while setting up WorkingVolume")?;
+        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())?;
 
         let rootless = if self.rootless {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
@@ -99,6 +121,10 @@ impl Receive {
 
         match self.format {
             Format::Sendstream => {
+                // make sure that working_dir is btrfs before we try to invoke
+                // 'btrfs' so that we can fail with a nicely categorized error
+                antlir2_btrfs::ensure_path_is_on_btrfs(&self.setup.working_dir)?;
+
                 let recv_tmp = tempfile::tempdir_in(&self.setup.working_dir)?;
                 let mut cmd = Command::new(self.btrfs);
                 cmd.arg("--quiet")
@@ -111,18 +137,20 @@ impl Receive {
                 }
                 trace!("receiving sendstream: {cmd:?}");
                 let res = cmd.spawn()?.wait()?;
-                ensure!(res.success(), "btrfs-receive failed");
+                if !res.success() {
+                    return Err(anyhow!("btrfs-receive failed").into());
+                }
                 let entries: Vec<_> = std::fs::read_dir(&recv_tmp)
                     .context("while reading tmp dir")?
                     .map(|r| {
                         r.map(|entry| entry.path())
                             .context("while iterating tmp dir")
                     })
-                    .collect::<Result<_>>()?;
+                    .collect::<anyhow::Result<_>>()?;
                 if entries.len() != 1 {
-                    return Err(anyhow!(
-                        "did not get exactly one subvolume received: {entries:?}"
-                    ));
+                    return Err(
+                        anyhow!("did not get exactly one subvolume received: {entries:?}").into(),
+                    );
                 }
 
                 trace!("opening received subvol: {}", entries[0].display());
@@ -214,5 +242,15 @@ fn main() -> Result<()> {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    args.run()
+    let res = args.run();
+    if let Err(e) = &res {
+        if let Some(category) = e.category() {
+            antlir2_error_handler::SubError::builder()
+                .category(category)
+                .message(e)
+                .build()
+                .log();
+        }
+    }
+    res
 }

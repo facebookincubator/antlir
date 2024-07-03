@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:selects.bzl", "selects")
+load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
@@ -95,6 +96,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args("--working-format=overlayfs") if ctx.attrs._overlayfs else cmd_args(),
         ),
         category = "antlir2_prebuilt_layer",
+        identifier = format,
         # needs local subvolumes
         local_only = not ctx.attrs._overlayfs,
         # the old output is used to clean up the local subvolume
@@ -102,6 +104,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         env = {
             "RUST_LOG": "antlir2=trace",
         },
+        error_handler = antlir2_error_handler,
     )
 
     contents = LayerContents(subvol_symlink = subvol_symlink)

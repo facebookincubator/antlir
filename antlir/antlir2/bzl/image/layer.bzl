@@ -5,6 +5,7 @@
 
 load("@prelude//utils:expect.bzl", "expect")
 load("@prelude//utils:selects.bzl", "selects")
+load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
@@ -117,6 +118,7 @@ def _compile(
         local_only = not ctx.attrs._overlayfs,
         # the old output is used to clean up the local subvolume
         no_outputs_cleanup = not ctx.attrs._overlayfs,
+        error_handler = antlir2_error_handler,
     )
 
     return LayerContents(
