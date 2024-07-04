@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "a4f310c5ff814039371147ab32d7605d12ba036d",
+    rev = "c6c5564e281668105d0a2dbd99616b8aac615487",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "35fd0f35598d479439a1411404828afc7c6a9638",
+    rev = "0ea922835cc82411d3afa179e28dd7655c85c6c6",
     visibility = [],
 )
 
@@ -1405,10 +1405,10 @@ cargo.rust_library(
             deps = [":iana-time-zone-0.1.60"],
         ),
         "windows-gnu": dict(
-            deps = [":windows-targets-0.52.5"],
+            deps = [":windows-targets-0.52.6"],
         ),
         "windows-msvc": dict(
-            deps = [":windows-targets-0.52.5"],
+            deps = [":windows-targets-0.52.6"],
         ),
     },
     visibility = [],
@@ -5875,10 +5875,10 @@ cargo.rust_library(
             deps = [":cfg-if-1.0.0"],
         ),
         "windows-gnu": dict(
-            deps = [":windows-targets-0.52.5"],
+            deps = [":windows-targets-0.52.6"],
         ),
         "windows-msvc": dict(
-            deps = [":windows-targets-0.52.5"],
+            deps = [":windows-targets-0.52.6"],
         ),
     },
     visibility = [],
@@ -7712,10 +7712,10 @@ cargo.rust_library(
             deps = [":libc-0.2.155"],
         ),
         "windows-gnu": dict(
-            deps = [":windows-targets-0.52.5"],
+            deps = [":windows-targets-0.52.6"],
         ),
         "windows-msvc": dict(
-            deps = [":windows-targets-0.52.5"],
+            deps = [":windows-targets-0.52.6"],
         ),
     },
     rustc_flags = ["@$(location :parking_lot_core-0.9.10-build-script-run[rustc_flags])"],
@@ -13171,6 +13171,7 @@ cargo.rust_library(
         "attributes",
         "std",
         "tracing-attributes",
+        "valuable",
     ],
     visibility = [],
     deps = [
@@ -14073,6 +14074,94 @@ cargo.rust_library(
     ],
 )
 
+alias(
+    name = "valuable",
+    actual = ":valuable-0.1.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "valuable-0.1.0.crate",
+    sha256 = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d",
+    strip_prefix = "valuable-0.1.0",
+    urls = ["https://static.crates.io/crates/valuable/0.1.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "valuable-0.1.0",
+    srcs = [":valuable-0.1.0.crate"],
+    crate = "valuable",
+    crate_root = "valuable-0.1.0.crate/src/lib.rs",
+    edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :valuable-0.1.0-build-script-run[out_dir])",
+    },
+    features = [
+        "alloc",
+        "default",
+        "derive",
+        "std",
+        "valuable-derive",
+    ],
+    rustc_flags = ["@$(location :valuable-0.1.0-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [":valuable-derive-0.1.0"],
+)
+
+cargo.rust_binary(
+    name = "valuable-0.1.0-build-script-build",
+    srcs = [":valuable-0.1.0.crate"],
+    crate = "build_script_build",
+    crate_root = "valuable-0.1.0.crate/build.rs",
+    edition = "2018",
+    features = [
+        "alloc",
+        "default",
+        "derive",
+        "std",
+        "valuable-derive",
+    ],
+    visibility = [],
+)
+
+buildscript_run(
+    name = "valuable-0.1.0-build-script-run",
+    package_name = "valuable",
+    buildscript_rule = ":valuable-0.1.0-build-script-build",
+    features = [
+        "alloc",
+        "default",
+        "derive",
+        "std",
+        "valuable-derive",
+    ],
+    version = "0.1.0",
+)
+
+http_archive(
+    name = "valuable-derive-0.1.0.crate",
+    sha256 = "9d44690c645190cfce32f91a1582281654b2338c6073fa250b0949fd25c55b32",
+    strip_prefix = "valuable-derive-0.1.0",
+    urls = ["https://static.crates.io/crates/valuable-derive/0.1.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "valuable-derive-0.1.0",
+    srcs = [":valuable-derive-0.1.0.crate"],
+    crate = "valuable_derive",
+    crate_root = "valuable-derive-0.1.0.crate/src/lib.rs",
+    edition = "2018",
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.36",
+        ":syn-1.0.109",
+    ],
+)
+
 http_archive(
     name = "value-bag-1.9.0.crate",
     sha256 = "5a84c137d37ab0142f0f2ddfe332651fdbf252e7b7dbb4e67b6c1f1b2e925101",
@@ -14443,7 +14532,7 @@ cargo.rust_library(
     edition = "2021",
     features = ["default"],
     visibility = [],
-    deps = [":windows-targets-0.52.5"],
+    deps = [":windows-targets-0.52.6"],
 )
 
 http_archive(
@@ -14522,7 +14611,7 @@ cargo.rust_library(
         "default",
     ],
     visibility = [],
-    deps = [":windows-targets-0.52.5"],
+    deps = [":windows-targets-0.52.6"],
 )
 
 http_archive(
@@ -14554,28 +14643,28 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "windows-targets-0.52.5.crate",
-    sha256 = "6f0713a46559409d202e70e28227288446bf7841d3211583a4b53e3f6d96e7eb",
-    strip_prefix = "windows-targets-0.52.5",
-    urls = ["https://static.crates.io/crates/windows-targets/0.52.5/download"],
+    name = "windows-targets-0.52.6.crate",
+    sha256 = "9b724f72796e036ab90c1021d4780d4d3d648aca59e491e6b98e725b84e99973",
+    strip_prefix = "windows-targets-0.52.6",
+    urls = ["https://static.crates.io/crates/windows-targets/0.52.6/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "windows-targets-0.52.5",
-    srcs = [":windows-targets-0.52.5.crate"],
+    name = "windows-targets-0.52.6",
+    srcs = [":windows-targets-0.52.6.crate"],
     crate = "windows_targets",
-    crate_root = "windows-targets-0.52.5.crate/src/lib.rs",
+    crate_root = "windows-targets-0.52.6.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "linux-x86_64": dict(
-            deps = [":windows_x86_64_gnu-0.52.5"],
+            deps = [":windows_x86_64_gnu-0.52.6"],
         ),
         "windows-gnu": dict(
-            deps = [":windows_x86_64_gnu-0.52.5"],
+            deps = [":windows_x86_64_gnu-0.52.6"],
         ),
         "windows-msvc": dict(
-            deps = [":windows_x86_64_msvc-0.52.5"],
+            deps = [":windows_x86_64_msvc-0.52.6"],
         ),
     },
     visibility = [],
@@ -14599,18 +14688,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "windows_x86_64_gnu-0.52.5.crate",
-    sha256 = "4e4246f76bdeff09eb48875a0fd3e2af6aada79d409d33011886d3e1581517d9",
-    strip_prefix = "windows_x86_64_gnu-0.52.5",
-    urls = ["https://static.crates.io/crates/windows_x86_64_gnu/0.52.5/download"],
+    name = "windows_x86_64_gnu-0.52.6.crate",
+    sha256 = "147a5c80aabfbf0c7d901cb5895d1de30ef2907eb21fbbab29ca94c5b08b1a78",
+    strip_prefix = "windows_x86_64_gnu-0.52.6",
+    urls = ["https://static.crates.io/crates/windows_x86_64_gnu/0.52.6/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "windows_x86_64_gnu-0.52.5",
-    srcs = [":windows_x86_64_gnu-0.52.5.crate"],
+    name = "windows_x86_64_gnu-0.52.6",
+    srcs = [":windows_x86_64_gnu-0.52.6.crate"],
     crate = "windows_x86_64_gnu",
-    crate_root = "windows_x86_64_gnu-0.52.5.crate/src/lib.rs",
+    crate_root = "windows_x86_64_gnu-0.52.6.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
 )
@@ -14633,18 +14722,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "windows_x86_64_msvc-0.52.5.crate",
-    sha256 = "bec47e5bfd1bff0eeaf6d8b485cc1074891a197ab4225d504cb7a1ab88b02bf0",
-    strip_prefix = "windows_x86_64_msvc-0.52.5",
-    urls = ["https://static.crates.io/crates/windows_x86_64_msvc/0.52.5/download"],
+    name = "windows_x86_64_msvc-0.52.6.crate",
+    sha256 = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec",
+    strip_prefix = "windows_x86_64_msvc-0.52.6",
+    urls = ["https://static.crates.io/crates/windows_x86_64_msvc/0.52.6/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "windows_x86_64_msvc-0.52.5",
-    srcs = [":windows_x86_64_msvc-0.52.5.crate"],
+    name = "windows_x86_64_msvc-0.52.6",
+    srcs = [":windows_x86_64_msvc-0.52.6.crate"],
     crate = "windows_x86_64_msvc",
-    crate_root = "windows_x86_64_msvc-0.52.5.crate/src/lib.rs",
+    crate_root = "windows_x86_64_msvc-0.52.6.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
 )
