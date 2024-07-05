@@ -123,6 +123,8 @@ fn main() -> Result<()> {
     };
     if let Err(e) = result {
         error!("{e:#?}");
+        // sentinel wrapper so that it can be extracted by CI
+        eprintln!("ANTLIR ERROR:");
         eprintln!("{}", format!("{e:#?}").red());
         eprintln!("{}", e.to_string().red());
         if let Some(category) = e.category() {
@@ -132,6 +134,7 @@ fn main() -> Result<()> {
                 .build()
                 .log();
         }
+        eprintln!("END ANTLIR ERROR");
         std::process::exit(1);
     }
     Ok(())
