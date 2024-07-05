@@ -67,7 +67,9 @@ def feature_impl(
         plugin_visibility: list[str] | None = None,
         visibility: list[str] | None = None,
         rustc_flags: list[str] | Select | None = [],
-        features: list[str] | Select | None = []):
+        features: list[str] | Select | None = [],
+        test_srcs: list[str] | Select | None = [],
+        test_deps: list[str] | Select | None = []):
     lib_visibility = lib_visibility or visibility or [
         "//antlir/antlir2/...",
         "//tupperware/cm/antlir2/...",
@@ -95,6 +97,8 @@ def feature_impl(
             ],
         ),
         features = features,
+        test_deps = test_deps,
+        test_srcs = test_srcs,
     )
     rust_library(
         name = name + ".linked",
