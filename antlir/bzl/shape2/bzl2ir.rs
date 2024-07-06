@@ -24,7 +24,6 @@ use json_arg::JsonFile;
 use serde::Deserialize;
 use slotmap::SlotMap;
 use starlark::any::ProvidesStaticType;
-use starlark::collections::SmallMap;
 use starlark::environment::FrozenModule;
 use starlark::environment::GlobalsBuilder;
 use starlark::environment::LibraryExtension;
@@ -35,7 +34,7 @@ use starlark::starlark_module;
 use starlark::starlark_simple_value;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
-use starlark::values::dict::DictOf;
+use starlark::values::dict::UnpackDictEntries;
 use starlark::values::function::NativeFunction;
 use starlark::values::list_or_tuple::UnpackListOrTuple;
 use starlark::values::starlark_value;
@@ -234,20 +233,20 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> Result<&'a TypeRegistryRefCell>
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
-        #[starlark(require = named)] __thrift: Option<DictOf<'v, u32, &'v str>>,
-        #[starlark(kwargs)] kwargs: DictOf<'v, &'v str, Value<'v>>,
+        #[starlark(require = named)] __thrift: Option<UnpackDictEntries<u32, &'v str>>,
+        #[starlark(kwargs)] kwargs: UnpackDictEntries<&'v str, Value<'v>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = kwargs
-            .to_dict()
+            .entries
             .into_iter()
             .filter(|(key, _)| (*key != "__I_AM_TARGET__") && (*key != "__thrift_fields"))
             .map(|(key, val)| val.try_to_field(&reg).map(|f| (key.into(), Arc::new(f))))
             .collect::<Result<_>>()?;
         let thrift_fields = __thrift
             .map(|t| {
-                t.to_dict()
+                t.entries
                     .into_iter()
                     .map(|(k, v)| {
                         let field_name = ir::FieldName(v.to_owned());
@@ -327,12 +326,12 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn new<'v>(
         shape: Value<'v>,
-        #[starlark(kwargs)] kwargs: DictOf<'v, StringValue<'v>, Value<'v>>,
-    ) -> anyhow::Result<AllocStruct<SmallMap<StringValue<'v>, Value<'v>>>> {
+        #[starlark(kwargs)] kwargs: UnpackDictEntries<StringValue<'v>, Value<'v>>,
+    ) -> anyhow::Result<AllocStruct<Vec<(StringValue<'v>, Value<'v>)>>> {
         let _ = shape;
         // no need to type-check, since it will already be done at buck parse
         // time, and will also be done when loading the json
-        Ok(AllocStruct(kwargs.to_dict()))
+        Ok(AllocStruct(kwargs.entries))
     }
 
     fn dict<'v>(
