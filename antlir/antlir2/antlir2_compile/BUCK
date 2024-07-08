@@ -10,6 +10,7 @@ rust_library(
     ]),
     deps = [
         "anyhow",
+        "cap-std",
         "libloading",
         "nix",
         "openat2",
