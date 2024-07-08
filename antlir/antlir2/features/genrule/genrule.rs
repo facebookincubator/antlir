@@ -69,7 +69,7 @@ impl antlir2_compile::CompileFeature for Genrule {
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let cwd = std::env::current_dir()?;
         let mut inner_cmd = self.cmd_iter();
-        let mut isol = IsolationContext::builder(ctx.root());
+        let mut isol = IsolationContext::builder(ctx.root_path());
         isol.user(&self.user)
             .ephemeral(false)
             .devtmpfs(Path::new("/dev"))

@@ -12,7 +12,6 @@ use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
-use std::os::fd::RawFd;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;

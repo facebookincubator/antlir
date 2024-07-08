@@ -443,10 +443,10 @@ impl DriverContext<'_> {
         }
     }
 
-    fn root(&self) -> Option<&Path> {
+    fn root_path(&self) -> Option<&Path> {
         match self {
             Self::Plan { root, .. } => root.as_deref(),
-            Self::Compile { ctx, .. } => Some(ctx.root()),
+            Self::Compile { ctx, .. } => Some(ctx.root_path()),
         }
     }
 
@@ -534,7 +534,7 @@ fn run_dnf_driver(
         layer_label: ctx.label().clone(),
     };
 
-    let root = match ctx.root() {
+    let root = match ctx.root_path() {
         Some(r) => Root::Root(r.to_owned()),
         None => Root::Empty(TempDir::new().context("while creating empty root dir")?),
     };
