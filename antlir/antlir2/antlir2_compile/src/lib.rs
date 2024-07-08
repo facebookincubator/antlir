@@ -9,6 +9,9 @@
 
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::ErrorKind;
 use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::path::PathBuf;
@@ -16,10 +19,8 @@ use std::str::FromStr;
 
 use antlir2_features::Feature;
 use buck_label::Label;
-use nix::dir::Dir;
-use nix::fcntl::OFlag;
+use cap_std::fs::Dir;
 use nix::libc;
-use nix::sys::stat::Mode;
 use openat2::openat2;
 use openat2::OpenHow;
 use openat2::ResolveFlags;
@@ -93,18 +94,13 @@ pub struct CompilerContext {
     plans: HashMap<String, serde_json::Value>,
 }
 
-fn parse_file<T, E>(path: &Path) -> Option<Result<T>>
+fn parse_file<T, E>(f: File) -> Result<T>
 where
     T: FromStr<Err = E>,
     Error: From<E>,
 {
-    match std::fs::read_to_string(path) {
-        Ok(src) => Some(T::from_str(&src).map_err(Error::from)),
-        Err(e) => match e.kind() {
-            std::io::ErrorKind::NotFound => None,
-            _ => Some(Err(e.into())),
-        },
-    }
+    let src = std::io::read_to_string(BufReader::new(f))?;
+    T::from_str(&src).map_err(Error::from)
 }
 
 impl CompilerContext {
@@ -114,8 +110,7 @@ impl CompilerContext {
         root: PathBuf,
         plans: HashMap<String, serde_json::Value>,
     ) -> Result<Self> {
-        let root_fd =
-            Dir::open(&root, OFlag::O_DIRECTORY, Mode::empty()).map_err(|e| Error::IO(e.into()))?;
+        let root_fd = Dir::open_ambient_dir(&root, cap_std::ambient_authority())?;
         Ok(Self {
             label,
             target_arch,
@@ -213,23 +208,32 @@ impl CompilerContext {
     }
 
     pub fn user_db(&self) -> Result<antlir2_users::passwd::EtcPasswd> {
-        match self.dst_path("/etc/passwd") {
-            Ok(path) => parse_file(&path).unwrap_or_else(|| Ok(Default::default())),
-            Err(_) => Ok(Default::default()),
+        match self.root.open("etc/passwd") {
+            Ok(f) => parse_file(f.into_std()),
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => Ok(Default::default()),
+                _ => Err(e.into()),
+            },
         }
     }
 
     pub fn shadow_db(&self) -> Result<antlir2_users::shadow::EtcShadow> {
-        match self.dst_path("/etc/shadow") {
-            Ok(path) => parse_file(&path).unwrap_or_else(|| Ok(Default::default())),
-            Err(_) => Ok(Default::default()),
+        match self.root.open("etc/shadow") {
+            Ok(f) => parse_file(f.into_std()),
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => Ok(Default::default()),
+                _ => Err(e.into()),
+            },
         }
     }
 
     pub fn groups_db(&self) -> Result<antlir2_users::group::EtcGroup> {
-        match self.dst_path("/etc/group") {
-            Ok(path) => parse_file(&path).unwrap_or_else(|| Ok(Default::default())),
-            Err(_) => Ok(Default::default()),
+        match self.root.open("etc/group") {
+            Ok(f) => parse_file(f.into_std()),
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => Ok(Default::default()),
+                _ => Err(e.into()),
+            },
         }
     }
 
