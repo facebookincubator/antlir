@@ -129,7 +129,12 @@ impl CompilerContext {
     }
 
     /// Root directory for the image being built
-    pub fn root(&self) -> &Path {
+    pub fn root(&self) -> &Dir {
+        &self.root
+    }
+
+    /// Path to root directory for the image being built
+    pub fn root_path(&self) -> &Path {
         &self.root_path
     }
 
