@@ -614,7 +614,7 @@ shape.enum("a", "b", 3)
             .expect_err("should have failed");
         assert!(
             err.to_string()
-                .contains("Type of parameters mismatch, expected `str`, actual `int`"),
+                .contains("Type of parameters mismatch, expected `str`, actual `int"),
             "{:?}",
             err.to_string()
         );
