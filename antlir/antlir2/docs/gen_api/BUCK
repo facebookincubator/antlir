@@ -20,6 +20,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "maplit",
         "serde",
         "serde_json",
         "tera",
