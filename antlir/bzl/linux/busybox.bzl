@@ -13,6 +13,7 @@ DEFAULT_APPLETS = [
     "cat",
     "clear",
     "cp",
+    "cut",
     "date",
     "dd",
     "df",
