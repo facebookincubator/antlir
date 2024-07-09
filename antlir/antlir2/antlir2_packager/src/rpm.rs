@@ -39,9 +39,15 @@ pub struct Rpm {
     license: String,
     summary: Option<String>,
     #[serde(default)]
+    build_requires: Vec<String>,
+    #[serde(default)]
     requires: Vec<String>,
     #[serde(default)]
     requires_post: Vec<String>,
+    #[serde(default)]
+    requires_pre_uninstall: Vec<String>,
+    #[serde(default)]
+    requires_post_uninstall: Vec<String>,
     #[serde(default)]
     recommends: Vec<String>,
     #[serde(default)]
@@ -53,6 +59,8 @@ pub struct Rpm {
     description: Option<String>,
     packager: Option<String>,
     post_install_script: Option<String>,
+    pre_uninstall_script: Option<String>,
+    post_uninstall_script: Option<String>,
     sign_with_private_key: Option<PathBuf>,
     sign_digest_algo: Option<String>,
     changelog: Option<String>,
@@ -70,6 +78,12 @@ pub struct Rpm {
 
 impl PackageFormat for Rpm {
     fn build(&self, out: &Path) -> Result<()> {
+        let build_requires = self
+            .build_requires
+            .iter()
+            .map(|r| format!("BuildRequires: {r}"))
+            .join("\n");
+
         let requires = self
             .requires
             .iter()
@@ -80,6 +94,18 @@ impl PackageFormat for Rpm {
             .requires_post
             .iter()
             .map(|r| format!("Requires(post): {r}"))
+            .join("\n");
+
+        let requires_post_uninstall = self
+            .requires_post_uninstall
+            .iter()
+            .map(|r| format!("Requires(postun): {r}"))
+            .join("\n");
+
+        let requires_pre_uninstall = self
+            .requires_pre_uninstall
+            .iter()
+            .map(|r| format!("Requires(preun): {r}"))
             .join("\n");
 
         let recommends = self
@@ -129,8 +155,11 @@ AutoReq: {autoreq}
 AutoProv: {autoprov}
 
 {packager}
+{build_requires}
 {requires}
 {requires_post}
+{requires_post_uninstall}
+{requires_pre_uninstall}
 {recommends}
 {provides}
 {supplements}
@@ -142,6 +171,8 @@ AutoProv: {autoprov}
 {changelog}
 
 {post_install_script}
+{pre_uninstall_script}
+{post_uninstall_script}
 "#,
             autoreq = if self.autoreq { "yes" } else { "no" },
             autoprov = if self.autoprov { "yes" } else { "no" },
@@ -152,8 +183,11 @@ AutoProv: {autoprov}
             release = release
                 .as_deref()
                 .unwrap_or(&localtime.format("%H%M%S").to_string()),
+            build_requires = build_requires,
             requires = requires,
             requires_post = requires_post,
+            requires_post_uninstall = requires_post_uninstall,
+            requires_pre_uninstall = requires_pre_uninstall,
             recommends = recommends,
             provides = provides,
             supplements = supplements,
@@ -168,6 +202,16 @@ AutoProv: {autoprov}
                 .post_install_script
                 .as_ref()
                 .map(|s| format!("%post\n{s}\n"))
+                .unwrap_or_default(),
+            pre_uninstall_script = self
+                .pre_uninstall_script
+                .as_ref()
+                .map(|s| format!("%preun\n{s}\n"))
+                .unwrap_or_default(),
+            post_uninstall_script = self
+                .post_uninstall_script
+                .as_ref()
+                .map(|s| format!("%postun\n{s}\n"))
                 .unwrap_or_default(),
             changelog = self
                 .changelog
