@@ -176,7 +176,8 @@ def _install_impl(
         # to an error message on path verification failure.
         description,
         # Remove an existing file that conflicts, if one exists
-        force = False):
+        force = False,
+        mode: int | str | None = None):
     # We haven't been provided an explicit dest so let's try and derive one from the
     # source
     if dest == None:
@@ -199,6 +200,7 @@ def _install_impl(
         feature.install(
             src = source,
             dst = paths.join(install_root, dest),
+            mode = mode,
         ),
     ] + ([feature.remove(
         path = paths.join(install_root, dest),
@@ -210,8 +212,9 @@ def _install_unit(
         source,
         dest = None,
         install_root = PROVIDER_ROOT,
-        force = False):
-    return _install_impl(source, dest, install_root, "Install System Unit", force = force)
+        force = False,
+        mode: int | str | None = None):
+    return _install_impl(source, dest, install_root, "Install System Unit", force = force, mode = mode)
 
 # Image feature to install a user unit
 def _install_user_unit(
