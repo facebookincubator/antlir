@@ -48,6 +48,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         local_only = True,  # needs root
         category = "antlir2_package",
+        identifier = "btrfs",
     )
     return [
         DefaultInfo(package),

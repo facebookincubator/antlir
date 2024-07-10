@@ -56,7 +56,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(spec, format = "--spec={}"),
             cmd_args(out.as_output(), format = "--out={}"),
         ),
-        category = "antlir2_gpt",
+        category = "antlir2_package",
+        identifier = "gpt",
         local_only = True,  # local subvol for ba
     )
     return [DefaultInfo(

@@ -96,6 +96,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # the old output is used to clean up the local subvolume
         no_outputs_cleanup = True,
         category = "antlir2_package",
+        identifier = "sendstream",
         env = {"RUST_LOG": "trace"},
     )
     return [
@@ -144,7 +145,8 @@ def _v2_impl(ctx: AnalysisContext) -> Promise:
                 cmd_args(v1_sendstream, format = "--input={}"),
                 cmd_args(sendstream_v2.as_output(), format = "--output={}"),
             ),
-            category = "sendstream_upgrade",
+            category = "antlir2_package",
+            identifier = "sendstream_upgrade",
             # This _can_ run remotely, but we've just produced the (often quite
             # large) sendstream artifact on this host, and we only care about the
             # final result of this v2 sendstream, so we should prefer to run locally
