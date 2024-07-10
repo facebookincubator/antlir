@@ -4,17 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/bzl:build_defs.bzl", "internal_external")
 load("//antlir/bzl:third_party.bzl", "third_party")
 
 oncall("antlir")
 
 third_party.build(
     name = "libcrypto",
-    src = internal_external(
-        fb = third_party.source("openssl_1.1.1k"),
-        oss = third_party.source("openssl"),
-    ),
+    src = third_party.source("openssl"),
     features = [
         feature.rpms_install(rpms = [
             # build deps
@@ -37,7 +33,7 @@ export CFLAGS="-fPIC -fno-omit-frame-pointer"
     no-mdc2 no-ec2m no-sm2 no-sm4 \
     no-zlib \
     no-rc5 no-ec2m no-gost no-sm3 no-idea no-whirlpool \
-    no-shared
+    no-shared no-docs no-tests
         """,
     ),
     visibility = [

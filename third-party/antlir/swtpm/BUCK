@@ -75,7 +75,8 @@ export CFLAGS="-B/opt/rh/gcc-toolset-9/root/bin \
     -I/third-party-build/deps/libcrypto/include \
     -I/usr/include/glib-2.0 \
     -I/usr/lib64/glib-2.0/include \
-    -I/third-party-build/deps/libtpms/include"
+    -I/third-party-build/deps/libtpms/include \
+    -Wno-deprecated-declarations"
 export LDFLAGS="-L/third-party-build/deps/libtpms/lib \
     -L/third-party-build/deps/libffi/lib/../lib64 \
     -L/third-party-build/deps/json-glib/lib64 \
