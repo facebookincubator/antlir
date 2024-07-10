@@ -35,7 +35,7 @@ third_party.build(
         build = "make",
         install = "make install",
         prepare = """
-export CFLAGS="-fPIC -I/third-party-build/deps/libcrypto/include"
+export CFLAGS="-fPIC -I/third-party-build/deps/libcrypto/include -Wno-deprecated-declarations"
 export LDFLAGS="-L/third-party-build/deps/libcrypto/lib"
 
 # need to fix a global symbol otherwise it collides
