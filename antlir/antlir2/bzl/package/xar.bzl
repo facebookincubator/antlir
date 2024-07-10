@@ -29,6 +29,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(spec, format = "--spec={}"),
         ),
         category = "antlir2_package",
+        identifier = "xar",
         local_only = True,  # requires local subvol
     )
     return [

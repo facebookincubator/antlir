@@ -74,6 +74,7 @@ def _generic_impl_with_layer(
         ),
         local_only = True,
         category = "antlir2_package",
+        identifier = format,
     )
 
     providers = [DefaultInfo(package)]
@@ -209,11 +210,15 @@ def _compressed_impl(
         ),
         is_executable = True,
     )
-    ctx.actions.run(cmd_args(
-        "/bin/sh",
-        script,
-        hidden = [package.as_output(), src],
-    ), category = "compress")
+    ctx.actions.run(
+        cmd_args(
+            "/bin/sh",
+            script,
+            hidden = [package.as_output(), src],
+        ),
+        category = "compress",
+        identifier = compressor,
+    )
     return [DefaultInfo(package, sub_targets = {
         "uncompressed": [DefaultInfo(src)],
     })]
