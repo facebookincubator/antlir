@@ -10,7 +10,6 @@ distinct from the default target platform used by the `buck2 build`.
 """
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
@@ -43,23 +42,23 @@ def attrs_selected_by_cfg():
         "flavor": attrs.option(
             attrs.dep(providers = [FlavorInfo]),
             default = select({
-                antlir2_dep("//antlir/antlir2/os:centos9"): internal_external(
-                    fb = antlir2_dep("//antlir/antlir2/facebook/flavor/centos9:centos9"),
-                    oss = "//flavor/centos9:centos9",
-                ),
                 # We always need to provide a DEFAULT branch that resolves to
                 # None since this is an attrs.option(). When everything is
                 # default_os (TODO(T168220644)) and this is not an option, this
                 # can be removed.
                 "DEFAULT": None,
+                "antlir//antlir/antlir2/os:centos9": internal_external(
+                    fb = "antlir//antlir/antlir2/facebook/flavor/centos9:centos9",
+                    oss = "//flavor/centos9:centos9",
+                ),
             } | internal_external(
                 fb = {
-                    antlir2_dep("//antlir/antlir2/os:centos10"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos10:centos10"),
-                    antlir2_dep("//antlir/antlir2/os:centos8"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos8:centos8"),
-                    antlir2_dep("//antlir/antlir2/os:eln"): antlir2_dep("//antlir/antlir2/facebook/flavor/eln:eln"),
-                    antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
-                    antlir2_dep("//antlir/antlir2/os:rhel8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8:rhel8"),
-                    antlir2_dep("//antlir/antlir2/os:rhel8.8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8.8:rhel8.8"),
+                    "antlir//antlir/antlir2/os:centos10": "antlir//antlir/antlir2/facebook/flavor/centos10:centos10",
+                    "antlir//antlir/antlir2/os:centos8": "antlir//antlir/antlir2/facebook/flavor/centos8:centos8",
+                    "antlir//antlir/antlir2/os:eln": "antlir//antlir/antlir2/facebook/flavor/eln:eln",
+                    "antlir//antlir/antlir2/os:none": "antlir//antlir/antlir2/flavor:none",
+                    "antlir//antlir/antlir2/os:rhel8": "antlir//antlir/antlir2/facebook/flavor/rhel8:rhel8",
+                    "antlir//antlir/antlir2/os:rhel8.8": "antlir//antlir/antlir2/facebook/flavor/rhel8.8:rhel8.8",
                 },
                 oss = {},
             )),
@@ -117,10 +116,10 @@ layer_cfg = transition(
     refs = {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
-        "package_manager_constraint": antlir2_dep("//antlir/antlir2/os/package_manager:package_manager"),
-        "package_manager_dnf": antlir2_dep("//antlir/antlir2/os/package_manager:dnf"),
-        "rooted": antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"),
-        "rootless": antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"),
+        "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
+        "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:dnf",
+        "rooted": "antlir//antlir/antlir2/antlir2_rootless:rooted",
+        "rootless": "antlir//antlir/antlir2/antlir2_rootless:rootless",
     } | (
         # @oss-disable
         {} # @oss-enable

@@ -9,7 +9,6 @@ load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handle
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
@@ -539,7 +538,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     return providers
 
 _layer_attrs = {
-    "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
+    "antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
     "build_appliance": attrs.option(
         attrs.exec_dep(providers = [BuildApplianceInfo]),
         default = None,
@@ -592,7 +591,7 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
-    "_analyze_feature": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_depgraph_if:analyze")),
+    "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
     "_dnf_auto_additional_repos": attrs.list(
         attrs.one_of(
             attrs.dep(providers = [RepoInfo]),
@@ -610,7 +609,7 @@ _layer_attrs = {
         default = None,
     ),
     "_materialize_to_subvol": attrs.option(attrs.exec_dep(), default = None),
-    "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
+    "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
     "_overlayfs": attrs.bool(default = False),
     "_run_container": attrs.option(attrs.exec_dep(), default = None),
     "_selected_target_arch": attrs.default_only(attrs.string(
@@ -697,8 +696,8 @@ def layer(
         # @oss-disable
         rootless = rootless,
         visibility = get_visibility(visibility),
-        _implicit_image_test = antlir2_dep("//antlir/antlir2/testing/implicit_image_test:implicit_image_test"),
-        _run_container = antlir2_dep("//antlir/antlir2/container_subtarget:run"),
-        _materialize_to_subvol = antlir2_dep("//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol"),
+        _implicit_image_test = "antlir//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
+        _run_container = "antlir//antlir/antlir2/container_subtarget:run",
+        _materialize_to_subvol = "antlir//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol",
         **kwargs
     )

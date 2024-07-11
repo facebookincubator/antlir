@@ -8,7 +8,6 @@ Simple buck2 configuration transition that marks all features as building with
 dnf.
 """
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
@@ -40,6 +39,6 @@ feature_cfg = transition(
     impl = _impl,
     attrs = ["default_os"],
     refs = {
-        "package_manager_dnf": antlir2_dep("//antlir/antlir2/os/package_manager:dnf"),
+        "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:dnf",
     } | os_transition_refs(),
 )

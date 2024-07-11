@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
@@ -45,11 +44,11 @@ _image_command_alias = rule(
         "args": attrs.list(attrs.string(), default = []),
         "exe": attrs.arg(),
         "layer": attrs.dep(providers = [LayerInfo]),
-        "_command_alias": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/image_command_alias:command_alias"))),
-        "_layer_analyze_feature": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_depgraph_if:analyze")),
-        "_layer_antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
-        "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
-        "_prep_feature": attrs.default_only(attrs.dep(default = antlir2_dep("//antlir/antlir2/image_command_alias:prep"))),
+        "_command_alias": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/image_command_alias:command_alias")),
+        "_layer_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
+        "_layer_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
+        "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
+        "_prep_feature": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/image_command_alias:prep")),
         "_target_arch": attrs.default_only(attrs.string(
             default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         )),

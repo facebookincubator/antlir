@@ -7,7 +7,6 @@ load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
-load(":target_helpers.bzl", "antlir_dep")
 
 TemplateInfo = provider(fields = {
     "compiled_srcs": Artifact,
@@ -66,7 +65,7 @@ _template = rule(
         "srcs": attrs.list(attrs.source()),
         "_compile_template": attrs.default_only(attrs.exec_dep(
             providers = [RunInfo],
-            default = antlir_dep(":compile-template"),
+            default = "antlir//antlir:compile-template",
         )),
     },
     doc = """
@@ -109,7 +108,7 @@ _render = rule(
         "template": attrs.dep(providers = [TemplateInfo]),
         "_render_template": attrs.default_only(attrs.exec_dep(
             providers = [RunInfo],
-            default = antlir_dep(":render-template"),
+            default = "antlir//antlir:render-template",
         )),
     },
     doc = """

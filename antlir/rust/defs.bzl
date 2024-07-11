@@ -5,7 +5,6 @@
 
 load("//antlir/bzl:build_defs.bzl", "python_library", "rust_library")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
 def antlir_rust_extension(
         *,
@@ -31,7 +30,7 @@ def antlir_rust_extension(
         crate = name,
         srcs = srcs,
         deps = deps,
-        visibility = [antlir_dep("rust:native_antlir_impl-lib")] + (rust_visibility or []),
+        visibility = ["antlir//antlir/rust:native_antlir_impl-lib"] + (rust_visibility or []),
         labels = labels,
         unittests = False,
         **kwargs
@@ -39,9 +38,9 @@ def antlir_rust_extension(
     python_library(
         name = name,
         srcs = {
-            antlir_dep("rust:trigger_rust_module_init.py"): name + ".py",
+            "antlir//antlir/rust:trigger_rust_module_init.py": name + ".py",
             typestub: name + ".pyi",
         },
-        deps = [antlir_dep("rust:rust")],
+        deps = ["antlir//antlir/rust:rust"],
         visibility = visibility,
     )

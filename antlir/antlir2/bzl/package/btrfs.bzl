@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "cfg_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
@@ -58,8 +57,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _btrfs = rule(
     impl = _impl,
     attrs = {
-        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
-        "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = antlir2_dep("//antlir/antlir2/antlir2_packager/btrfs_packager:btrfs-packager"))),
+        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
+        "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = "antlir//antlir/antlir2/antlir2_packager/btrfs_packager:btrfs-packager")),
         "compression_level": attrs.int(default = 3),
         # used by transition
         "default_os": attrs.option(attrs.string(), default = None),

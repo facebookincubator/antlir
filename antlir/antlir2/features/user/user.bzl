@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_subdirs_exist")
 load("//antlir/antlir2/features/group:group.bzl", "group_add")
@@ -52,7 +51,7 @@ def user_add(
     """
     return ParseTimeFeature(
         feature_type = "user",
-        plugin = antlir2_dep("//antlir/antlir2/features/user:user"),
+        plugin = "antlir//antlir/antlir2/features/user:user",
         kwargs = {
             "comment": comment,
             "home_dir": home_dir,

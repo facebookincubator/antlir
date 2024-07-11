@@ -22,7 +22,6 @@ binaries without first installing them into a layer.
 """
 
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
@@ -59,7 +58,7 @@ def extract_from_layer(
     """
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
-        plugin = antlir2_dep("//antlir/antlir2/features/extract:extract_from_layer"),
+        plugin = "antlir//antlir/antlir2/features/extract:extract_from_layer",
         antlir2_configured_deps = {
             "layer": layer,
         },
@@ -100,13 +99,13 @@ def extract_buck_binary(
     """
     return ParseTimeFeature(
         feature_type = "extract_buck_binary",
-        plugin = antlir2_dep("//antlir/antlir2/features/extract:extract_buck_binary"),
+        plugin = "antlir//antlir/antlir2/features/extract:extract_buck_binary",
         # include in deps so we can look at the providers
         deps = {
             "src": src,
         },
         exec_deps = {
-            "_analyze": antlir2_dep("//antlir/antlir2/features/extract:extract-buck-binary-analyze"),
+            "_analyze": "antlir//antlir/antlir2/features/extract:extract-buck-binary-analyze",
         } | (
             {
                 "_objcopy": internal_external(

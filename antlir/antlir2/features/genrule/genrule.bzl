@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
@@ -19,7 +18,7 @@ def genrule(
         fail("Must provide exactly one of `cmd` or `bash`")
     return ParseTimeFeature(
         feature_type = "genrule",
-        plugin = antlir2_dep("//antlir/antlir2/features/genrule:genrule"),
+        plugin = "antlir//antlir/antlir2/features/genrule:genrule",
         kwargs = {
             "bind_repo_ro": bind_repo_ro,
             "mount_platform": mount_platform,

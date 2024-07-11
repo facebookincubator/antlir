@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
@@ -19,7 +18,7 @@ def layer_mount(
         mountpoint: str | None = None):
     return ParseTimeFeature(
         feature_type = "mount",
-        plugin = antlir2_dep("//antlir/antlir2/features/mount:mount"),
+        plugin = "antlir//antlir/antlir2/features/mount:mount",
         deps = {
             "layer": source,
         },
@@ -39,7 +38,7 @@ def host_mount(
     mountpoint = mountpoint or source
     return ParseTimeFeature(
         feature_type = "mount",
-        plugin = antlir2_dep("//antlir/antlir2/features/mount:mount"),
+        plugin = "antlir//antlir/antlir2/features/mount:mount",
         kwargs = {
             "host_source": source,
             "is_directory": is_directory,

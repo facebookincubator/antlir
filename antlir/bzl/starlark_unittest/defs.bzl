@@ -5,7 +5,6 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     deps_dir = {}
@@ -36,7 +35,7 @@ _starlark_unittest = rule(
     attrs = {
         "deps": attrs.list(attrs.dep()),
         "srcs": attrs.list(attrs.source()),
-        "_runner": attrs.default_only(attrs.exec_dep(default = antlir_dep("bzl/starlark_unittest:starlark-unittest"))),
+        "_runner": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/bzl/starlark_unittest:starlark-unittest")),
     },
 )
 

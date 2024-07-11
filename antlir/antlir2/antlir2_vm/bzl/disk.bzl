@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "DiskInfo")
 
 def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -97,7 +96,7 @@ def _create_empty_disk(
     """Create an empty disk of `size` MiB"""
     _create_disk_from_package(
         name = name,
-        image = antlir_dep(":empty"),
+        image = "antlir//antlir:empty",
         additional_mib = size_mib,
         bootable = False,
         interface = interface,

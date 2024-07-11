@@ -3,11 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-
 _refs = {
-    "rooted": antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"),
-    "rootless": antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"),
+    "rooted": "antlir//antlir/antlir2/antlir2_rootless:rooted",
+    "rootless": "antlir//antlir/antlir2/antlir2_rootless:rootless",
 }
 
 _attrs = {
@@ -30,9 +28,9 @@ def _transition(*, refs, attrs, constraints):
     return constraints
 
 _is_rootless_select = select({
-    antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
-    antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
     "DEFAULT": False,
+    "antlir//antlir/antlir2/antlir2_rootless:rooted": False,
+    "antlir//antlir/antlir2/antlir2_rootless:rootless": True,
 })
 
 def _transition_impl(platform, refs, attrs):

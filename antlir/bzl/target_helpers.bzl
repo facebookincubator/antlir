@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":build_defs.bzl", "config", "repository_name", "target_utils")
+load(":build_defs.bzl", "repository_name", "target_utils")
 
 def normalize_target(target):
     if target.startswith("//"):
@@ -30,30 +30,3 @@ def normalize_target(target):
         path = parsed.base_path,
         name = parsed.name,
     )
-
-def antlir_dep(target):
-    """Get a normalized target referring to a dependency under the root Antlir
-    directory. This helper should be used when referring to any Antlir target,
-    excluding `load` statements. This should not be used when referring to
-    targets defined outside of the Antlir directory, e.g. user-defined layers in
-    external build files.
-
-    For example, if you want to refer to $cell//antlir:compiler, the dependency
-    should be expressed as `antlir_dep(":compiler")`. Similarly, if you want to
-    refer to $cell//antlir/nspawn_in_subvol:run, the dependency should be
-    expressed as `antlir_dep("nspawn_in_subvol:run")`.
-
-    Specifically, this will add the Antlir cell name, and the "antlir" prefix
-    to the package path, which will ensure the target is resolved correctly and
-    will help when moving Antlir to its own cell."""
-
-    if "//" in target or target.startswith("/"):
-        fail(
-            "Antlir deps should be expressed as a target relative to the " +
-            "root Antlir directory, e.g. instead of `$cell//antlir/foo:bar` " +
-            "the dep should be expressed as `foo:bar`.",
-        )
-
-    if target.startswith(":"):
-        return "{}//antlir{}".format(config.get_antlir_cell_name(), target)
-    return "{}//antlir/{}".format(config.get_antlir_cell_name(), target)

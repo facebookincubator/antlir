@@ -6,7 +6,6 @@
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
@@ -81,7 +80,7 @@ def install(
 
     return ParseTimeFeature(
         feature_type = "install",
-        plugin = antlir2_dep("//antlir/antlir2/features/install:install"),
+        plugin = "antlir//antlir/antlir2/features/install:install",
         deps_or_srcs = {"src": src},
         exec_deps = {
             "_objcopy": internal_external(
@@ -129,7 +128,7 @@ def install_text(
 
     return ParseTimeFeature(
         feature_type = "install",
-        plugin = antlir2_dep("//antlir/antlir2/features/install:install"),
+        plugin = "antlir//antlir/antlir2/features/install:install",
         kwargs = {
             "dst": dst,
             "group": group,
