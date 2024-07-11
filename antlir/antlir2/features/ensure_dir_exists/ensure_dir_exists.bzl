@@ -5,7 +5,6 @@
 
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -39,7 +38,7 @@ def ensure_subdirs_exist(
     """
     return ParseTimeFeature(
         feature_type = "ensure_dir_exists",
-        plugin = antlir2_dep("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists"),
+        plugin = "antlir//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists",
         kwargs = {
             "group": group,
             "into_dir": into_dir,

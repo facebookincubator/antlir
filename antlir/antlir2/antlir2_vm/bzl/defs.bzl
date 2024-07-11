@@ -6,7 +6,6 @@
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/linux/vm/console:defs.bzl", "TTY_NAME")
 load(":run_command.bzl", "vm_run_command")
 load(":test.bzl", "vm_cpp_test", "vm_python_test", "vm_rust_test", "vm_sh_test")
@@ -187,41 +186,41 @@ _vm_host = rule(
         "firmware": attrs.default_only(
             attrs.exec_dep(
                 default = arch_select(
-                    aarch64 = antlir_dep("vm/runtime:edk2-aarch64-code.fd"),
-                    x86_64 = antlir_dep("vm/runtime:edk2-x86_64-code.fd"),
+                    aarch64 = "antlir//antlir/vm/runtime:edk2-aarch64-code.fd",
+                    x86_64 = "antlir//antlir/vm/runtime:edk2-x86_64-code.fd",
                 ),
             ),
             doc = "firmware for the VM",
         ),
         "image": attrs.exec_dep(
             providers = [LayerInfo],
-            default = antlir_dep("antlir2/antlir2_vm:container-image"),
+            default = "antlir//antlir/antlir2/antlir2_vm:container-image",
             doc = "container image to execute the VM inside",
         ),
         "qemu_img": attrs.default_only(
-            attrs.exec_dep(default = antlir_dep("vm/runtime:qemu-img")),
+            attrs.exec_dep(default = "antlir//antlir/vm/runtime:qemu-img"),
             doc = "qemu-img binary for manipulating disk images",
         ),
         "qemu_system": attrs.default_only(
             attrs.exec_dep(
                 default = arch_select(
-                    aarch64 = antlir_dep("vm/runtime:qemu-system-aarch64"),
-                    x86_64 = antlir_dep("vm/runtime:qemu-system-x86_64"),
+                    aarch64 = "antlir//antlir/vm/runtime:qemu-system-aarch64",
+                    x86_64 = "antlir//antlir/vm/runtime:qemu-system-x86_64",
                 ),
             ),
             doc = "qemu-system binary that should match target arch",
         ),
         "roms_dir": attrs.default_only(
-            attrs.exec_dep(default = antlir_dep("vm/runtime:roms")),
+            attrs.exec_dep(default = "antlir//antlir/vm/runtime:roms"),
             doc = "ROMs for the VM",
         ),
         "swtpm": attrs.default_only(
-            attrs.exec_dep(default = antlir_dep("vm/runtime:swtpm")),
+            attrs.exec_dep(default = "antlir//antlir/vm/runtime:swtpm"),
             doc = "Software TPM binary for the VM",
         ),
         "vm_exec": attrs.default_only(
             attrs.exec_dep(
-                default = antlir_dep("antlir2/antlir2_vm:antlir2_vm"),
+                default = "antlir//antlir/antlir2/antlir2_vm:antlir2_vm",
                 doc = "executable that runs VM in isolation",
             ),
         ),

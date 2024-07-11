@@ -8,7 +8,6 @@ load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handle
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load("//antlir/bzl:build_defs.bzl", "internal_external")
@@ -137,19 +136,19 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _prebuilt = rule(
     impl = _impl,
     attrs = {
-        "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
-        "antlir2_receive": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_receive:antlir2-receive"))),
+        "antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
+        "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_receive:antlir2-receive")),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
         "_btrfs": attrs.option(attrs.exec_dep()),
-        "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
+        "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
         "_overlayfs": attrs.bool(default = False),
         "_rootless": attrs.default_only(attrs.bool(default = select({
-            antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
-            antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
             "DEFAULT": False,
+            "antlir//antlir/antlir2/antlir2_rootless:rooted": False,
+            "antlir//antlir/antlir2/antlir2_rootless:rootless": True,
         }))),
     } | rootless_cfg.attrs,
     cfg = rootless_cfg.rule_cfg,

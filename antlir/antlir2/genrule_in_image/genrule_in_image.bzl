@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
@@ -101,11 +100,11 @@ _genrule_in_image = rule(
         "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "out": attrs.option(attrs.string(), default = None),
         "outs": attrs.option(attrs.dict(attrs.string(), attrs.string()), default = None),
-        "_genrule_in_image": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/genrule_in_image:genrule_in_image"))),
-        "_layer_analyze_feature": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_depgraph_if:analyze")),
-        "_layer_antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
-        "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
-        "_prep_feature": attrs.default_only(attrs.dep(default = antlir2_dep("//antlir/antlir2/genrule_in_image:prep"))),
+        "_genrule_in_image": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/genrule_in_image:genrule_in_image")),
+        "_layer_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
+        "_layer_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
+        "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
+        "_prep_feature": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/genrule_in_image:prep")),
         "_target_arch": attrs.default_only(attrs.string(
             default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         )),

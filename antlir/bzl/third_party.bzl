@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load(":build_defs.bzl", "buck_genrule", "internal_external", third_party_shim = "third_party")
@@ -66,7 +65,7 @@ chmod +x $OUT
     image.layer(
         name = name + "__setup_layer",
         parent_layer = internal_external(
-            fb = antlir2_dep("//antlir/third-party:build-base"),
+            fb = "antlir//antlir/third-party:build-base",
             oss = "//third-party/antlir:build-base",
         ),
         dnf_additional_repos = dnf_additional_repos,

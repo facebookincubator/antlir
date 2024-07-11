@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load(
     "//antlir/antlir2/bzl:types.bzl",
@@ -69,7 +68,7 @@ def _install_common(
 
     return ParseTimeFeature(
         feature_type = "rpm",
-        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
+        plugin = "antlir//antlir/antlir2/features/rpm:rpm",
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         srcs = {
             "subjects_src": subjects_src,
@@ -79,7 +78,7 @@ def _install_common(
             "subjects": subjects,
         },
         exec_deps = {
-            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
+            "plan": "antlir//antlir/antlir2/features/rpm:plan",
         },
     )
 
@@ -144,13 +143,13 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
     """
     return ParseTimeFeature(
         feature_type = "rpm",
-        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
+        plugin = "antlir//antlir/antlir2/features/rpm:rpm",
         kwargs = {
             "action": "remove_if_exists",
             "subjects": rpms,
         },
         exec_deps = {
-            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
+            "plan": "antlir//antlir/antlir2/features/rpm:plan",
         },
     )
 
@@ -169,13 +168,13 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
     """
     return ParseTimeFeature(
         feature_type = "rpm",
-        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
+        plugin = "antlir//antlir/antlir2/features/rpm:rpm",
         kwargs = {
             "action": "remove",
             "subjects": rpms,
         },
         exec_deps = {
-            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
+            "plan": "antlir//antlir/antlir2/features/rpm:plan",
         },
     )
 
@@ -188,7 +187,7 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
     """
     return ParseTimeFeature(
         feature_type = "rpm",
-        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
+        plugin = "antlir//antlir/antlir2/features/rpm:rpm",
         kwargs = {
             "action": "module_enable",
             "subjects": [selects.apply(
@@ -197,7 +196,7 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
             )],
         },
         exec_deps = {
-            "plan": antlir2_dep("//antlir/antlir2/features/rpm:plan"),
+            "plan": "antlir//antlir/antlir2/features/rpm:plan",
         },
     )
 

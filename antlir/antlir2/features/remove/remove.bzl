@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def remove(
@@ -23,7 +22,7 @@ def remove(
     """
     return ParseTimeFeature(
         feature_type = "remove",
-        plugin = antlir2_dep("//antlir/antlir2/features/remove:remove"),
+        plugin = "antlir//antlir/antlir2/features/remove:remove",
         kwargs = {
             "must_be_empty": must_be_empty,
             "must_exist": must_exist,

@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def group_add(
@@ -19,7 +18,7 @@ def group_add(
     """
     return ParseTimeFeature(
         feature_type = "group",
-        plugin = antlir2_dep("//antlir/antlir2/features/group:group"),
+        plugin = "antlir//antlir/antlir2/features/group:group",
         kwargs = {
             "gid": gid,
             "groupname": groupname,

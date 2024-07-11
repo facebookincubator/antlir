@@ -9,7 +9,6 @@
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
@@ -225,7 +224,7 @@ def _implicit_image_test(
     if rootless == False:
         target_compatible_with = selects.apply(
             target_compatible_with or [],
-            lambda tcw: tcw + [antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted")],
+            lambda tcw: tcw + ["antlir//antlir/antlir2/antlir2_rootless:rooted"],
         )
         labels = selects.apply(labels, lambda labels: labels + ["uses_sudo"])
 
@@ -252,7 +251,7 @@ def _implicit_image_test(
 image_cpp_test = partial(
     _implicit_image_test,
     cpp_unittest,
-    _static_list_wrapper = antlir2_dep("//antlir/antlir2/testing/image_test:static-list-cpp"),
+    _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-cpp",
     _add_outer_labels = ["tpx:optout-test-result-output-spec"] + internal_external(
         fb = [],
         # don't have working gtest in oss (yet)
@@ -292,6 +291,6 @@ def image_python_test(
         layer = test_layer,
         default_os = default_os,
         # @oss-disable
-        _static_list_wrapper = antlir2_dep("//antlir/antlir2/testing/image_test:static-list-py"),
+        _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-py",
         **kwargs
     )

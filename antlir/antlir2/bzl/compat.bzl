@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:types.bzl", "types")
 
@@ -32,7 +31,7 @@ def _from_antlir1_flavor(
             else:
                 flavor = flavor[:-len("-untested")]
 
-        flavor = antlir2_dep("//antlir/antlir2/facebook/flavor/{flavor}:{flavor}".format(flavor = flavor))
+        flavor = "antlir//antlir/antlir2/facebook/flavor/{flavor}:{flavor}".format(flavor = flavor)
 
     return flavor
 

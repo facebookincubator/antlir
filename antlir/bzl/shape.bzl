@@ -113,7 +113,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "python_library", "rust_library", "target_utils", "third_party")
 load(":shell.bzl", "shell")
-load(":target_helpers.bzl", "antlir_dep", "normalize_target")
+load(":target_helpers.bzl", "normalize_target")
 load(":template.bzl", "render")
 
 _NO_DEFAULT = struct(no_default = True)
@@ -297,13 +297,13 @@ _shape_rule = rule(
         "_ir2code": attrs.default_only(
             attrs.exec_dep(
                 providers = [RunInfo],
-                default = antlir_dep("bzl/shape2:ir2code"),
+                default = "antlir//antlir/bzl/shape2:ir2code",
             ),
         ),
         "_ir2code_templates": attrs.default_only(
             attrs.source(
                 allow_directory = True,
-                default = antlir_dep("bzl/shape2/templates:templates"),
+                default = "antlir//antlir/bzl/shape2/templates:templates",
             ),
         ),
     },
@@ -315,9 +315,9 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
 
     # @oss-disable
 
-    bzl2ir = antlir_dep("bzl/shape2:bzl2ir") # @oss-enable
+    bzl2ir = "antlir//antlir/bzl/shape2:bzl2ir" # @oss-enable
     if test_only_rc_bzl2_ir:
-        bzl2ir = antlir_dep("bzl/shape2:bzl2ir")
+        bzl2ir = "antlir//antlir/bzl/shape2:bzl2ir"
 
     visibility = get_visibility(visibility)
 
@@ -334,7 +334,7 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
         name = "{}-python".format(name),
         srcs = {":{}[src][python]".format(name): "__init__.py"},
         base_module = native.package_name() + "." + name.replace(".shape", ""),
-        deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
+        deps = ["antlir//antlir:shape"] + ["{}-python".format(d) for d in deps],
         visibility = visibility,
         **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
     )
@@ -342,7 +342,7 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
         name = "{}-rust".format(name),
         crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
         mapped_srcs = {":{}[src][rust]".format(name): "src/lib.rs"},
-        deps = ["{}-rust".format(d) for d in deps] + [antlir_dep("bzl/shape2:shape")] + third_party.libraries(
+        deps = ["{}-rust".format(d) for d in deps] + ["antlir//antlir/bzl/shape2:shape"] + third_party.libraries(
             [
                 "anyhow",
                 "fbthrift",

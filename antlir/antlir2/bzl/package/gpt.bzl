@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
@@ -82,7 +81,7 @@ _gpt = rule(
                 attrs.enum(["_internal_came_from_package_fn"]),
             ),
         ),
-        "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
+        "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
     },
 )
 

@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "shared_features_attrs")
@@ -29,11 +28,11 @@ stamp_buildinfo_rule = rule(
     impl = _impl,
     attrs = {
                 "layer": attrs.dep(providers = [LayerInfo]),
-                "_analyze_feature": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_depgraph_if:analyze")),
-                "_antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
-                "_dot_meta_feature": attrs.dep(default = antlir2_dep("//antlir/antlir2/bzl/package:dot-meta")),
-                "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
-                "_run_container": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/container_subtarget:run")),
+                "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
+                "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
+                "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta"),
+                "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
+                "_run_container": attrs.exec_dep(default = "antlir//antlir/antlir2/container_subtarget:run"),
                 "_target_arch": attrs.default_only(attrs.string(
                     default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
                 )),

@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
@@ -32,7 +31,7 @@ def dot_meta(
     }
     return ParseTimeFeature(
         feature_type = "dot_meta",
-        plugin = antlir2_dep("//antlir/antlir2/features/dot_meta:dot_meta"),
+        plugin = "antlir//antlir/antlir2/features/dot_meta:dot_meta",
         kwargs = {
             "build_info": build_info,
         },
