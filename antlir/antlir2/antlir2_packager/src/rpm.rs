@@ -7,6 +7,7 @@
 
 use std::fmt::Write as _;
 use std::io::Write as _;
+use std::os::linux::fs::MetadataExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -256,14 +257,19 @@ AutoProv: {autoprov}
                 if relpath == Path::new("/") {
                     continue;
                 }
-                if let Some(caps) =
-                    std::fs::File::open(entry.path()).and_then(|f| f.get_capabilities())?
-                {
+                let f = std::fs::File::open(entry.path())?;
+                if let Some(caps) = f.get_capabilities()? {
                     let caps = caps.to_text()?;
                     spec.push_str("%caps(");
                     spec.push_str(&caps);
                     spec.push_str(") ");
                 }
+
+                let metadata = f.metadata().context("while getting file metadata")?;
+                let uid = metadata.st_uid();
+                let gid = metadata.st_gid();
+                // keep default mode which preserves permission bits
+                spec.push_str(format!("%attr(-, {}, {}) ", uid, gid).as_str());
 
                 spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
                 spec.push('\n');
