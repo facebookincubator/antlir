@@ -30,8 +30,8 @@ def install(
         src: str | Select,
         dst: str | Select,
         mode: int | str | Select | None = None,
-        user: str | Select = "root",
-        group: str | Select = "root",
+        user: str | int | Select = "root",
+        group: str | int | Select = "root",
         xattrs: dict[str, str] | Select = {},
         never_use_dev_binary_symlink: bool = False,
         split_debuginfo: bool = True,
@@ -120,8 +120,8 @@ def install_text(
         text: str | Select,
         dst: str | Select,
         mode: int | str | Select | None = None,
-        user: str | Select = "root",
-        group: str | Select = "root",
+        user: str | int | Select = "root",
+        group: str | int | Select = "root",
         xattrs: dict[str, str] | Select = {}):
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
@@ -255,7 +255,11 @@ install_rule = rule(
         "default_directory_mode": attrs.option(attrs.int(), default = None),
         "default_file_mode": attrs.option(attrs.int(), default = None),
         "dst": attrs.string(),
-        "group": attrs.string(default = "root"),
+        "group": attrs.one_of(
+            attrs.string(),
+            attrs.int(),
+            default = "root",
+        ),
         "mode": attrs.option(attrs.int(), default = None),
         "never_use_dev_binary_symlink": attrs.bool(
             default = False,
@@ -269,7 +273,11 @@ install_rule = rule(
             default = None,
         ),
         "text": attrs.option(attrs.string(), default = None),
-        "user": attrs.string(default = "root"),
+        "user": attrs.one_of(
+            attrs.string(),
+            attrs.int(),
+            default = "root",
+        ),
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
         "_binaries_require_repo": attrs.bool(
             # TODO: when D53184737 lands and is used by all features, this

@@ -52,6 +52,27 @@ image_diff_test(
     layer = ":install-text",
 )
 
+image.layer(
+    name = "install-with-ids",
+    features = [
+        feature.install_text(
+            dst = "/hello",
+            group = 43,
+            mode = "a+rw",
+            text = "Hello world!\n",
+            user = 42,
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-install-with-ids",
+    diff = "install-with-ids.toml",
+    diff_type = "file",
+    layer = ":install-with-ids",
+)
+
 buck_genrule(
     name = "genrule-dir",
     out = "out",

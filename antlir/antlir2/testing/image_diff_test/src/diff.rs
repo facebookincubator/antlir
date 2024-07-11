@@ -16,6 +16,7 @@ use serde_with::serde_as;
 use similar::TextDiff;
 
 use crate::file_entry::FileEntry;
+use crate::file_entry::NameOrId;
 use crate::file_entry::XattrData;
 use crate::rpm_entry::RpmEntry;
 
@@ -69,9 +70,9 @@ pub(crate) struct FileEntryDiff {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     text_patch: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    user: Option<FieldDiff<String>>,
+    user: Option<FieldDiff<NameOrId>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    group: Option<FieldDiff<String>>,
+    group: Option<FieldDiff<NameOrId>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     mode: Option<FieldDiff<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
