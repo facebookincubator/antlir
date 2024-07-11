@@ -25,9 +25,7 @@ use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
 use antlir2_features::stat::Mode;
 use antlir2_features::types::BuckOutSource;
-use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
-use antlir2_features::types::UserName;
 use antlir2_users::GroupId;
 use antlir2_users::Id;
 use antlir2_users::UserId;
@@ -49,15 +47,28 @@ pub type Feature = Install;
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Install {
     pub dst: PathInLayer,
-    pub group: GroupName,
+    pub group: NameOrId<GroupId>,
     pub mode: Mode,
     pub src: BuckOutSource,
-    pub user: UserName,
+    pub user: NameOrId<UserId>,
     pub binary_info: Option<BinaryInfo>,
     pub xattrs: HashMap<String, XattrValue>,
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub setcap: Option<Capabilities>,
     pub always_use_gnu_debuglink: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum NameOrId<I: Id> {
+    Name(String),
+    Id(I),
+}
+
+impl<I: Id> From<&str> for NameOrId<I> {
+    fn from(s: &str) -> Self {
+        Self::Name(s.to_owned())
+    }
 }
 
 impl Install {
@@ -281,10 +292,22 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
     }
 
     fn requires(&self) -> Result<Vec<Requirement>, String> {
-        let mut requires = vec![
-            Requirement::ordered(ItemKey::User(self.user.to_owned()), Validator::Exists),
-            Requirement::ordered(ItemKey::Group(self.group.to_owned()), Validator::Exists),
-        ];
+        let mut requires = vec![];
+        // if a user gives us the numeric ids, we have to just assume they know
+        // what they are doing and intend to bypass the user existence check
+        // here
+        if let NameOrId::Name(u) = &self.user {
+            requires.push(Requirement::ordered(
+                ItemKey::User(u.to_owned()),
+                Validator::Exists,
+            ));
+        }
+        if let NameOrId::Name(g) = &self.group {
+            requires.push(Requirement::ordered(
+                ItemKey::Group(g.to_owned()),
+                Validator::Exists,
+            ));
+        }
         // For relative dest paths (or `/`), parent() could be the empty string
         if let Some(parent) = self.dst.parent()
             && !parent.as_os_str().is_empty()
@@ -301,8 +324,14 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
 impl antlir2_compile::CompileFeature for Install {
     #[tracing::instrument(name = "install", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        let uid = ctx.uid(&self.user)?;
-        let gid = ctx.gid(&self.group)?;
+        let uid = match &self.user {
+            NameOrId::Name(n) => ctx.uid(n)?,
+            NameOrId::Id(i) => *i,
+        };
+        let gid = match &self.group {
+            NameOrId::Name(n) => ctx.gid(n)?,
+            NameOrId::Id(i) => *i,
+        };
         if self.is_dir() {
             debug!("{:?} is a dir", self.src);
             for entry in WalkDir::new(&self.src) {

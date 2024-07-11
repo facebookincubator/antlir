@@ -36,8 +36,8 @@ pub(crate) struct FileEntry {
     pub(crate) mode: Mode,
     #[serde_as(as = "DisplayFromStr")]
     pub(crate) file_type: FileType,
-    pub(crate) user: String,
-    pub(crate) group: String,
+    pub(crate) user: NameOrId,
+    pub(crate) group: NameOrId,
     #[serde(default)]
     pub(crate) text: Option<String>,
 
@@ -45,6 +45,13 @@ pub(crate) struct FileEntry {
     pub(crate) content_hash: Option<String>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub(crate) xattrs: BTreeMap<String, XattrData>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum NameOrId {
+    Name(String),
+    Id(u32),
 }
 
 impl FileEntry {
@@ -64,14 +71,12 @@ impl FileEntry {
                 file_type: FileType::from(meta.file_type()),
                 user: users
                     .get(&meta.uid())
-                    .with_context(|| format!("no such uid {}", meta.uid()))?
-                    .name()
-                    .to_owned(),
+                    .map(|u| NameOrId::Name(u.name().to_owned()))
+                    .unwrap_or(NameOrId::Id(meta.uid())),
                 group: groups
                     .get(&meta.gid())
-                    .with_context(|| format!("no such gid {}", meta.gid()))?
-                    .name()
-                    .to_owned(),
+                    .map(|g| NameOrId::Name(g.name().to_owned()))
+                    .unwrap_or(NameOrId::Id(meta.gid())),
                 text: Some(
                     target
                         .to_str()
@@ -113,14 +118,12 @@ impl FileEntry {
             mode,
             user: users
                 .get(&meta.uid())
-                .with_context(|| format!("no such uid {}", meta.uid()))?
-                .name()
-                .to_owned(),
+                .map(|u| NameOrId::Name(u.name().to_owned()))
+                .unwrap_or(NameOrId::Id(meta.uid())),
             group: groups
                 .get(&meta.gid())
-                .with_context(|| format!("no such gid {}", meta.gid()))?
-                .name()
-                .to_owned(),
+                .map(|g| NameOrId::Name(g.name().to_owned()))
+                .unwrap_or(NameOrId::Id(meta.gid())),
             file_type: FileType::from(meta.file_type()),
             xattrs,
             content_hash: if text.is_none() { content_hash } else { None },
