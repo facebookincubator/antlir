@@ -115,8 +115,14 @@ def _compile(
             "RUST_LOG": "antlir2=trace",
         },
         identifier = identifier,
-        # needs local subvolumes or root
-        local_only = ctx.attrs._working_format == "btrfs" or not ctx.attrs._rootless,
+        local_only = (
+            # btrfs subvolumes can only exist locally
+            ctx.attrs._working_format == "btrfs" or
+            # no sudo access on remote execution
+            not ctx.attrs._rootless or
+            # no aarch64 emulation on remote execution
+            target_arch == "aarch64"
+        ),
         # the old output is used to clean up the local subvolume
         no_outputs_cleanup = ctx.attrs._working_format == "btrfs",
         error_handler = antlir2_error_handler,

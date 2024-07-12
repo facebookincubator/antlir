@@ -20,11 +20,6 @@ image.layer(
             text = "I am antlir\n",
         ),
     ],
-    target_compatible_with = [
-        # TODO(T156455885): RE builds for ARM must be scheduled on an ARM
-        # worker, but it's not clear if that's possible.
-        "ovr_config//cpu:x86_64",
-    ],
 )
 
 image.layer(
