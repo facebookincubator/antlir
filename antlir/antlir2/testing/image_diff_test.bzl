@@ -65,9 +65,21 @@ _image_diff_test_macro = rule_with_default_target_platform(_image_diff_test)
 
 def image_diff_test(
         *,
+        name: str,
         default_os: str | None = None,
         **kwargs):
     _image_diff_test_macro(
+        name = name,
         default_os = default_os or get_default_os_for_package(),
+        **kwargs
+    )
+
+    # add an overlayfs variant so that we can ensure that remote-execution
+    # builds keep working and pass the same correctness tests
+    kwargs.pop("working_format", None)
+    _image_diff_test_macro(
+        name = name + "-overlayfs",
+        default_os = default_os or get_default_os_for_package(),
+        working_format = "overlayfs",
         **kwargs
     )
