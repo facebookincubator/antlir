@@ -21,7 +21,6 @@ use std::path::Path;
 
 use anyhow::Context;
 use anyhow::Result;
-use tracing::trace;
 use urlencoding::decode_binary;
 use urlencoding::encode_binary;
 use walkdir::WalkDir;
@@ -58,7 +57,6 @@ pub fn unmangle(src: &Path, dst_root: &Path) -> Result<()> {
         let urlencoded_path = entry.file_name();
         let decoded = decode_binary(urlencoded_path.as_bytes());
         let dst = dst_root.join(OsStr::from_bytes(&decoded));
-        trace!("copying {urlencoded_path:?} -> '{}'", dst.display());
         if let Some(parent) = dst.parent() {
             create_dir_all(parent)?;
         }
