@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
+load("//antlir/bzl:build_defs.bzl", "do_not_use_repo_cfg")
 load(":constants.shape.bzl", "nevra_t", "repo_config_t")
 load(":target_helpers.bzl", "normalize_target")
 
@@ -70,7 +70,6 @@ REPO_CFG = repo_config_t(
     # elements in this list, because we do not know the version set that the
     # including `image.layer` will use.  This would be fixable if Buck
     # supported providers like Bazel does.
-    antlir_cell_name = config.get_antlir_cell_name(),
     rc_targets = [
         (t if t == "all" else normalize_target(t))
         for t in _get_str_list_cfg("rc_targets", separator = ",")

@@ -51,7 +51,6 @@ nevra_t = shape.shape(
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
     host_mounts_for_repo_artifacts = shape.list(shape.path),
-    antlir_cell_name = str,
     rc_targets = shape.list(str),
     flavor_alias = shape.field(str, optional = True),
 )
