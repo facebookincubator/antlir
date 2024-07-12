@@ -21,6 +21,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         "_rootless": ctx.attrs._rootless,
         "_run_container": None,
         "_selected_target_arch": ctx.attrs._target_arch,
+        "_working_format": ctx.attrs._working_format,
     })
 
     def _with_anon_layer(layer: ProviderCollection) -> list[Provider]:

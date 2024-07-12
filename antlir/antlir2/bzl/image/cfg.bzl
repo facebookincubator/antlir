@@ -31,6 +31,11 @@ def cfg_attrs():
             default = None,
             doc = "Build this image for a specific target arch without using `buck -c`",
         ),
+        "working_format": attrs.option(
+            attrs.enum(["btrfs", "overlayfs"]),
+            default = None,
+            doc = "Underlying on-disk format for the layer build",
+        ),
     } | (
         # @oss-disable
         {} # @oss-enable
@@ -64,6 +69,13 @@ def attrs_selected_by_cfg():
             )),
         ),
         "_rootless": rootless_cfg.is_rootless_attr,
+        "_working_format": attrs.default_only(attrs.string(
+            default = select({
+                "DEFAULT": "btrfs",
+                "antlir//antlir/antlir2/cfg:btrfs": "btrfs",
+                "antlir//antlir/antlir2/cfg:overlayfs": "overlayfs",
+            }),
+        )),
     }
 
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
@@ -97,6 +109,10 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     if is_facebook:
         constraints = fb_transition(refs, attrs, constraints, overwrite = False)
 
+    working_format_setting = refs.working_format[ConstraintSettingInfo]
+    if attrs.working_format and working_format_setting.label not in constraints:
+        constraints[working_format_setting.label] = getattr(refs, "working_format." + attrs.working_format)[ConstraintValueInfo]
+
     label = platform.label
 
     # if we made any changes, change the label
@@ -120,6 +136,9 @@ layer_cfg = transition(
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:dnf",
         "rooted": "antlir//antlir/antlir2/antlir2_rootless:rooted",
         "rootless": "antlir//antlir/antlir2/antlir2_rootless:rootless",
+        "working_format": "antlir//antlir/antlir2/cfg:working_format",
+        "working_format.btrfs": "antlir//antlir/antlir2/cfg:btrfs",
+        "working_format.overlayfs": "antlir//antlir/antlir2/cfg:overlayfs",
     } | (
         # @oss-disable
         {} # @oss-enable
