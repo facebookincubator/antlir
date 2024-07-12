@@ -10,10 +10,12 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "serde_json",
         "tracing",
         "tracing-subscriber",
         "walkdir",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
 )
