@@ -238,9 +238,6 @@ def _rust_python_extension(name: str, **kwargs):
 def _thrift_library(**kwargs):
     fail("not implemented")
 
-def _get_antlir_cell_name():
-    return "antlir"
-
 ### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:target_utils.bzl)
 def _parse_target(target, default_repo = None, default_base_path = None):
     if target.count(":") != 1:
@@ -299,7 +296,6 @@ shim = struct(
     #
     antlir_buck_env = _antlir_buck_env,
     config = struct(
-        get_antlir_cell_name = _get_antlir_cell_name,
         get_platform_for_current_buildfile = lambda: struct(target_platform = None),
     ),
     get_visibility = _get_visibility,
@@ -326,6 +322,5 @@ shim = struct(
             "/mnt/gvfs",
         ]),
     },
-    repository_name = lambda: "@antlir",
     add_test_framework_label = lambda labels, add: labels + [add],
 )

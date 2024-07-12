@@ -273,7 +273,6 @@ http_archive = shim.http_archive
 is_buck2 = shim.is_buck2
 is_facebook = shim.is_facebook
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
-repository_name = shim.repository_name
 target_utils = shim.target_utils
 alias = shim.alias
 add_test_framework_label = shim.add_test_framework_label

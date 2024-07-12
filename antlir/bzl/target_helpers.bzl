@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":build_defs.bzl", "repository_name", "target_utils")
+load(":build_defs.bzl", "target_utils")
 
 def normalize_target(target):
     if target.startswith("//"):
