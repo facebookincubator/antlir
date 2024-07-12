@@ -101,6 +101,7 @@ def _generic_impl(
             "_rootless": ctx.attrs._rootless,
             "_run_container": ctx.attrs._run_container,
             "_target_arch": ctx.attrs._target_arch,
+            "_working_format": ctx.attrs._working_format,
         }).promise.map(partial(
             _generic_impl_with_layer,
             ctx = ctx,

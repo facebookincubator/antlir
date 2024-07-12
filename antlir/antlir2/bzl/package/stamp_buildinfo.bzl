@@ -22,6 +22,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "_rootless": ctx.attrs._rootless,
         "_run_container": ctx.attrs._run_container,
         "_selected_target_arch": ctx.attrs._target_arch,
+        "_working_format": ctx.attrs._working_format,
     }).promise.map(lambda l: [l[LayerInfo], l[DefaultInfo]])
 
 stamp_buildinfo_rule = rule(

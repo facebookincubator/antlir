@@ -1,0 +1,18 @@
+load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
+
+oncall("antlir")
+
+constraint_setting(
+    name = "working_format",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "btrfs",
+    constraint_setting = ":working_format",
+)
+
+constraint_value(
+    name = "overlayfs",
+    constraint_setting = ":working_format",
+)

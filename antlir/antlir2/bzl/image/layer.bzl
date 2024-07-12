@@ -54,7 +54,7 @@ def _compile(
     Compile features into a new image layer
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
-    if ctx.attrs._overlayfs:
+    if ctx.attrs._working_format == "overlayfs":
         parent_layers = (parent.overlayfs.layers + [parent.overlayfs.top]) if parent else []
         overlayfs_model_out = ctx.actions.declare_output(identifier, "overlayfs-out.json")
         data_dir = ctx.actions.declare_output(identifier, "overlayfs-data-dir", dir = True)
@@ -84,10 +84,12 @@ def _compile(
             json_file = overlayfs_model,
         )
         subvol_symlink = None
-    else:
+    elif ctx.attrs._working_format == "btrfs":
         overlayfs_model_out = None
         overlayfs = None
         subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink")
+    else:
+        fail("unknown working format '{}'".format(ctx.attrs._working_format))
     ctx.actions.run(
         cmd_args(
             cmd_args("sudo") if not rootless else cmd_args(),
@@ -96,16 +98,16 @@ def _compile(
             "compile",
             "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
-            cmd_args(parent.subvol_symlink, format = "--parent={}") if parent and not ctx.attrs._overlayfs else cmd_args(),
+            cmd_args(parent.subvol_symlink, format = "--parent={}") if parent and ctx.attrs._working_format == "btrfs" else cmd_args(),
             cmd_args(
-                subvol_symlink.as_output() if not ctx.attrs._overlayfs else overlayfs_model_out,
+                subvol_symlink.as_output() if ctx.attrs._working_format == "btrfs" else overlayfs_model_out,
                 format = "--output={}",
             ),
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(topo_features, format = "--features={}"),
             cmd_args(plans, format = "--plans={}"),
-            cmd_args("--working-format=overlayfs") if ctx.attrs._overlayfs else cmd_args(),
+            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
             hidden = hidden_deps,
         ),
         category = "antlir2",
@@ -113,10 +115,10 @@ def _compile(
             "RUST_LOG": "antlir2=trace",
         },
         identifier = identifier,
-        # needs local subvolumes
-        local_only = not ctx.attrs._overlayfs,
+        # needs local subvolumes or root
+        local_only = ctx.attrs._working_format == "btrfs" or not ctx.attrs._rootless,
         # the old output is used to clean up the local subvolume
-        no_outputs_cleanup = not ctx.attrs._overlayfs,
+        no_outputs_cleanup = ctx.attrs._working_format == "btrfs",
         error_handler = antlir2_error_handler,
     )
 
@@ -294,9 +296,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # contains all the other features. In practice that's really hard and
     # inconvenient for image authors, but is incredibly useful for everyone
     # involved, so we can do it for them implicitly.
-
-    if ctx.attrs._overlayfs and not ctx.attrs._rootless:
-        fail("overlayfs is only supported with rootless")
 
     layer = ctx.attrs.parent_layer[LayerInfo].contents if ctx.attrs.parent_layer else None
     facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
@@ -617,6 +616,13 @@ _layer_attrs = {
         doc = "CPU arch that this layer is being built for. This is always " +
               "correct, while target_arch might or might not be set",
     )),
+    "_working_format": attrs.default_only(attrs.string(
+        default = select({
+            "DEFAULT": "btrfs",
+            "antlir//antlir/antlir2/cfg:btrfs": "btrfs",
+            "antlir//antlir/antlir2/cfg:overlayfs": "overlayfs",
+        }),
+    )),
 }
 
 _layer_attrs.update(cfg_attrs())
@@ -684,7 +690,7 @@ def layer(
         rootless = get_antlir2_rootless()
 
     if get_antlir2_use_overlayfs():
-        kwargs["_overlayfs"] = True
+        kwargs["working_format"] = "overlayfs"
         rootless = True
 
     if not rootless:

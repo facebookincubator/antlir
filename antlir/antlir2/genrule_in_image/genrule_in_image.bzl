@@ -75,6 +75,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             "_rootless": ctx.attrs._rootless,
             "_run_container": None,
             "_selected_target_arch": ctx.attrs._target_arch,
+            "_working_format": ctx.attrs._working_format,
         }).promise.map(_with_anon_layer)
     else:
         return _with_anon_layer(ctx.attrs.exec_layer)
