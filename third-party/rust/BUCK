@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "93ab0caaa1853184592315bc71fcd8a09ec7bdba",
+    rev = "b1b740abb9b27350b086dc4ed14d1012d669c79a",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "b807b68611c42dc51488c37b3170defcddf25b2a",
+    rev = "163903add33d4cbaefe6dd2bb281c2850856e0d2",
     visibility = [],
 )
 
@@ -4375,7 +4375,7 @@ cargo.rust_library(
         ":ordered-float-3.9.2",
         ":panic-message-0.3.0",
         ":serde_json-1.0.120",
-        ":thiserror-1.0.61",
+        ":thiserror-1.0.62",
     ],
 )
 
@@ -5392,7 +5392,7 @@ cargo.rust_library(
         ":pest_derive-2.7.11",
         ":serde-1.0.204",
         ":serde_json-1.0.120",
-        ":thiserror-1.0.61",
+        ":thiserror-1.0.62",
         ":walkdir-2.5.0",
     ],
 )
@@ -9422,7 +9422,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":memchr-2.7.4",
-        ":thiserror-1.0.61",
+        ":thiserror-1.0.62",
         ":ucd-trie-0.1.6",
     ],
 )
@@ -14002,7 +14002,7 @@ cargo.rust_library(
         ":static_assertions-1.1.0",
         ":strsim-0.10.0",
         ":textwrap-0.11.0",
-        ":thiserror-1.0.61",
+        ":thiserror-1.0.62",
     ],
 )
 
@@ -14080,7 +14080,7 @@ cargo.rust_library(
         ":num-traits-0.2.19",
         ":once_cell-1.19.0",
         ":starlark_map-0.12.0",
-        ":thiserror-1.0.61",
+        ":thiserror-1.0.62",
     ],
 )
 
@@ -15200,61 +15200,61 @@ cargo.rust_library(
 
 alias(
     name = "thiserror",
-    actual = ":thiserror-1.0.61",
+    actual = ":thiserror-1.0.62",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "thiserror-1.0.61.crate",
-    sha256 = "c546c80d6be4bc6a00c0f01730c08df82eaa7a7a61f11d656526506112cc1709",
-    strip_prefix = "thiserror-1.0.61",
-    urls = ["https://static.crates.io/crates/thiserror/1.0.61/download"],
+    name = "thiserror-1.0.62.crate",
+    sha256 = "f2675633b1499176c2dff06b0856a27976a8f9d436737b4cf4f312d4d91d8bbb",
+    strip_prefix = "thiserror-1.0.62",
+    urls = ["https://static.crates.io/crates/thiserror/1.0.62/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "thiserror-1.0.61",
-    srcs = [":thiserror-1.0.61.crate"],
+    name = "thiserror-1.0.62",
+    srcs = [":thiserror-1.0.62.crate"],
     crate = "thiserror",
-    crate_root = "thiserror-1.0.61.crate/src/lib.rs",
+    crate_root = "thiserror-1.0.62.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :thiserror-1.0.61-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :thiserror-1.0.62-build-script-run[out_dir])",
     },
-    rustc_flags = ["@$(location :thiserror-1.0.61-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :thiserror-1.0.62-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [":thiserror-impl-1.0.61"],
+    deps = [":thiserror-impl-1.0.62"],
 )
 
 cargo.rust_binary(
-    name = "thiserror-1.0.61-build-script-build",
-    srcs = [":thiserror-1.0.61.crate"],
+    name = "thiserror-1.0.62-build-script-build",
+    srcs = [":thiserror-1.0.62.crate"],
     crate = "build_script_build",
-    crate_root = "thiserror-1.0.61.crate/build.rs",
+    crate_root = "thiserror-1.0.62.crate/build.rs",
     edition = "2021",
     visibility = [],
 )
 
 buildscript_run(
-    name = "thiserror-1.0.61-build-script-run",
+    name = "thiserror-1.0.62-build-script-run",
     package_name = "thiserror",
-    buildscript_rule = ":thiserror-1.0.61-build-script-build",
-    version = "1.0.61",
+    buildscript_rule = ":thiserror-1.0.62-build-script-build",
+    version = "1.0.62",
 )
 
 http_archive(
-    name = "thiserror-impl-1.0.61.crate",
-    sha256 = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533",
-    strip_prefix = "thiserror-impl-1.0.61",
-    urls = ["https://static.crates.io/crates/thiserror-impl/1.0.61/download"],
+    name = "thiserror-impl-1.0.62.crate",
+    sha256 = "d20468752b09f49e909e55a5d338caa8bedf615594e9d80bc4c565d30faf798c",
+    strip_prefix = "thiserror-impl-1.0.62",
+    urls = ["https://static.crates.io/crates/thiserror-impl/1.0.62/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "thiserror-impl-1.0.61",
-    srcs = [":thiserror-impl-1.0.61.crate"],
+    name = "thiserror-impl-1.0.62",
+    srcs = [":thiserror-impl-1.0.62.crate"],
     crate = "thiserror_impl",
-    crate_root = "thiserror-impl-1.0.61.crate/src/lib.rs",
+    crate_root = "thiserror-impl-1.0.62.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
@@ -16182,7 +16182,7 @@ cargo.rust_library(
         ":log-0.4.22",
         ":rand-0.8.5",
         ":smallvec-1.13.2",
-        ":thiserror-1.0.61",
+        ":thiserror-1.0.62",
         ":tinyvec-1.8.0",
         ":tokio-1.38.0",
         ":url-2.5.2",
@@ -16235,7 +16235,7 @@ cargo.rust_library(
         ":parking_lot-0.11.2",
         ":resolv-conf-0.7.0",
         ":smallvec-1.13.2",
-        ":thiserror-1.0.61",
+        ":thiserror-1.0.62",
         ":tokio-1.38.0",
         ":trust-dns-proto-0.20.4",
     ],
