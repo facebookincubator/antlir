@@ -59,7 +59,7 @@ fn format_ty(
 
 fn main() -> Result<()> {
     let starlark_path_to_template = hashmap! {
-        "fbcode//antlir/antlir2/features:defs.bzl" => TemplateCfg {
+        "fbcode//antlir/antlir2/bzl/feature:defs.bzl" => TemplateCfg {
             input: "templates/features.mdx",
             doc_location: "features.md",
         },
