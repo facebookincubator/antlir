@@ -58,17 +58,20 @@ fn format_ty(
 }
 
 fn main() -> Result<()> {
-    let starlark_path_to_template = hashmap! {
+    let mut starlark_path_to_template = hashmap! {
         "fbcode//antlir/antlir2/bzl/feature:defs.bzl" => TemplateCfg {
             input: "templates/features.mdx",
             doc_location: "features.md",
         },
-        #[cfg(facebook)]
-        "fbcode//antlir/antlir2/features/facebook/container:defs.bzl" => TemplateCfg {
+    };
+    #[cfg(facebook)]
+    starlark_path_to_template.insert(
+        "fbcode//antlir/antlir2/features/facebook/container:defs.bzl",
+        TemplateCfg {
             input: "templates/fb/cmv2_api_reference.mdx",
             doc_location: "fb/cmv2-api-reference.md",
         },
-    };
+    );
     let args = Args::parse();
 
     let mut tera = Tera::default();
