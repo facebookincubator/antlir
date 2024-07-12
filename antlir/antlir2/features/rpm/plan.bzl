@@ -93,13 +93,8 @@ def plan(
         ),
         category = "rpm_plan",
         identifier = identifier,
-        # TODO(T156455885): this should be able to run on an aarch64 RE worker,
-        # but it's complicated, so for now just force local_only execution where
-        # we will be able to do binfmt user mode emulation if necessary. When
-        # that works, uncomment the below two lines.
-        # # local_only if the parent is only available as a subvol
-        # local_only = bool(parent_layer_contents and not parent_layer_contents.overlayfs),
-        local_only = True,
+        # local_only if the parent is only available as a subvol
+        local_only = bool(parent_layer_contents and not parent_layer_contents.overlayfs),
     )
 
     repos = compiler_plan_to_local_repos(
