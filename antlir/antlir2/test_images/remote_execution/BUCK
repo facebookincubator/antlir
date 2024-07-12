@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
 load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_names")
 load("//antlir/bzl:build_defs.bzl", "internal_external")
 
@@ -39,4 +40,13 @@ image_test_rpm_names(
     ),
     layer = ":child-that-installs-rpms",
     rootless = True,
+)
+
+genrule_in_image(
+    name = "genrule_in_image",
+    out = "uname.txt",
+    bash = """
+        uname -r > $OUT
+    """,
+    layer = ":example",
 )

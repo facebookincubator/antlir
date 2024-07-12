@@ -10,10 +10,12 @@ use std::path::PathBuf;
 
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
+use antlir2_overlayfs::OverlayFs;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use clap::ValueEnum;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -23,6 +25,9 @@ struct Args {
     rootless: bool,
     #[clap(long)]
     ephemeral: bool,
+    #[clap(value_enum, long)]
+    /// On-disk format of the layer storage
+    working_format: WorkingFormat,
     #[clap(flatten)]
     out: Out,
     #[clap(last(true))]
@@ -36,6 +41,12 @@ struct Out {
 
     #[clap(long)]
     dir: bool,
+}
+
+#[derive(Debug, ValueEnum, Clone, Copy)]
+enum WorkingFormat {
+    Btrfs,
+    Overlayfs,
 }
 
 fn main() -> Result<()> {
@@ -53,7 +64,26 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
 
-    let mut builder = IsolationContext::builder(&args.layer);
+    let root_guard = rootless.map(|r| r.escalate()).transpose()?;
+    antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
+    drop(root_guard);
+
+    let overlayfs = match args.working_format {
+        WorkingFormat::Overlayfs => {
+            let model = std::fs::read_to_string(&args.layer).context("while reading model json")?;
+            let model = serde_json::from_str(&model).context("while parsing model json")?;
+            let opts = antlir2_overlayfs::Opts::builder().model(model).build();
+            let fs = OverlayFs::mount(opts).context("while mounting overlayfs")?;
+            Some(fs)
+        }
+        WorkingFormat::Btrfs => None,
+    };
+
+    let mut builder = IsolationContext::builder(
+        overlayfs
+            .as_ref()
+            .map_or(args.layer.as_path(), |o| o.mountpoint()),
+    );
     builder.ephemeral(args.ephemeral);
     #[cfg(facebook)]
     builder.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
