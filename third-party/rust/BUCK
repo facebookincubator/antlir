@@ -7,14 +7,14 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "f79f662eaa7ce720ba7ee1367edbe2166dedb176",
+    rev = "7e7f3e67c13675623168894a167fe99cf13d21e9",
     visibility = [],
 )
 
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "e7b296286c2512d78d83768d15141b16a6567251",
+    rev = "90796cf100f5f77196a3eca4dd06c583120f6498",
     visibility = [],
 )
 
@@ -1435,18 +1435,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.3.crate",
-    sha256 = "18e2d530f35b40a84124146478cd16f34225306a8441998836466a2e2961c950",
-    strip_prefix = "cc-1.1.3",
-    urls = ["https://static.crates.io/crates/cc/1.1.3/download"],
+    name = "cc-1.1.5.crate",
+    sha256 = "324c74f2155653c90b04f25b2a47a8a631360cb908f92a772695f430c7e31052",
+    strip_prefix = "cc-1.1.5",
+    urls = ["https://static.crates.io/crates/cc/1.1.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.3",
-    srcs = [":cc-1.1.3.crate"],
+    name = "cc-1.1.5",
+    srcs = [":cc-1.1.5.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.3.crate/src/lib.rs",
+    crate_root = "cc-1.1.5.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -1464,10 +1464,7 @@ cargo.rust_library(
         ),
     },
     visibility = [],
-    deps = [
-        ":jobserver-0.1.31",
-        ":once_cell-1.19.0",
-    ],
+    deps = [":jobserver-0.1.31"],
 )
 
 http_archive(
@@ -2988,7 +2985,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.3",
+        ":cc-1.1.5",
         ":cxxbridge-flags-1.0.124",
     ],
 )
@@ -7063,7 +7060,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.3",
+        ":cc-1.1.5",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -8105,16 +8102,16 @@ cargo.rust_library(
         "macos-arm64": dict(
             deps = [
                 ":libc-0.2.155",
-                ":security-framework-2.11.0",
-                ":security-framework-sys-2.11.0",
+                ":security-framework-2.11.1",
+                ":security-framework-sys-2.11.1",
                 ":tempfile-3.10.1",
             ],
         ),
         "macos-x86_64": dict(
             deps = [
                 ":libc-0.2.155",
-                ":security-framework-2.11.0",
-                ":security-framework-sys-2.11.0",
+                ":security-framework-2.11.1",
+                ":security-framework-sys-2.11.1",
                 ":tempfile-3.10.1",
             ],
         ),
@@ -8976,7 +8973,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.3",
+        ":cc-1.1.5",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -11660,7 +11657,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.3"],
+    deps = [":cc-1.1.5"],
 )
 
 buildscript_run(
@@ -11742,7 +11739,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.3"],
+    deps = [":cc-1.1.5"],
 )
 
 buildscript_run(
@@ -12268,10 +12265,10 @@ cargo.rust_library(
             deps = [":openssl-probe-0.1.5"],
         ),
         "macos-arm64": dict(
-            deps = [":security-framework-2.11.0"],
+            deps = [":security-framework-2.11.1"],
         ),
         "macos-x86_64": dict(
-            deps = [":security-framework-2.11.0"],
+            deps = [":security-framework-2.11.1"],
         ),
         "windows-gnu": dict(
             deps = [":schannel-0.1.23"],
@@ -12784,22 +12781,23 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "security-framework-2.11.0.crate",
-    sha256 = "c627723fd09706bacdb5cf41499e95098555af3c3c29d014dc3c458ef6be11c0",
-    strip_prefix = "security-framework-2.11.0",
-    urls = ["https://static.crates.io/crates/security-framework/2.11.0/download"],
+    name = "security-framework-2.11.1.crate",
+    sha256 = "897b2245f0b511c87893af39b033e5ca9cce68824c4d7e7630b5a1d339658d02",
+    strip_prefix = "security-framework-2.11.1",
+    urls = ["https://static.crates.io/crates/security-framework/2.11.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "security-framework-2.11.0",
-    srcs = [":security-framework-2.11.0.crate"],
+    name = "security-framework-2.11.1",
+    srcs = [":security-framework-2.11.1.crate"],
     crate = "security_framework",
-    crate_root = "security-framework-2.11.0.crate/src/lib.rs",
+    crate_root = "security-framework-2.11.1.crate/src/lib.rs",
     edition = "2021",
     features = [
         "OSX_10_10",
         "OSX_10_11",
+        "OSX_10_12",
         "OSX_10_9",
         "default",
     ],
@@ -12809,27 +12807,28 @@ cargo.rust_library(
         ":core-foundation-0.9.4",
         ":core-foundation-sys-0.8.6",
         ":libc-0.2.155",
-        ":security-framework-sys-2.11.0",
+        ":security-framework-sys-2.11.1",
     ],
 )
 
 http_archive(
-    name = "security-framework-sys-2.11.0.crate",
-    sha256 = "317936bbbd05227752583946b9e66d7ce3b489f84e11a94a510b4437fef407d7",
-    strip_prefix = "security-framework-sys-2.11.0",
-    urls = ["https://static.crates.io/crates/security-framework-sys/2.11.0/download"],
+    name = "security-framework-sys-2.11.1.crate",
+    sha256 = "75da29fe9b9b08fe9d6b22b5b4bcbc75d8db3aa31e639aa56bb62e9d46bfceaf",
+    strip_prefix = "security-framework-sys-2.11.1",
+    urls = ["https://static.crates.io/crates/security-framework-sys/2.11.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "security-framework-sys-2.11.0",
-    srcs = [":security-framework-sys-2.11.0.crate"],
+    name = "security-framework-sys-2.11.1",
+    srcs = [":security-framework-sys-2.11.1.crate"],
     crate = "security_framework_sys",
-    crate_root = "security-framework-sys-2.11.0.crate/src/lib.rs",
+    crate_root = "security-framework-sys-2.11.1.crate/src/lib.rs",
     edition = "2021",
     features = [
         "OSX_10_10",
         "OSX_10_11",
+        "OSX_10_12",
         "OSX_10_9",
         "default",
     ],
