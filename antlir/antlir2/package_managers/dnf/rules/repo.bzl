@@ -111,8 +111,8 @@ repo_attrs = {
     "dnf_conf": attrs.dict(attrs.string(), attrs.string(), default = {}),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
     "logical_id": attrs.option(attrs.string(), doc = "repo name as in dnf.conf", default = None),
-    "makecache": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules/makecache:makecache")),
-    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules/makerepo:makerepo")),
+    "makecache": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/package_managers/dnf/rules/makecache:makecache")),
+    "makerepo": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/package_managers/dnf/rules/makerepo:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),
     "rpms": attrs.list(
         attrs.dep(providers = [RpmInfo]),

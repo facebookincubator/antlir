@@ -6,13 +6,7 @@ oncall("antlir")
 template(
     name = "resolv",
     srcs = ["resolv.jinja2"],
-    visibility = [
-        "//antlir/linux/vm/...",
-        "//ee_provisioning/images/...",
-        "//images/...",
-        "//metalos/...",
-        "//tupperware/image/vmtest/impl/...",
-    ],
+    visibility = ["PUBLIC"],
 )
 
 shape.impl(

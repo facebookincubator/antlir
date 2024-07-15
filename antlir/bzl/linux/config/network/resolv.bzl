@@ -15,7 +15,7 @@ def _render(name, instance):
     return shape.render_template(
         name = name,
         instance = instance,
-        template = "//antlir/bzl/linux/config/network:resolv",
+        template = "antlir//antlir/bzl/linux/config/network:resolv",
     )
 
 def _install(instance = None, **kwargs):

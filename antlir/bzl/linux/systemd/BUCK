@@ -13,30 +13,20 @@ template(
     srcs = [
         "mount.jinja2",
     ],
-    visibility = [
-        "//antlir/vm/...",
-        "//metalos/...",
-        "//ti/platform/edgeos/...",
-    ],
+    visibility = ["PUBLIC"],
     deps = [":unit"],
 )
 
 template(
     name = "timer_unit",
     srcs = ["timer_unit.jinja2"],
-    visibility = [
-        "//metalos/...",
-        "//netos/...",
-    ],
+    visibility = ["PUBLIC"],
     deps = [":unit"],
 )
 
 template(
     name = "service_unit",
     srcs = ["service_unit.jinja2"],
-    visibility = [
-        "//metalos/...",
-        "//netos/...",
-    ],
+    visibility = ["PUBLIC"],
     deps = [":unit"],
 )

@@ -22,7 +22,7 @@ def _systemd_build(
         kernels = kernels,
         label = label,
         args = args,
-        parent_layer = "//antlir/bzl/linux/boot/systemd:base",
+        parent_layer = "antlir//antlir/bzl/linux/boot/systemd:base",
         efi_size_mb = efi_size_mb,
     )
 

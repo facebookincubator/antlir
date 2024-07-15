@@ -207,7 +207,7 @@ def _implicit_image_test(
             parent_layer = layer,
             features = [
                 systemd.install_unit(
-                    "//antlir/antlir2/testing/image_test:antlir2_image_test.service",
+                    "antlir//antlir/antlir2/testing/image_test:antlir2_image_test.service",
                     force = True,
                 ),
             ],
