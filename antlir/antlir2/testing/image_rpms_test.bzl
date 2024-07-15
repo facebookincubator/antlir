@@ -43,7 +43,7 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
 _rpm_names_test = rule(
     impl = _rpm_names_test_impl,
     attrs = {
-        "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
+        "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
         "not_installed": attrs.bool(default = False),
@@ -85,7 +85,7 @@ _rpm_integrity_test = rule(
     attrs = {
         "ignored_files": attrs.list(attrs.string(doc = "path that is allowed to fail integrity test"), default = []),
         "ignored_rpms": attrs.list(attrs.string(doc = "name of rpm that is ignored for integrity checks"), default = []),
-        "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
+        "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
     },
 )
 

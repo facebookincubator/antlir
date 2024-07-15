@@ -35,7 +35,7 @@ def ble_build(
                 ],
                 options = args,
             ),
-            template = "//antlir/bzl/linux/boot:loader",
+            template = "antlir//antlir/bzl/linux/boot:loader",
         )
 
         features.extend([

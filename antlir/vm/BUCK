@@ -6,10 +6,6 @@ export_file(
     name = "mount-generator",
     src = "mount-generator",
     visibility = [
-        "//antlir/linux/vm/...",
-        "//images/...",
-        "//metalos/...",
-        "//provisioning/images/grasstile/...",
-        "//ti/platform/edgeos/...",
+        "PUBLIC",
     ],
 )

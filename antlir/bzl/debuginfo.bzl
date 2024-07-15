@@ -40,7 +40,7 @@ def _split(
         **(default_os_kwarg | flavor_kwarg)
     )
     cfg_kwargs = {
-        "flavor": "//antlir/antlir2/flavor:none",
+        "flavor": "antlir//antlir/antlir2/flavor:none",
     } if not default_os else {"default_os": default_os}
     antlir2_image.layer(
         name = debuginfo_name,

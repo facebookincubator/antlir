@@ -5,7 +5,5 @@ oncall("antlir")
 template(
     name = "nsswitch",
     srcs = ["nsswitch.jinja2"],
-    visibility = [
-        "//metalos/...",
-    ],
+    visibility = ["PUBLIC"],
 )
