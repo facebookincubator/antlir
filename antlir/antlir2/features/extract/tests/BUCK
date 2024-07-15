@@ -69,9 +69,8 @@ image.layer(
     features = [
         feature.ensure_dirs_exist(dirs = "/usr/bin"),
         feature.clone(
-            dst_path = "/usr/bin/systemctl",
+            path = "/usr/bin/systemctl",
             src_layer = ":binaries-clone-src",
-            src_path = "/usr/bin/systemctl",
         ),
     ],
     parent_layer = ":base",
