@@ -216,7 +216,7 @@ impl Compile {
                         let parent = Subvolume::open(parent)?;
                         parent.snapshot(&dst, Default::default())?
                     }
-                    None => Subvolume::create(&dst).context("while creating new subvol")?,
+                    None => Subvolume::create(&dst)?,
                 };
                 debug!("produced r/w subvol '{subvol:?}'");
                 Ok(WorkingLayer::Btrfs(subvol))
