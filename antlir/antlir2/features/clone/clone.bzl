@@ -11,14 +11,18 @@ load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTime
 def clone(
         *,
         src_layer: str | Select,
-        src_path: str | Select,
-        dst_path: str | Select,
+        path: str | Select | None = None,
+        src_path: str | Select | None = None,
+        dst_path: str | Select | None = None,
         user: str | None = None,
         group: str | None = None):
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
 
+    This copies from `src_path` in the `src_layer` to `dst_path` in this layer.
+    If both paths are the same, you can just set `path` and it will serve as
+    both the source and destination paths.
 
     ### Trailing slashes on both paths are significant
 
@@ -84,6 +88,7 @@ def clone(
         kwargs = {
             "dst_path": dst_path,
             "group": group,
+            "path": path,
             "src_path": src_path,
             "user": user,
         },
@@ -104,14 +109,21 @@ clone_record = record(
 )
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    omit_outer_dir = ctx.attrs.src_path.endswith("/")
-    pre_existing_dest = ctx.attrs.dst_path.endswith("/")
+    if ctx.attrs.path and (ctx.attrs.src_path or ctx.attrs.dst_path):
+        fail("'path' is mutually exclusive with 'src_path' and 'dst_path'")
+    if not ctx.attrs.path and (not ctx.attrs.src_path or not ctx.attrs.dst_path):
+        fail("'src_path' and 'dst_path' must be set if 'path' is missing")
+    src_path = ctx.attrs.src_path or ctx.attrs.path
+    dst_path = ctx.attrs.dst_path or ctx.attrs.path
+
+    omit_outer_dir = src_path.endswith("/")
+    pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:
         fail(
             "Your `src_path` {} ends in /, which means only the contents " +
             "of the directory will be cloned. Therefore, you must also add a " +
             "trailing / to `dst_path` to signal that clone will write " +
-            "inside that pre-existing directory dst_path".format(ctx.attrs.src_path),
+            "inside that pre-existing directory dst_path".format(src_path),
         )
 
     usergroup = None
@@ -129,8 +141,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             feature_type = "clone",
             data = clone_record(
                 src_layer = layer_dep_analyze(ctx.attrs.src_layer),
-                src_path = ctx.attrs.src_path,
-                dst_path = ctx.attrs.dst_path,
+                src_path = src_path,
+                dst_path = dst_path,
                 omit_outer_dir = omit_outer_dir,
                 pre_existing_dest = pre_existing_dest,
                 usergroup = usergroup,
@@ -143,11 +155,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 clone_rule = rule(
     impl = _impl,
     attrs = {
-        "dst_path": attrs.string(),
+        "dst_path": attrs.option(attrs.string(), default = None),
         "group": attrs.option(attrs.string(), default = None),
+        "path": attrs.option(attrs.string(), default = None),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "src_layer": attrs.dep(providers = [LayerInfo]),
-        "src_path": attrs.string(),
+        "src_path": attrs.option(attrs.string(), default = None),
         "user": attrs.option(attrs.string(), default = None),
     },
 )

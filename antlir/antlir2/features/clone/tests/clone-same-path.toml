@@ -1,0 +1,11 @@
+[file.f]
+op = 'added'
+
+[file.f.diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+user = "antlir"
+group = "antlir"
+text = '''
+This file will be cloned!
+'''
