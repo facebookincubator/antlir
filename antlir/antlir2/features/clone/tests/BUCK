@@ -87,6 +87,24 @@ image_diff_test(
     layer = ":clone-file",
 )
 
+image.layer(
+    name = "clone-same-path",
+    features = [
+        feature.clone(
+            path = "/f",
+            src_layer = ":clone-src",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "clone-same-path-test",
+    diff = "clone-same-path.toml",
+    diff_type = "file",
+    layer = ":clone-same-path",
+)
+
 alias(
     name = "clone-src-alias",
     actual = ":clone-src",
