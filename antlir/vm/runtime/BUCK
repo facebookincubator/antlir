@@ -10,12 +10,11 @@ image.layer(
     name = "qemu-tools-rc",
     features = [
         feature.clone(
-            dst_path = path,
+            path = path,
             src_layer = internal_external(
                 fb = "//antlir/third-party/qemu:qemu",
                 oss = "//third-party/antlir/qemu:qemu",
             ),
-            src_path = path,
         )
         for path in [
             "/bin",
@@ -25,12 +24,11 @@ image.layer(
     ] + [
         feature.ensure_dirs_exist(dirs = "/share"),
         feature.clone(
-            dst_path = "/bin/swtpm",
+            path = "/bin/swtpm",
             src_layer = internal_external(
                 fb = "//antlir/third-party/swtpm:swtpm",
                 oss = "//third-party/antlir/swtpm:swtpm",
             ),
-            src_path = "/bin/swtpm",
         ),
     ],
 )
