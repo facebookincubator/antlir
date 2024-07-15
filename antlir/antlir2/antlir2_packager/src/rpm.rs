@@ -20,6 +20,10 @@ use anyhow::Result;
 use chrono::prelude::*;
 use itertools::Itertools;
 use libcap::FileExt as _;
+use nix::unistd::Gid;
+use nix::unistd::Group;
+use nix::unistd::Uid;
+use nix::unistd::User;
 use serde::Deserialize;
 use tempfile::NamedTempFile;
 
@@ -266,10 +270,16 @@ AutoProv: {autoprov}
                 }
 
                 let metadata = f.metadata().context("while getting file metadata")?;
-                let uid = metadata.st_uid();
-                let gid = metadata.st_gid();
+                let group_name = Group::from_gid(Gid::from_raw(metadata.st_gid()))
+                    .context("while getting group name")?
+                    .expect("must be a valid group");
+                let user_name = User::from_uid(Uid::from_raw(metadata.st_uid()))
+                    .context("while getting user name")?
+                    .expect("must be a valid user");
                 // keep default mode which preserves permission bits
-                spec.push_str(format!("%attr(-, {}, {}) ", uid, gid).as_str());
+                spec.push_str(
+                    format!("%attr(-, {}, {}) ", user_name.name, group_name.name).as_str(),
+                );
 
                 spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
                 spec.push('\n');
