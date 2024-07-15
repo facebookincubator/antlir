@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "7e7f3e67c13675623168894a167fe99cf13d21e9",
+    rev = "680b63a47015e3090fdf3a1d7eeccf7e268da9fa",
     visibility = [],
 )
 
@@ -6893,6 +6893,56 @@ cargo.rust_library(
 )
 
 alias(
+    name = "fbinit",
+    actual = ":fbinit-0.2.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "fbinit-0.2.0.crate",
+    sha256 = "f9fab2ce1c23354acaba3e8f75bd00c52b4cc8ed91da7c02c8324b874320a298",
+    strip_prefix = "fbinit-0.2.0",
+    urls = ["https://static.crates.io/crates/fbinit/0.2.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "fbinit-0.2.0",
+    srcs = [":fbinit-0.2.0.crate"],
+    crate = "fbinit",
+    crate_root = "fbinit-0.2.0.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [
+        ":fbinit_macros-0.2.0",
+        ":quickcheck-1.0.3",
+    ],
+)
+
+http_archive(
+    name = "fbinit_macros-0.2.0.crate",
+    sha256 = "0e1b8281b24c3488f292c860b4a6608425bac12a69ce5b16e8f3b1582b5c7083",
+    strip_prefix = "fbinit_macros-0.2.0",
+    urls = ["https://static.crates.io/crates/fbinit_macros/0.2.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "fbinit_macros-0.2.0",
+    srcs = [":fbinit_macros-0.2.0.crate"],
+    crate = "fbinit_macros",
+    crate_root = "fbinit_macros-0.2.0.crate/lib.rs",
+    edition = "2021",
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.36",
+        ":syn-1.0.109-syn1",
+    ],
+)
+
+alias(
     name = "fbthrift",
     actual = ":fbthrift-0.0.1+unstable",
     visibility = ["PUBLIC"],
@@ -7075,17 +7125,13 @@ cargo.rust_library(
     edition = "2018",
     features = [
         "any_impl",
-        "any_zlib",
         "default",
-        "libz-sys",
         "miniz_oxide",
         "rust_backend",
-        "zlib",
     ],
     visibility = [],
     deps = [
         ":crc32fast-1.4.2",
-        ":libz-sys-1.1.18",
         ":miniz_oxide-0.7.4",
     ],
 )
@@ -10464,6 +10510,9 @@ buildscript_run(
     name = "libz-sys-1.1.18-build-script-run",
     package_name = "libz-sys",
     buildscript_rule = ":libz-sys-1.1.18-build-script-build",
+    env = {
+        "OPT_LEVEL": "3",
+    },
     features = [
         "default",
         "libc",
