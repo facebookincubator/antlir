@@ -35,7 +35,6 @@ use fxhash::FxHashSet;
 use itertools::Itertools;
 use json_arg::JsonFile;
 use jwalk::WalkDir;
-use tracing::trace;
 use tracing::warn;
 
 #[derive(Parser)]
@@ -72,7 +71,6 @@ fn populate_files(tx: &mut Transaction, root: &Path) -> Result<()> {
             .strip_prefix(root)
             .context("all paths must start with root dir")?;
         let path = Path::new("/").join(relpath);
-        trace!("adding {path:?}");
         let meta = entry
             .metadata()
             .with_context(|| format!("while statting {}", full_path.display()))?;
