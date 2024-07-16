@@ -40,7 +40,7 @@ def test_rpms(
         parent_layer = parent_layer,
         features = features + [
             feature.remove(path = "/etc/dnf/dnf.conf", must_exist = False),
-            feature.install(src = "//antlir:empty", dst = "/etc/dnf/dnf.conf"),
+            feature.install(src = "antlir//antlir:empty", dst = "/etc/dnf/dnf.conf"),
         ],
         dnf_additional_repos = dnf_additional_repos,
         dnf_versionlock = dnf_versionlock,

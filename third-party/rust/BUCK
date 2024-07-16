@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "d23fa4338728125f90488fcb85446b3e1d368257",
+    rev = "4a355733891136014c1650693851180339722382",
     visibility = [],
 )
 
@@ -6917,6 +6917,30 @@ cargo.rust_library(
         ":fbinit_macros-0.2.0",
         ":quickcheck-1.0.3",
     ],
+)
+
+alias(
+    name = "fbinit-tokio",
+    actual = ":fbinit-tokio-0.1.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "fbinit-tokio-0.1.0.crate",
+    sha256 = "317d2fa7f2ba45f8a5f7e4c6f3231d91348a655d54b9a59ba3d5904386995c92",
+    strip_prefix = "fbinit-tokio-0.1.0",
+    urls = ["https://static.crates.io/crates/fbinit-tokio/0.1.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "fbinit-tokio-0.1.0",
+    srcs = [":fbinit-tokio-0.1.0.crate"],
+    crate = "fbinit_tokio",
+    crate_root = "fbinit-tokio-0.1.0.crate/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [":tokio-1.38.0"],
 )
 
 http_archive(

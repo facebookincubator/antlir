@@ -231,7 +231,7 @@ def _rust_bindgen_library(name: str, header: str, **kwargs):
 def _rust_python_extension(name: str, **kwargs):
     native.alias(
         name = name,
-        actual = "//antlir:empty",
+        actual = "antlir//antlir:empty",
     )
     print("TODO: rust_python_extension")
 
