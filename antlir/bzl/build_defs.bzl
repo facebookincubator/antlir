@@ -254,6 +254,15 @@ def _normalize_rust_dep(dep):
         return dep
     return shim.third_party.library(dep, platform = "rust")
 
+def _echo(ctx: AnalysisContext) -> list[Provider]:
+    artifact = ctx.actions.write(ctx.label.name, ctx.attrs.content)
+    return [DefaultInfo(default_output = artifact)]
+
+echo = rule(
+    impl = _echo,
+    attrs = {"content": attrs.string()},
+)
+
 def internal_external(*, fb, oss):
     if is_facebook:
         return fb
