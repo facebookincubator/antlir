@@ -281,4 +281,3 @@ third_party = struct(
     source = shim.third_party.source,
     libraries = _third_party_libraries,
 )
-thrift_library = shim.thrift_library
