@@ -205,6 +205,11 @@ def _rust_common(rule, **kwargs):
         kwargs["deps"] = selects.apply(kwargs.pop("deps", []), lambda deps: deps + list(kwargs.pop("fb_deps", [])))
         if kwargs.get("unittests", False):
             kwargs["test_deps"] = list(kwargs.pop("test_deps", [])) + list(kwargs.pop("fb_test_deps", []))
+        else:
+            kwargs.pop("fb_test_deps", None)
+    else:
+        kwargs.pop("fb_deps", None)
+        kwargs.pop("fb_test_deps", None)
 
     deps = selects.apply(kwargs.pop("deps", []), lambda deps: [_normalize_rust_dep(d) for d in deps])
     rule(deps = deps, **kwargs)
