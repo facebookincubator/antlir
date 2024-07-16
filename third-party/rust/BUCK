@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "680b63a47015e3090fdf3a1d7eeccf7e268da9fa",
+    rev = "d23fa4338728125f90488fcb85446b3e1d368257",
     visibility = [],
 )
 
@@ -1014,18 +1014,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "async-executor-1.12.0.crate",
-    sha256 = "c8828ec6e544c02b0d6691d21ed9f9218d0384a82542855073c2a3f58304aaf0",
-    strip_prefix = "async-executor-1.12.0",
-    urls = ["https://static.crates.io/crates/async-executor/1.12.0/download"],
+    name = "async-executor-1.13.0.crate",
+    sha256 = "d7ebdfa2ebdab6b1760375fa7d6f382b9f486eac35fc994625a00e89280bdbb7",
+    strip_prefix = "async-executor-1.13.0",
+    urls = ["https://static.crates.io/crates/async-executor/1.13.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "async-executor-1.12.0",
-    srcs = [":async-executor-1.12.0.crate"],
+    name = "async-executor-1.13.0",
+    srcs = [":async-executor-1.13.0.crate"],
     crate = "async_executor",
-    crate_root = "async-executor-1.12.0.crate/src/lib.rs",
+    crate_root = "async-executor-1.13.0.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
     deps = [
@@ -24911,7 +24911,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":async-broadcast-0.7.1",
-        ":async-executor-1.12.0",
+        ":async-executor-1.13.0",
         ":async-fs-2.1.2",
         ":async-io-2.3.3",
         ":async-lock-3.4.0",
