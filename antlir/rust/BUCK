@@ -1,5 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_library", "rust_binary", "rust_python_extension", "third_party")
-load("//antlir/bzl:shell.bzl", "shell")
+load("//antlir/bzl:build_defs.bzl", "echo", "export_file", "python_library", "rust_binary", "rust_python_extension", "third_party")
 load(":modules.bzl", "extension_modules", "extension_rust_targets")
 
 oncall("antlir")
@@ -43,11 +42,9 @@ register_modules_src.extend(["submodule!({}, \"{}\", py, m)?;".format(crate, mod
 
 register_modules_src.append("Ok(())\n}")
 
-buck_genrule(
+echo(
     name = "register_modules.rs",
-    cmd = "echo {} > $OUT".format(shell.quote(
-        "\n".join(register_modules_src),
-    )),
+    content = "\n".join(register_modules_src) + "\n",
 )
 
 rust_binary(
