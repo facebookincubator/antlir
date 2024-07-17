@@ -76,10 +76,7 @@ def _wrap_internal(fn, args, kwargs):
     # case it's read-only, so generate a new list with its contents.
     # We pull off both `labels` and `tags` just to make sure that we get both
     # and then recombine them into the expected arg name.
-    kwargs[label_arg] = kwargs.pop("labels", []) + kwargs.pop("tags", []) + ["antlir_macros"]
-    # TODO: kill the 'antlir_macros' label - it means that all genrules get
-    # forced to local-only. Unfortunately tons and tons of them actually need to
-    # be run locally, but we can do better when more antlir1-isms are gone.
+    kwargs[label_arg] = kwargs.pop("labels", []) + kwargs.pop("tags", [])
 
     # Antlir build outputs should not be visible outside of antlir by default. This
     # helps prevent our abstractions from leaking into other codebases as Antlir
