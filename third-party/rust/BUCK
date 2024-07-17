@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "4a355733891136014c1650693851180339722382",
+    rev = "91c19bade2b844afcb78ec08e3ab328ae2ae7ed1",
     visibility = [],
 )
 
@@ -1008,7 +1008,7 @@ cargo.rust_library(
         ":futures-io-0.3.30",
         ":memchr-2.7.4",
         ":pin-project-lite-0.2.14",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":zstd-safe-7.2.0",
     ],
 )
@@ -1216,7 +1216,7 @@ cargo.rust_library(
             deps = [
                 ":async-channel-2.3.1",
                 ":async-io-2.3.3",
-                ":async-signal-0.2.8",
+                ":async-signal-0.2.9",
                 ":async-task-4.7.1",
                 ":rustix-0.38.34",
             ],
@@ -1225,7 +1225,7 @@ cargo.rust_library(
             deps = [
                 ":async-channel-2.3.1",
                 ":async-io-2.3.3",
-                ":async-signal-0.2.8",
+                ":async-signal-0.2.9",
                 ":async-task-4.7.1",
                 ":rustix-0.38.34",
             ],
@@ -1233,7 +1233,7 @@ cargo.rust_library(
         "macos-arm64": dict(
             deps = [
                 ":async-io-2.3.3",
-                ":async-signal-0.2.8",
+                ":async-signal-0.2.9",
                 ":rustix-0.38.34",
                 ":rustix-0.38.34",
             ],
@@ -1241,7 +1241,7 @@ cargo.rust_library(
         "macos-x86_64": dict(
             deps = [
                 ":async-io-2.3.3",
-                ":async-signal-0.2.8",
+                ":async-signal-0.2.9",
                 ":rustix-0.38.34",
                 ":rustix-0.38.34",
             ],
@@ -1295,18 +1295,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "async-signal-0.2.8.crate",
-    sha256 = "794f185324c2f00e771cd9f1ae8b5ac68be2ca7abb129a87afd6e86d228bc54d",
-    strip_prefix = "async-signal-0.2.8",
-    urls = ["https://static.crates.io/crates/async-signal/0.2.8/download"],
+    name = "async-signal-0.2.9.crate",
+    sha256 = "dfb3634b73397aa844481f814fad23bbf07fdb0eabec10f2eb95e58944b1ec32",
+    strip_prefix = "async-signal-0.2.9",
+    urls = ["https://static.crates.io/crates/async-signal/0.2.9/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "async-signal-0.2.8",
-    srcs = [":async-signal-0.2.8.crate"],
+    name = "async-signal-0.2.9",
+    srcs = [":async-signal-0.2.9.crate"],
     crate = "async_signal",
-    crate_root = "async-signal-0.2.8.crate/src/lib.rs",
+    crate_root = "async-signal-0.2.9.crate/src/lib.rs",
     edition = "2018",
     platform = {
         "linux-arm64": dict(
@@ -1612,7 +1612,7 @@ cargo.rust_library(
         "tokio_1",
     ],
     named_deps = {
-        "tokio_1": ":tokio-1.38.0",
+        "tokio_1": ":tokio-1.38.1",
     },
     visibility = [],
     deps = [
@@ -3034,7 +3034,7 @@ cargo.rust_library(
         ":lazy_static-1.5.0",
         ":once_cell-1.19.0",
         ":thiserror-1.0.62",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -4178,6 +4178,12 @@ cargo.rust_library(
         ":itoa-1.0.11",
         ":ryu-1.0.18",
     ],
+)
+
+alias(
+    name = "concurrent-queue",
+    actual = ":concurrent-queue-2.5.0",
+    visibility = ["PUBLIC"],
 )
 
 http_archive(
@@ -6940,7 +6946,7 @@ cargo.rust_library(
     crate_root = "fbinit-tokio-0.1.0.crate/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":tokio-1.38.0"],
+    deps = [":tokio-1.38.1"],
 )
 
 http_archive(
@@ -8367,7 +8373,7 @@ cargo.rust_library(
         ":http-0.2.12",
         ":indexmap-2.2.6",
         ":slab-0.4.9",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tokio-util-0.7.11",
         ":tracing-0.1.40",
     ],
@@ -8889,7 +8895,7 @@ cargo.rust_library(
         ":serde-1.0.204",
         ":serde_json-1.0.120",
         ":serde_urlencoded-0.7.1",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -8980,7 +8986,7 @@ cargo.rust_library(
         ":itoa-1.0.11",
         ":pin-project-lite-0.2.14",
         ":socket2-0.5.7",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tower-service-0.3.2",
         ":tracing-0.1.40",
         ":want-0.3.1",
@@ -9027,7 +9033,7 @@ cargo.rust_library(
         ":log-0.4.22",
         ":rustls-0.21.12",
         ":rustls-native-certs-0.6.3",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tokio-rustls-0.24.1",
     ],
 )
@@ -9057,7 +9063,7 @@ cargo.rust_library(
         ":bytes-1.6.1",
         ":hyper-0.14.30",
         ":native-tls-0.2.12",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tokio-native-tls-0.3.1",
     ],
 )
@@ -9336,7 +9342,7 @@ cargo.rust_library(
         ":number_prefix-0.4.0",
         ":portable-atomic-1.6.0",
         ":rayon-1.10.0",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":unicode-segmentation-1.11.0",
         ":unicode-width-0.1.13",
     ],
@@ -10432,7 +10438,6 @@ third_party_rust_cxx_library(
         "-DHAVE_ISNAN",
         "-DHAVE_LOCALTIME_R",
     ],
-    preferred_linkage = "static",
     preprocessor_flags = ["-I$(location :libsqlite3-sys-0.26.0.crate)/sqlite3"],
     visibility = [],
 )
@@ -11732,7 +11737,7 @@ cargo.rust_library(
         ":serde_json-1.0.120",
         ":socket2-0.4.10",
         ":thiserror-1.0.62",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tokio-native-tls-0.3.1",
         ":tokio-util-0.7.11",
         ":twox-hash-1.6.3",
@@ -15271,7 +15276,7 @@ cargo.rust_library(
         ":pin-project-lite-0.2.14",
         ":pyo3-0.21.2",
         ":pyo3-asyncio-macros-0.21.0",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -15552,43 +15557,6 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [":proc-macro2-1.0.86"],
-)
-
-alias(
-    name = "ractor",
-    actual = ":ractor-0.10.3",
-    visibility = ["PUBLIC"],
-)
-
-http_archive(
-    name = "ractor-0.10.3.crate",
-    sha256 = "11e9a53fcabb680bb70a3ce495e744676ee7e1800a188e01a68d18916a1b48e1",
-    strip_prefix = "ractor-0.10.3",
-    urls = ["https://static.crates.io/crates/ractor/0.10.3/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "ractor-0.10.3",
-    srcs = [":ractor-0.10.3.crate"],
-    crate = "ractor",
-    crate_root = "ractor-0.10.3.crate/src/lib.rs",
-    edition = "2021",
-    features = [
-        "async-trait",
-        "default",
-        "tokio_runtime",
-    ],
-    visibility = [],
-    deps = [
-        ":async-trait-0.1.81",
-        ":dashmap-5.5.3",
-        ":futures-0.3.30",
-        ":once_cell-1.19.0",
-        ":strum-0.26.3",
-        ":tokio-1.38.0",
-        ":tracing-0.1.40",
-    ],
 )
 
 http_archive(
@@ -16342,7 +16310,7 @@ cargo.rust_library(
                 ":rustls-0.21.12",
                 ":rustls-native-certs-0.6.3",
                 ":rustls-pemfile-1.0.4",
-                ":tokio-1.38.0",
+                ":tokio-1.38.1",
                 ":tokio-native-tls-0.3.1",
                 ":tokio-rustls-0.24.1",
                 ":tokio-util-0.7.11",
@@ -16371,7 +16339,7 @@ cargo.rust_library(
                 ":rustls-0.21.12",
                 ":rustls-native-certs-0.6.3",
                 ":rustls-pemfile-1.0.4",
-                ":tokio-1.38.0",
+                ":tokio-1.38.1",
                 ":tokio-native-tls-0.3.1",
                 ":tokio-rustls-0.24.1",
                 ":tokio-util-0.7.11",
@@ -16401,7 +16369,7 @@ cargo.rust_library(
                 ":rustls-native-certs-0.6.3",
                 ":rustls-pemfile-1.0.4",
                 ":system-configuration-0.5.1",
-                ":tokio-1.38.0",
+                ":tokio-1.38.1",
                 ":tokio-native-tls-0.3.1",
                 ":tokio-rustls-0.24.1",
                 ":tokio-util-0.7.11",
@@ -16431,7 +16399,7 @@ cargo.rust_library(
                 ":rustls-native-certs-0.6.3",
                 ":rustls-pemfile-1.0.4",
                 ":system-configuration-0.5.1",
-                ":tokio-1.38.0",
+                ":tokio-1.38.1",
                 ":tokio-native-tls-0.3.1",
                 ":tokio-rustls-0.24.1",
                 ":tokio-util-0.7.11",
@@ -16460,7 +16428,7 @@ cargo.rust_library(
                 ":rustls-0.21.12",
                 ":rustls-native-certs-0.6.3",
                 ":rustls-pemfile-1.0.4",
-                ":tokio-1.38.0",
+                ":tokio-1.38.1",
                 ":tokio-native-tls-0.3.1",
                 ":tokio-rustls-0.24.1",
                 ":tokio-util-0.7.11",
@@ -16490,7 +16458,7 @@ cargo.rust_library(
                 ":rustls-0.21.12",
                 ":rustls-native-certs-0.6.3",
                 ":rustls-pemfile-1.0.4",
-                ":tokio-1.38.0",
+                ":tokio-1.38.1",
                 ":tokio-native-tls-0.3.1",
                 ":tokio-rustls-0.24.1",
                 ":tokio-util-0.7.11",
@@ -19169,7 +19137,7 @@ cargo.rust_library(
     deps = [
         ":libc-0.2.155",
         ":signal-hook-0.3.17",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -20187,9 +20155,7 @@ cargo.rust_library(
     crate_root = "strum-0.26.3.crate/src/lib.rs",
     edition = "2018",
     features = [
-        "default",
         "derive",
-        "std",
         "strum_macros",
     ],
     visibility = [],
@@ -21473,23 +21439,23 @@ cargo.rust_library(
 
 alias(
     name = "tokio",
-    actual = ":tokio-1.38.0",
+    actual = ":tokio-1.38.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tokio-1.38.0.crate",
-    sha256 = "ba4f4a02a7a80d6f274636f0aa95c7e383b912d41fe721a31f29e29698585a4a",
-    strip_prefix = "tokio-1.38.0",
-    urls = ["https://static.crates.io/crates/tokio/1.38.0/download"],
+    name = "tokio-1.38.1.crate",
+    sha256 = "eb2caba9f80616f438e09748d5acda951967e1ea58508ef53d9c6402485a46df",
+    strip_prefix = "tokio-1.38.1",
+    urls = ["https://static.crates.io/crates/tokio/1.38.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tokio-1.38.0",
-    srcs = [":tokio-1.38.0.crate"],
+    name = "tokio-1.38.1",
+    srcs = [":tokio-1.38.1.crate"],
     crate = "tokio",
-    crate_root = "tokio-1.38.0.crate/src/lib.rs",
+    crate_root = "tokio-1.38.1.crate/src/lib.rs",
     edition = "2021",
     features = [
         "bytes",
@@ -21632,7 +21598,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":native-tls-0.2.12",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -21660,7 +21626,7 @@ cargo.rust_library(
     deps = [
         ":pin-project-1.1.5",
         ":rand-0.8.5",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -21693,7 +21659,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":rustls-0.21.12",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -21723,7 +21689,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":rustls-0.22.4",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -21761,7 +21727,7 @@ cargo.rust_library(
     deps = [
         ":futures-core-0.3.30",
         ":pin-project-lite-0.2.14",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tokio-util-0.7.11",
     ],
 )
@@ -21803,7 +21769,7 @@ cargo.rust_library(
         ":log-0.4.22",
         ":rustls-0.21.12",
         ":rustls-native-certs-0.6.3",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tokio-rustls-0.24.1",
         ":tungstenite-0.19.0",
     ],
@@ -21833,7 +21799,7 @@ cargo.rust_library(
     deps = [
         ":futures-util-0.3.30",
         ":log-0.4.22",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tungstenite-0.21.0",
     ],
 )
@@ -21882,7 +21848,7 @@ cargo.rust_library(
         ":futures-util-0.3.30",
         ":pin-project-lite-0.2.14",
         ":slab-0.4.9",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
     ],
 )
 
@@ -22434,7 +22400,7 @@ cargo.rust_library(
         ":smallvec-1.13.2",
         ":thiserror-1.0.62",
         ":tinyvec-1.8.0",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":url-2.5.2",
     ],
 )
@@ -22486,7 +22452,7 @@ cargo.rust_library(
         ":resolv-conf-0.7.0",
         ":smallvec-1.13.2",
         ":thiserror-1.0.62",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":trust-dns-proto-0.20.4",
     ],
 )
@@ -23927,7 +23893,7 @@ cargo.rust_library(
         ":serde-1.0.204",
         ":serde_json-1.0.120",
         ":serde_urlencoded-0.7.1",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tokio-rustls-0.25.0",
         ":tokio-tungstenite-0.21.0",
         ":tokio-util-0.7.11",
@@ -24954,7 +24920,7 @@ cargo.rust_library(
         ":serde_repr-0.1.19",
         ":sha1-0.10.6",
         ":static_assertions-1.1.0",
-        ":tokio-1.38.0",
+        ":tokio-1.38.1",
         ":tracing-0.1.40",
         ":xdg-home-1.2.0",
         ":zbus_macros-4.3.1",
@@ -25362,7 +25328,6 @@ third_party_rust_cxx_library(
         "-DZSTDERRORLIB_VISIBILITY=",
         "-DZSTD_LEGACY_SUPPORT=1",
     ],
-    preferred_linkage = "static",
     visibility = [],
 )
 
