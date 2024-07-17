@@ -6,6 +6,7 @@
 # @oss-disable
 # @oss-disable
 # @oss-disable
+# @oss-disable
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
@@ -139,6 +140,7 @@ vm_test = rule_with_default_target_platform(_vm_test)
 
 def _get_internal_labels(test_rule, run_as_bundle: bool):
     wrapper_labels = ["heavyweight"]
+    # @oss-disable
     if run_as_bundle:
         wrapper_labels.append(special_tags.run_as_bundle)
     if fully_qualified_test_name_rollout.use_fully_qualified_name():
