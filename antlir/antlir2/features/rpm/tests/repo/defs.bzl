@@ -31,6 +31,7 @@ def test_rpm(
         name = target_name + "--layer",
         features = features,
         parent_layer = parent_layer,
+        rootless = True,
         visibility = [":{}--package".format(target_name)],
     )
     package.rpm(

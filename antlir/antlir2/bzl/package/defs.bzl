@@ -126,6 +126,7 @@ def _generic_impl(
 
 # Create a new buck2 rule that implements a specific package format.
 def _new_package_rule(
+        *,
         format: str,
         rule_attrs: dict[str, Attr] = {},
         dot_meta: bool = True,
@@ -302,7 +303,6 @@ _rpm, _rpm_anon = _new_package_rule(
     },
     format = "rpm",
     dot_meta = False,
-    sudo = True,
     force_extension = "rpm",
 )
 
@@ -373,7 +373,7 @@ package = struct(
     cpio_zst = package_macro(_cpio_zst),
     ext3 = package_macro(_ext3),
     gpt = gpt,
-    rpm = package_macro(_rpm),
+    rpm = package_macro(_rpm, always_rootless = True),
     sendstream_v2 = sendstream_v2,
     squashfs = package_macro(_squashfs),
     tar = package_macro(_tar),
