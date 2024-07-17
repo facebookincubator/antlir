@@ -11,7 +11,11 @@ load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/bzl/build_defs.bzl", "get_visibility")
 
-def package_macro(buck_rule, *, always_needs_root: bool = False):
+def package_macro(
+        buck_rule,
+        *,
+        always_needs_root: bool = False,
+        always_rootless: bool = False):
     def _inner(
             use_default_os_from_package: bool | None = None,
             default_os: str | None = None,
@@ -32,6 +36,8 @@ def package_macro(buck_rule, *, always_needs_root: bool = False):
             kwargs["compatible_with"] = kwargs.pop("compatible_with", []) + [rootless_cfg.refs["rooted"]]
         elif rootless == None:
             rootless = get_antlir2_rootless()
+        if always_rootless:
+            rootless = True
         buck_rule(
             default_os = default_os,
             rootless = rootless,
