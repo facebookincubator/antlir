@@ -124,6 +124,7 @@ def _cpp_library(*args, **kwargs):
     _wrap_internal(native.cxx_library, args, kwargs)
 
 def _cpp_unittest(*args, **kwargs):
+    kwargs.pop("supports_static_listing", None)
     _wrap_internal(native.cxx_test, args, kwargs)
 
 def _cxx_genrule(*args, **kwargs):
@@ -197,6 +198,7 @@ def _rust_binary(*, name: str, **kwargs):
     if unittests:
         _rust_unittest(name = name + "-unittests", **kwargs)
     kwargs["name"] = name
+    kwargs.pop("allocator", None)
     kwargs.pop("nodefaultlibs", None)
     _wrap_internal(native.rust_binary, [], kwargs)
 
