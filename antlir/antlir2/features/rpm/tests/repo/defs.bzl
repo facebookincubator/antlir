@@ -11,6 +11,7 @@ load("//antlir/bzl:types.bzl", "types")
 types.lint_noop()
 
 def test_rpm(
+        *,
         name: str,
         version: str,
         release: str,
@@ -19,6 +20,7 @@ def test_rpm(
         license: str = "NONE",
         requires: list[str] = [],
         requires_post: list[str] = [],
+        provides: list[str] = [],
         recommends: list[str] = [],
         features = [],
         parent_layer: str | None = None,
@@ -42,6 +44,7 @@ def test_rpm(
         license = license,
         requires = requires,
         requires_post = requires_post,
+        provides = provides,
         recommends = recommends,
         post_install_script = post_install_script,
         changelog = changelog,
