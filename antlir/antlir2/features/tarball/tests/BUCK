@@ -49,6 +49,7 @@ buck_genrule(
 
 EOF
     """,
+    labels = ["uses_fakeroot"],
 )
 
 buck_genrule(
