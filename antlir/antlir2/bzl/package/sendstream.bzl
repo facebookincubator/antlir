@@ -78,7 +78,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "spec.json",
         {"sendstream": {
             "incremental_parent": ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink if ctx.attrs.incremental_parent else None,
-            "layer": ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
             "subvol_symlink": subvol_symlink.as_output(),
             "volume_name": ctx.attrs.volume_name,
         }},
@@ -89,6 +88,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "sudo",
             ctx.attrs.antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
+            cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
             cmd_args(sendstream.as_output(), format = "--out={}"),
         ),
         local_only = True,  # needs root and local subvol

@@ -28,14 +28,13 @@ use crate::PackageFormat;
 #[serde(deny_unknown_fields)]
 pub struct Ext3 {
     build_appliance: BuildAppliance,
-    layer: PathBuf,
     label: Option<String>,
     size_mb: Option<u64>,
     free_mb: u64,
 }
 
 impl PackageFormat for Ext3 {
-    fn build(&self, out: &Path) -> Result<()> {
+    fn build(&self, out: &Path, layer: &Path) -> Result<()> {
         let rootless = antlir2_rootless::init().context("while initializing rootless")?;
         File::create(out).context("failed to create output file")?;
 
@@ -44,7 +43,7 @@ impl PackageFormat for Ext3 {
             .readonly()
             .tmpfs(Path::new("/__antlir2__/out"))
             .outputs(("/__antlir2__/out/ext3", out))
-            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((Path::new("/__antlir2__/root"), layer))
             .inputs((
                 PathBuf::from("/__antlir2__/working_directory"),
                 std::env::current_dir()?,
@@ -67,7 +66,7 @@ impl PackageFormat for Ext3 {
         } else {
             let total_file_size = ByteSize::b(rootless.as_root(|| {
                 Ok::<_, Error>(
-                    WalkDir::new(&self.layer)
+                    WalkDir::new(layer)
                         .into_iter()
                         .map(|entry| {
                             entry.context("while walking directory").and_then(|e| {

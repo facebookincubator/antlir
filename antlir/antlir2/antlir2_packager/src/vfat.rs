@@ -24,14 +24,13 @@ use crate::PackageFormat;
 #[serde(deny_unknown_fields)]
 pub struct Vfat {
     build_appliance: BuildAppliance,
-    layer: PathBuf,
     fat_size: Option<u16>,
     label: Option<String>,
     size_mb: u64,
 }
 
 impl PackageFormat for Vfat {
-    fn build(&self, out: &Path) -> Result<()> {
+    fn build(&self, out: &Path, layer: &Path) -> Result<()> {
         let file = File::create(out).context("failed to create output file")?;
         file.set_len(self.size_mb * 1024 * 1024)
             .context("failed to set output to specified size")?;
@@ -44,7 +43,7 @@ impl PackageFormat for Vfat {
             .readonly()
             .tmpfs(Path::new("/__antlir2__/out"))
             .outputs(("/__antlir2__/out/vfat", out))
-            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((Path::new("/__antlir2__/root"), layer))
             .inputs((
                 PathBuf::from("/__antlir2__/working_directory"),
                 std::env::current_dir()?,
@@ -68,7 +67,7 @@ impl PackageFormat for Vfat {
             .context("failed to mkfs.vfat")?;
 
         // mcopy all the files from the input layer directly into the vfat image.
-        let paths = std::fs::read_dir(&self.layer).context("Failed to list input directory")?;
+        let paths = std::fs::read_dir(layer).context("Failed to list input directory")?;
         let mut sources = Vec::new();
         for path in paths {
             sources.push(

@@ -9,7 +9,6 @@ use std::fs::Permissions;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
-use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -18,17 +17,16 @@ use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct UnprivilegedDir {
-    layer: PathBuf,
-}
+pub struct UnprivilegedDir {}
 
 impl UnprivilegedDir {
     pub(crate) fn build(
         &self,
         out: &Path,
+        layer: &Path,
         root_guard: Option<antlir2_rootless::EscalationGuard>,
     ) -> Result<()> {
-        let layer = self.layer.canonicalize()?;
+        let layer = layer.canonicalize()?;
         std::fs::create_dir(out).context("while creating root")?;
         std::os::unix::fs::lchown(
             out,

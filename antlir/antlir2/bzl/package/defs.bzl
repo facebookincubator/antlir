@@ -51,9 +51,7 @@ def _generic_impl_with_layer(
         output_name += "." + force_extension
 
     package = ctx.actions.declare_output(output_name, dir = is_dir)
-    spec_opts = {
-        "layer": layer[LayerInfo].contents.subvol_symlink,
-    }
+    spec_opts = {}
     if uses_build_appliance:
         spec_opts["build_appliance"] = build_appliance[BuildApplianceInfo].dir
     for key in rule_attr_keys:
@@ -69,6 +67,7 @@ def _generic_impl_with_layer(
             cmd_args("sudo", "--preserve-env=TMPDIR") if (sudo and not ctx.attrs._rootless) else cmd_args(),
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
+            cmd_args(layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
             "--dir" if is_dir else cmd_args(),
             cmd_args(package.as_output(), format = "--out={}"),
             "--rootless" if ctx.attrs._rootless else cmd_args(),

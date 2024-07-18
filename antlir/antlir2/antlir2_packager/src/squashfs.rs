@@ -24,11 +24,10 @@ use crate::PackageFormat;
 #[serde(deny_unknown_fields)]
 pub struct Squashfs {
     build_appliance: BuildAppliance,
-    layer: PathBuf,
 }
 
 impl PackageFormat for Squashfs {
-    fn build(&self, out: &Path) -> Result<()> {
+    fn build(&self, out: &Path, layer: &Path) -> Result<()> {
         File::create(out).context("failed to create output file")?;
 
         let isol_context = IsolationContext::builder(self.build_appliance.path())
@@ -36,7 +35,7 @@ impl PackageFormat for Squashfs {
             .readonly()
             .tmpfs(Path::new("/__antlir2__/out"))
             .outputs(("/__antlir2__/out/squashfs", out))
-            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((Path::new("/__antlir2__/root"), layer))
             .inputs((
                 PathBuf::from("/__antlir2__/working_directory"),
                 std::env::current_dir()?,
