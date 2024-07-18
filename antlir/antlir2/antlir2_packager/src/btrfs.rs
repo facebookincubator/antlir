@@ -19,6 +19,7 @@ use tempfile::NamedTempFile;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Btrfs {
     btrfs_packager_path: Vec<PathBuf>,
     spec: serde_json::Value,

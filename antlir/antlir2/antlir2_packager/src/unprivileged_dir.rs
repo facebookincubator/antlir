@@ -17,6 +17,7 @@ use serde::Deserialize;
 use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct UnprivilegedDir {
     layer: PathBuf,
 }

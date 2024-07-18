@@ -21,6 +21,7 @@ use crate::BuildAppliance;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Tar {
     build_appliance: BuildAppliance,
     layer: PathBuf,

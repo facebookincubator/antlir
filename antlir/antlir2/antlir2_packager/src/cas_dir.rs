@@ -18,6 +18,7 @@ use serde::Deserialize;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CasDir {
     layer: PathBuf,
 }
