@@ -209,11 +209,20 @@ impl Manifest {
                     let fd = opts
                         .open(&dst)
                         .with_context(|| format!("while opening '{}'", dst.display()))?;
-                    fchown(&fd, Some(entry.uid), Some(entry.gid))?;
+                    fchown(&fd, Some(entry.uid), Some(entry.gid))
+                        .with_context(|| format!("while chowning '{}'", dst.display()))?;
                     for xattr in &entry.xattrs {
-                        fd.set_xattr(OsStr::from_bytes(&xattr.name), &xattr.value)?;
+                        fd.set_xattr(OsStr::from_bytes(&xattr.name), &xattr.value)
+                            .with_context(|| {
+                                format!(
+                                    "while setting xattr '{}' on '{}'",
+                                    String::from_utf8_lossy(&xattr.name),
+                                    dst.display(),
+                                )
+                            })?;
                     }
-                    fd.set_permissions(Permissions::from_mode(entry.mode))?;
+                    fd.set_permissions(Permissions::from_mode(entry.mode))
+                        .with_context(|| format!("while chmodding '{}'", dst.display()))?;
                 }
                 Content::Symlink(target) => {
                     symlink(target, &dst).with_context(|| {
@@ -230,13 +239,16 @@ impl Manifest {
                         SFlag::from_bits_truncate(entry.mode),
                         Mode::from_bits_truncate(entry.mode),
                         *rdev,
-                    )?;
+                    )
+                    .with_context(|| format!("while making device node '{}'", dst.display()))?;
                 }
                 Content::Fifo => {
-                    mkfifo(&dst, Mode::from_bits_truncate(entry.mode))?;
+                    mkfifo(&dst, Mode::from_bits_truncate(entry.mode))
+                        .with_context(|| format!("while making fifo '{}'", dst.display()))?;
                 }
                 Content::Whiteout => {
-                    mknod(&dst, SFlag::S_IFCHR, Mode::empty(), makedev(0, 0))?;
+                    mknod(&dst, SFlag::S_IFCHR, Mode::empty(), makedev(0, 0))
+                        .with_context(|| format!("while making whiteout '{}'", dst.display()))?;
                 }
             };
         }
