@@ -32,6 +32,7 @@ use crate::BuildAppliance;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Rpm {
     build_appliance: BuildAppliance,
     layer: PathBuf,

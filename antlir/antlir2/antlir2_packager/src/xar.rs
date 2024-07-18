@@ -23,6 +23,7 @@ use uuid::Uuid;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Xar {
     squashfs: PathBuf,
     executable: PathBuf,

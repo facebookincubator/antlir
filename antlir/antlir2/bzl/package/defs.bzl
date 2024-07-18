@@ -42,7 +42,8 @@ def _generic_impl_with_layer(
         can_be_partition: bool,
         is_dir: bool,
         sudo: bool,
-        force_extension: str | None) -> list[Provider]:
+        force_extension: str | None,
+        uses_build_appliance: bool) -> list[Provider]:
     build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
 
     output_name = ctx.attrs.out or ctx.label.name
@@ -51,9 +52,10 @@ def _generic_impl_with_layer(
 
     package = ctx.actions.declare_output(output_name, dir = is_dir)
     spec_opts = {
-        "build_appliance": build_appliance[BuildApplianceInfo].dir,
         "layer": layer[LayerInfo].contents.subvol_symlink,
     }
+    if uses_build_appliance:
+        spec_opts["build_appliance"] = build_appliance[BuildApplianceInfo].dir
     for key in rule_attr_keys:
         spec_opts[key] = getattr(ctx.attrs, key)
 
@@ -88,7 +90,8 @@ def _generic_impl(
         can_be_partition: bool,
         is_dir: bool,
         sudo: bool,
-        force_extension: str | None):
+        force_extension: str | None,
+        uses_build_appliance: bool):
     if ctx.attrs.dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
             "flavor": ctx.attrs.flavor,
@@ -111,6 +114,7 @@ def _generic_impl(
             is_dir = is_dir,
             sudo = sudo,
             force_extension = force_extension,
+            uses_build_appliance = uses_build_appliance,
         ))
     else:
         return _generic_impl_with_layer(
@@ -122,6 +126,7 @@ def _generic_impl(
             is_dir = is_dir,
             sudo = sudo,
             force_extension = force_extension,
+            uses_build_appliance = uses_build_appliance,
         )
 
 # Create a new buck2 rule that implements a specific package format.
@@ -133,7 +138,8 @@ def _new_package_rule(
         can_be_partition: bool = False,
         is_dir: bool = False,
         sudo: bool = False,
-        force_extension: str | None = None):
+        force_extension: str | None = None,
+        uses_build_appliance: bool = False):
     kwargs = {
         "attrs": default_attrs | common_attrs | rule_attrs | {
             "dot_meta": attrs.bool(default = dot_meta),
@@ -146,6 +152,7 @@ def _new_package_rule(
             is_dir = is_dir,
             sudo = sudo,
             force_extension = force_extension,
+            uses_build_appliance = uses_build_appliance,
         ),
     }
     return (
@@ -251,6 +258,7 @@ _cas_dir, _cas_dir_anon = _new_package_rule(
 _cpio, _cpio_anon = _new_package_rule(
     format = "cpio",
     sudo = True,
+    uses_build_appliance = True,
 )
 
 _cpio_gz = _new_compressed_package_rule(
@@ -304,6 +312,7 @@ _rpm, _rpm_anon = _new_package_rule(
     format = "rpm",
     dot_meta = False,
     force_extension = "rpm",
+    uses_build_appliance = True,
 )
 
 _vfat, _vfat_anon = _new_package_rule(
@@ -315,6 +324,7 @@ _vfat, _vfat_anon = _new_package_rule(
     format = "vfat",
     sudo = True,
     can_be_partition = True,
+    uses_build_appliance = True,
 )
 
 _squashfs, squashfs_anon = _new_package_rule(
@@ -322,11 +332,13 @@ _squashfs, squashfs_anon = _new_package_rule(
     format = "squashfs",
     can_be_partition = True,
     sudo = True,
+    uses_build_appliance = True,
 )
 
 _tar, _tar_anon = _new_package_rule(
     format = "tar",
     sudo = True,
+    uses_build_appliance = True,
 )
 
 _tar_gz = _new_compressed_package_rule(
@@ -357,6 +369,7 @@ _ext3, _ext3_anon = _new_package_rule(
     },
     can_be_partition = True,
     sudo = True,
+    uses_build_appliance = True,
 )
 
 _unprivileged_dir, _unprivileged_dir_anon = _new_package_rule(

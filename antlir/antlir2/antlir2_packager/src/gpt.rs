@@ -22,6 +22,7 @@ use uuid::Uuid;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Gpt {
     disk_guid: Option<Uuid>,
     partitions: Vec<Partition>,

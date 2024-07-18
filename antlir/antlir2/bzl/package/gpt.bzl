@@ -57,7 +57,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         category = "antlir2_package",
         identifier = "gpt",
-        local_only = True,  # local subvol for ba
     )
     return [DefaultInfo(
         out,

@@ -27,6 +27,7 @@ use tracing::warn;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Sendstream {
     layer: PathBuf,
     volume_name: String,
