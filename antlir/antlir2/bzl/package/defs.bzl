@@ -310,6 +310,7 @@ _rpm, _rpm_anon = _new_package_rule(
     },
     format = "rpm",
     dot_meta = False,
+    sudo = True,
     force_extension = "rpm",
     uses_build_appliance = True,
 )
