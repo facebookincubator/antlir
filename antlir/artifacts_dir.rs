@@ -14,12 +14,13 @@ create_exception!(artifacts_dir, SigilNotFound, pyo3::exceptions::PyException);
 
 use fs_utils_rs::AntlirPath;
 
-pub fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResult<PathBuf> {
+fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResult<PathBuf> {
     match path_in_repo {
         Some(p) => Ok(p),
         None => {
             let argv0: String = py.import("sys")?.getattr("argv")?.get_item(0)?.extract()?;
-            Ok(argv0.into())
+            let argv0 = PathBuf::from(argv0);
+            Ok(argv0.canonicalize()?)
         }
     }
 }
