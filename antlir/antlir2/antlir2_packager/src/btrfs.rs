@@ -16,8 +16,6 @@ use anyhow::Result;
 use serde::Deserialize;
 use tempfile::NamedTempFile;
 
-use crate::PackageFormat;
-
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Btrfs {
@@ -25,8 +23,8 @@ pub struct Btrfs {
     spec: serde_json::Value,
 }
 
-impl PackageFormat for Btrfs {
-    fn build(&self, out: &Path) -> Result<()> {
+impl Btrfs {
+    pub fn build(&self, out: &Path) -> Result<()> {
         let btrfs_packager_path = self
             .btrfs_packager_path
             .first()

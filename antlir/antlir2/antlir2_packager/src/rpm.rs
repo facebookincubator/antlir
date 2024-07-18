@@ -35,7 +35,6 @@ use crate::PackageFormat;
 #[serde(deny_unknown_fields)]
 pub struct Rpm {
     build_appliance: BuildAppliance,
-    layer: PathBuf,
     #[serde(rename = "rpm_name")]
     name: String,
     epoch: i32,
@@ -83,7 +82,7 @@ pub struct Rpm {
 }
 
 impl PackageFormat for Rpm {
-    fn build(&self, out: &Path) -> Result<()> {
+    fn build(&self, out: &Path, layer: &Path) -> Result<()> {
         let build_requires = self
             .build_requires
             .iter()
@@ -240,7 +239,7 @@ AutoProv: {autoprov}
         // This breaks PARs, so we want to disable it.
         spec.push_str("%undefine __brp_mangle_shebangs\n");
 
-        if std::fs::read_dir(&self.layer)
+        if std::fs::read_dir(layer)
             .context("failed to list layer contents")?
             .count()
             != 0
@@ -248,7 +247,7 @@ AutoProv: {autoprov}
             spec.push_str("%install\n");
             writeln!(spec, "cp -rp \"/__antlir2__/root\"/* %{{buildroot}}/",)?;
             spec.push_str("%files\n");
-            for entry in walkdir::WalkDir::new(&self.layer) {
+            for entry in walkdir::WalkDir::new(layer) {
                 let entry = entry.context("while walking layer")?;
                 if entry.file_type().is_dir() {
                     continue;
@@ -256,7 +255,7 @@ AutoProv: {autoprov}
                 let relpath = Path::new("/").join(
                     entry
                         .path()
-                        .strip_prefix(&self.layer)
+                        .strip_prefix(layer)
                         .expect("must be under layer"),
                 );
                 if relpath == Path::new("/") {
@@ -316,7 +315,7 @@ AutoProv: {autoprov}
             ))
             .working_directory(Path::new("/__antlir2__/working_directory"))
             .inputs((Path::new("/tmp/rpmspec"), rpm_spec_file.path()))
-            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((Path::new("/__antlir2__/root"), layer))
             .outputs((Path::new("/__antlir2__/out"), output_dir.path()))
             .tmpfs(Path::new("/tmp"))
             .tmpfs(Path::new("/dev"))

@@ -19,8 +19,6 @@ use bytesize::ByteSize;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::PackageFormat;
-
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Gpt {
@@ -82,8 +80,8 @@ struct Partition {
     alignment: Option<u64>,
 }
 
-impl PackageFormat for Gpt {
-    fn build(&self, out: &Path) -> Result<()> {
+impl Gpt {
+    pub(crate) fn build(&self, out: &Path) -> Result<()> {
         // 2mb of scratch space for gpt headers
         let mut total_size = ByteSize::mb(2);
         for partition in &self.partitions {

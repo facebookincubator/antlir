@@ -29,7 +29,6 @@ use crate::PackageFormat;
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Sendstream {
-    layer: PathBuf,
     volume_name: String,
     #[serde(default)]
     incremental_parent: Option<PathBuf>,
@@ -37,9 +36,9 @@ pub struct Sendstream {
 }
 
 impl PackageFormat for Sendstream {
-    fn build(&self, out: &Path) -> Result<()> {
+    fn build(&self, out: &Path, layer: &Path) -> Result<()> {
         let rootless = antlir2_rootless::init().context("while initializing rootless")?;
-        let canonical_layer = self.layer.canonicalize()?;
+        let canonical_layer = layer.canonicalize()?;
         let subvol = Subvolume::open(&canonical_layer).context("while opening subvol")?;
         let tempdir = tempfile::tempdir_in(canonical_layer.parent().expect("cannot be /"))
             .context("while creating temp dir")?;

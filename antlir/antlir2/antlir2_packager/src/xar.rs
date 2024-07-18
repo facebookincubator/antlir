@@ -20,8 +20,6 @@ use anyhow::Result;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::PackageFormat;
-
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Xar {
@@ -32,8 +30,8 @@ pub struct Xar {
 
 const SQUASHFS_OFFSET: u64 = 4096;
 
-impl PackageFormat for Xar {
-    fn build(&self, out: &Path) -> Result<()> {
+impl Xar {
+    pub(crate) fn build(&self, out: &Path) -> Result<()> {
         let mut out = BufWriter::new(File::create(out)?);
         writeln!(out, "#!/usr/bin/env xarexec_fuse")?;
         writeln!(

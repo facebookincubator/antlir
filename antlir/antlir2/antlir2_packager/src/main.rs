@@ -33,7 +33,7 @@ mod build_appliance;
 pub(crate) use build_appliance::BuildAppliance;
 
 pub(crate) trait PackageFormat {
-    fn build(&self, out: &Path) -> Result<()>;
+    fn build(&self, out: &Path, layer: &Path) -> Result<()>;
 }
 
 #[derive(Parser, Debug)]
@@ -42,6 +42,9 @@ pub(crate) struct PackageArgs {
     #[clap(long)]
     /// Specifications for the packaging
     spec: JsonFile<Spec>,
+    #[clap(long)]
+    /// The layer being packaged
+    layer: Option<PathBuf>,
     #[clap(long)]
     dir: bool,
     #[clap(long)]
@@ -93,18 +96,24 @@ fn main() -> Result<()> {
         None
     };
 
+    let layer = args.layer.as_deref();
+
     match args.spec.into_inner() {
         Spec::Btrfs(p) => p.build(&args.out),
-        Spec::CasDir(p) => p.build(&args.out),
-        Spec::Cpio(p) => p.build(&args.out),
-        Spec::Ext3(p) => p.build(&args.out),
+        Spec::CasDir(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Cpio(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Ext3(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Gpt(p) => p.build(&args.out),
-        Spec::Rpm(p) => p.build(&args.out),
-        Spec::Sendstream(p) => p.build(&args.out),
-        Spec::Squashfs(p) => p.build(&args.out),
-        Spec::Tar(p) => p.build(&args.out),
-        Spec::UnprivilegedDir(p) => p.build(&args.out, root_guard),
-        Spec::Vfat(p) => p.build(&args.out),
+        Spec::Rpm(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Sendstream(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Squashfs(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Tar(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::UnprivilegedDir(p) => p.build(
+            &args.out,
+            layer.context("layer required for this format")?,
+            root_guard,
+        ),
+        Spec::Vfat(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Xar(p) => p.build(&args.out),
     }
 }

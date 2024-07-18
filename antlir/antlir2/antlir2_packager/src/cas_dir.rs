@@ -6,7 +6,6 @@
  */
 
 use std::path::Path;
-use std::path::PathBuf;
 
 use antlir2_cas_dir::CasDirOpts;
 use anyhow::Context;
@@ -19,14 +18,12 @@ use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct CasDir {
-    layer: PathBuf,
-}
+pub struct CasDir {}
 
 impl PackageFormat for CasDir {
-    fn build(&self, out: &Path) -> Result<()> {
+    fn build(&self, out: &Path, layer: &Path) -> Result<()> {
         antlir2_cas_dir::CasDir::dehydrate(
-            &self.layer,
+            layer,
             out.to_owned(),
             CasDirOpts::default()
                 .uid(match std::env::var("SUDO_UID") {
