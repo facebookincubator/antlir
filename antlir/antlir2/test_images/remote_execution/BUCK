@@ -34,6 +34,7 @@ image.layer(
 image_test_rpm_names(
     name = "test-rpms-installed",
     src = "rpms.txt",
+    compatible_with = ["ovr_config//cpu:x86_64"],
     labels = internal_external(
         fb = [],
         oss = ["disabled"],
