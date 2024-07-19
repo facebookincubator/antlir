@@ -12,11 +12,11 @@ _attrs = {
     "rootless": attrs.option(attrs.bool(), default = None),
 }
 
-def _transition(*, refs, attrs, constraints):
+def _transition(*, refs, attrs, constraints, overwrite: bool = False):
     rootless = refs.rootless[ConstraintValueInfo]
 
     # If there is already a configuration, keep it
-    if rootless.setting.label in constraints:
+    if rootless.setting.label in constraints and not overwrite:
         return constraints
     elif attrs.rootless:
         # Otherwise set it to rootless if rootless=True otherwise default to
