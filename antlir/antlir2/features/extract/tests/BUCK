@@ -92,6 +92,14 @@ image.layer(
             ],
             layer = ":binaries-clone-src",
         ),
+        feature.extract_from_layer(
+            binaries = [
+                # This binary extract overlaps with a subset of
+                # files extracted above.
+                "/usr/lib64/libc.so.6",
+            ],
+            layer = ":binaries-clone-src",
+        ),
     ],
     parent_layer = ":base",
 )
@@ -109,6 +117,14 @@ image.layer(
         feature.extract_from_layer(
             binaries = [
                 "/usr/bin/systemctl.link",
+            ],
+            layer = ":binaries-clone-src",
+        ),
+        feature.extract_from_layer(
+            binaries = [
+                # This symlink extract overlaps with a subset of
+                # files extracted above.
+                "/usr/lib64/libsystemd.so.0",
             ],
             layer = ":binaries-clone-src",
         ),

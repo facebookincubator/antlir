@@ -153,6 +153,7 @@ impl antlir2_compile::CompileFeature for ExtractFromLayer {
 
                 // use the exact same link target when recreating the
                 // symlinkg (in other words, the same "relativeness")
+                let _ = std::fs::remove_file(&dst);
                 let target = std::fs::read_link(&src).with_context(|| {
                     format!("while reading the link target of  {}", src.display())
                 })?;

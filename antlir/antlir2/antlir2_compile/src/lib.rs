@@ -46,7 +46,9 @@ pub enum Error {
     Feature(#[from] antlir2_features::Error),
     #[error(transparent)]
     Isolate(#[from] antlir2_isolate::Error),
-    #[error(transparent)]
+    // Use Debug display trait to also display the underlying error (vs
+    // just context information).
+    #[error("{0:?}")]
     Other(#[from] anyhow::Error),
 }
 
