@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 # @lint-ignore-every BUCKLINT
-# @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 def _third_party_library(project, rule = None, platform = None):
     """
@@ -141,6 +140,7 @@ def _invert_dict(x):
         return x
     return {v: k for k, v in x.items()}
 
+# @lint-ignore BUCKRESTRICTEDSYNTAX
 def _python_library(*, **kwargs):
     kwargs["srcs"] = _invert_dict(kwargs.pop("srcs", []))
     kwargs["resources"] = _invert_dict(kwargs.pop("resources", []))
