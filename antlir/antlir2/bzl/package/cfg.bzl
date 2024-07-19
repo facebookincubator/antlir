@@ -34,7 +34,12 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
             constraints = constraints,
         )
 
-    constraints = rootless_cfg.transition(refs = refs, attrs = attrs, constraints = constraints)
+    constraints = rootless_cfg.transition(
+        refs = refs,
+        attrs = attrs,
+        constraints = constraints,
+        overwrite = True,
+    )
 
     if is_facebook:
         constraints = fb_transition(
