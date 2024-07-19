@@ -13,15 +13,21 @@ import importlib.resources
 import os
 from typing import Type, TypeVar, Union
 
-import pydantic
 from antlir.freeze import DoNotFreeze, freeze
 from antlir.fs_utils import Path
+
+try:
+    from pydantic.v1 import BaseModel  # pragma: no cover  # noqa: F403
+    from pydantic.v1.main import ModelMetaclass  # pragma: no cover  # type: ignore
+except ImportError:
+    from pydantic import BaseModel  # type: ignore  # noqa: F403
+    from pydantic.main import ModelMetaclass  # type: ignore  # noqa: F403
 
 
 S = TypeVar("S")
 
 
-class ShapeMeta(pydantic.main.ModelMetaclass):
+class ShapeMeta(ModelMetaclass):
     def __new__(metacls, name, bases, dct):  # noqa: B902
         cls = super().__new__(metacls, name, bases, dct)
         # Only apply shape meta hacks to generated classes, not user-written
@@ -61,7 +67,7 @@ class ShapeMeta(pydantic.main.ModelMetaclass):
         return f"{clsname}({fields})"
 
 
-class Shape(pydantic.BaseModel, DoNotFreeze, metaclass=ShapeMeta):
+class Shape(BaseModel, DoNotFreeze, metaclass=ShapeMeta):
     class Config:
         allow_mutation = False
 
