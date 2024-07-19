@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 
 DEFAULT_APPLETS = [
     "basename",
@@ -116,13 +116,13 @@ def _install(
     The `src` layer must have the `busybox` binary installed at the path `/busybox`.
     """
     return [
-        antlir2_feature.clone(
+        feature.clone(
             src_layer = src,
             src_path = src_path,
             dst_path = paths.join(install_dir, "busybox"),
         ),
     ] + [
-        antlir2_feature.ensure_file_symlink(
+        feature.ensure_file_symlink(
             link = paths.join(install_dir, applet),
             target = paths.join(install_dir, "busybox"),
         )
