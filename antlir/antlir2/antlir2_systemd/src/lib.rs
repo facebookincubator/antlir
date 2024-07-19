@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::fmt::Display;
 use std::path::Path;
 use std::process::Command;
 
@@ -13,6 +12,7 @@ use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
+use strum::Display;
 
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct UnitFile {
@@ -43,8 +43,9 @@ impl UnitFile {
 }
 
 /// Install state of a unit file.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Display)]
 #[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
 pub enum UnitFileState {
     /// Unit file is permanently enabled.
     Enabled,
@@ -80,15 +81,17 @@ pub enum UnitFileState {
     Bad,
 }
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Display)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum Preset {
     Enabled,
     Disabled,
 }
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize, Display)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum UnitType<'a> {
     Service,
     Socket,
@@ -119,25 +122,6 @@ impl<'a> From<&'a str> for UnitType<'a> {
             "slice" => Self::Slice,
             "scope" => Self::Slice,
             s => Self::Other(s),
-        }
-    }
-}
-
-impl Display for UnitType<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Service => write!(f, "service"),
-            Self::Socket => write!(f, "socket"),
-            Self::Device => write!(f, "device"),
-            Self::Mount => write!(f, "mount"),
-            Self::Automount => write!(f, "automount"),
-            Self::Swap => write!(f, "swap"),
-            Self::Target => write!(f, "target"),
-            Self::Path => write!(f, "path"),
-            Self::Timer => write!(f, "timer"),
-            Self::Slice => write!(f, "slice"),
-            Self::Scope => write!(f, "scope"),
-            Self::Other(s) => write!(f, "{}", s),
         }
     }
 }
