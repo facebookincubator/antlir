@@ -132,7 +132,7 @@ def anon_v1_sendstream(
     )
 
 def _v2_impl(ctx: AnalysisContext) -> Promise:
-    sendstream_v2 = ctx.actions.declare_output("image.sendstream.v2")
+    sendstream_v2 = ctx.actions.declare_output("image.sendstream")
 
     def _map(providers: ProviderCollection) -> list[Provider]:
         v1_sendstream = providers[SendstreamInfo].sendstream
