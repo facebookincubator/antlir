@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", antlir2_image = "image")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load(":build_defs.bzl", "target_utils")
