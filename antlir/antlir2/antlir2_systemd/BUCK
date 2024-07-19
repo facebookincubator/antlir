@@ -12,6 +12,7 @@ rust_library(
         "anyhow",
         "serde",
         "serde_json",
+        "strum",
     ],
 )
 
