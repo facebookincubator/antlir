@@ -7,7 +7,7 @@ load(":defs.bzl", "third_party_rust_cxx_library")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "0112e1028a9a98fef4766593c17f07ceceb2d862",
+    rev = "d4be887d567625fe92ebfabcfa1943e25a683913",
     visibility = [],
 )
 
@@ -3683,7 +3683,7 @@ cargo.rust_library(
     deps = [
         ":glob-0.3.1",
         ":libc-0.2.155",
-        ":libloading-0.8.4",
+        ":libloading-0.8.5",
     ],
 )
 
@@ -4295,29 +4295,6 @@ cargo.rust_library(
         ":libc-0.2.155",
         ":unicode-width-0.1.13",
     ],
-)
-
-alias(
-    name = "const-cstr",
-    actual = ":const-cstr-0.3.0",
-    visibility = ["PUBLIC"],
-)
-
-http_archive(
-    name = "const-cstr-0.3.0.crate",
-    sha256 = "ed3d0b5ff30645a68f35ece8cea4556ca14ef8a1651455f789a099a0513532a6",
-    strip_prefix = "const-cstr-0.3.0",
-    urls = ["https://static.crates.io/crates/const-cstr/0.3.0/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "const-cstr-0.3.0",
-    srcs = [":const-cstr-0.3.0.crate"],
-    crate = "const_cstr",
-    crate_root = "const-cstr-0.3.0.crate/src/lib.rs",
-    edition = "2015",
-    visibility = [],
 )
 
 alias(
@@ -10307,18 +10284,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "libloading-0.8.4.crate",
-    sha256 = "e310b3a6b5907f99202fcdb4960ff45b93735d7c7d96b760fcff8db2dc0e103d",
-    strip_prefix = "libloading-0.8.4",
-    urls = ["https://static.crates.io/crates/libloading/0.8.4/download"],
+    name = "libloading-0.8.5.crate",
+    sha256 = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4",
+    strip_prefix = "libloading-0.8.5",
+    urls = ["https://static.crates.io/crates/libloading/0.8.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "libloading-0.8.4",
-    srcs = [":libloading-0.8.4.crate"],
+    name = "libloading-0.8.5",
+    srcs = [":libloading-0.8.5.crate"],
     crate = "libloading",
-    crate_root = "libloading-0.8.4.crate/src/lib.rs",
+    crate_root = "libloading-0.8.5.crate/src/lib.rs",
     edition = "2015",
     platform = {
         "linux-arm64": dict(
@@ -11895,17 +11872,17 @@ cargo.rust_library(
         "linux-arm64": dict(
             deps = [
                 ":log-0.4.22",
-                ":openssl-0.10.64",
+                ":openssl-0.10.65",
                 ":openssl-probe-0.1.5",
-                ":openssl-sys-0.9.102",
+                ":openssl-sys-0.9.103",
             ],
         ),
         "linux-x86_64": dict(
             deps = [
                 ":log-0.4.22",
-                ":openssl-0.10.64",
+                ":openssl-0.10.65",
                 ":openssl-probe-0.1.5",
-                ":openssl-sys-0.9.102",
+                ":openssl-sys-0.9.103",
             ],
         ),
         "macos-arm64": dict(
@@ -12985,32 +12962,32 @@ cargo.rust_library(
 
 alias(
     name = "openssl",
-    actual = ":openssl-0.10.64",
+    actual = ":openssl-0.10.65",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "openssl-0.10.64.crate",
-    sha256 = "95a0481286a310808298130d22dd1fef0fa571e05a8f44ec801801e84b216b1f",
-    strip_prefix = "openssl-0.10.64",
-    urls = ["https://static.crates.io/crates/openssl/0.10.64/download"],
+    name = "openssl-0.10.65.crate",
+    sha256 = "c2823eb4c6453ed64055057ea8bd416eda38c71018723869dd043a3b1186115e",
+    strip_prefix = "openssl-0.10.65",
+    urls = ["https://static.crates.io/crates/openssl/0.10.65/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "openssl-0.10.64",
-    srcs = [":openssl-0.10.64.crate"],
+    name = "openssl-0.10.65",
+    srcs = [":openssl-0.10.65.crate"],
     crate = "openssl",
-    crate_root = "openssl-0.10.64.crate/src/lib.rs",
+    crate_root = "openssl-0.10.65.crate/src/lib.rs",
     edition = "2018",
     env = {
-        "OUT_DIR": "$(location :openssl-0.10.64-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :openssl-0.10.65-build-script-run[out_dir])",
     },
     features = ["default"],
     named_deps = {
-        "ffi": ":openssl-sys-0.9.102",
+        "ffi": ":openssl-sys-0.9.103",
     },
-    rustc_flags = ["@$(location :openssl-0.10.64-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :openssl-0.10.65-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":bitflags-2.6.0",
@@ -13023,21 +13000,21 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "openssl-0.10.64-build-script-build",
-    srcs = [":openssl-0.10.64.crate"],
+    name = "openssl-0.10.65-build-script-build",
+    srcs = [":openssl-0.10.65.crate"],
     crate = "build_script_build",
-    crate_root = "openssl-0.10.64.crate/build.rs",
+    crate_root = "openssl-0.10.65.crate/build.rs",
     edition = "2018",
     features = ["default"],
     visibility = [],
 )
 
 buildscript_run(
-    name = "openssl-0.10.64-build-script-run",
+    name = "openssl-0.10.65-build-script-run",
     package_name = "openssl",
-    buildscript_rule = ":openssl-0.10.64-build-script-build",
+    buildscript_rule = ":openssl-0.10.65-build-script-build",
     features = ["default"],
-    version = "0.10.64",
+    version = "0.10.65",
 )
 
 http_archive(
@@ -13082,37 +13059,37 @@ cargo.rust_library(
 
 alias(
     name = "openssl-sys",
-    actual = ":openssl-sys-0.9.102",
+    actual = ":openssl-sys-0.9.103",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "openssl-sys-0.9.102.crate",
-    sha256 = "c597637d56fbc83893a35eb0dd04b2b8e7a50c91e64e9493e398b5df4fb45fa2",
-    strip_prefix = "openssl-sys-0.9.102",
-    urls = ["https://static.crates.io/crates/openssl-sys/0.9.102/download"],
+    name = "openssl-sys-0.9.103.crate",
+    sha256 = "7f9e8deee91df40a943c71b917e5874b951d32a802526c85721ce3b776c929d6",
+    strip_prefix = "openssl-sys-0.9.103",
+    urls = ["https://static.crates.io/crates/openssl-sys/0.9.103/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "openssl-sys-0.9.102",
-    srcs = [":openssl-sys-0.9.102.crate"],
+    name = "openssl-sys-0.9.103",
+    srcs = [":openssl-sys-0.9.103.crate"],
     crate = "openssl_sys",
-    crate_root = "openssl-sys-0.9.102.crate/src/lib.rs",
+    crate_root = "openssl-sys-0.9.103.crate/src/lib.rs",
     edition = "2018",
     env = {
-        "OUT_DIR": "$(location :openssl-sys-0.9.102-build-script-main-run[out_dir])",
+        "OUT_DIR": "$(location :openssl-sys-0.9.103-build-script-main-run[out_dir])",
     },
-    rustc_flags = ["@$(location :openssl-sys-0.9.102-build-script-main-run[rustc_flags])"],
+    rustc_flags = ["@$(location :openssl-sys-0.9.103-build-script-main-run[rustc_flags])"],
     visibility = [],
     deps = [":libc-0.2.155"],
 )
 
 cargo.rust_binary(
-    name = "openssl-sys-0.9.102-build-script-main",
-    srcs = [":openssl-sys-0.9.102.crate"],
+    name = "openssl-sys-0.9.103-build-script-main",
+    srcs = [":openssl-sys-0.9.103.crate"],
     crate = "build_script_main",
-    crate_root = "openssl-sys-0.9.102.crate/build/main.rs",
+    crate_root = "openssl-sys-0.9.103.crate/build/main.rs",
     edition = "2018",
     visibility = [],
     deps = [
@@ -13123,10 +13100,10 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "openssl-sys-0.9.102-build-script-main-run",
+    name = "openssl-sys-0.9.103-build-script-main-run",
     package_name = "openssl-sys",
-    buildscript_rule = ":openssl-sys-0.9.102-build-script-main",
-    version = "0.9.102",
+    buildscript_rule = ":openssl-sys-0.9.103-build-script-main",
+    version = "0.9.103",
 )
 
 http_archive(
@@ -22864,7 +22841,7 @@ cargo.rust_library(
         ":env_logger-0.11.3",
         ":fbthrift-0.0.3",
         ":httparse-1.9.4",
-        ":libloading-0.8.4",
+        ":libloading-0.8.5",
         ":log-0.4.22",
         ":nix-0.29.0",
         ":proc-mounts-0.3.0",
@@ -22898,7 +22875,7 @@ cargo.rust_binary(
         ":env_logger-0.11.3",
         ":fbthrift-0.0.3",
         ":httparse-1.9.4",
-        ":libloading-0.8.4",
+        ":libloading-0.8.5",
         ":log-0.4.22",
         ":nix-0.29.0",
         ":proc-mounts-0.3.0",
