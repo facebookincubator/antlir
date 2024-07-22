@@ -17,19 +17,26 @@ def _third_party_library(project, rule = None, platform = None):
     if not rule:
         rule = project
 
+    # TODO: third party deps should be consumable from the cell which is calling
+    # this function so that deps aren't pinned to whatever ships in antlir, but
+    # while metalos has deps on some antlir rust targets, we can't do this (or
+    # we get mismatched type errors with duplicate crates)
+    cell = "antlir"
+
     if platform == "python" or platform == "pypi":
         if not rule == project:
             fail("python dependencies must omit rule or be identical to project")
-        return "antlir//third-party/python:" + project
+
+        return cell + "//third-party/python:" + project
 
     if platform == "rust":
         if not rule == project:
             fail("rust dependencies must omit rule or be identical to project")
 
-        return "antlir//third-party/rust:" + project
+        return cell + "//third-party/rust:" + project
 
     if platform == "antlir":
-        return "//third-party/antlir/{project}:{rule}".format(
+        return cell + "//third-party/antlir/{project}:{rule}".format(
             project = project,
             rule = rule,
         )
