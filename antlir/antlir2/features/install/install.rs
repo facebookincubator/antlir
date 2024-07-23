@@ -30,12 +30,15 @@ use antlir2_users::GroupId;
 use antlir2_users::Id;
 use antlir2_users::UserId;
 use anyhow::Context;
+#[cfg(feature = "setcap")]
 use libcap::Capabilities;
+#[cfg(feature = "setcap")]
 use libcap::FileExt as _;
 use serde::de::Deserializer;
 use serde::de::Error as _;
 use serde::Deserialize;
 use serde_with::serde_as;
+#[cfg(feature = "setcap")]
 use serde_with::DisplayFromStr;
 use tracing::debug;
 use walkdir::WalkDir;
@@ -53,8 +56,11 @@ pub struct Install {
     pub user: NameOrId<UserId>,
     pub binary_info: Option<BinaryInfo>,
     pub xattrs: HashMap<String, XattrValue>,
+    #[cfg(feature = "setcap")]
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub setcap: Option<Capabilities>,
+    #[cfg(not(feature = "setcap"))]
+    pub setcap: Option<String>,
     pub always_use_gnu_debuglink: bool,
 }
 
@@ -464,7 +470,13 @@ impl antlir2_compile::CompileFeature for Install {
                     // Technically we could just use self.setcap directly, but
                     // then that would still result in a syscall to clear the
                     // file capabilities (which won't even be there)
+                    #[cfg(feature = "setcap")]
                     dst_file.set_capabilities(Some(cap))?;
+                    #[cfg(not(feature = "setcap"))]
+                    return Err(anyhow::anyhow!(
+                        "setcap ({cap}) is not supported on this platform"
+                    )
+                    .into());
                 }
             }
         }
@@ -505,6 +517,7 @@ fn add_gnu_debuglink(src: &Path, debug: &Path) -> anyhow::Result<()> {
     objcopy.status()?;
     Ok(())
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

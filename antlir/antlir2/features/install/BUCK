@@ -1,9 +1,11 @@
+# @oss-disable
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
-load("//antlir/bzl:build_defs.bzl", "alias", "internal_external", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 
 oncall("antlir")
 
-_base_deps = [
+base_deps = [
     "anyhow",
     "base64",
     "hex",
@@ -14,25 +16,25 @@ _base_deps = [
     "//antlir/antlir2/antlir2_users:antlir2_users",
 ]
 
-alias(
-    name = "no-setcap",
-    actual = "ovr_config//build_mode:arvr_mode",
-) if is_facebook else None
+optional_deps = select({
+    "DEFAULT": [],
+    "ovr_config//os:linux": (
+        # @oss-disable
+        ["//antlir/antlir2/libcap:libcap"] # @oss-enable
+    ),
+})
 
 feature_impl(
     name = "install",
     features = internal_external(
-        fb = select({
-            ":no-setcap": [],
-            "DEFAULT": ["setcap"],
-        }),
+        # We can't actually select on arvr modes because of exec platform shenanigans
+        # https://fb.workplace.com/groups/asktp/posts/3317571605206390
+        # @oss-disable
+        fb = [], # @oss-enable
         oss = ["setcap"],
     ),
-    deps = internal_external(
-        fb = select({
-            ":no-setcap": _base_deps,
-            "DEFAULT": _base_deps + ["//antlir/antlir2/libcap:libcap"],
-        }),
-        oss = _base_deps + ["//antlir/antlir2/libcap:libcap"],
+    deps = selects.apply(
+        optional_deps,
+        lambda d: base_deps + d,
     ),
 )
