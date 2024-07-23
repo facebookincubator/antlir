@@ -366,6 +366,10 @@ enum DriverEvent {
         package: Package,
         error: String,
     },
+    GpgWarning {
+        package: Package,
+        error: String,
+    },
     ScriptletOutput(String),
     PackageNotFound(String),
     PackageNotInstalled(String),
