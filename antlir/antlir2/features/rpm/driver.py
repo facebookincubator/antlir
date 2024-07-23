@@ -434,6 +434,7 @@ def driver(spec) -> None:
     # Check the GPG signatures for all the to-be-installed packages before doing
     # the transaction
     gpg_errors = defaultdict(list)
+    gpg_warnings = defaultdict(list)
 
     # Import all the GPG keys for repos that we're installing packages from
     import_keys = defaultdict(list)
@@ -466,7 +467,11 @@ def driver(spec) -> None:
 
         if import_result.returncode != 0:
             for pkg in pkgs:
-                gpg_errors[pkg].append(
+                # It's not necessarily a hard failure if we failed to import a
+                # key (CentOS 10 has more aggressive key requirements), but it
+                # might be the cause of a later signature validation failure, so
+                # make sure that we record it appropriately.
+                gpg_warnings[pkg].append(
                     f"failed to import gpg key ({keyfile}): {import_result.stderr.lower()}"
                 )
 
@@ -508,6 +513,20 @@ def driver(spec) -> None:
             if ("key id" not in stdout) or ("signature" not in stdout):
                 gpg_errors[pkg].append("RPM is not signed")
 
+    if gpg_warnings:
+        with out as out:
+            for pkg, errors in gpg_warnings.items():
+                for error in errors:
+                    json.dump(
+                        {
+                            "gpg_warning": {
+                                "package": package_struct(pkg),
+                                "error": error,
+                            }
+                        },
+                        out,
+                    )
+                    out.write("\n")
     if gpg_errors:
         with out as out:
             for pkg, errors in gpg_errors.items():
