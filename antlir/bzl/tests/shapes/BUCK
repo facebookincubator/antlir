@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest", "rust_unittest")
 load("//antlir/bzl:make_target_t.bzl", "make_target_t")
 load("//antlir/bzl:shape.bzl", "shape")
