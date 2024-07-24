@@ -25,7 +25,12 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
             overwrite = True,
         )
 
-    constraints = rootless_cfg.transition(refs = refs, attrs = attrs, constraints = constraints)
+    constraints = rootless_cfg.transition(
+        refs = refs,
+        attrs = attrs,
+        constraints = constraints,
+        overwrite = True,
+    )
 
     if is_facebook:
         constraints = fb_transition(
