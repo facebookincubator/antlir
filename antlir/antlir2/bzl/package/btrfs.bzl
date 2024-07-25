@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "cfg_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
@@ -83,6 +84,7 @@ _btrfs = rule(
             ),
             default = None,
         ),
+        "_rootless": rootless_cfg.is_rootless_attr,
     } | cfg_attrs(),
     cfg = package_cfg,
 )

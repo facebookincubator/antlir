@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
+load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
 load(":macro.bzl", "package_macro")
@@ -11,7 +12,7 @@ load(":macro.bzl", "package_macro")
 SendstreamInfo = provider(fields = [
     "sendstream",  # 'artifact' that is the btrfs sendstream
     "subvol_symlink",  # subvol that was actually packaged
-    "layer",  # layer that was packaged
+    "layer",  # the layer this came from
 ])
 
 _base_sendstream_args_defaults = {
@@ -30,10 +31,8 @@ _base_sendstream_args = {
     "labels": attrs.list(attrs.string(), default = []),
     "layer": attrs.dep(providers = [LayerInfo]),
     "volume_name": attrs.string(default = _base_sendstream_args_defaults["volume_name"]),
-}
-
-def _sendstream_package_macro(rule):
-    return package_macro(rule, always_needs_root = True)
+    "_rootless": rootless_cfg.is_rootless_attr,
+} | rootless_cfg.attrs
 
 def _find_incremental_parent(*, layer: LayerInfo, parent_label: Label) -> Dependency | None:
     if not layer.parent:
@@ -50,9 +49,17 @@ def _find_incremental_parent(*, layer: LayerInfo, parent_label: Label) -> Depend
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     sendstream = ctx.actions.declare_output("image.sendstream")
-    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+
+    userspace = ctx.attrs._rootless
+
+    if not userspace:
+        subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+    else:
+        subvol_symlink = None
 
     if ctx.attrs.incremental_parent:
+        if userspace:
+            fail("incremental sendstreams cannot yet be produced in userspace (aka rootless)")
         incremental_parent_layer = _find_incremental_parent(
             layer = ctx.attrs.layer[LayerInfo],
             parent_label = ctx.attrs.incremental_parent[SendstreamInfo].layer.label,
@@ -78,22 +85,24 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "spec.json",
         {"sendstream": {
             "incremental_parent": ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink if ctx.attrs.incremental_parent else None,
-            "subvol_symlink": subvol_symlink.as_output(),
+            "subvol_symlink": subvol_symlink.as_output() if subvol_symlink else None,
+            "userspace": userspace,
             "volume_name": ctx.attrs.volume_name,
         }},
         with_inputs = True,
     )
     ctx.actions.run(
         cmd_args(
-            "sudo",
+            "sudo" if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs.antlir2_packager[RunInfo],
+            "--rootless" if ctx.attrs._rootless else cmd_args(),
             cmd_args(spec, format = "--spec={}"),
             cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
             cmd_args(sendstream.as_output(), format = "--out={}"),
         ),
         local_only = True,  # needs root and local subvol
         # the old output is used to clean up the local subvolume
-        no_outputs_cleanup = True,
+        no_outputs_cleanup = not userspace,
         category = "antlir2_package",
         identifier = "sendstream",
         env = {"RUST_LOG": "trace"},
@@ -175,4 +184,4 @@ _sendstream_v2 = rule(
     cfg = package_cfg,
 )
 
-sendstream_v2 = _sendstream_package_macro(_sendstream_v2)
+sendstream_v2 = package_macro(_sendstream_v2)

@@ -288,6 +288,10 @@ impl Info {
             false => Some(uuid),
         }
     }
+
+    pub fn ctransid(&self) -> u64 {
+        self.0.ctransid
+    }
 }
 
 impl Debug for Info {

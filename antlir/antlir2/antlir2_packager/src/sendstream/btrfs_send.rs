@@ -107,28 +107,32 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
         Ok::<_, anyhow::Error>(subvol)
     })??;
 
-    if spec.subvol_symlink.exists() {
-        trace!("removing existing output {}", spec.subvol_symlink.display());
-        rootless.as_root(|| match Subvolume::open(&spec.subvol_symlink) {
+    let out_subvol_symlink = spec
+        .subvol_symlink
+        .clone()
+        .context("btrfs_send sendstreams must have subvol_symlink output")?;
+    if out_subvol_symlink.exists() {
+        trace!("removing existing output {}", out_subvol_symlink.display());
+        rootless.as_root(|| match Subvolume::open(&out_subvol_symlink) {
             Ok(old_subvol) => {
                 if let Err(e) = old_subvol.delete() {
                     warn!(
                         "couldn't delete old subvol '{}': {e:?}",
-                        spec.subvol_symlink.display()
+                        out_subvol_symlink.display()
                     );
                 }
             }
             Err(e) => {
                 warn!(
                     "couldn't open old subvol '{}': {e:?}",
-                    spec.subvol_symlink.display()
+                    out_subvol_symlink.display()
                 );
             }
         })?;
     }
 
-    let _ = std::fs::remove_file(&spec.subvol_symlink);
-    std::os::unix::fs::symlink(subvol.path(), &spec.subvol_symlink)
+    let _ = std::fs::remove_file(&out_subvol_symlink);
+    std::os::unix::fs::symlink(subvol.path(), &out_subvol_symlink)
         .context("while symlinking packaged subvol")?;
 
     Ok(())
