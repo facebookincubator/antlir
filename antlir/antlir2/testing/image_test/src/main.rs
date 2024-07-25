@@ -158,6 +158,10 @@ fn main() -> Result<()> {
     if Path::new("/dev/fuse").exists() {
         ctx.outputs([Path::new("/dev/fuse")]);
     }
+    if spec.rootless {
+        #[cfg(facebook)]
+        ctx.tmpfs(Path::new("/mnt/xarfuse"));
+    }
 
     if let Some(hostname) = spec.hostname {
         ctx.hostname(hostname);
