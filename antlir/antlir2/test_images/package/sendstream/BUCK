@@ -60,3 +60,10 @@ package.sendstream_v2(
     layer = ":layer",
     volume_name = "named",
 )
+
+package.sendstream_v2(
+    name = "named.sendstream.v2.rootless",
+    layer = ":layer",
+    rootless = True,
+    volume_name = "named",
+)

@@ -13,6 +13,7 @@ use serde::Deserialize;
 
 use crate::PackageFormat;
 mod btrfs_send;
+mod userspace;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -20,11 +21,15 @@ pub struct Sendstream {
     volume_name: String,
     #[serde(default)]
     incremental_parent: Option<PathBuf>,
-    subvol_symlink: PathBuf,
+    subvol_symlink: Option<PathBuf>,
+    userspace: bool,
 }
 
 impl PackageFormat for Sendstream {
     fn build(&self, out: &Path, layer: &Path) -> Result<()> {
-        btrfs_send::build(self, out, layer)
+        match self.userspace {
+            false => btrfs_send::build(self, out, layer),
+            true => userspace::build(self, out, layer),
+        }
     }
 }
