@@ -143,3 +143,20 @@ easier-to-understand error.
 
 See the [internal page](fb/multi-os-images-ci-recommendations.md) for CI
 structure recommendations.
+
+## Debugging
+
+Now that layers can be reconfigured for different OSes, it can sometimes be
+confusing to see a build error on some `parent_layer` that is normally
+configured for one OS, but fails when configured for another.
+
+You can build a layer target as if it was being brought in as a dependency of
+some other target by using the `--target-universe` flag of `buck2 build`.
+
+For example, if you have a multi-OS layer at `fbcode//my_image:my_image`, and it
+fails to build as a dependency of a CentOS 8 package
+(`fbcode//my_image/centos8:package`), you can reproduce just that build failure
+with this command:
+```
+buck2 build --target-universe fbcode//my_image/centos8:package fbcode//my_image:my_image
+```
