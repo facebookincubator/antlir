@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
@@ -89,11 +90,15 @@ def antlir2_configured_alias(
         *,
         name: str,
         default_os: str | None = None,
+        rootless: bool | None = None,
         visibility: list[str] | None = None,
         **kwargs):
+    if rootless == None:
+        rootless = get_antlir2_rootless()
     _antlir2_configured_alias_macro(
         name = name,
         default_os = default_os,
+        rootless = rootless,
         visibility = get_visibility(visibility),
         **kwargs
     )
