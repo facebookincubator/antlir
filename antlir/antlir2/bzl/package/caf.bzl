@@ -18,7 +18,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
 _caf = rule(
     impl = _impl,
-    attrs = layer_attrs,
+    attrs = layer_attrs | {
+        "labels": attrs.list(attrs.string(), default = []),
+    },
     cfg = package_cfg,
 )
 

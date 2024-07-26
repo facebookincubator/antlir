@@ -17,6 +17,7 @@ load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 # Attrs that are required by all packages
 common_attrs = {
     "build_appliance": attrs.option(attrs.exec_dep(providers = [BuildApplianceInfo]), default = None),
+    "labels": attrs.list(attrs.string(), default = []),
     "out": attrs.option(attrs.string(doc = "Output filename"), default = None),
 } | layer_attrs
 

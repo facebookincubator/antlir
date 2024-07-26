@@ -38,9 +38,14 @@ def package_macro(
             rootless = get_antlir2_rootless()
         if always_rootless:
             rootless = True
+
+        labels = kwargs.pop("labels", [])
+        if not rootless:
+            labels = selects.apply(labels, lambda labels: list(labels) + ["uses_sudo"])
         buck_rule(
             default_os = default_os,
             rootless = rootless,
+            labels = labels,
             visibility = visibility,
             **(kwargs | default_target_platform_kwargs())
         )
