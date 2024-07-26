@@ -11,6 +11,7 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "blake3",
         "bytesize",
         "chrono",
         "clap",

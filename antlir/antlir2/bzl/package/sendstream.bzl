@@ -58,8 +58,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         subvol_symlink = None
 
     if ctx.attrs.incremental_parent:
-        if userspace:
-            fail("incremental sendstreams cannot yet be produced in userspace (aka rootless)")
         incremental_parent_layer = _find_incremental_parent(
             layer = ctx.attrs.layer[LayerInfo],
             parent_label = ctx.attrs.incremental_parent[SendstreamInfo].layer.label,
@@ -81,10 +79,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             incremental_parent_layer[LayerInfo].flavor.label,
         )
 
+        if userspace:
+            incremental_parent = ctx.attrs.incremental_parent[SendstreamInfo].layer[LayerInfo].subvol_symlink
+        else:
+            incremental_parent = ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink
+    else:
+        incremental_parent = None
+
     spec = ctx.actions.write_json(
         "spec.json",
         {"sendstream": {
-            "incremental_parent": ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink if ctx.attrs.incremental_parent else None,
+            "incremental_parent": incremental_parent,
             "subvol_symlink": subvol_symlink.as_output() if subvol_symlink else None,
             "userspace": userspace,
             "volume_name": ctx.attrs.volume_name,
