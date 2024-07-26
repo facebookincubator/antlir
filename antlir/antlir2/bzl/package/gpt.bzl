@@ -71,6 +71,7 @@ _gpt = rule(
         "block_size": attrs.int(default = 512, doc = "block size of the gpt layout in bytes"),
         "build_appliance": attrs.option(attrs.exec_dep(providers = [LayerInfo]), default = None),
         "disk_guid": attrs.option(attrs.string(), default = None),
+        "labels": attrs.list(attrs.string(), default = []),
         "partitions": attrs.list(
             attrs.tuple(
                 attrs.dep(providers = [GptPartitionSource]),
