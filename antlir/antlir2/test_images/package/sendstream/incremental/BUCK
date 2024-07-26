@@ -44,6 +44,12 @@ package.sendstream_v2(
     layer = ":parent",
 )
 
+package.sendstream_v2(
+    name = "parent.sendstream.rootless",
+    layer = ":parent",
+    rootless = True,
+)
+
 buck_genrule(
     name = "child_large_file",
     out = "child_large_file",
@@ -90,6 +96,13 @@ package.sendstream_v2(
     layer = ":child",
 )
 
+package.sendstream_v2(
+    name = "child.sendstream.rootless",
+    incremental_parent = ":parent.sendstream.rootless",
+    layer = ":child",
+    rootless = True,
+)
+
 image.layer(
     name = "foo",
     features = [
@@ -105,6 +118,8 @@ python_unittest(
     srcs = ["test_incremental_size.py"],
     resources = {
         ":child.sendstream": "child.sendstream",
+        ":child.sendstream.rootless": "child.sendstream.rootless",
         ":parent.sendstream": "parent.sendstream",
+        ":parent.sendstream.rootless": "parent.sendstream.rootless",
     },
 )

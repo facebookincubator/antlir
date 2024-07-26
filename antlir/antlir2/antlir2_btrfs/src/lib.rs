@@ -289,6 +289,14 @@ impl Info {
         }
     }
 
+    pub fn received_uuid(&self) -> Option<Uuid> {
+        let uuid = Uuid::from_slice(&self.0.received_uuid).expect("always correct len");
+        match uuid.is_nil() {
+            true => None,
+            false => Some(uuid),
+        }
+    }
+
     pub fn ctransid(&self) -> u64 {
         self.0.ctransid
     }

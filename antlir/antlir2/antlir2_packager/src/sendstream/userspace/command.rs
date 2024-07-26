@@ -28,6 +28,25 @@ where
         .finish()
 }
 
+pub(crate) fn snapshot<P>(
+    path: P,
+    uuid: Uuid,
+    ctransid: u64,
+    clone_uuid: Uuid,
+    clone_ctransid: u64,
+) -> Vec<u8>
+where
+    P: AsRef<Path>,
+{
+    CommandBuilder::new(2)
+        .tlv(&Tlv::Path(path.as_ref()))
+        .tlv(&Tlv::Uuid(uuid))
+        .tlv(&Tlv::Ctransid(ctransid))
+        .tlv(&Tlv::CloneUuid(clone_uuid))
+        .tlv(&Tlv::CloneCtransid(clone_ctransid))
+        .finish()
+}
+
 pub(crate) fn chown<P>(path: P, uid: u64, gid: u64) -> Vec<u8>
 where
     P: AsRef<Path>,
@@ -103,6 +122,24 @@ where
         .finish()
 }
 
+pub(crate) fn unlink<P>(path: P) -> Vec<u8>
+where
+    P: AsRef<Path>,
+{
+    CommandBuilder::new(11)
+        .tlv(&Tlv::Path(path.as_ref()))
+        .finish()
+}
+
+pub(crate) fn rmdir<P>(path: P) -> Vec<u8>
+where
+    P: AsRef<Path>,
+{
+    CommandBuilder::new(12)
+        .tlv(&Tlv::Path(path.as_ref()))
+        .finish()
+}
+
 pub(crate) fn mknod<P>(path: P, mode: u64, rdev: u64) -> Vec<u8>
 where
     P: AsRef<Path>,
@@ -156,5 +193,26 @@ where
         .tlv(&Tlv::Atime(atime))
         .tlv(&Tlv::Mtime(mtime))
         .tlv(&Tlv::Ctime(ctime))
+        .finish()
+}
+
+pub(crate) fn rm_xattr<P, N>(path: P, name: N) -> Vec<u8>
+where
+    P: AsRef<Path>,
+    N: AsRef<[u8]>,
+{
+    CommandBuilder::new(14)
+        .tlv(&Tlv::Path(path.as_ref()))
+        .tlv(&Tlv::XattrName(name.as_ref()))
+        .finish()
+}
+
+pub(crate) fn truncate<P>(path: P, size: u64) -> Vec<u8>
+where
+    P: AsRef<Path>,
+{
+    CommandBuilder::new(17)
+        .tlv(&Tlv::Path(path.as_ref()))
+        .tlv(&Tlv::Size(size))
         .finish()
 }
