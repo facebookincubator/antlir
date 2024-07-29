@@ -3,7 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
@@ -44,6 +46,7 @@ _image_command_alias = rule(
     attrs = {
         "args": attrs.list(attrs.string(), default = []),
         "exe": attrs.arg(),
+        "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
         "_command_alias": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/image_command_alias:command_alias")),
         "_layer_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
@@ -57,4 +60,18 @@ _image_command_alias = rule(
     cfg = layer_cfg,
 )
 
-image_command_alias = rule_with_default_target_platform(_image_command_alias)
+_image_command_alias_macro = rule_with_default_target_platform(_image_command_alias)
+
+def image_command_alias(*, rootless: bool | None = None, **kwargs):
+    if rootless == None:
+        rootless = get_antlir2_rootless()
+
+    labels = kwargs.pop("labels", [])
+    if not rootless:
+        labels = selects.apply(labels, lambda labels: list(labels) + ["uses_sudo"])
+
+    _image_command_alias_macro(
+        rootless = rootless,
+        labels = labels,
+        **kwargs
+    )

@@ -6,6 +6,7 @@
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
@@ -109,6 +110,7 @@ _genrule_in_image = rule(
                 (//antlir/antlir2/genrule_in_image:prep)
             """,
         ),
+        "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "out": attrs.option(attrs.string(), default = None),
         "outs": attrs.option(attrs.dict(attrs.string(), attrs.string()), default = None),
@@ -140,9 +142,15 @@ def genrule_in_image(
     if get_antlir2_use_overlayfs():
         kwargs["working_format"] = "overlayfs"
         rootless = True
+
+    labels = kwargs.pop("labels", [])
+    if not rootless:
+        labels = selects.apply(labels, lambda labels: list(labels) + ["uses_sudo"])
+
     _genrule_in_image_macro(
         name = name,
         default_os = default_os,
         rootless = rootless,
+        labels = labels,
         **kwargs
     )
