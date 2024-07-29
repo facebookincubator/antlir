@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "0f9062792d71183a63b85e6ab9b0e645ba2b6cb8",
+    rev = "61896e97abd3bba10e5d7a1abc6392682bca0449",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "0f117b9e4204f6e7eb1e2f6972bd61dd64e95417",
+    rev = "8f2831ed37072e696c331b775e2b51e0a2af1bc2",
     visibility = [],
 )
 
@@ -1734,7 +1734,7 @@ cargo.rust_binary(
         "std",
     ],
     visibility = [],
-    deps = [":cc-1.1.6"],
+    deps = [":cc-1.1.7"],
 )
 
 buildscript_run(
@@ -2331,6 +2331,18 @@ http_archive(
     name = "blake3-1.5.0.crate",
     sha256 = "0231f06152bf547e9c2b5194f247cd97aacf6dcd8b15d8e5ec0663f64580da87",
     strip_prefix = "blake3-1.5.0",
+    sub_targets = [
+        "c/blake3.c",
+        "c/blake3.h",
+        "c/blake3_avx2_x86-64_unix.S",
+        "c/blake3_avx512_x86-64_unix.S",
+        "c/blake3_dispatch.c",
+        "c/blake3_impl.h",
+        "c/blake3_neon.c",
+        "c/blake3_portable.c",
+        "c/blake3_sse2_x86-64_unix.S",
+        "c/blake3_sse41_x86-64_unix.S",
+    ],
     urls = ["https://static.crates.io/crates/blake3/1.5.0/download"],
     visibility = [],
 )
@@ -2341,16 +2353,56 @@ cargo.rust_library(
     crate = "blake3",
     crate_root = "blake3-1.5.0.crate/src/lib.rs",
     edition = "2021",
-    env = {
-        "OUT_DIR": "$(location :blake3-1.5.0-build-script-run[out_dir])",
-    },
     features = [
         "default",
         "digest",
         "std",
         "traits-preview",
     ],
-    rustc_flags = ["@$(location :blake3-1.5.0-build-script-run[rustc_flags])"],
+    platform = {
+        "linux-arm64": dict(
+            rustc_flags = ["--cfg=blake3_neon"],
+            deps = [":blake3-1.5.0-simd_neon-aarch64"],
+        ),
+        "linux-x86_64": dict(
+            rustc_flags = [
+                "--cfg=blake3_avx2_ffi",
+                "--cfg=blake3_avx512_ffi",
+                "--cfg=blake3_sse2_ffi",
+                "--cfg=blake3_sse41_ffi",
+            ],
+            deps = [":blake3-1.5.0-simd_x86_unix"],
+        ),
+        "macos-arm64": dict(
+            rustc_flags = ["--cfg=blake3_neon"],
+            deps = [":blake3-1.5.0-simd_neon-aarch64"],
+        ),
+        "macos-x86_64": dict(
+            rustc_flags = [
+                "--cfg=blake3_avx2_ffi",
+                "--cfg=blake3_avx512_ffi",
+                "--cfg=blake3_sse2_ffi",
+                "--cfg=blake3_sse41_ffi",
+            ],
+            deps = [":blake3-1.5.0-simd_x86_unix"],
+        ),
+        "windows-gnu": dict(
+            rustc_flags = [
+                "--cfg=blake3_avx2_ffi",
+                "--cfg=blake3_avx512_ffi",
+                "--cfg=blake3_sse2_ffi",
+                "--cfg=blake3_sse41_ffi",
+            ],
+        ),
+        "windows-msvc": dict(
+            rustc_flags = [
+                "--cfg=blake3_avx2_ffi",
+                "--cfg=blake3_avx512_ffi",
+                "--cfg=blake3_sse2_ffi",
+                "--cfg=blake3_sse41_ffi",
+            ],
+        ),
+    },
     visibility = [],
     deps = [
         ":arrayref-0.3.8",
@@ -2361,33 +2413,40 @@ cargo.rust_library(
     ],
 )
 
-cargo.rust_binary(
-    name = "blake3-1.5.0-build-script-build",
-    srcs = [":blake3-1.5.0.crate"],
-    crate = "build_script_build",
-    crate_root = "blake3-1.5.0.crate/build.rs",
-    edition = "2021",
-    features = [
-        "default",
-        "digest",
-        "std",
-        "traits-preview",
+third_party_rust_cxx_library(
+    name = "blake3-1.5.0-simd_neon-aarch64",
+    srcs = [":blake3-1.5.0.crate[c/blake3_neon.c]"],
+    headers = [
+        ":blake3-1.5.0.crate[c/blake3.h]",
+        ":blake3-1.5.0.crate[c/blake3_impl.h]",
     ],
     visibility = [],
-    deps = [":cc-1.1.6"],
 )
 
-buildscript_run(
-    name = "blake3-1.5.0-build-script-run",
-    package_name = "blake3",
-    buildscript_rule = ":blake3-1.5.0-build-script-build",
-    features = [
-        "default",
-        "digest",
-        "std",
-        "traits-preview",
+third_party_rust_cxx_library(
+    name = "blake3-1.5.0-simd_x86_unix",
+    srcs = [
+        ":blake3-1.5.0.crate[c/blake3.c]",
+        ":blake3-1.5.0.crate[c/blake3_avx2_x86-64_unix.S]",
+        ":blake3-1.5.0.crate[c/blake3_avx512_x86-64_unix.S]",
+        ":blake3-1.5.0.crate[c/blake3_dispatch.c]",
+        ":blake3-1.5.0.crate[c/blake3_portable.c]",
+        ":blake3-1.5.0.crate[c/blake3_sse2_x86-64_unix.S]",
+        ":blake3-1.5.0.crate[c/blake3_sse41_x86-64_unix.S]",
     ],
-    version = "1.5.0",
+    headers = [
+        ":blake3-1.5.0.crate[c/blake3.h]",
+        ":blake3-1.5.0.crate[c/blake3_impl.h]",
+    ],
+    compatible_with = [
+        "prelude//os/constraints:linux",
+        "prelude//os/constraints:macos",
+    ],
+    compiler_flags = [
+        "-mavx512f",
+        "-mavx512vl",
+    ],
+    visibility = [],
 )
 
 http_archive(
@@ -3266,18 +3325,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.6.crate",
-    sha256 = "2aba8f4e9906c7ce3c73463f62a7f0c65183ada1a2d47e397cc8810827f9694f",
-    strip_prefix = "cc-1.1.6",
-    urls = ["https://static.crates.io/crates/cc/1.1.6/download"],
+    name = "cc-1.1.7.crate",
+    sha256 = "26a5c3fd7bfa1ce3897a3a3501d362b2d87b7f2583ebcb4a949ec25911025cbc",
+    strip_prefix = "cc-1.1.7",
+    urls = ["https://static.crates.io/crates/cc/1.1.7/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.6",
-    srcs = [":cc-1.1.6.crate"],
+    name = "cc-1.1.7",
+    srcs = [":cc-1.1.7.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.6.crate/src/lib.rs",
+    crate_root = "cc-1.1.7.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4038,7 +4097,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.50.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.1.6"],
+    deps = [":cc-1.1.7"],
 )
 
 cargo.rust_library(
@@ -5077,7 +5136,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.6",
+        ":cc-1.1.7",
         ":cxxbridge-flags-1.0.124",
     ],
 )
@@ -10523,7 +10582,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.6",
+        ":cc-1.1.7",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -11864,7 +11923,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.1.6",
+        ":cc-1.1.7",
         ":cmake-0.1.50",
         ":subprocess-0.2.9",
     ],
@@ -13082,7 +13141,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.6",
+        ":cc-1.1.7",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -16586,7 +16645,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.6"],
+    deps = [":cc-1.1.7"],
 )
 
 buildscript_run(
@@ -16668,7 +16727,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.6"],
+    deps = [":cc-1.1.7"],
 )
 
 buildscript_run(
@@ -25197,6 +25256,7 @@ cargo.rust_library(
         "zdict_builder",
         "zstdmt",
     ],
+    rustc_flags = ["-ldylib=zstd"],
     visibility = [],
     deps = [":zstd-sys-2.0.12+zstd.1.5.6-zstd"],
 )
