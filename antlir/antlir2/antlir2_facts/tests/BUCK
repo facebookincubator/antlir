@@ -120,7 +120,7 @@ rust_unittest(
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
     ] + internal_external(
-        fb = ["//common/rust/buck_resources:buck_resources"],
+        fb = ["fbsource//third-party/rust:buck-resources"],
         oss = [],
     ),
 )
