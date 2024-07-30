@@ -11,175 +11,6 @@ load("@prelude//utils:selects.bzl", "selects")
 # open-source by starting to use un-shimmed features.
 load(":build_defs_impl.bzl", "shim")
 
-def _check_args(rule, args, kwargs, allowed_kwargs):
-    if args:
-        fail("use kwargs")
-    for kwarg in kwargs:
-        if kwarg not in allowed_kwargs:
-            fail("kwarg `{}` is not supported by the OSS shim for `{}`".format(
-                kwarg,
-                rule,
-            ))
-
-def _make_rule_kwargs_dict(lst):
-    return {k: 1 for k in lst}
-
-_CPP_BINARY_KWARGS = _make_rule_kwargs_dict(
-    [
-        "compiler_flags",
-        "deps",
-        "external_deps",
-        "labels",
-        "link_style",
-        "linker_flags",
-        "name",
-        "srcs",
-        "tags",
-        "visibility",
-    ],
-)
-
-def cpp_binary(*args, **kwargs):
-    _check_args("cpp_binary", args, kwargs, _CPP_BINARY_KWARGS)
-    shim.cpp_binary(**kwargs)
-
-_CPP_LIBRARY_KWARGS = _make_rule_kwargs_dict(
-    [
-        "compiler_flags",
-        "deps",
-        "exported_headers",
-        "exported_linker_flags",
-        "external_deps",
-        "header_namespace",
-        "headers",
-        "include_directories",
-        "labels",
-        "linker_flags",
-        "name",
-        "preferred_linkage",
-        "preprocessor_flags",
-        "srcs",
-        "tags",
-        "visibility",
-    ],
-)
-
-def cpp_library(*args, **kwargs):
-    _check_args("cpp_library", args, kwargs, _CPP_LIBRARY_KWARGS)
-    shim.cpp_library(**kwargs)
-
-_CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
-    [
-        "deps",
-        "env",
-        "external_deps",
-        "headers",
-        "labels",
-        "name",
-        "owner",
-        "resources",
-        "srcs",
-        "tags",
-        "visibility",
-        "supports_static_listing",
-    ],
-)
-
-def cpp_unittest(*args, **kwargs):
-    _check_args("cpp_unittest", args, kwargs, _CPP_UNITTEST_KWARGS)
-    shim.cpp_unittest(**kwargs)
-
-_CXX_GENRULE_KWARGS = _make_rule_kwargs_dict(
-    [
-        "cmd",
-        "labels",
-        "name",
-        "out",
-        "srcs",
-        "tags",
-        "type",
-        "visibility",
-    ],
-)
-
-def cxx_genrule(*args, **kwargs):
-    _check_args("cxx_genrule", args, kwargs, _CXX_GENRULE_KWARGS)
-    shim.cxx_genrule(**kwargs)
-
-_PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
-    [
-        "base_module",
-        "compatible_with",
-        "deps",
-        "labels",
-        "main_function",
-        "main_module",
-        "main_src",
-        "name",
-        "package_style",
-        "par_style",
-        "resources",
-        "runtime_deps",
-        "runtime_env",
-        "srcs",
-        "tags",
-        "visibility",
-    ],
-)
-
-def python_binary(*args, **kwargs):
-    _check_args("python_binary", args, kwargs, _PYTHON_BINARY_KWARGS)
-    shim.python_binary(**kwargs)
-
-_PYTHON_LIBRARY_KWARGS = _make_rule_kwargs_dict(
-    [
-        "base_module",
-        "compatible_with",
-        "deps",
-        "labels",
-        "name",
-        "resources",
-        "runtime_deps",
-        "srcs",
-        "tags",
-        "type_stubs",
-        "visibility",
-    ],
-)
-
-def python_library(*args, **kwargs):
-    _check_args("python_library", args, kwargs, _PYTHON_LIBRARY_KWARGS)
-    shim.python_library(**kwargs)
-
-_PYTHON_UNITTEST_KWARGS = _make_rule_kwargs_dict(
-    [
-        "base_module",
-        "compatible_with",
-        "cpp_deps",
-        "deps",
-        "env",
-        "flavor",
-        "labels",
-        "main_module",
-        "name",
-        "needed_coverage",
-        "package_style",
-        "par_style",
-        "target_compatible_with",
-        "resources",
-        "runtime_deps",
-        "srcs",
-        "tags",
-        "visibility",
-        "supports_static_listing",
-        "remote_execution",
-    ],
-)
-
-def python_unittest(*args, **kwargs):
-    _check_args("python_unittest", args, kwargs, _PYTHON_UNITTEST_KWARGS)
-    shim.python_unittest(**kwargs)
-
 def _third_party_libraries(names, platform = None):
     return [
         shim.third_party.library(name, platform = platform)
@@ -274,6 +105,13 @@ def internal_external(*, fb, oss):
     else:
         return oss
 
+cpp_binary = shim.cpp_binary
+cpp_library = shim.cpp_library
+cpp_unittest = shim.cpp_unittest
+cxx_genrule = shim.cxx_genrule
+python_binary = shim.python_binary
+python_library = shim.python_library
+python_unittest = shim.python_unittest
 buck_command_alias = shim.buck_command_alias
 buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
