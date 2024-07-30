@@ -252,8 +252,7 @@ impl SendAttributeHeader {
             Some(size) => context.write16(size)?,
             None => trace!(
                 context.ssuc_logger,
-                "Size not found while persisting attribute type {:?}",
-                self.sah_attribute_type
+                "Size not found while persisting attribute type {:?}", self.sah_attribute_type
             ),
         }
         Ok(())
