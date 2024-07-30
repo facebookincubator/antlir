@@ -399,8 +399,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
         child.ssuc_associated_with_parent = false;
         trace!(
             self.ssuc_logger,
-            "Ctxt associated with parent is {}",
-            child.ssuc_associated_with_parent
+            "Ctxt associated with parent is {}", child.ssuc_associated_with_parent
         );
         self.ssuc_stats.ssus_context_return_time += Self::get_time_delta(&start_time);
     }

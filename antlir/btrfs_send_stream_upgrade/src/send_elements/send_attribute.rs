@@ -113,8 +113,7 @@ impl SendAttribute {
         let header_slice = &attribute.sa_buffer[..header_size];
         trace!(
             context.ssuc_logger,
-            "New AttributeHeader bytes {:02X?}",
-            header_slice
+            "New AttributeHeader bytes {:02X?}", header_slice
         );
         Ok(attribute)
     }
@@ -154,8 +153,7 @@ impl SendAttribute {
         let header_slice = &attribute.sa_buffer[..header_size];
         trace!(
             context.ssuc_logger,
-            "NewFromInt AttributeHeader bytes {:02X?}",
-            header_slice
+            "NewFromInt AttributeHeader bytes {:02X?}", header_slice
         );
         Ok(attribute)
     }
@@ -195,8 +193,7 @@ impl SendAttribute {
         let header_slice = &attribute.sa_buffer[..header_size];
         trace!(
             context.ssuc_logger,
-            "NewFromInt AttributeHeader bytes {:02X?}",
-            header_slice
+            "NewFromInt AttributeHeader bytes {:02X?}", header_slice
         );
         Ok(attribute)
     }
@@ -237,8 +234,7 @@ impl SendAttribute {
         let header_slice = &attribute.sa_buffer[..header_size];
         trace!(
             context.ssuc_logger,
-            "NewFromString AttributeHeader bytes {:02X?}",
-            header_slice
+            "NewFromString AttributeHeader bytes {:02X?}", header_slice
         );
         Ok(attribute)
     }
@@ -299,8 +295,7 @@ impl SendAttribute {
         let header_slice = &attribute.sa_buffer[..header_size];
         trace!(
             context.ssuc_logger,
-            "Copied AttributeHeader bytes {:02X?}",
-            header_slice
+            "Copied AttributeHeader bytes {:02X?}", header_slice
         );
         Ok(attribute)
     }
@@ -602,8 +597,7 @@ impl SendAttribute {
         let header_slice = &self.sa_buffer[..self.sa_header.get_header_size()];
         trace!(
             context.ssuc_logger,
-            "Checking AttributeHeader bytes {:02X?}",
-            header_slice
+            "Checking AttributeHeader bytes {:02X?}", header_slice
         );
         // Start off by creating the attribute header
         let header;
