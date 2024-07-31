@@ -24,8 +24,4 @@ _caf = rule(
     cfg = package_cfg,
 )
 
-caf = package_macro(
-    _caf,
-    # TODO(jtru): support rootless in CAF
-    always_needs_root = True,
-)
+caf = package_macro(_caf)
