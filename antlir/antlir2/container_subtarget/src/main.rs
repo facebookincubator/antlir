@@ -110,6 +110,8 @@ fn main() -> anyhow::Result<()> {
     }
     if let Some(chdir) = &args.chdir {
         cmd_builder.working_directory(chdir);
+    } else {
+        cmd_builder.working_directory(Path::new("/"));
     }
     if args.boot {
         cmd_builder.register(true);
