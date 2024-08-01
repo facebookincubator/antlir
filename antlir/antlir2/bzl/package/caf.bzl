@@ -24,4 +24,8 @@ _caf = rule(
     cfg = package_cfg,
 )
 
-caf = package_macro(_caf)
+caf = package_macro(
+    _caf,
+    # TODO(jtru): remove when unshare userns works
+    always_needs_root = True,
+)
