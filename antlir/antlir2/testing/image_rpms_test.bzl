@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
@@ -57,9 +58,16 @@ _rpm_names_test_macro = rule_with_default_target_platform(_rpm_names_test)
 def image_test_rpm_names(
         *,
         default_os: str | None = None,
+        rootless: bool | None = None,
         **kwargs):
+    rootless = rootless if rootless != None else get_antlir2_rootless()
+    labels = kwargs.pop("labels", [])
+    if not rootless:
+        labels.append("uses_sudo")
     _rpm_names_test_macro(
         default_os = default_os or get_default_os_for_package(),
+        rootless = rootless,
+        labels = labels,
         **kwargs
     )
 
@@ -97,11 +105,14 @@ def image_test_rpm_integrity(
         ignored_files: list[str] | Select = [],
         ignored_rpms: list[str] | Select = [],
         default_os: str | None = None,
+        rootless: bool | None = None,
         **kwargs):
     """
     Verify the integrity of all installed RPMs to ensure that any changes done
     by an image will not be undone by any runtime rpm installation.
     """
+    rootless = rootless if rootless != None else get_antlir2_rootless()
+
     _rpm_integrity_test_macro(
         name = name + "--script",
         ignored_files = ignored_files,
@@ -117,11 +128,13 @@ def image_test_rpm_integrity(
                 mountpoint = "/layer",
             ),
         ],
+        rootless = rootless,
     )
     image_sh_test(
         name = name,
         layer = ":{}--layer".format(name),
         test = ":{}--script".format(name),
         default_os = default_os or get_default_os_for_package(),
+        rootless = rootless,
         **kwargs
     )
