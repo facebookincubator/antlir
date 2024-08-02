@@ -84,7 +84,6 @@ impl LogArgs {
 
 #[derive(Parser, Debug)]
 enum Subcommand {
-    CasDir(cmd::CasDir),
     Compile(cmd::Compile),
     Depgraph(cmd::Depgraph),
 }
@@ -117,7 +116,6 @@ fn main() -> Result<()> {
         .init();
 
     let result = match args.subcommand {
-        Subcommand::CasDir(x) => x.run(rootless),
         Subcommand::Compile(x) => x.run(rootless),
         Subcommand::Depgraph(x) => x.run(),
     };

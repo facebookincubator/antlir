@@ -19,7 +19,6 @@ rust_binary(
         "tracing",
         "tracing-subscriber",
         "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
-        "//antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
         "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
