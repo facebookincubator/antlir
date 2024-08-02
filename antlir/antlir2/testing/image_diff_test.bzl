@@ -4,9 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 
 def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -59,6 +60,7 @@ _image_diff_test = rule(
         "_rootless": rootless_cfg.is_rootless_attr,
     } | cfg_attrs(),
     doc = "Test that the only changes between a layer and it's parent is what you expect",
+    cfg = layer_cfg,
 )
 
 _image_diff_test_macro = rule_with_default_target_platform(_image_diff_test)
@@ -67,19 +69,18 @@ def image_diff_test(
         *,
         name: str,
         default_os: str | None = None,
+        rootless: bool | None = None,
         **kwargs):
+    rootless = rootless if rootless != None else get_antlir2_rootless()
+    labels = kwargs.pop("labels", [])
+    labels = list(labels)
+    if not rootless:
+        labels.append("uses_sudo")
+
     _image_diff_test_macro(
         name = name,
         default_os = default_os or get_default_os_for_package(),
-        **kwargs
-    )
-
-    # add an overlayfs variant so that we can ensure that remote-execution
-    # builds keep working and pass the same correctness tests
-    kwargs.pop("working_format", None)
-    _image_diff_test_macro(
-        name = name + "-overlayfs",
-        default_os = default_os or get_default_os_for_package(),
-        working_format = "overlayfs",
+        rootless = rootless,
+        labels = labels,
         **kwargs
     )
