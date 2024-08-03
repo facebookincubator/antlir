@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "3d9f92b9133b659ba728f81d5dd4ad05ac881c96",
+    rev = "407dd688ce0442c1fc3ba12956e317e1d88b0ea3",
     visibility = [],
 )
 
@@ -47,7 +47,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":lazy_static-1.5.0",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
     ],
 )
 
@@ -1031,7 +1031,7 @@ cargo.rust_library(
         ":memchr-2.7.4",
         ":pin-project-lite-0.2.14",
         ":tokio-1.39.2",
-        ":zstd-safe-7.2.0",
+        ":zstd-safe-7.2.1",
     ],
 )
 
@@ -1908,7 +1908,7 @@ cargo.rust_library(
         ":peeking_take_while-0.1.2",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":rustc-hash-1.1.0",
         ":shlex-1.3.0",
     ],
@@ -1961,7 +1961,7 @@ cargo.rust_library(
         ":peeking_take_while-0.1.2",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":rustc-hash-1.1.0",
         ":shlex-1.3.0",
         ":syn-1.0.109-syn1",
@@ -2027,7 +2027,7 @@ cargo.rust_library(
         ":prettyplease-0.2.20",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":rustc-hash-1.1.0",
         ":shlex-1.3.0",
         ":syn-2.0.72",
@@ -3880,7 +3880,7 @@ cargo.rust_library(
         ":clap_lex-0.2.4",
         ":indexmap-1.9.3",
         ":once_cell-1.19.0",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":strsim-0.10.0",
         ":termcolor-1.4.1",
         ":terminal_size-0.2.6",
@@ -6483,7 +6483,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":log-0.4.22",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
     ],
 )
 
@@ -6519,7 +6519,7 @@ cargo.rust_library(
         ":humantime-2.1.0",
         ":is-terminal-0.4.12",
         ":log-0.4.22",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":termcolor-1.4.1",
     ],
 )
@@ -6573,7 +6573,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":log-0.4.22",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
     ],
 )
 
@@ -8974,7 +8974,7 @@ cargo.rust_library(
         ":hyper-0.14.30",
         ":log-0.4.22",
         ":once_cell-1.19.0",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":serde-1.0.204",
         ":serde_json-1.0.122",
         ":serde_urlencoded-0.7.1",
@@ -9291,10 +9291,10 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
     },
     visibility = [],
@@ -9959,7 +9959,7 @@ cargo.rust_library(
         ":lalrpop-util-0.19.12",
         ":petgraph-0.6.5",
         ":pico-args-0.4.2",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":regex-syntax-0.6.29",
         ":string_cache-0.8.7",
         ":term-0.7.0",
@@ -10001,7 +10001,7 @@ cargo.rust_binary(
         ":lalrpop-util-0.19.12",
         ":petgraph-0.6.5",
         ":pico-args-0.4.2",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":regex-syntax-0.6.29",
         ":string_cache-0.8.7",
         ":term-0.7.0",
@@ -10037,7 +10037,7 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
-    deps = [":regex-1.10.5"],
+    deps = [":regex-1.10.6"],
 )
 
 alias(
@@ -11922,7 +11922,7 @@ cargo.rust_library(
         ":num-bigint-0.4.6",
         ":num-traits-0.2.19",
         ":rand-0.8.5",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":rust_decimal-1.35.0",
         ":saturating-0.1.0",
         ":serde-1.0.204",
@@ -12020,7 +12020,7 @@ cargo.rust_library(
                 ":libc-0.2.155",
                 ":security-framework-2.11.1",
                 ":security-framework-sys-2.11.1",
-                ":tempfile-3.10.1",
+                ":tempfile-3.11.0",
             ],
         ),
         "macos-x86_64": dict(
@@ -12028,7 +12028,7 @@ cargo.rust_library(
                 ":libc-0.2.155",
                 ":security-framework-2.11.1",
                 ":security-framework-sys-2.11.1",
-                ":tempfile-3.10.1",
+                ":tempfile-3.11.0",
             ],
         ),
         "windows-gnu": dict(
@@ -13604,7 +13604,7 @@ cargo.rust_library(
     crate_root = "parse-zoneinfo-0.3.1.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":regex-1.10.5"],
+    deps = [":regex-1.10.6"],
 )
 
 http_archive(
@@ -14491,25 +14491,25 @@ buildscript_run(
 )
 
 http_archive(
-    name = "ppv-lite86-0.2.18.crate",
-    sha256 = "dee4364d9f3b902ef14fab8a1ddffb783a1cb6b4bba3bfc1fa3922732c7de97f",
-    strip_prefix = "ppv-lite86-0.2.18",
-    urls = ["https://static.crates.io/crates/ppv-lite86/0.2.18/download"],
+    name = "ppv-lite86-0.2.20.crate",
+    sha256 = "77957b295656769bb8ad2b6a6b09d897d94f05c41b069aede1fcdaa675eaea04",
+    strip_prefix = "ppv-lite86-0.2.20",
+    urls = ["https://static.crates.io/crates/ppv-lite86/0.2.20/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "ppv-lite86-0.2.18",
-    srcs = [":ppv-lite86-0.2.18.crate"],
+    name = "ppv-lite86-0.2.20",
+    srcs = [":ppv-lite86-0.2.20.crate"],
     crate = "ppv_lite86",
-    crate_root = "ppv-lite86-0.2.18.crate/src/lib.rs",
+    crate_root = "ppv-lite86-0.2.20.crate/src/lib.rs",
     edition = "2021",
     features = [
         "simd",
         "std",
     ],
     visibility = [],
-    deps = [":zerocopy-0.6.6"],
+    deps = [":zerocopy-0.7.35"],
 )
 
 http_archive(
@@ -14562,7 +14562,7 @@ cargo.rust_library(
         ":float-cmp-0.8.0",
         ":normalize-line-endings-0.3.0",
         ":predicates-core-1.0.8",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
     ],
 )
 
@@ -14594,7 +14594,7 @@ cargo.rust_library(
         ":itertools-0.10.5",
         ":normalize-line-endings-0.3.0",
         ":predicates-core-1.0.8",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
     ],
 )
 
@@ -15557,7 +15557,7 @@ cargo.rust_binary(
         "python-3",
     ],
     visibility = [],
-    deps = [":regex-1.10.5"],
+    deps = [":regex-1.10.6"],
 )
 
 buildscript_run(
@@ -15830,7 +15830,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":ppv-lite86-0.2.18",
+        ":ppv-lite86-0.2.20",
         ":rand_core-0.6.4",
     ],
 )
@@ -16017,23 +16017,23 @@ cargo.rust_library(
 
 alias(
     name = "regex",
-    actual = ":regex-1.10.5",
+    actual = ":regex-1.10.6",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "regex-1.10.5.crate",
-    sha256 = "b91213439dad192326a0d7c6ee3955910425f441d7038e0d6933b0aec5c4517f",
-    strip_prefix = "regex-1.10.5",
-    urls = ["https://static.crates.io/crates/regex/1.10.5/download"],
+    name = "regex-1.10.6.crate",
+    sha256 = "4219d74c6b67a3654a9fbebc4b419e22126d13d2f3c4a07ee0cb61ff79a79619",
+    strip_prefix = "regex-1.10.6",
+    urls = ["https://static.crates.io/crates/regex/1.10.6/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "regex-1.10.5",
-    srcs = [":regex-1.10.5.crate"],
+    name = "regex-1.10.6",
+    srcs = [":regex-1.10.6.crate"],
     crate = "regex",
-    crate_root = "regex-1.10.5.crate/src/lib.rs",
+    crate_root = "regex-1.10.6.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -16931,7 +16931,7 @@ cargo.rust_library(
         ":glob-0.3.1",
         ":proc-macro2-1.0.86",
         ":quote-1.0.36",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":relative-path-1.9.3",
         ":syn-2.0.72",
         ":unicode-ident-1.0.12",
@@ -18037,10 +18037,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
     },
     visibility = [],
@@ -19874,7 +19874,7 @@ cargo.rust_library(
         ":once_cell-1.19.0",
         ":paste-1.0.15",
         ":ref-cast-1.0.23",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":serde-1.0.204",
         ":serde_json-1.0.122",
         ":starlark_derive-0.12.0",
@@ -20877,23 +20877,23 @@ cargo.rust_library(
 
 alias(
     name = "tempfile",
-    actual = ":tempfile-3.10.1",
+    actual = ":tempfile-3.11.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tempfile-3.10.1.crate",
-    sha256 = "85b77fafb263dd9d05cbeac119526425676db3784113aa9295c88498cbf8bff1",
-    strip_prefix = "tempfile-3.10.1",
-    urls = ["https://static.crates.io/crates/tempfile/3.10.1/download"],
+    name = "tempfile-3.11.0.crate",
+    sha256 = "b8fcd239983515c23a32fb82099f97d0b11b8c72f654ed659363a95c3dad7a53",
+    strip_prefix = "tempfile-3.11.0",
+    urls = ["https://static.crates.io/crates/tempfile/3.11.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tempfile-3.10.1",
-    srcs = [":tempfile-3.10.1.crate"],
+    name = "tempfile-3.11.0",
+    srcs = [":tempfile-3.11.0.crate"],
     crate = "tempfile",
-    crate_root = "tempfile-3.10.1.crate/src/lib.rs",
+    crate_root = "tempfile-3.11.0.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "linux-arm64": dict(
@@ -20919,6 +20919,7 @@ cargo.rust_library(
     deps = [
         ":cfg-if-1.0.0",
         ":fastrand-2.1.0",
+        ":once_cell-1.19.0",
     ],
 )
 
@@ -20967,7 +20968,7 @@ cargo.rust_library(
         ":pest-2.7.11",
         ":pest_derive-2.7.11",
         ":rand-0.8.5",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":serde-1.0.204",
         ":serde_json-1.0.122",
         ":slug-0.1.5",
@@ -21074,10 +21075,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
     },
     visibility = [],
@@ -22334,7 +22335,7 @@ cargo.rust_library(
         ":matchers-0.1.0",
         ":nu-ansi-term-0.46.0",
         ":once_cell-1.19.0",
-        ":regex-1.10.5",
+        ":regex-1.10.6",
         ":sharded-slab-0.1.7",
         ":smallvec-1.13.2",
         ":thread_local-1.1.8",
@@ -22817,13 +22818,13 @@ cargo.rust_library(
     platform = {
         "windows-gnu": dict(
             deps = [
-                ":tempfile-3.10.1",
+                ":tempfile-3.11.0",
                 ":winapi-0.3.9",
             ],
         ),
         "windows-msvc": dict(
             deps = [
-                ":tempfile-3.10.1",
+                ":tempfile-3.11.0",
                 ":winapi-0.3.9",
             ],
         ),
@@ -22867,7 +22868,7 @@ cargo.rust_library(
         ":rand-0.8.5",
         ":serde-1.0.204",
         ":serde_json-1.0.122",
-        ":tempfile-3.10.1",
+        ":tempfile-3.11.0",
         ":thiserror-1.0.63",
         ":uefisettings_backend_thrift-0.1.0",
         ":uefisettings_spellings_db_thrift-0.1.0",
@@ -22901,7 +22902,7 @@ cargo.rust_binary(
         ":rand-0.8.5",
         ":serde-1.0.204",
         ":serde_json-1.0.122",
-        ":tempfile-3.10.1",
+        ":tempfile-3.11.0",
         ":thiserror-1.0.63",
         ":uefisettings-0.1.4",
         ":uefisettings_backend_thrift-0.1.0",
@@ -23881,10 +23882,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.8"],
+            deps = [":winapi-util-0.1.9"],
         ),
     },
     visibility = [],
@@ -24206,25 +24207,25 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "winapi-util-0.1.8.crate",
-    sha256 = "4d4cc384e1e73b93bafa6fb4f1df8c41695c8a91cf9c4c64358067d15a7b6c6b",
-    strip_prefix = "winapi-util-0.1.8",
-    urls = ["https://static.crates.io/crates/winapi-util/0.1.8/download"],
+    name = "winapi-util-0.1.9.crate",
+    sha256 = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb",
+    strip_prefix = "winapi-util-0.1.9",
+    urls = ["https://static.crates.io/crates/winapi-util/0.1.9/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "winapi-util-0.1.8",
-    srcs = [":winapi-util-0.1.8.crate"],
+    name = "winapi-util-0.1.9",
+    srcs = [":winapi-util-0.1.9.crate"],
     crate = "winapi_util",
-    crate_root = "winapi-util-0.1.8.crate/src/lib.rs",
+    crate_root = "winapi-util-0.1.9.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "windows-gnu": dict(
-            deps = [":windows-sys-0.52.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
         "windows-msvc": dict(
-            deps = [":windows-sys-0.52.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
     },
     visibility = [],
@@ -24401,7 +24402,6 @@ cargo.rust_library(
         "Win32_System_Memory",
         "Win32_System_Performance",
         "Win32_System_Pipes",
-        "Win32_System_SystemInformation",
         "Win32_System_SystemServices",
         "Win32_System_Threading",
         "Win32_System_WindowsProgramming",
@@ -24433,8 +24433,12 @@ cargo.rust_library(
         "Win32",
         "Win32_Foundation",
         "Win32_Security",
+        "Win32_Storage",
+        "Win32_Storage_FileSystem",
         "Win32_System",
+        "Win32_System_Console",
         "Win32_System_Pipes",
+        "Win32_System_SystemInformation",
         "default",
     ],
     visibility = [],
@@ -25068,31 +25072,6 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "zerocopy-0.6.6.crate",
-    sha256 = "854e949ac82d619ee9a14c66a1b674ac730422372ccb759ce0c39cabcf2bf8e6",
-    strip_prefix = "zerocopy-0.6.6",
-    urls = ["https://static.crates.io/crates/zerocopy/0.6.6/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "zerocopy-0.6.6",
-    srcs = [":zerocopy-0.6.6.crate"],
-    crate = "zerocopy",
-    crate_root = "zerocopy-0.6.6.crate/src/lib.rs",
-    edition = "2021",
-    env = {
-        "CARGO_PKG_VERSION": "0.6.6",
-    },
-    features = ["simd"],
-    visibility = [],
-    deps = [
-        ":byteorder-1.5.0",
-        ":zerocopy-derive-0.6.6",
-    ],
-)
-
-http_archive(
     name = "zerocopy-0.7.35.crate",
     sha256 = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0",
     strip_prefix = "zerocopy-0.7.35",
@@ -25109,24 +25088,34 @@ cargo.rust_library(
     env = {
         "CARGO_PKG_VERSION": "0.7.35",
     },
-    features = ["simd"],
+    features = [
+        "byteorder",
+        "default",
+        "derive",
+        "simd",
+        "zerocopy-derive",
+    ],
     visibility = [],
+    deps = [
+        ":byteorder-1.5.0",
+        ":zerocopy-derive-0.7.35",
+    ],
 )
 
 http_archive(
-    name = "zerocopy-derive-0.6.6.crate",
-    sha256 = "125139de3f6b9d625c39e2efdd73d41bdac468ccd556556440e322be0e1bbd91",
-    strip_prefix = "zerocopy-derive-0.6.6",
-    urls = ["https://static.crates.io/crates/zerocopy-derive/0.6.6/download"],
+    name = "zerocopy-derive-0.7.35.crate",
+    sha256 = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e",
+    strip_prefix = "zerocopy-derive-0.7.35",
+    urls = ["https://static.crates.io/crates/zerocopy-derive/0.7.35/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "zerocopy-derive-0.6.6",
-    srcs = [":zerocopy-derive-0.6.6.crate"],
+    name = "zerocopy-derive-0.7.35",
+    srcs = [":zerocopy-derive-0.7.35.crate"],
     crate = "zerocopy_derive",
-    crate_root = "zerocopy-derive-0.6.6.crate/src/lib.rs",
-    edition = "2021",
+    crate_root = "zerocopy-derive-0.7.35.crate/src/lib.rs",
+    edition = "2018",
     proc_macro = True,
     visibility = [],
     deps = [
@@ -25191,28 +25180,28 @@ cargo.rust_library(
         "zstdmt",
     ],
     visibility = [],
-    deps = [":zstd-safe-7.2.0"],
+    deps = [":zstd-safe-7.2.1"],
 )
 
 alias(
     name = "zstd-safe",
-    actual = ":zstd-safe-7.2.0",
+    actual = ":zstd-safe-7.2.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "zstd-safe-7.2.0.crate",
-    sha256 = "fa556e971e7b568dc775c136fc9de8c779b1c2fc3a63defaafadffdbd3181afa",
-    strip_prefix = "zstd-safe-7.2.0",
-    urls = ["https://static.crates.io/crates/zstd-safe/7.2.0/download"],
+    name = "zstd-safe-7.2.1.crate",
+    sha256 = "54a3ab4db68cea366acc5c897c7b4d4d1b8994a9cd6e6f841f8964566a419059",
+    strip_prefix = "zstd-safe-7.2.1",
+    urls = ["https://static.crates.io/crates/zstd-safe/7.2.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "zstd-safe-7.2.0",
-    srcs = [":zstd-safe-7.2.0.crate"],
+    name = "zstd-safe-7.2.1",
+    srcs = [":zstd-safe-7.2.1.crate"],
     crate = "zstd_safe",
-    crate_root = "zstd-safe-7.2.0.crate/src/lib.rs",
+    crate_root = "zstd-safe-7.2.1.crate/src/lib.rs",
     edition = "2018",
     features = [
         "arrays",
@@ -25222,16 +25211,16 @@ cargo.rust_library(
         "zdict_builder",
         "zstdmt",
     ],
-    rustc_flags = ["@$(location :zstd-safe-7.2.0-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :zstd-safe-7.2.1-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [":zstd-sys-2.0.12+zstd.1.5.6"],
+    deps = [":zstd-sys-2.0.13+zstd.1.5.6"],
 )
 
 cargo.rust_binary(
-    name = "zstd-safe-7.2.0-build-script-build",
-    srcs = [":zstd-safe-7.2.0.crate"],
+    name = "zstd-safe-7.2.1-build-script-build",
+    srcs = [":zstd-safe-7.2.1.crate"],
     crate = "build_script_build",
-    crate_root = "zstd-safe-7.2.0.crate/build.rs",
+    crate_root = "zstd-safe-7.2.1.crate/build.rs",
     edition = "2018",
     features = [
         "arrays",
@@ -25245,9 +25234,9 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "zstd-safe-7.2.0-build-script-run",
+    name = "zstd-safe-7.2.1-build-script-run",
     package_name = "zstd-safe",
-    buildscript_rule = ":zstd-safe-7.2.0-build-script-build",
+    buildscript_rule = ":zstd-safe-7.2.1-build-script-build",
     features = [
         "arrays",
         "default",
@@ -25256,13 +25245,13 @@ buildscript_run(
         "zdict_builder",
         "zstdmt",
     ],
-    version = "7.2.0",
+    version = "7.2.1",
 )
 
 http_archive(
-    name = "zstd-sys-2.0.12+zstd.1.5.6.crate",
-    sha256 = "0a4e40c320c3cb459d9a9ff6de98cff88f4751ee9275d140e2be94a2b74e4c13",
-    strip_prefix = "zstd-sys-2.0.12+zstd.1.5.6",
+    name = "zstd-sys-2.0.13+zstd.1.5.6.crate",
+    sha256 = "38ff0f21cfee8f97d94cef41359e0c89aa6113028ab0291aa8ca0038995a95aa",
+    strip_prefix = "zstd-sys-2.0.13+zstd.1.5.6",
     sub_targets = [
         "zdict.h",
         "zstd.h",
@@ -25348,15 +25337,15 @@ http_archive(
         "zstd/lib/zstd.h",
         "zstd/lib/zstd_errors.h",
     ],
-    urls = ["https://static.crates.io/crates/zstd-sys/2.0.12+zstd.1.5.6/download"],
+    urls = ["https://static.crates.io/crates/zstd-sys/2.0.13+zstd.1.5.6/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "zstd-sys-2.0.12+zstd.1.5.6",
-    srcs = [":zstd-sys-2.0.12+zstd.1.5.6.crate"],
+    name = "zstd-sys-2.0.13+zstd.1.5.6",
+    srcs = [":zstd-sys-2.0.13+zstd.1.5.6.crate"],
     crate = "zstd_sys",
-    crate_root = "zstd-sys-2.0.12+zstd.1.5.6.crate/src/lib.rs",
+    crate_root = "zstd-sys-2.0.13+zstd.1.5.6.crate/src/lib.rs",
     edition = "2018",
     features = [
         "legacy",
@@ -25366,97 +25355,97 @@ cargo.rust_library(
     ],
     rustc_flags = ["-ldylib=zstd"],
     visibility = [],
-    deps = [":zstd-sys-2.0.12+zstd.1.5.6-zstd"],
+    deps = [":zstd-sys-2.0.13+zstd.1.5.6-zstd"],
 )
 
 third_party_rust_cxx_library(
-    name = "zstd-sys-2.0.12+zstd.1.5.6-zstd",
+    name = "zstd-sys-2.0.13+zstd.1.5.6-zstd",
     srcs = [
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/debug.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/entropy_common.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/error_private.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/fse_decompress.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/pool.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/threading.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/zstd_common.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/fse_compress.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/hist.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/huf_compress.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_literals.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_sequences.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_superblock.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_double_fast.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_fast.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_lazy.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_opt.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstdmt_compress.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/huf_decompress.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/huf_decompress_amd64.S]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/zstd_ddict.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_block.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/dictBuilder/cover.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/dictBuilder/divsufsort.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/dictBuilder/fastcover.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/dictBuilder/zdict.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v01.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v02.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v03.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v04.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v05.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v06.c]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v07.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/debug.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/entropy_common.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/error_private.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/fse_decompress.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/pool.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/threading.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/zstd_common.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/fse_compress.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/hist.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/huf_compress.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_literals.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_sequences.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_superblock.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_double_fast.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_fast.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_lazy.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_opt.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstdmt_compress.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/huf_decompress.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/huf_decompress_amd64.S]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/zstd_ddict.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_block.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/dictBuilder/cover.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/dictBuilder/divsufsort.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/dictBuilder/fastcover.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/dictBuilder/zdict.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v01.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v02.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v03.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v04.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v05.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v06.c]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v07.c]",
     ],
     headers = [
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zdict.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/bitstream.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/compiler.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/cpu.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/debug.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/error_private.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/fse.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/huf.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/mem.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/pool.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/portability_macros.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/threading.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/zstd_deps.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/zstd_internal.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/common/zstd_trace.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/clevels.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/hist.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_internal.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_literals.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_sequences.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_superblock.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_cwksp.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_double_fast.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_fast.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_lazy.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm_geartab.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstd_opt.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/compress/zstdmt_compress.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/zstd_ddict.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_block.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_internal.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/deprecated/zbuff.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/dictBuilder/cover.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/dictBuilder/divsufsort.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_legacy.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v01.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v02.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v03.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v04.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v05.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v06.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v07.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/zdict.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/zstd.h]",
-        ":zstd-sys-2.0.12+zstd.1.5.6.crate[zstd/lib/zstd_errors.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zdict.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/bitstream.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/compiler.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/cpu.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/debug.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/error_private.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/fse.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/huf.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/mem.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/pool.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/portability_macros.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/threading.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/zstd_deps.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/zstd_internal.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/common/zstd_trace.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/clevels.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/hist.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_internal.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_literals.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_sequences.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_superblock.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_cwksp.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_double_fast.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_fast.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_lazy.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm_geartab.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstd_opt.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/compress/zstdmt_compress.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/zstd_ddict.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_block.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_internal.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/deprecated/zbuff.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/dictBuilder/cover.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/dictBuilder/divsufsort.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_legacy.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v01.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v02.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v03.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v04.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v05.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v06.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v07.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/zdict.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/zstd.h]",
+        ":zstd-sys-2.0.13+zstd.1.5.6.crate[zstd/lib/zstd_errors.h]",
     ],
     compiler_flags = [
         "-O3",
