@@ -16,7 +16,6 @@ use clap::Parser;
 use json_arg::JsonFile;
 
 mod btrfs;
-mod cas_dir;
 mod cpio;
 mod ext;
 mod gpt;
@@ -100,7 +99,6 @@ fn main() -> Result<()> {
 
     match args.spec.into_inner() {
         Spec::Btrfs(p) => p.build(&args.out),
-        Spec::CasDir(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Cpio(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Ext3(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Gpt(p) => p.build(&args.out),

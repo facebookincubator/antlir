@@ -11,7 +11,6 @@ use serde::Deserialize;
 #[serde(rename_all = "snake_case")]
 pub enum Spec {
     Btrfs(crate::btrfs::Btrfs),
-    CasDir(crate::cas_dir::CasDir),
     Cpio(crate::cpio::Cpio),
     Ext3(crate::ext::Ext3),
     Gpt(crate::gpt::Gpt),

@@ -249,12 +249,6 @@ def _new_compressed_package_rule(
         cfg = package_cfg,
     )
 
-_cas_dir, _cas_dir_anon = _new_package_rule(
-    format = "cas_dir",
-    is_dir = True,
-    sudo = True,
-)
-
 _cpio, _cpio_anon = _new_package_rule(
     format = "cpio",
     sudo = True,
@@ -380,7 +374,6 @@ _unprivileged_dir, _unprivileged_dir_anon = _new_package_rule(
 
 package = struct(
     btrfs = btrfs,
-    cas_dir = package_macro(_cas_dir),
     cpio = package_macro(_cpio),
     cpio_gz = package_macro(_cpio_gz),
     cpio_zst = package_macro(_cpio_zst),
