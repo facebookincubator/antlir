@@ -32,7 +32,6 @@ python_library(
 )
 
 antlir_rust_extension(
-    # @autodeps-skip
     name = "fs_utils_rs",
     srcs = ["fs_utils_rs.rs"],
     # Doesn't compile on windows.
@@ -68,7 +67,6 @@ python_library(
 )
 
 antlir_rust_extension(
-    # @autodeps-skip
     name = "artifacts_dir",
     srcs = ["artifacts_dir.rs"],
     crate_root = "artifacts_dir.rs",
@@ -82,7 +80,6 @@ antlir_rust_extension(
 )
 
 rust_library(
-    # @autodeps-skip
     name = "find_root",
     srcs = ["find_root.rs"],
     crate_root = "find_root.rs",
