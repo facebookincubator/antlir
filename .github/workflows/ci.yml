@@ -8,6 +8,9 @@ defaults:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1/3, 2/3, 3/3]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,6 +43,7 @@ jobs:
       - name: Find tests
         run: |
           ./buck2 bxl //ci:find_tests.bxl:find_tests -- \
+            --shard=${{ matrix.shard }} \
             --disable //antlir/antlir2/antlir2_btrfs/... \
             --disable //antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir-image-test \
             --disable //antlir/antlir2/antlir2_overlayfs/... \
