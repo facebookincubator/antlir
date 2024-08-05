@@ -7,7 +7,6 @@ load("@prelude//utils:expect.bzl", "expect")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
-load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerContents", "LayerInfo")
@@ -696,8 +695,16 @@ def layer(
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
+    # If the user didn't configure the rootless setting, default to True
+    # NOTE: this only affects builds that `buck2 build` the layer directly, it
+    # does *NOT* affect builds that use this layer as a dependency (packages,
+    # container tests, vm tests).
+    #
+    # Why does it matter then?
+    # Automated bisect services will `buck2 build` layer targets directly when
+    # they are broken, and that does not support `sudo`.
     if rootless == None:
-        rootless = get_antlir2_rootless()
+        rootless = True
 
     if get_antlir2_use_overlayfs():
         kwargs["working_format"] = "overlayfs"
