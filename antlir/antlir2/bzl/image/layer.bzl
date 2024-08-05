@@ -83,13 +83,23 @@ def _compile(
             json_file_with_inputs = overlayfs_model_with_inputs,
             json_file = overlayfs_model,
         )
-        subvol_symlink = None
+        parent_arg = cmd_args()  # parent is included in the output
+        out_arg = cmd_args(overlayfs_model_out, format = "--output={}")
+        contents = LayerContents(
+            overlayfs = overlayfs,
+            subvol_symlink = None,
+        )
     elif ctx.attrs._working_format == "btrfs":
-        overlayfs_model_out = None
-        overlayfs = None
+        parent_arg = cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args()
         subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink")
+        out_arg = cmd_args(subvol_symlink.as_output(), format = "--output={}")
+        contents = LayerContents(
+            subvol_symlink = subvol_symlink,
+            overlayfs = None,
+        )
     else:
         fail("unknown working format '{}'".format(ctx.attrs._working_format))
+
     ctx.actions.run(
         cmd_args(
             cmd_args("sudo") if not rootless else cmd_args(),
@@ -98,11 +108,8 @@ def _compile(
             "compile",
             "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
-            cmd_args(parent.subvol_symlink, format = "--parent={}") if parent and ctx.attrs._working_format == "btrfs" else cmd_args(),
-            cmd_args(
-                subvol_symlink.as_output() if ctx.attrs._working_format == "btrfs" else overlayfs_model_out,
-                format = "--output={}",
-            ),
+            parent_arg,
+            out_arg,
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(topo_features, format = "--features={}"),
@@ -128,10 +135,7 @@ def _compile(
         error_handler = antlir2_error_handler,
     )
 
-    return LayerContents(
-        overlayfs = overlayfs,
-        subvol_symlink = subvol_symlink,
-    )
+    return contents
 
 def _container_sub_target(
         binary: Dependency | None,
