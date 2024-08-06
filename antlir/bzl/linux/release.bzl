@@ -152,20 +152,22 @@ def _release_file_macro(
         name: str,
         **kwargs):
     kwargs.setdefault("os_id", selects.or_({
-        ("antlir//antlir/antlir2/os:centos8", "antlir//antlir/antlir2/os:centos9"): "centos",
+        ("antlir//antlir/antlir2/os:centos8", "antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "centos",
         "antlir//antlir/antlir2/os:eln": "fedora",
     }))
     kwargs.setdefault("os_name", selects.or_({
-        ("antlir//antlir/antlir2/os:centos8", "antlir//antlir/antlir2/os:centos9"): "CentOS Stream",
+        ("antlir//antlir/antlir2/os:centos8", "antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "CentOS Stream",
         "antlir//antlir/antlir2/os:eln": "Fedora Linux",
     }))
     eln_version = "40"
     kwargs.setdefault("os_version", select({
+        "antlir//antlir/antlir2/os:centos10": "10",
         "antlir//antlir/antlir2/os:centos8": "8",
         "antlir//antlir/antlir2/os:centos9": "9",
         "antlir//antlir/antlir2/os:eln": eln_version,
     }))
     kwargs.setdefault("os_version_id", select({
+        "antlir//antlir/antlir2/os:centos10": "10",
         "antlir//antlir/antlir2/os:centos8": "8",
         "antlir//antlir/antlir2/os:centos9": "9",
         "antlir//antlir/antlir2/os:eln": eln_version,
@@ -238,6 +240,7 @@ def _install(
         vcs_rev = vcs_rev or native.read_config("build_info", "revision", "local"),
         vcs_rev_time = vcs_rev_time or int(native.read_config("build_info", "revision_epochtime", 0)),
         compatible_with = [
+            "antlir//antlir/antlir2/os:centos10",
             "antlir//antlir/antlir2/os:centos8",
             "antlir//antlir/antlir2/os:centos9",
             "antlir//antlir/antlir2/os:eln",
