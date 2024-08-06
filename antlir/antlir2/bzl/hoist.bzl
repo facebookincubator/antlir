@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
+load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
@@ -77,6 +78,8 @@ def hoist(
         default_os = default_os or get_default_os_for_package()
     if rootless == None:
         rootless = get_antlir2_rootless()
+    if not rootless:
+        kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
     _hoist_macro(
         name = name,
         default_os = default_os,
