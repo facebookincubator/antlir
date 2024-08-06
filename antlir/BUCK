@@ -114,7 +114,6 @@ python_library(
 )
 
 rust_binary(
-    # @autodeps-skip
     name = "repo-root",
     srcs = ["repo_root.rs"],
     crate_root = "repo_root.rs",
@@ -155,19 +154,16 @@ python_binary(
 )
 
 export_file(
-    # @autodeps-skip
     name = "empty",
     visibility = ["PUBLIC"],
 )
 
 export_file(
-    # @autodeps-skip
     name = "empty.json",
     visibility = ["PUBLIC"],
 )
 
 buck_sh_binary(
-    # @autodeps-skip
     name = "empty.bin",
     main = "empty.sh",
     visibility = ["PUBLIC"],
