@@ -9,12 +9,24 @@ def _impl(ctx):
     tests = tests - ctx.uquery().attrregexfilter("labels", "disabled", tests)
     disable = ctx.unconfigured_targets([t for disable in ctx.cli_args.disable for t in disable])
     tests = tests - disable
-    ctx.output.print("\n".join([str(t.label) for t in tests]))
+
+    shard, n_shards = ctx.cli_args.shard.split("/", 1)
+    shard, n_shards = int(shard), int(n_shards)
+    sharded_tests = []
+    for test in tests:
+        label = str(test.label)
+        sha = int(sha256(label), 16)
+        test_shard = (sha % n_shards) + 1
+        if test_shard == shard:
+            sharded_tests.append(label)
+
+    ctx.output.print("\n".join(sharded_tests))
 
 find_tests = bxl_main(
     impl = _impl,
     cli_args = {
         "disable": cli_args.list(cli_args.target_expr(), default = []),
         "pattern": cli_args.list(cli_args.string(), default = ["antlir//..."]),
+        "shard": cli_args.string(default = "1/1"),
     },
 )
