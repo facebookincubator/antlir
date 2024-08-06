@@ -101,13 +101,6 @@ impl<'a> Label {
         }
     }
 
-    /// Escape the Label to be used in a filename. This flattens the label space
-    /// so that a directory hierarchy does not need to be created to match the
-    /// repo structure (in other words, '/' and ' ' get replaced with '-').
-    pub fn flat_filename(&self) -> String {
-        self.to_string().replace(['/', ' '], "-")
-    }
-
     pub fn cell(&self) -> &str {
         &self.full[self.cell.clone()]
     }
@@ -348,12 +341,6 @@ mod tests {
     fn display(#[case] s: &str) {
         let label = Label::new(s).expect("well-formed");
         assert_eq!(s, label.to_string());
-    }
-
-    #[test]
-    fn escape() {
-        let label: Label = Label::new("abc//path/to/target:label").expect("well-formed");
-        assert_eq!("abc--path-to-target:label", label.flat_filename());
     }
 
     #[test]
