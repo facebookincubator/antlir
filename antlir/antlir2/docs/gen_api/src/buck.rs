@@ -62,6 +62,7 @@ pub(crate) struct ItemDocs {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub(crate) enum Param {
     NoArgs,
+    OnlyNamedAfter,
     Arg(Arg),
     Kwargs,
     Args,
