@@ -22,6 +22,7 @@ use anyhow::Context;
 use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;
+use fbinit::FacebookInit;
 use json_arg::JsonFile;
 use tracing::debug;
 use tracing::trace;
@@ -89,8 +90,8 @@ impl WorkingLayer {
 }
 
 impl Compile {
-    #[tracing::instrument(name = "compile", skip(self, rootless), ret, err)]
-    pub(crate) fn run(self, rootless: Rootless) -> Result<()> {
+    #[tracing::instrument(name = "compile", skip_all, ret, err)]
+    pub(crate) fn run(self, rootless: Rootless, fb: FacebookInit) -> Result<()> {
         // this must happen before unshare
         let working_volume = match self.working_format {
             WorkingFormat::Btrfs => Some(WorkingVolume::ensure(self.working_dir.clone())?),
@@ -177,6 +178,12 @@ impl Compile {
                 let _ = std::fs::remove_file(&self.output);
                 std::os::unix::fs::symlink(subvol.path(), &self.output)
                     .context("while making symlink")?;
+
+                #[cfg(facebook)]
+                working_volume
+                    .as_ref()
+                    .expect("WorkingVolume always exists for btrfs")
+                    .log_to_scuba(fb);
             }
             WorkingLayer::OverlayFs(fs) => {
                 drop(ctx);

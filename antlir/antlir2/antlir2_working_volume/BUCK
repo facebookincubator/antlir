@@ -10,6 +10,12 @@ rust_library(
         "ovr_config//os:linux",
         "ovr_config//os:macos",
     ],
+    fb_deps = [
+        "//common/rust/fbwhoami:fbwhoami",
+        "//common/rust/scuba:scuba",
+        "//common/rust/shed/scuba_sample:scuba_sample",
+        "//common/rust/shed/fbinit:fbinit",
+    ],
     deps = [
         "nix",
         "thiserror",
