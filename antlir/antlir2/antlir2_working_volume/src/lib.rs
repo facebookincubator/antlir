@@ -21,6 +21,9 @@ use nix::sys::stat::Mode;
 use tracing::trace;
 use uuid::Uuid;
 
+#[cfg(facebook)]
+mod facebook;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
