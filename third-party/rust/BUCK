@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "29ef2a0f4b3f37b2ba29873c8aa94e64e20717ee",
+    rev = "c83f3fca6e0f41543ca9a9bc3f691ecc512def74",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "d4ebc82c120f31a90899967cc802ac7f205b9878",
+    rev = "baf4d5b8d0e7caf0cdb103981d0efde186acacbf",
     visibility = [],
 )
 
