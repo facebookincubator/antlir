@@ -88,7 +88,7 @@ impl OverlayFs {
                 .map_err(Error::ScratchSetup)?;
         }
 
-        let mut options = OsString::from("userxattr,uuid=off");
+        let mut options = OsString::from("uuid=off");
         options.push(",upperdir=");
         options.push(scratch.upperdir());
         options.push(",workdir=");
