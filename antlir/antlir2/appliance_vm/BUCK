@@ -3,7 +3,7 @@ load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
-load("//antlir/bzl:build_defs.bzl", "export_file", "internal_external")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 
 oncall("antlir")
 
@@ -21,17 +21,6 @@ export_file(
 
 export_file(
     name = "kernelconfig.aarch64",
-)
-
-image.layer(
-    name = "build-appliance",
-    features = [
-        "//antlir/antlir2/genrule_in_image:prep",
-    ],
-    parent_layer = internal_external(
-        fb = "//kernel/build/image:_appliance.layer",
-        oss = ":appliance",
-    ),
 )
 
 genrule_in_image(
@@ -67,7 +56,7 @@ genrule_in_image(
 )
 
 image.layer(
-    name = "appliance",
+    name = "build-appliance",
     features = [
         # common RPMs
         feature.rpms_install(subjects = [
@@ -115,5 +104,6 @@ image.layer(
             must_exist = False,
             path = "/usr/lib/rpm/macros.d/macros.kmp",
         ),
+        "//antlir/antlir2/genrule_in_image:prep",
     ],
 )
