@@ -6,6 +6,7 @@
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "get_visibility", "is_facebook")
@@ -95,6 +96,8 @@ def antlir2_configured_alias(
         **kwargs):
     if rootless == None:
         rootless = get_antlir2_rootless()
+    if not rootless:
+        kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: list(labels) + ["uses_sudo"])
     _antlir2_configured_alias_macro(
         name = name,
         default_os = default_os,
