@@ -184,6 +184,16 @@ impl Compile {
                     .as_ref()
                     .expect("WorkingVolume always exists for btrfs")
                     .log_to_scuba(fb);
+
+                let root_guard = rootless.map(|r| r.escalate()).transpose()?;
+                if let Err(e) = working_volume
+                    .as_ref()
+                    .expect("WorkingVolume always exists for btrfs")
+                    .garbage_collect_old_subvols()
+                {
+                    warn!("failed to gc old subvols: {e:#?}")
+                }
+                drop(root_guard);
             }
             WorkingLayer::OverlayFs(fs) => {
                 drop(ctx);
