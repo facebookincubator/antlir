@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "c83f3fca6e0f41543ca9a9bc3f691ecc512def74",
+    rev = "d1d1b41ce044dc1249bb0fb2a60b79f874096912",
     visibility = [],
 )
 
@@ -12020,7 +12020,7 @@ cargo.rust_library(
                 ":libc-0.2.155",
                 ":security-framework-2.11.1",
                 ":security-framework-sys-2.11.1",
-                ":tempfile-3.11.0",
+                ":tempfile-3.12.0",
             ],
         ),
         "macos-x86_64": dict(
@@ -12028,7 +12028,7 @@ cargo.rust_library(
                 ":libc-0.2.155",
                 ":security-framework-2.11.1",
                 ":security-framework-sys-2.11.1",
-                ":tempfile-3.11.0",
+                ":tempfile-3.12.0",
             ],
         ),
         "windows-gnu": dict(
@@ -17601,7 +17601,7 @@ cargo.rust_library(
         "tls12",
     ],
     named_deps = {
-        "pki_types": ":rustls-pki-types-1.7.0",
+        "pki_types": ":rustls-pki-types-1.8.0",
     },
     rustc_flags = ["@$(location :rustls-0.22.4-build-script-run[rustc_flags])"],
     visibility = [],
@@ -17729,25 +17729,25 @@ cargo.rust_library(
         "std",
     ],
     named_deps = {
-        "pki_types": ":rustls-pki-types-1.7.0",
+        "pki_types": ":rustls-pki-types-1.8.0",
     },
     visibility = [],
     deps = [":base64-0.22.1"],
 )
 
 http_archive(
-    name = "rustls-pki-types-1.7.0.crate",
-    sha256 = "976295e77ce332211c0d24d92c0e83e50f5c5f046d11082cea19f3df13a3562d",
-    strip_prefix = "rustls-pki-types-1.7.0",
-    urls = ["https://static.crates.io/crates/rustls-pki-types/1.7.0/download"],
+    name = "rustls-pki-types-1.8.0.crate",
+    sha256 = "fc0a2ce646f8655401bb81e7927b812614bd5d91dbc968696be50603510fcaf0",
+    strip_prefix = "rustls-pki-types-1.8.0",
+    urls = ["https://static.crates.io/crates/rustls-pki-types/1.8.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rustls-pki-types-1.7.0",
-    srcs = [":rustls-pki-types-1.7.0.crate"],
+    name = "rustls-pki-types-1.8.0",
+    srcs = [":rustls-pki-types-1.8.0.crate"],
     crate = "rustls_pki_types",
-    crate_root = "rustls-pki-types-1.7.0.crate/src/lib.rs",
+    crate_root = "rustls-pki-types-1.8.0.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -17809,7 +17809,7 @@ cargo.rust_library(
         "std",
     ],
     named_deps = {
-        "pki_types": ":rustls-pki-types-1.7.0",
+        "pki_types": ":rustls-pki-types-1.8.0",
     },
     visibility = [],
     deps = [
@@ -20877,23 +20877,23 @@ cargo.rust_library(
 
 alias(
     name = "tempfile",
-    actual = ":tempfile-3.11.0",
+    actual = ":tempfile-3.12.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tempfile-3.11.0.crate",
-    sha256 = "b8fcd239983515c23a32fb82099f97d0b11b8c72f654ed659363a95c3dad7a53",
-    strip_prefix = "tempfile-3.11.0",
-    urls = ["https://static.crates.io/crates/tempfile/3.11.0/download"],
+    name = "tempfile-3.12.0.crate",
+    sha256 = "04cbcdd0c794ebb0d4cf35e88edd2f7d2c4c3e9a5a6dab322839b321c6a87a64",
+    strip_prefix = "tempfile-3.12.0",
+    urls = ["https://static.crates.io/crates/tempfile/3.12.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tempfile-3.11.0",
-    srcs = [":tempfile-3.11.0.crate"],
+    name = "tempfile-3.12.0",
+    srcs = [":tempfile-3.12.0.crate"],
     crate = "tempfile",
-    crate_root = "tempfile-3.11.0.crate/src/lib.rs",
+    crate_root = "tempfile-3.12.0.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "linux-arm64": dict(
@@ -20909,10 +20909,10 @@ cargo.rust_library(
             deps = [":rustix-0.38.34"],
         ),
         "windows-gnu": dict(
-            deps = [":windows-sys-0.52.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
         "windows-msvc": dict(
-            deps = [":windows-sys-0.52.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
     },
     visibility = [],
@@ -21747,7 +21747,7 @@ cargo.rust_library(
         "tls12",
     ],
     named_deps = {
-        "pki_types": ":rustls-pki-types-1.7.0",
+        "pki_types": ":rustls-pki-types-1.8.0",
     },
     visibility = [],
     deps = [
@@ -22818,13 +22818,13 @@ cargo.rust_library(
     platform = {
         "windows-gnu": dict(
             deps = [
-                ":tempfile-3.11.0",
+                ":tempfile-3.12.0",
                 ":winapi-0.3.9",
             ],
         ),
         "windows-msvc": dict(
             deps = [
-                ":tempfile-3.11.0",
+                ":tempfile-3.12.0",
                 ":winapi-0.3.9",
             ],
         ),
@@ -22868,7 +22868,7 @@ cargo.rust_library(
         ":rand-0.8.5",
         ":serde-1.0.204",
         ":serde_json-1.0.122",
-        ":tempfile-3.11.0",
+        ":tempfile-3.12.0",
         ":thiserror-1.0.63",
         ":uefisettings_backend_thrift-0.1.0",
         ":uefisettings_spellings_db_thrift-0.1.0",
@@ -22902,7 +22902,7 @@ cargo.rust_binary(
         ":rand-0.8.5",
         ":serde-1.0.204",
         ":serde_json-1.0.122",
-        ":tempfile-3.11.0",
+        ":tempfile-3.12.0",
         ":thiserror-1.0.63",
         ":uefisettings-0.1.4",
         ":uefisettings_backend_thrift-0.1.0",
