@@ -47,6 +47,10 @@ image.layer(
             dst = "/antlir/.privkey",
             mode = "u+r",
         ),
+        # Don't let random configurations sneak in - we want this tightly
+        # controlled since it's a very constrained environment and a somewhat
+        # unique setup to just SSH into the local VM
+        feature.remove(path = "/etc/ssh/ssh_config.d"),
         feature.ensure_dirs_exist(dirs = "/antlir"),
     ],
     visibility = ["PUBLIC"],
