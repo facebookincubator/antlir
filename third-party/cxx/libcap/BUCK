@@ -1,0 +1,80 @@
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "cpp_binary", "cpp_library", "http_archive")
+
+http_archive(
+    name = "src",
+    urls = [
+        "https://mirrors.edge.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.70.tar.gz",
+    ],
+    sha1 = "fb56e148feb9e1ae7d45840b7cf3fca35cb769b7",
+    sha256 = "d3b777ed413c9fafface03b917e171854709b5e4be38dbfb9219aaf7dfd4eea6",
+    strip_prefix = "libcap-2.70/libcap",
+    sub_targets = [
+        "cap_alloc.c",
+        "cap_extint.c",
+        "cap_file.c",
+        "cap_flag.c",
+        "cap_proc.c",
+        "cap_test.c",
+        "cap_text.c",
+        "empty.c",
+        "execable.c",
+        "execable.h",
+        "libcap.h",
+        "_makenames.c",
+        "include/uapi/linux/capability.h",
+        "include/sys/capability.h",
+        "include/sys/securebits.h",
+    ],
+)
+
+buck_genrule(
+    name = "cap_names.list.h",
+    srcs = [":src[include/uapi/linux/capability.h]"],
+    cmd = """
+        grep -E '^#define\\s+CAP_([^\\s]+)\\s+[0-9]+\\s*$$' include/uapi/linux/capability.h | sed -e 's/^#define\\s\\+/{"/' -e 's/\\s*$$/},/' -e 's/\\s\\+/",/' -e 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' > $OUT
+    """,
+)
+
+cpp_binary(
+    name = "_makenames",
+    srcs = [":src[_makenames.c]"],
+    headers = {
+        "cap_names.list.h": ":cap_names.list.h",
+    },
+    header_namespace = "",
+)
+
+buck_genrule(
+    name = "cap_names.h",
+    cmd = """
+        $(exe :_makenames) > $OUT
+    """,
+)
+
+cpp_library(
+    name = "libcap",
+    srcs = [
+        ":src[cap_alloc.c]",
+        ":src[cap_extint.c]",
+        ":src[cap_file.c]",
+        ":src[cap_flag.c]",
+        ":src[cap_proc.c]",
+        ":src[cap_test.c]",
+        ":src[cap_text.c]",
+        ":src[execable.c]",
+    ],
+    exported_headers = {
+        "cap_names.h": ":cap_names.h",
+        "libcap.h": ":src[libcap.h]",
+        "sys/capability.h": ":src[include/sys/capability.h]",
+        "sys/securebits.h": ":src[include/sys/securebits.h]",
+    },
+    header_namespace = "",
+    preprocessor_flags = [
+        "-DLIBRARY_VERSION=\"libcap-2.70\"",
+        select({
+            "config//cpu:arm64": "-DSHARED_LOADER=\"/lib64/ld-linux-aarch64.so.1\"",
+            "config//cpu:x86_64": "-DSHARED_LOADER=\"/lib64/ld-linux-x86-64.so.2\"",
+        })
+    ],
+)

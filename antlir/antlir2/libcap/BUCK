@@ -10,7 +10,7 @@ rust_bindgen_library(
     cpp_deps = [
         internal_external(
             fb = "third-party//libcap:cap",
-            oss = "//third-party/cxx/system:libcap",
+            oss = "//third-party/cxx/libcap:libcap",
         ),
     ],
     generate = ("types", "functions", "vars"),
