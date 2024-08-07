@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(duration_constructors)]
+
 use std::fmt::Debug;
 use std::io::ErrorKind;
 use std::os::fd::AsRawFd;
@@ -23,6 +25,7 @@ use uuid::Uuid;
 
 #[cfg(facebook)]
 mod facebook;
+mod gc;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -39,6 +42,10 @@ pub enum Error {
     CreateWorkingVolume(std::io::Error),
     #[error("failed to check eden presence")]
     CheckEden(std::io::Error),
+    #[error("garbage collection io error: {0}")]
+    GarbageCollect(std::io::Error),
+    #[error(transparent)]
+    Btrfs(#[from] antlir2_btrfs::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -15,11 +15,14 @@ rust_library(
         "//common/rust/scuba:scuba",
         "//common/rust/shed/scuba_sample:scuba_sample",
         "//common/rust/shed/fbinit:fbinit",
+        "//justknobs/rust:justknobs",
     ],
     deps = [
         "nix",
+        "once_cell",
         "thiserror",
         "tracing",
         "uuid",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
     ],
 )
