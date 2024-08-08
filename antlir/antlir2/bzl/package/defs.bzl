@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "os_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -284,6 +284,10 @@ _rpm, _rpm_anon = _new_package_rule(
         "epoch": attrs.int(default = 0),
         "extra_files": attrs.list(attrs.string(), default = []),
         "license": attrs.string(),
+        "os": attrs.enum(
+            ["linux", "darwin"],
+            default = os_select(linux = "linux", macos = "darwin"),
+        ),
         "packager": attrs.option(attrs.string(), default = None),
         "post_install_script": attrs.option(attrs.string(), default = None),
         "post_uninstall_script": attrs.option(attrs.string(), default = None),

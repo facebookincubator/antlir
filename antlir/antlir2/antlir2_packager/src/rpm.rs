@@ -41,6 +41,7 @@ pub struct Rpm {
     version: Option<String>,
     release: Option<String>,
     arch: String,
+    os: String,
     license: String,
     summary: Option<String>,
     #[serde(default)]
@@ -144,6 +145,7 @@ impl PackageFormat for Rpm {
             release,
             arch,
             license,
+            os,
             ..
         } = self;
 
@@ -225,6 +227,10 @@ AutoProv: {autoprov}
                 .unwrap_or_default(),
         );
 
+        if os == "darwin" {
+            // T67659468 explains need for this
+            spec.push_str("%define _smp_build_ncpus 1\n")
+        }
         if !self.python_bytecompile {
             spec.push_str("%define __brp_python_bytecompile %{nil}\n");
         }
@@ -327,7 +333,7 @@ AutoProv: {autoprov}
                 .command("/bin/rpmbuild")?
                 .arg("-bb")
                 .arg("--target")
-                .arg(arch)
+                .arg(format!("{arch}-{os}"))
                 .arg("--define")
                 .arg("_rpmdir /__antlir2__/out")
                 .arg("--define")
