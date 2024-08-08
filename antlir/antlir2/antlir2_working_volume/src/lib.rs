@@ -102,6 +102,10 @@ impl WorkingVolume {
                             msg: "Failed to run command".to_string(),
                         })?;
                     if !res.status.success() {
+                        // Eden may still have created the directory before
+                        // crashing. Attempt to clean it up so that future
+                        // actions don't use it by mistake.
+                        let _ = std::fs::remove_dir(&path);
                         return Err(Error::AddRedirect {
                             cmd: format!("{:?}", cmd),
                             debug_info: get_debug_info(),
