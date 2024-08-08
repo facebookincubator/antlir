@@ -32,3 +32,10 @@ def arch_to_platform(arch: str) -> str:
         "aarch64": "ovr_config//cpu:arm64",
         "x86_64": "ovr_config//cpu:x86_64",
     }[arch]
+
+def os_select(linux, macos) -> Select:
+    """Helper for any field that needs OS dependent select"""
+    return select({
+        "ovr_config//os:linux": linux,
+        "ovr_config//os:macos": macos,
+    })
