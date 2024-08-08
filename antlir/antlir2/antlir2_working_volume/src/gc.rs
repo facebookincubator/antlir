@@ -18,11 +18,11 @@ use crate::Result;
 use crate::WorkingVolume;
 
 static AGE_THRESHOLD: Lazy<Duration> = Lazy::new(|| {
-    #[cfg(facebook)]
+    #[cfg(justknobs)]
     let duration = justknobs::get("antlir2/compiler:gc_if_older_than_sec", None)
         .map(|s| Duration::from_secs(s as u64))
         .unwrap_or(Duration::from_days(14));
-    #[cfg(not(facebook))]
+    #[cfg(not(justknobs))]
     let duration = Duration::from_days(1);
     duration
 });
