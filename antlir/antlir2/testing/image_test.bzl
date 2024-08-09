@@ -19,7 +19,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
 
-HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
+HIDE_TEST_LABELS = [special_tags.disabled, special_tags.test_is_invisible_to_testpilot]
 
 def _default_list(maybe_value: list[str] | None, default: list[str]) -> list[str]:
     if maybe_value == None:

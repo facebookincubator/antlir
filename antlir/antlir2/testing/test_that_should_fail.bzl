@@ -4,10 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable
+# @oss-disable
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
 
-_HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
+_HIDE_TEST_LABELS = [special_tags.disabled, special_tags.test_is_invisible_to_testpilot]
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     test_cmd = cmd_args(
