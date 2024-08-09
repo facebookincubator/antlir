@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "4222c0a156be10b327e6e505df742c3505463093",
+    rev = "040cdc40ac6a07b1374993ad8493dc30dc869fc4",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "3fd2e5701c936b333e9bf6018fa36c9525265e59",
+    rev = "aafd87501908fbace1cca48ece2e6a8dc9754838",
     visibility = [],
 )
 
@@ -3890,24 +3890,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap-4.5.13.crate",
-    sha256 = "0fbb260a053428790f3de475e304ff84cdbc4face759ea7a3e64c1edd938a7fc",
-    strip_prefix = "clap-4.5.13",
-    urls = ["https://static.crates.io/crates/clap/4.5.13/download"],
+    name = "clap-4.5.14.crate",
+    sha256 = "c937d4061031a6d0c8da4b9a4f98a172fc2976dfb1c19213a9cf7d0d3c837e36",
+    strip_prefix = "clap-4.5.14",
+    urls = ["https://static.crates.io/crates/clap/4.5.14/download"],
     visibility = [],
 )
 
 alias(
     name = "clap",
-    actual = ":clap-4.5.13-clap",
+    actual = ":clap-4.5.14-clap",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap-4.5.13-clap",
-    srcs = [":clap-4.5.13.crate"],
+    name = "clap-4.5.14-clap",
+    srcs = [":clap-4.5.14.crate"],
     crate = "clap",
-    crate_root = "clap-4.5.13.crate/src/lib.rs",
+    crate_root = "clap-4.5.14.crate/src/lib.rs",
     edition = "2021",
     features = [
         "color",
@@ -3925,24 +3925,24 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":clap_builder-4.5.13",
+        ":clap_builder-4.5.14",
         ":clap_derive-4.5.13",
     ],
 )
 
 http_archive(
-    name = "clap_builder-4.5.13.crate",
-    sha256 = "64b17d7ea74e9f833c7dbf2cbe4fb12ff26783eda4782a8975b72f895c9b4d99",
-    strip_prefix = "clap_builder-4.5.13",
-    urls = ["https://static.crates.io/crates/clap_builder/4.5.13/download"],
+    name = "clap_builder-4.5.14.crate",
+    sha256 = "85379ba512b21a328adf887e85f7742d12e96eb31f3ef077df4ffc26b506ffed",
+    strip_prefix = "clap_builder-4.5.14",
+    urls = ["https://static.crates.io/crates/clap_builder/4.5.14/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "clap_builder-4.5.13",
-    srcs = [":clap_builder-4.5.13.crate"],
+    name = "clap_builder-4.5.14",
+    srcs = [":clap_builder-4.5.14.crate"],
     crate = "clap_builder",
-    crate_root = "clap_builder-4.5.13.crate/src/lib.rs",
+    crate_root = "clap_builder-4.5.14.crate/src/lib.rs",
     edition = "2021",
     features = [
         "color",
@@ -3969,28 +3969,28 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.12.crate",
-    sha256 = "a8670053e87c316345e384ca1f3eba3006fc6355ed8b8a1140d104e109e3df34",
-    strip_prefix = "clap_complete-4.5.12",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.12/download"],
+    name = "clap_complete-4.5.13.crate",
+    sha256 = "aa3c596da3cf0983427b0df0dba359df9182c13bd5b519b585a482b0c351f4e8",
+    strip_prefix = "clap_complete-4.5.13",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.13/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.12-clap_complete",
+    actual = ":clap_complete-4.5.13-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.12-clap_complete",
-    srcs = [":clap_complete-4.5.12.crate"],
+    name = "clap_complete-4.5.13-clap_complete",
+    srcs = [":clap_complete-4.5.13.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.12.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.13.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
-    deps = [":clap-4.5.13-clap"],
+    deps = [":clap-4.5.14-clap"],
 )
 
 http_archive(
