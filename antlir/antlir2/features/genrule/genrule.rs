@@ -24,6 +24,8 @@ use anyhow::Context;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::error;
+use tracing::info;
 
 pub type Feature = Genrule;
 
@@ -108,6 +110,14 @@ impl antlir2_compile::CompileFeature for Genrule {
         cmd.args(inner_cmd);
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;
+        let stdout = String::from_utf8_lossy(&res.stdout);
+        if !stdout.is_empty() {
+            info!("genrule stdout: {stdout}");
+        }
+        let stderr = String::from_utf8_lossy(&res.stderr);
+        if !stderr.is_empty() {
+            error!("genrule stderr: {stderr}");
+        }
         if !res.status.success() {
             return Err(anyhow::anyhow!(
                 "genrule {self:?} {}. {}\n{}",
