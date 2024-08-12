@@ -7,8 +7,10 @@ load("@prelude//linking:shared_libraries.bzl", "SharedLibraryInfo")
 load("@prelude//rust:link_info.bzl", "RustLinkInfo")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+# @oss-disable
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:oss_shim.bzl", blocklist_deps_test = "ret_none") # @oss-enable
 
 FeaturePluginInfo = provider(fields = [
     "plugin",
@@ -135,4 +137,9 @@ def feature_impl(
         lib = ":{}.linked".format(name),
         deps = "deps(:{}.linked, 1)".format(name),
         visibility = plugin_visibility or visibility or ["PUBLIC"],
+    )
+
+    blocklist_deps_test(
+        name = name + "--test-deps",
+        target = ":" + name,
     )

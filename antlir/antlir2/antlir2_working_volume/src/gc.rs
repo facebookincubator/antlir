@@ -10,22 +10,13 @@ use std::path::Path;
 use std::time::Duration;
 
 use antlir2_btrfs::Subvolume;
-use once_cell::sync::Lazy;
 use tracing::warn;
 
 use crate::Error;
 use crate::Result;
 use crate::WorkingVolume;
 
-static AGE_THRESHOLD: Lazy<Duration> = Lazy::new(|| {
-    #[cfg(justknobs)]
-    let duration = justknobs::get("antlir2/compiler:gc_if_older_than_sec", None)
-        .map(|s| Duration::from_secs(s as u64))
-        .unwrap_or(Duration::from_days(14));
-    #[cfg(not(justknobs))]
-    let duration = Duration::from_days(1);
-    duration
-});
+static AGE_THRESHOLD: Duration = Duration::from_days(14);
 
 impl WorkingVolume {
     pub fn garbage_collect_old_subvols(&self) -> Result<()> {
@@ -37,7 +28,7 @@ impl WorkingVolume {
                 continue;
             }
             if let Some(age) = meta.created().ok().and_then(|t| t.elapsed().ok()) {
-                if age >= *AGE_THRESHOLD {
+                if age >= AGE_THRESHOLD {
                     let path = entry.path();
                     if let Err(e) = try_gc_subvol(&path) {
                         warn!("failed to gc subvol {}: {e}", path.display());
