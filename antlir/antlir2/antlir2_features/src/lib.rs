@@ -71,7 +71,7 @@ struct PluginJson {
 
 pub struct Plugin {
     path: PathBuf,
-    lib: libloading::Library,
+    lib: &'static libloading::Library,
 }
 
 impl Feature {
@@ -91,7 +91,7 @@ impl Feature {
 
 impl Plugin {
     fn open(path: &Path) -> Result<Self> {
-        let lib = libloading::Library::new(path)?;
+        let lib = Box::leak(Box::new(libloading::Library::new(path)?));
         let init_tracing: libloading::Symbol<fn(&tracing::Dispatch) -> ()> =
             unsafe { lib.get(b"init_tracing")? };
         tracing::dispatcher::get_default(|dispatch| {
