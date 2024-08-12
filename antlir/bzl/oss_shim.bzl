@@ -24,7 +24,7 @@ none = None
 special_tags = struct(
     run_as_bundle = "OSS_NO_OP",
     enable_artifact_reporting = "OSS_NO_OP",
-    disabled = "OSS_NO_OP",
+    disabled = "disabled",
     test_is_invisible_to_testpilot = "OSS_NO_OP",
 )
 
