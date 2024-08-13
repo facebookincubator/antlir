@@ -11,14 +11,12 @@ compile_error!("only supported on linux");
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::io::ErrorKind;
-use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::Command;
 
 use antlir2_users::passwd::EtcPasswd;
 use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
-use isolate_unshare_preexec::isolate_unshare_preexec;
 
 pub mod mount;
 
@@ -69,21 +67,6 @@ impl<'a> IsolatedContext<'a> {
         if *register {
             return Err(Error::UnsupportedSetting("register"));
         }
-
-        let mut cmd = Command::new(&program);
-
-        cmd.env_clear();
-        // reasonable default PATH (same as systemd-nspawn uses)
-        cmd.env(
-            "PATH",
-            "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        );
-        cmd.env("container", "antlir2");
-        cmd.env("USER", &**user);
-        if let Some(term) = std::env::var_os("TERM") {
-            cmd.env("TERM", term);
-        }
-        cmd.envs(setenv);
 
         let mut dir_binds = Vec::new();
         let mut file_binds = Vec::new();
@@ -203,9 +186,28 @@ impl<'a> IsolatedContext<'a> {
             gid,
             ephemeral: *ephemeral,
         };
-        unsafe {
-            cmd.pre_exec(move || isolate_unshare_preexec(&args).map_err(std::io::Error::from));
+
+        let mut cmd = Command::new(
+            buck_resources::get("antlir/antlir2/antlir2_isolate/isolate_unshare/preexec")
+                .expect("isolate_unshare_preexec is always present"),
+        );
+
+        cmd.env_clear();
+        // reasonable default PATH (same as systemd-nspawn uses)
+        cmd.env(
+            "PATH",
+            "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        );
+        cmd.env("container", "antlir2");
+        cmd.env("USER", &**user);
+        if let Some(term) = std::env::var_os("TERM") {
+            cmd.env("TERM", term);
         }
+        cmd.envs(setenv);
+        cmd.arg(serde_json::to_string(&args).expect("args are always serializable"));
+        cmd.arg(program);
+        cmd.arg("--");
+
         Ok(cmd)
     }
 }

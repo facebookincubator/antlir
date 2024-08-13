@@ -11,12 +11,17 @@ rust_library(
     compatible_with = [
         "ovr_config//os:linux",
     ],
+    resources = {
+        "preexec": "//antlir/antlir2/antlir2_isolate/isolate_unshare/isolate_unshare_preexec:isolate_unshare_preexec",
+    },
     visibility = ["//antlir/antlir2/antlir2_isolate:"],
     deps = [
+        "buck-resources",
         "nix",
+        "serde_json",
         "thiserror",
         "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
-        "//antlir/antlir2/antlir2_isolate/isolate_unshare/isolate_unshare_preexec:isolate_unshare_preexec",
+        "//antlir/antlir2/antlir2_isolate/isolate_unshare/isolate_unshare_preexec:isolate_unshare_preexec-lib",
         "//antlir/antlir2/antlir2_users:antlir2_users",
     ],
 )

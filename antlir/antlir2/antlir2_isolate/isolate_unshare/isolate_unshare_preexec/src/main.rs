@@ -5,21 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-// See safety notes about pre_exec here
-// https://doc.rust-lang.org/stable/std/os/unix/process/trait.CommandExt.html#tymethod.pre_exec
-//
-// TL;DR we basically can't do anything but pure-logic here - even `malloc` can
-// easily fail catastrophically.
-//
-// This isn't really possible to enforce at compile time, so the best we can
-// really do is move anything running in this post-fork-pre-exec context into
-// this separate crate which we can look at more carefully to ensure that it's
-// not doing anything unsafe.
-//
-// Using #[no_std] would help encourage this, but it's not really feasible to
-// pass owned data into this implementation without using std types like
-// PathBuf.
-
 #![feature(io_error_more)]
 
 use std::ffi::OsString;
@@ -27,10 +12,15 @@ use std::fs::create_dir;
 use std::fs::create_dir_all;
 use std::fs::File;
 use std::io::ErrorKind;
-use std::io::Result;
 use std::os::fd::AsRawFd;
+use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
+use std::process::Command;
 
+use anyhow::Error;
+use anyhow::Result;
+use clap::Parser;
+use json_arg::Json;
 use nix::dir::Dir;
 use nix::errno::Errno;
 use nix::fcntl::OFlag;
@@ -41,6 +31,8 @@ use nix::sched::CloneFlags;
 use nix::sys::stat::Mode;
 use nix::unistd::mkdir;
 use nix::unistd::symlinkat;
+use serde::Deserialize;
+use serde::Serialize;
 
 static SCRATCH: &str = "/tmp/__antlir2__";
 pub static NEWROOT: &str = "/tmp/__antlir2__/newroot";
@@ -52,6 +44,7 @@ static NEWROOT_PROC: &str = "/tmp/__antlir2__/newroot/proc";
 /// still work properly.
 static MS_NOSYMFOLLOW: MsFlags = unsafe { MsFlags::from_bits_unchecked(256) };
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Args {
     pub root: PathBuf,
     pub root_ro: bool,
@@ -67,12 +60,14 @@ pub struct Args {
     pub ephemeral: bool,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Bind {
     pub src: PathBuf,
     pub dst: PathBuf,
     pub ro: bool,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TmpfsOverlay {
     pub dst: PathBuf,
     pub upper: PathBuf,
@@ -80,7 +75,22 @@ pub struct TmpfsOverlay {
     pub data: OsString,
 }
 
-pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
+#[derive(Debug, Parser)]
+struct CliArgs {
+    args: Json<Args>,
+    program: OsString,
+    #[clap(last = true)]
+    program_args: Vec<OsString>,
+}
+
+fn main() -> Result<()> {
+    let args = CliArgs::parse();
+    isolate_unshare_preexec(&args.args)?;
+    let err = Command::new(args.program).args(args.program_args).exec();
+    Err(Error::from(err).context("failed to exec child"))
+}
+
+fn isolate_unshare_preexec(args: &Args) -> std::io::Result<()> {
     unshare(CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWNET | CloneFlags::CLONE_NEWUTS)?;
     // Remount / as private so that we don't let any changes escape back to the
     // parent mount namespace.
