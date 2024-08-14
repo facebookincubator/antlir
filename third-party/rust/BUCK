@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "9d61e989f7b9de53e3ddf88d40c128c57c4d0cb5",
+    rev = "df44a06b9ddd92efb33c2062d60c79d7e5b7cfbb",
     visibility = [],
 )
 
@@ -2830,6 +2830,69 @@ buildscript_run(
     version = "0.6.12",
 )
 
+alias(
+    name = "bytecheck",
+    actual = ":bytecheck-0.7.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "bytecheck-0.7.0.crate",
+    sha256 = "41502630fe304ce54cbb2f8389e017784dee2b0328147779fcbe43b9db06d35d",
+    strip_prefix = "bytecheck-0.7.0",
+    urls = ["https://static.crates.io/crates/bytecheck/0.7.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "bytecheck-0.7.0",
+    srcs = [":bytecheck-0.7.0.crate"],
+    crate = "bytecheck",
+    crate_root = "bytecheck-0.7.0.crate/src/lib.rs",
+    edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :bytecheck-0.7.0-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "simdutf8",
+        "std",
+    ],
+    rustc_flags = ["@$(location :bytecheck-0.7.0-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [
+        ":bytecheck_derive-0.7.0",
+        ":ptr_meta-0.1.4",
+        ":simdutf8-0.1.4",
+    ],
+)
+
+cargo.rust_binary(
+    name = "bytecheck-0.7.0-build-script-build",
+    srcs = [":bytecheck-0.7.0.crate"],
+    crate = "build_script_build",
+    crate_root = "bytecheck-0.7.0.crate/build.rs",
+    edition = "2021",
+    features = [
+        "default",
+        "simdutf8",
+        "std",
+    ],
+    visibility = [],
+)
+
+buildscript_run(
+    name = "bytecheck-0.7.0-build-script-run",
+    package_name = "bytecheck",
+    buildscript_rule = ":bytecheck-0.7.0-build-script-build",
+    features = [
+        "default",
+        "simdutf8",
+        "std",
+    ],
+    version = "0.7.0",
+)
+
 http_archive(
     name = "bytecheck_derive-0.6.12.crate",
     sha256 = "3db406d29fbcd95542e92559bed4d8ad92636d1ca8b3b72ede10b4bcc010e659",
@@ -2845,6 +2908,33 @@ cargo.rust_library(
     crate_root = "bytecheck_derive-0.6.12.crate/src/lib.rs",
     edition = "2021",
     features = ["std"],
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.36",
+        ":syn-1.0.109-syn1",
+    ],
+)
+
+http_archive(
+    name = "bytecheck_derive-0.7.0.crate",
+    sha256 = "eda88c587085bc07dc201ab9df871bd9baa5e07f7754b745e4d7194b43ac1eda",
+    strip_prefix = "bytecheck_derive-0.7.0",
+    urls = ["https://static.crates.io/crates/bytecheck_derive/0.7.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "bytecheck_derive-0.7.0",
+    srcs = [":bytecheck_derive-0.7.0.crate"],
+    crate = "bytecheck_derive",
+    crate_root = "bytecheck_derive-0.7.0.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "default",
+        "std",
+    ],
     proc_macro = True,
     visibility = [],
     deps = [
@@ -4293,7 +4383,7 @@ cargo.rust_library(
     edition = "2021",
     features = ["indexmap"],
     visibility = [],
-    deps = [":indexmap-2.3.0"],
+    deps = [":indexmap-2.4.0"],
 )
 
 alias(
@@ -8246,7 +8336,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":fallible-iterator-0.3.0",
-        ":indexmap-2.3.0",
+        ":indexmap-2.4.0",
         ":stable_deref_trait-1.2.0",
     ],
 )
@@ -8454,7 +8544,7 @@ cargo.rust_library(
         ":futures-sink-0.3.30",
         ":futures-util-0.3.30",
         ":http-0.2.12",
-        ":indexmap-2.3.0",
+        ":indexmap-2.4.0",
         ":slab-0.4.9",
         ":tokio-1.39.2",
         ":tokio-util-0.7.11",
@@ -9070,7 +9160,7 @@ cargo.rust_library(
         ":pin-project-lite-0.2.14",
         ":socket2-0.5.7",
         ":tokio-1.39.2",
-        ":tower-service-0.3.2",
+        ":tower-service-0.3.3",
         ":tracing-0.1.40",
         ":want-0.3.1",
     ],
@@ -9355,23 +9445,23 @@ cargo.rust_library(
 
 alias(
     name = "indexmap",
-    actual = ":indexmap-2.3.0",
+    actual = ":indexmap-2.4.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "indexmap-2.3.0.crate",
-    sha256 = "de3fc2e30ba82dd1b3911c8de1ffc143c74a914a14e99514d7637e3099df5ea0",
-    strip_prefix = "indexmap-2.3.0",
-    urls = ["https://static.crates.io/crates/indexmap/2.3.0/download"],
+    name = "indexmap-2.4.0.crate",
+    sha256 = "93ead53efc7ea8ed3cfb0c79fc8023fbb782a5432b52830b6518941cebe6505c",
+    strip_prefix = "indexmap-2.4.0",
+    urls = ["https://static.crates.io/crates/indexmap/2.4.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "indexmap-2.3.0",
-    srcs = [":indexmap-2.3.0.crate"],
+    name = "indexmap-2.4.0",
+    srcs = [":indexmap-2.4.0.crate"],
     crate = "indexmap",
-    crate_root = "indexmap-2.3.0.crate/src/lib.rs",
+    crate_root = "indexmap-2.4.0.crate/src/lib.rs",
     edition = "2021",
     features = [
         "arbitrary",
@@ -13934,7 +14024,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":fixedbitset-0.4.2",
-        ":indexmap-2.3.0",
+        ":indexmap-2.4.0",
         ":serde-1.0.207",
         ":serde_derive-1.0.207",
     ],
@@ -16333,6 +16423,7 @@ cargo.rust_library(
     features = [
         "bytecheck",
         "std",
+        "validation",
     ],
     rustc_flags = ["@$(location :rend-0.4.2-build-script-run[rustc_flags])"],
     visibility = [],
@@ -16348,6 +16439,7 @@ cargo.rust_binary(
     features = [
         "bytecheck",
         "std",
+        "validation",
     ],
     visibility = [],
 )
@@ -16359,6 +16451,7 @@ buildscript_run(
     features = [
         "bytecheck",
         "std",
+        "validation",
     ],
     version = "0.4.2",
 )
@@ -16539,7 +16632,7 @@ cargo.rust_library(
         ":serde_json-1.0.124",
         ":serde_urlencoded-0.7.1",
         ":sync_wrapper-0.1.2",
-        ":tower-service-0.3.2",
+        ":tower-service-0.3.3",
         ":url-2.5.2",
     ],
 )
@@ -16798,10 +16891,13 @@ cargo.rust_library(
     },
     features = [
         "alloc",
+        "bytecheck",
         "default",
         "hashbrown",
+        "rend",
         "size_32",
         "std",
+        "validation",
     ],
     rustc_flags = ["@$(location :rkyv-0.7.44-build-script-run[rustc_flags])"],
     visibility = [],
@@ -16827,10 +16923,13 @@ cargo.rust_binary(
     edition = "2021",
     features = [
         "alloc",
+        "bytecheck",
         "default",
         "hashbrown",
+        "rend",
         "size_32",
         "std",
+        "validation",
     ],
     visibility = [],
 )
@@ -16841,10 +16940,13 @@ buildscript_run(
     buildscript_rule = ":rkyv-0.7.44-build-script-build",
     features = [
         "alloc",
+        "bytecheck",
         "default",
         "hashbrown",
+        "rend",
         "size_32",
         "std",
+        "validation",
     ],
     version = "0.7.44",
 )
@@ -21985,7 +22087,7 @@ cargo.rust_library(
     features = ["default"],
     visibility = [],
     deps = [
-        ":indexmap-2.3.0",
+        ":indexmap-2.4.0",
         ":toml_datetime-0.6.8",
         ":winnow-0.5.40",
     ],
@@ -22017,7 +22119,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":indexmap-2.3.0",
+        ":indexmap-2.4.0",
         ":serde-1.0.207",
         ":serde_spanned-0.6.7",
         ":toml_datetime-0.6.8",
@@ -22046,7 +22148,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":indexmap-2.3.0",
+        ":indexmap-2.4.0",
         ":toml_datetime-0.6.8",
         ":winnow-0.5.40",
     ],
@@ -22073,7 +22175,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":indexmap-2.3.0",
+        ":indexmap-2.4.0",
         ":serde-1.0.207",
         ":serde_spanned-0.6.7",
         ":toml_datetime-0.6.8",
@@ -22083,23 +22185,23 @@ cargo.rust_library(
 
 alias(
     name = "tower-service",
-    actual = ":tower-service-0.3.2",
+    actual = ":tower-service-0.3.3",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tower-service-0.3.2.crate",
-    sha256 = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52",
-    strip_prefix = "tower-service-0.3.2",
-    urls = ["https://static.crates.io/crates/tower-service/0.3.2/download"],
+    name = "tower-service-0.3.3.crate",
+    sha256 = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3",
+    strip_prefix = "tower-service-0.3.3",
+    urls = ["https://static.crates.io/crates/tower-service/0.3.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tower-service-0.3.2",
-    srcs = [":tower-service-0.3.2.crate"],
+    name = "tower-service-0.3.3",
+    srcs = [":tower-service-0.3.3.crate"],
     crate = "tower_service",
-    crate_root = "tower-service-0.3.2.crate/src/lib.rs",
+    crate_root = "tower-service-0.3.3.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
 )
@@ -23963,7 +24065,7 @@ cargo.rust_library(
         ":tokio-rustls-0.25.0",
         ":tokio-tungstenite-0.21.0",
         ":tokio-util-0.7.11",
-        ":tower-service-0.3.2",
+        ":tower-service-0.3.3",
         ":tracing-0.1.40",
     ],
 )
