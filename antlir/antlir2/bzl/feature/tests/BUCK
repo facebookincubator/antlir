@@ -1,0 +1,30 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+
+oncall("antlir")
+
+feature.new(
+    "empty",
+    features = [],
+)
+
+feature.new(
+    name = "test-nested-list-in-select",
+    features = select({
+        "DEFAULT": [
+            [
+                feature.install_text(
+                    dst = "/nested",
+                    text = "nested",
+                ),
+                ":empty",
+                None,
+            ],
+            feature.install_text(
+                dst = "not_nested",
+                text = "not_nested",
+            ),
+            ":empty",
+            None,
+        ],
+    }),
+)
