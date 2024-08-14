@@ -44,6 +44,8 @@ struct Args {
     boot: bool,
     #[clap(long)]
     chdir: Option<PathBuf>,
+    #[clap(long)]
+    enable_network: bool,
     #[clap(last = true)]
     cmd: Vec<OsString>,
 }
@@ -93,7 +95,8 @@ fn main() -> anyhow::Result<()> {
         .user(&args.user)
         .inputs(bind_ro_inputs)
         .outputs(bind_rw)
-        .ephemeral(true);
+        .ephemeral(true)
+        .enable_network(args.enable_network);
     if !args.rootless {
         cmd_builder.invocation_type(match (args.boot, args.pipe) {
             (true, false) => InvocationType::BootReadOnly,

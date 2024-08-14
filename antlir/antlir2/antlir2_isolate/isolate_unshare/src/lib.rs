@@ -56,6 +56,7 @@ impl<'a> IsolatedContext<'a> {
             tmpfs_overlay,
             hostname,
             readonly,
+            enable_network,
         } = &self.0;
 
         // TODO: remove these settings entirely when we get rid of
@@ -66,6 +67,9 @@ impl<'a> IsolatedContext<'a> {
         }
         if *register {
             return Err(Error::UnsupportedSetting("register"));
+        }
+        if *enable_network {
+            return Err(Error::UnsupportedSetting("enable_network"));
         }
 
         let mut dir_binds = Vec::new();

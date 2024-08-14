@@ -103,6 +103,7 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         tmpfs_overlay,
         hostname,
         readonly,
+        enable_network,
     } = ctx;
     if !devtmpfs.is_empty() && devtmpfs.len() > 1 && !devtmpfs.contains(Path::new("/dev")) {
         return Err(Error::Unsupported("devtmpfs"));
@@ -123,7 +124,9 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     nspawn_args.push("--quiet".into());
     nspawn_args.push("--directory".into());
     nspawn_args.push(layer.as_ref().into());
-    nspawn_args.push("--private-network".into());
+    if !enable_network {
+        nspawn_args.push("--private-network".into());
+    }
     nspawn_args.push("--user".into());
     nspawn_args.push(user.as_ref().into());
     if let Some(hostname) = hostname {

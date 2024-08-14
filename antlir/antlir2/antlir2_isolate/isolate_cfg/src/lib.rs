@@ -50,6 +50,8 @@ pub struct IsolationContext<'a> {
     pub hostname: Option<Cow<'a, str>>,
     /// See [IsolationContextBuilder::readonly]
     pub readonly: bool,
+    /// See [IsolationContextBuilder::enable_network]
+    pub enable_network: bool,
 }
 
 /// Controls how the container is spawned and how console is configured for the
@@ -96,6 +98,7 @@ impl<'a> IsolationContext<'a> {
                 tmpfs_overlay: Default::default(),
                 hostname: None,
                 readonly: false,
+                enable_network: false,
             },
         }
     }
@@ -203,6 +206,12 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Start the container with a readonly root.
     pub fn readonly(&mut self) -> &mut Self {
         self.ctx.readonly = true;
+        self
+    }
+
+    /// Control whether or not to start the container with network access.
+    pub fn enable_network(&mut self, flag: bool) -> &mut Self {
+        self.ctx.enable_network = flag;
         self
     }
 
