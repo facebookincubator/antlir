@@ -103,7 +103,7 @@ def _buck_filegroup(*args, **kwargs):
 def _buck_genrule(*args, **kwargs):
     # This is unused in FB
     kwargs.pop("flavor_config", None)
-    if "out" not in kwargs:
+    if "out" not in kwargs and "outs" not in kwargs:
         kwargs["out"] = "out"
     existing_labels = kwargs.get("labels", [])
 
