@@ -126,7 +126,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     inline_features = []
     anon_features = []
     feature_deps = []
-    for feat in ctx.attrs.features:
+    for feat in flatten.flatten(ctx.attrs.features):
         # select() can return None for some branches
         if not feat:
             continue
@@ -211,64 +211,69 @@ _nestable_value = attrs.one_of(
 )
 nestable_value = _nestable_value
 
+# allow None to be intermixed in the features list so that a `select` is
+# able to do nothing for certain configurations
+_nested_feature_type = attrs.option(
+    attrs.one_of(
+        attrs.dep(providers = [FeatureInfo], doc = "feature targets to include"),
+        attrs.tuple(
+            attrs.string(doc = "ParseTimeFeature.feature_type"),
+            attrs.exec_dep(
+                providers = [FeaturePluginInfo],
+                doc = "ParseTimeFeature.plugin",
+            ),
+            attrs.dict(attrs.string(), _nestable_value, doc = "kwargs"),
+            attrs.dict(
+                attrs.string(),
+                attrs.one_of(
+                    attrs.dep(),
+                    attrs.source(),
+                ),
+                doc = "ParseTimeFeature.deps_or_srcs",
+            ),
+            attrs.dict(
+                attrs.string(),
+                attrs.source(),
+                doc = "ParseTimeFeature.srcs",
+            ),
+            attrs.dict(
+                attrs.string(),
+                attrs.one_of(
+                    attrs.dep(),
+                    # @oss-disable
+                ),
+                doc = "ParseTimeFeature.deps",
+            ),
+            attrs.dict(
+                attrs.string(),
+                attrs.exec_dep(),
+                doc = "ParseTimeFeature.exec_deps",
+            ),
+            attrs.dict(
+                attrs.string(),
+                attrs.dep(),
+                doc = "ParseTimeFeature.antlir2_configured_deps",
+            ),
+            attrs.list(
+                attrs.one_of(attrs.dep(), attrs.source()),
+                doc = "ParseTimeFeature.unnamed_deps_or_srcs",
+            ),
+            attrs.dict(
+                attrs.string(),
+                attrs.arg(anon_target_compatible = True),
+                doc = "ParseTimeFeature.args",
+            ),
+            doc = "inline feature definition",
+        ),
+    ),
+    default = None,
+)
+
 shared_features_attrs = {
     "features": attrs.list(
-        # allow None to be intermixed in the features list so that a `select` is
-        # able to do nothing for certain configurations
-        attrs.option(
-            attrs.one_of(
-                attrs.dep(providers = [FeatureInfo], doc = "feature targets to include"),
-                attrs.tuple(
-                    attrs.string(doc = "ParseTimeFeature.feature_type"),
-                    attrs.exec_dep(
-                        providers = [FeaturePluginInfo],
-                        doc = "ParseTimeFeature.plugin",
-                    ),
-                    attrs.dict(attrs.string(), _nestable_value, doc = "kwargs"),
-                    attrs.dict(
-                        attrs.string(),
-                        attrs.one_of(
-                            attrs.dep(),
-                            attrs.source(),
-                        ),
-                        doc = "ParseTimeFeature.deps_or_srcs",
-                    ),
-                    attrs.dict(
-                        attrs.string(),
-                        attrs.source(),
-                        doc = "ParseTimeFeature.srcs",
-                    ),
-                    attrs.dict(
-                        attrs.string(),
-                        attrs.one_of(
-                            attrs.dep(),
-                            # @oss-disable
-                        ),
-                        doc = "ParseTimeFeature.deps",
-                    ),
-                    attrs.dict(
-                        attrs.string(),
-                        attrs.exec_dep(),
-                        doc = "ParseTimeFeature.exec_deps",
-                    ),
-                    attrs.dict(
-                        attrs.string(),
-                        attrs.dep(),
-                        doc = "ParseTimeFeature.antlir2_configured_deps",
-                    ),
-                    attrs.list(
-                        attrs.one_of(attrs.dep(), attrs.source()),
-                        doc = "ParseTimeFeature.unnamed_deps_or_srcs",
-                    ),
-                    attrs.dict(
-                        attrs.string(),
-                        attrs.arg(anon_target_compatible = True),
-                        doc = "ParseTimeFeature.args",
-                    ),
-                    doc = "inline feature definition",
-                ),
-            ),
-            default = None,
+        attrs.one_of(
+            _nested_feature_type,
+            attrs.list(_nested_feature_type),
         ),
         default = [],
     ),
