@@ -2,4 +2,5 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "antlir2/docs"
-    ignore: "*"
+    ignore:
+      - dependency-name: "*"
