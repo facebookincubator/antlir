@@ -706,7 +706,7 @@ def layer(
     # they are broken, and that does not support `sudo`.
     if not antlir2_rootless_config_set() and rootless == None:
         rootless = True
-    else:
+    elif rootless == None:
         rootless = get_antlir2_rootless()
 
     if get_antlir2_use_overlayfs():
