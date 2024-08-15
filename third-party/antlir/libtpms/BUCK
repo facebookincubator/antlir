@@ -38,9 +38,7 @@ third_party.build(
 export CFLAGS="-fPIC -I/third-party-build/deps/libcrypto/include -Wno-deprecated-declarations"
 export LDFLAGS="-L/third-party-build/deps/libcrypto/lib"
 
-# need to fix a global symbol otherwise it collides
-# later on due to static linkage
-sed -i 's/char state_directory/static char state_directory/' ./src/tpm12/tpm_nvfile.c
+sed -i 's/char state_directory/static char state_directory/' ./src/tpm_nvfile.c
 
 ./autogen.sh --prefix="${OUTPUT}" --with-openssl --with-tpm2 --disable-shared
         """,
