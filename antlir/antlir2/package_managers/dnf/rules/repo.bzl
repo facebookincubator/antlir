@@ -43,7 +43,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "--expected-rpm-count={}".format(len(ctx.attrs.rpms)),
             optional_args,
         ),
-        allow_cache_upload = False,
         category = "repodata",
     )
 
@@ -58,7 +57,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 plain_repodata,
                 repodata.as_output(),
             ),
-            allow_cache_upload = False,
             category = "solv",
         )
     else:
