@@ -238,7 +238,9 @@ impl antlir2_compile::CompileFeature for Clone {
         // can just go ahead and blindly copy everything here
         let src_root = self
             .src_layer
-            .subvol_symlink
+            .contents
+            .as_subvol_symlink()
+            .context("only subvol_symlink is supported")?
             .join(self.src_path.strip_prefix("/").unwrap_or(&self.src_path))
             .canonicalize()?;
         for entry in WalkDir::new(&src_root) {
