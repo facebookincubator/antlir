@@ -8,6 +8,11 @@ rust_library(
     compatible_with = [
         "ovr_config//os:linux",
     ],
+    fb_deps = [
+        "//common/rust/folly/memory:memory",
+    ],
     visibility = ["//antlir/antlir2/antlir2_rootless:"],
-    deps = ["nix"],
+    deps = [
+        "nix",
+    ],
 )

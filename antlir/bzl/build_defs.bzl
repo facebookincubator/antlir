@@ -55,6 +55,10 @@ def rust_library(**kwargs):
 
 def rust_binary(**kwargs):
     kwargs.setdefault("link_style", "static")
+
+    # Use malloc here so that we can avoid issues with jemalloc's use of background threads
+    # and unshare_userns.
+    kwargs.setdefault("allocator", "malloc")
     kwargs, test_kwargs = _split_rust_kwargs(kwargs)
     _rust_common(shim.rust_binary, **kwargs)
     _rust_implicit_test(kwargs, test_kwargs)
