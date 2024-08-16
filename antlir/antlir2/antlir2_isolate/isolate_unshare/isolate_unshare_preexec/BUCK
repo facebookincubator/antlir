@@ -1,24 +1,6 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 oncall("antlir")
-
-rust_library(
-    name = "isolate_unshare_preexec-lib",
-    srcs = glob(["src/**/*.rs"]),
-    compatible_with = [
-        "ovr_config//os:linux",
-    ],
-    crate = "isolate_unshare_preexec",
-    crate_root = "src/main.rs",
-    visibility = ["//antlir/antlir2/antlir2_isolate/isolate_unshare:"],
-    deps = [
-        "anyhow",
-        "clap",
-        "nix",
-        "serde",
-        "//antlir/util/cli/json_arg:json_arg",
-    ],
-)
 
 rust_binary(
     name = "isolate_unshare_preexec",
@@ -29,9 +11,10 @@ rust_binary(
     visibility = ["//antlir/antlir2/antlir2_isolate/isolate_unshare:"],
     deps = [
         "anyhow",
+        "cap-std",
         "clap",
         "nix",
-        "serde",
+        "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )
