@@ -12,6 +12,7 @@ rust_library(
         "serde_json",
         "thiserror",
         "tracing",
+        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/buck/buck_label:buck_label",
     ],
 )

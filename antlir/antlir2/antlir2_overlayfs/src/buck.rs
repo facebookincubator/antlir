@@ -13,13 +13,33 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
 pub struct OverlayFs {
     pub(crate) top: Layer,
     pub(crate) layers: Vec<Layer>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
 pub(crate) struct Layer {
     pub(crate) data_dir: PathBuf,
     /// Path to a [crate::manifest::Manifest] file

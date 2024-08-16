@@ -90,7 +90,9 @@ impl antlir2_compile::CompileFeature for ExtractFromLayer {
         });
         let src_layer = self
             .layer
-            .subvol_symlink
+            .contents
+            .as_subvol_symlink()
+            .context("only subvol_symlink is supported")?
             .canonicalize()
             .context("while looking up abspath of src layer")?;
         trace!("extract root = {}", src_layer.display());
