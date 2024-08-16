@@ -195,6 +195,7 @@ def _python_unittest(*args, **kwargs):
 
 def _rust_unittest(*args, **kwargs):
     kwargs.pop("nodefaultlibs", None)
+    kwargs.pop("allocator", None)
     _wrap_internal(native.rust_test, args, kwargs)
 
 def _rust_binary(*, name: str, **kwargs):

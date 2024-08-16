@@ -58,11 +58,6 @@
 // that is just using no_std.
 #![no_std]
 
-// In case jemalloc is used (the default in fbcode), this disables background
-// threads which would prevent unsharing into a userns.
-#[no_mangle]
-pub static malloc_conf: &[u8] = b"background_thread:false\0";
-
 use core::ffi::CStr;
 
 use nix::errno::Errno;
@@ -83,6 +78,16 @@ pub struct Map<'a> {
 }
 
 pub fn unshare_userns(pid_cstr: &CStr, uid_map: &Map, gid_map: &Map) -> Result<()> {
+    // TODO(T181212521): do the same check in OSS
+    #[cfg(facebook)]
+    if memory::is_using_jemalloc()
+        && memory::mallctl_read::<bool>("background_thread").expect("Err reading mallctl")
+    {
+        panic!(
+            "jemalloc background thread is enabled!\nThis is incompatible with unshare_userns, \
+             please check your binary's `malloc_conf` or set the binary target's `allocator` attribute to \"malloc\"."
+        );
+    }
     let (read, write) = pipe()?;
     match unsafe { fork() }? {
         ForkResult::Parent { child } => {
@@ -107,14 +112,14 @@ pub fn unshare_userns(pid_cstr: &CStr, uid_map: &Map, gid_map: &Map) -> Result<(
                     Ok(())
                 }
                 Ok(ForkResult::Child) => nix::unistd::execv(
-                    CStr::from_bytes_with_nul(b"/usr/bin/newgidmap\0").expect("infallible"),
+                    c"/usr/bin/newgidmap",
                     &[
-                        CStr::from_bytes_with_nul(b"newgidmap\0").expect("infallible"),
+                        c"newgidmap",
                         pid_cstr,
-                        CStr::from_bytes_with_nul(b"0\0").expect("infallible"),
+                        c"0",
                         gid_map.outside_root,
-                        CStr::from_bytes_with_nul(b"1\0").expect("infallible"),
-                        CStr::from_bytes_with_nul(b"1\0").expect("infallible"),
+                        c"1",
+                        c"1",
                         gid_map.outside_sub_start,
                         gid_map.len,
                     ],
@@ -123,14 +128,14 @@ pub fn unshare_userns(pid_cstr: &CStr, uid_map: &Map, gid_map: &Map) -> Result<(
                 Err(e) => Err(e),
             }?;
             nix::unistd::execv(
-                CStr::from_bytes_with_nul(b"/usr/bin/newuidmap\0").expect("infallible"),
+                c"/usr/bin/newuidmap",
                 &[
-                    CStr::from_bytes_with_nul(b"newuidmap\0").expect("infallible"),
+                    c"newuidmap",
                     pid_cstr,
-                    CStr::from_bytes_with_nul(b"0\0").expect("infallible"),
+                    c"0",
                     uid_map.outside_root,
-                    CStr::from_bytes_with_nul(b"1\0").expect("infallible"),
-                    CStr::from_bytes_with_nul(b"1\0").expect("infallible"),
+                    c"1",
+                    c"1",
                     uid_map.outside_sub_start,
                     uid_map.len,
                 ],
