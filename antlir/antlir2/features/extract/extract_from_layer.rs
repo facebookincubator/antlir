@@ -22,6 +22,7 @@ use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
 use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
+use antlir2_path::PathExt;
 use anyhow::Context;
 use extract::copy_dep;
 use extract::so_dependencies;
@@ -43,7 +44,7 @@ pub struct ExtractFromLayer {
 fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
     match path.starts_with("/lib") || path.starts_with("/lib64") {
         false => Cow::Borrowed(path),
-        true => Cow::Owned(Path::new("/usr").join(path.strip_prefix("/").unwrap_or(path))),
+        true => Cow::Owned(Path::new("/usr").join_abs(path)),
     }
 }
 
@@ -98,7 +99,7 @@ impl antlir2_compile::CompileFeature for ExtractFromLayer {
         trace!("extract root = {}", src_layer.display());
         let mut all_deps = HashSet::new();
         for binary in &self.binaries {
-            let src = src_layer.join(binary.strip_prefix("/").unwrap_or(binary));
+            let src = src_layer.join_abs(binary);
             let dst = ctx.dst_path(binary)?;
 
             let src_meta = std::fs::symlink_metadata(&src)
@@ -185,7 +186,7 @@ impl antlir2_compile::CompileFeature for ExtractFromLayer {
         }
         let cwd = std::env::current_dir()?;
         for dep in all_deps {
-            let path_in_src_layer = src_layer.join(dep.strip_prefix("/").unwrap_or(&dep));
+            let path_in_src_layer = src_layer.join_abs(&dep);
             // If the dep path within the container is under the current
             // cwd (aka, the repo), we need to get the file out of the
             // host instead of the container.

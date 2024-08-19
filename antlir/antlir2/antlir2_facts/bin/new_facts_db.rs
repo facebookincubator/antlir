@@ -23,6 +23,7 @@ use antlir2_facts::Transaction;
 use antlir2_isolate::sys::unshare;
 use antlir2_isolate::IsolationContext;
 use antlir2_overlayfs::OverlayFs;
+use antlir2_path::PathExt;
 use antlir2_systemd::UnitFile;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
@@ -173,10 +174,7 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
                 .context("while getting rpm db path")?;
             let out = std::str::from_utf8(&out.stdout).context("while decoding rpm db path")?;
             let dbpath = Path::new(out.trim());
-            if !root
-                .join(dbpath.strip_prefix("/").unwrap_or(dbpath))
-                .exists()
-            {
+            if !root.join_abs(dbpath).exists() {
                 warn!("rpm db does not exist in image {}", root.display());
                 return Ok(());
             }

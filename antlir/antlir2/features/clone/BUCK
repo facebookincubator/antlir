@@ -11,5 +11,6 @@ feature_impl(
         "anyhow",
         "walkdir",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
     ],
 )

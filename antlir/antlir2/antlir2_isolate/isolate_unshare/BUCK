@@ -22,6 +22,7 @@ rust_library(
         "thiserror",
         "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
         "//antlir/antlir2/antlir2_isolate/isolate_unshare/isolate_unshare_preexec:isolate_unshare_preexec-lib",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
         "//antlir/antlir2/antlir2_users:antlir2_users",
     ],
 )

@@ -16,6 +16,7 @@ use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::Arch;
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
+use antlir2_path::PathExt;
 use anyhow::Context;
 use anyhow::Result;
 use goblin::elf::Elf;
@@ -43,7 +44,7 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
 ) -> anyhow::Result<Vec<PathBuf>> {
     let binary = Path::new(binary.as_ref());
     let binary_as_seen_from_here = match sysroot {
-        Some(sysroot) => Cow::Owned(sysroot.join(binary.strip_prefix("/").unwrap_or(binary))),
+        Some(sysroot) => Cow::Owned(sysroot.join_abs(binary)),
         None => Cow::Borrowed(binary),
     };
 
