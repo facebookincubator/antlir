@@ -27,6 +27,7 @@ use antlir2_features::types::GroupName;
 use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
+use antlir2_path::PathExt;
 use anyhow::Context;
 use serde::Deserialize;
 use serde::Serialize;
@@ -241,7 +242,7 @@ impl antlir2_compile::CompileFeature for Clone {
             .contents
             .as_subvol_symlink()
             .context("only subvol_symlink is supported")?
-            .join(self.src_path.strip_prefix("/").unwrap_or(&self.src_path))
+            .join_abs(&self.src_path)
             .canonicalize()?;
         for entry in WalkDir::new(&src_root) {
             let entry = entry.map_err(std::io::Error::from)?;

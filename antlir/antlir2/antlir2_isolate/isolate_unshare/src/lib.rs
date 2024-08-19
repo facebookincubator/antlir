@@ -14,6 +14,7 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::process::Command;
 
+use antlir2_path::PathExt;
 use antlir2_users::passwd::EtcPasswd;
 use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
@@ -81,15 +82,12 @@ impl<'a> IsolatedContext<'a> {
             .chain(outputs.iter().map(|(dst, src)| (dst, src, false)))
         {
             let ft = src.metadata()?.file_type();
-            let dst = if let Ok(target) =
-                std::fs::read_link(layer.join(dst.strip_prefix("/").unwrap_or(dst)))
-            {
+            let dst = if let Ok(target) = std::fs::read_link(layer.join_abs(dst)) {
                 dst.parent().unwrap_or(dst).join(target)
             } else {
                 dst.clone().into_owned()
             };
-            let dst = Path::new(isolate_unshare_preexec::NEWROOT)
-                .join(dst.strip_prefix("/").unwrap_or(&dst));
+            let dst = Path::new(isolate_unshare_preexec::NEWROOT).join_abs(dst);
             if ft.is_dir() {
                 dir_binds.push(isolate_unshare_preexec::Bind {
                     src: src.clone().into(),
@@ -109,7 +107,7 @@ impl<'a> IsolatedContext<'a> {
                 file_binds.push(isolate_unshare_preexec::Bind {
                     src: Path::new("/dev").join(dev),
                     dst: Path::new(isolate_unshare_preexec::NEWROOT)
-                        .join(devtmpfs.strip_prefix("/").unwrap_or(devtmpfs))
+                        .join_abs(devtmpfs)
                         .join(dev),
                     ro: false,
                 });
@@ -143,7 +141,7 @@ impl<'a> IsolatedContext<'a> {
                 .iter()
                 .map(|t| {
                     Path::new(isolate_unshare_preexec::NEWROOT)
-                        .join(t.strip_prefix("/").unwrap_or(t))
+                        .join_abs(t)
                         .to_owned()
                 })
                 .collect(),
@@ -151,7 +149,7 @@ impl<'a> IsolatedContext<'a> {
                 .iter()
                 .map(|t| {
                     Path::new(isolate_unshare_preexec::NEWROOT)
-                        .join(t.strip_prefix("/").unwrap_or(t))
+                        .join_abs(t)
                         .to_owned()
                 })
                 .collect(),
@@ -160,7 +158,7 @@ impl<'a> IsolatedContext<'a> {
                 .enumerate()
                 .map(|(idx, t)| {
                     let dst = Path::new(isolate_unshare_preexec::NEWROOT)
-                        .join(t.strip_prefix("/").unwrap_or(t))
+                        .join_abs(t)
                         .to_owned();
                     let upper =
                         Path::new("/tmp/__antlir2__/tmpfs_overlay").join(format!("upper_{idx}"));

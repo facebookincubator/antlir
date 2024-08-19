@@ -16,6 +16,7 @@ rust_library(
         "twox-hash",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
     ],
 )
 
@@ -32,6 +33,7 @@ feature_impl(
     deps = [
         "anyhow",
         ":extract",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
     ],
 )
 
