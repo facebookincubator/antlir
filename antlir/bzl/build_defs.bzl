@@ -17,6 +17,30 @@ def _third_party_libraries(names, platform = None):
         for name in names
     ]
 
+def _ensure_dep_is_public(dep: str):
+    package = native.package_name()
+    if not package.startswith("antlir"):
+        # TODO: apply this same check to metalos
+        return dep
+
+    # don't run this check on non-shipped directories
+    package = package.split("/")
+    for fb_path in ("facebook", "fb", "fbpkg"):
+        if fb_path in package:
+            return dep
+
+    # This covers deps in the same target as well as unqualified third party
+    # dependencies
+    if "//" not in dep:
+        return dep
+    if dep.startswith("fbsource//third-party/rust:"):
+        fail("Do not use fbsource//third-party/rust:, instead just use '{}'".format(dep.removeprefix("fbsource//third-party/rust:")))
+    fbcode_dep = dep.removeprefix("fbcode").removeprefix("antlir")
+    if fbcode_dep.startswith("//antlir") or fbcode_dep.startswith("//metalos"):
+        return dep
+    else:
+        fail("internal-only dependency '{}' must be moved to fb_deps (and its usage must be conditional on #[cfg(facebook)])".format(dep))
+
 def _rust_common(rule, **kwargs):
     rustc_flags = kwargs.pop("rustc_flags", [])
     append = [
@@ -33,7 +57,8 @@ def _rust_common(rule, **kwargs):
         kwargs["unittests"] = False
 
     if shim.is_facebook:
-        kwargs["deps"] = selects.apply(kwargs.pop("deps", []), lambda deps: deps + list(kwargs.pop("fb_deps", [])))
+        deps = selects.apply(kwargs.pop("deps", []), lambda deps: [_ensure_dep_is_public(dep) for dep in deps])
+        kwargs["deps"] = selects.apply(deps, lambda deps: deps + list(kwargs.pop("fb_deps", [])))
         if kwargs.get("unittests", False):
             kwargs["test_deps"] = list(kwargs.pop("test_deps", [])) + list(kwargs.pop("fb_test_deps", []))
         else:
@@ -43,7 +68,11 @@ def _rust_common(rule, **kwargs):
         kwargs.pop("fb_test_deps", None)
 
     deps = selects.apply(kwargs.pop("deps", []), lambda deps: [_normalize_rust_dep(d) for d in deps])
-    rule(deps = deps, **kwargs)
+    named_deps = selects.apply(kwargs.pop("named_deps", {}), lambda named_deps: {
+        key: _normalize_rust_dep(_ensure_dep_is_public(d))
+        for key, d in named_deps.items()
+    })
+    rule(deps = deps, named_deps = named_deps, **kwargs)
 
 def rust_python_extension(**kwargs):
     _rust_common(shim.rust_python_extension, **kwargs)

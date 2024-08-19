@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "echo", "export_file", "python_library", "rust_binary", "rust_python_extension", "third_party")
+load("//antlir/bzl:build_defs.bzl", "echo", "export_file", "python_library", "rust_binary", "rust_python_extension")
 load(":modules.bzl", "extension_modules", "extension_rust_targets")
 
 oncall("antlir")
@@ -25,10 +25,7 @@ rust_python_extension(
         ":register_modules.rs": "src/register_modules.rs",
     },
     visibility = ["//antlir/..."],
-    deps = [third_party.library(
-        "pyo3",
-        platform = "rust",
-    )] + extension_rust_targets,
+    deps = ["pyo3"] + extension_rust_targets,
 )
 
 export_file(name = "trigger_rust_module_init.py")

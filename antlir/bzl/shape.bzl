@@ -111,7 +111,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 """
 
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "python_library", "rust_library", "target_utils", "third_party")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "python_library", "rust_library", "target_utils")
 load(":shell.bzl", "shell")
 load(":target_helpers.bzl", "normalize_target")
 load(":template.bzl", "render")
@@ -342,16 +342,14 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
         name = "{}-rust".format(name),
         crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
         mapped_srcs = {":{}[src][rust]".format(name): "src/lib.rs"},
-        deps = ["{}-rust".format(d) for d in deps] + ["antlir//antlir/bzl/shape2:shape"] + third_party.libraries(
-            [
-                "anyhow",
-                "fbthrift",
-                "serde",
-                "serde_json",
-                "typed-builder",
-            ],
-            platform = "rust",
-        ),
+        deps = ["{}-rust".format(d) for d in deps] + [
+            "antlir//antlir/bzl/shape2:shape",
+            "anyhow",
+            "fbthrift",
+            "serde",
+            "serde_json",
+            "typed-builder",
+        ],
         visibility = visibility,
         unittests = False,
         allow_unused_crate_dependencies = True,
