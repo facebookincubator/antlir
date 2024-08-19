@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 oncall("antlir")
@@ -39,4 +40,29 @@ rust_binary(
         "//antlir/antlir2/libcap:libcap",
         "//antlir/util/cli/json_arg:json_arg",
     ],
+)
+
+feature.new(
+    name = "build-appliance-features",
+    features = [
+        feature.rpms_install(rpms = [
+            "cpio",
+            "dosfstools",
+            "e2fsprogs",
+            "mtools",
+            "rpm-build",
+            "rpm-sign",
+            "squashfs-tools",
+            "zstd",
+        ]),
+        select({
+            "//antlir/antlir2/os:centos8": None,
+            "//antlir/antlir2/os:rhel8": None,
+            "//antlir/antlir2/os:rhel8.8": None,
+            "DEFAULT": feature.rpms_install(rpms = [
+                "erofs-utils",
+            ]),
+        }),
+    ],
+    visibility = ["//antlir/antlir2/build_appliance/..."],
 )
