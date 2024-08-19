@@ -4,7 +4,6 @@ load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_integrity", "image_test_rpm_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
 load("//antlir/antlir2/testing:test_that_should_fail.bzl", "sh_test_that_should_fail", "test_that_should_fail")
-load("//antlir/bzl:build_defs.bzl", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load(":test.bzl", "test_variants")
 
@@ -59,14 +58,8 @@ test_variants(
     lang = "rust",
     test_rule = image_rust_test,
     deps = [
-        third_party.library(
-            "whoami",
-            platform = "rust",
-        ),
-        third_party.library(
-            "serde_json",
-            platform = "rust",
-        ),
+        "serde_json",
+        "whoami",
     ],
 )
 

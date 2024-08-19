@@ -115,12 +115,10 @@ rust_unittest(
         "test_db": ":test-layer[debug][facts]",
     },
     deps = [
+        "buck-resources",
         "tracing",
         "tracing-test",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
-    ] + internal_external(
-        fb = ["fbsource//third-party/rust:buck-resources"],
-        oss = [],
-    ),
+    ],
 )
