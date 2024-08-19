@@ -8,13 +8,10 @@
 use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Stdio;
 
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
-use anyhow::ensure;
 use anyhow::Context;
-use anyhow::Error;
 use anyhow::Result;
 use bytesize::ByteSize;
 use serde::Deserialize;
@@ -33,16 +30,17 @@ pub struct Ext3 {
     free_mb: u64,
 }
 
+const MAPPED_OUTPUT: &str = "/__antlir2__/out/ext3";
+
 impl PackageFormat for Ext3 {
     fn build(&self, out: &Path, layer: &Path) -> Result<()> {
-        let rootless = antlir2_rootless::init().context("while initializing rootless")?;
         File::create(out).context("failed to create output file")?;
 
         let isol_context = IsolationContext::builder(self.build_appliance.path())
             .ephemeral(false)
             .readonly()
             .tmpfs(Path::new("/__antlir2__/out"))
-            .outputs(("/__antlir2__/out/ext3", out))
+            .outputs((MAPPED_OUTPUT, out))
             .inputs((Path::new("/__antlir2__/root"), layer))
             .inputs((
                 PathBuf::from("/__antlir2__/working_directory"),
@@ -57,29 +55,25 @@ impl PackageFormat for Ext3 {
             cmd.arg("-L").arg(label);
         }
         cmd.arg("-d").arg("/__antlir2__/root");
-        cmd.arg("/__antlir2__/out/ext3");
+        cmd.arg(MAPPED_OUTPUT);
         if let Some(size_mb) = self.size_mb {
             cmd.arg(format!("{}M", size_mb));
-            rootless.as_root(|| {
-                run_cmd(cmd.stdout(Stdio::piped())).context("failed to build ext3 archive")
-            })??;
+            run_cmd(&mut cmd).context("failed to build ext3 archive")?;
         } else {
-            let total_file_size = ByteSize::b(rootless.as_root(|| {
-                Ok::<_, Error>(
-                    WalkDir::new(layer)
-                        .into_iter()
-                        .map(|entry| {
-                            entry.context("while walking directory").and_then(|e| {
-                                e.metadata().map(|m| m.len()).with_context(|| {
-                                    format!("while getting size of {}", e.path().display())
-                                })
+            let total_file_size = ByteSize::b(
+                WalkDir::new(layer)
+                    .into_iter()
+                    .map(|entry| {
+                        entry.context("while walking directory").and_then(|e| {
+                            e.metadata().map(|m| m.len()).with_context(|| {
+                                format!("while getting size of {}", e.path().display())
                             })
                         })
-                        .collect::<Result<Vec<_>>>()?
-                        .into_iter()
-                        .sum(),
-                )
-            })??);
+                    })
+                    .collect::<Result<Vec<_>>>()?
+                    .into_iter()
+                    .sum(),
+            );
             // Well this is kinda crazy... Here goes:
             // We can't really determine the minimal size of an ext3 image file
             // given a directory - we can only approximate it.
@@ -97,14 +91,10 @@ impl PackageFormat for Ext3 {
             // It's just one kilobyte Michael, what could it cost? $10?
             let size_kb = (size.0 / 1024) + 1;
             cmd.arg(format!("{size_kb}K"));
-            rootless.as_root(|| {
-                run_cmd(cmd.stdout(Stdio::piped())).context("failed to build ext3 archive")
-            })??;
+            run_cmd(&mut cmd).context("failed to build ext3 archive")?;
 
-            let resize_out = rootless
-                .as_root(|| run_cmd(isol.command("resize2fs")?.arg("-M").arg(out)))?
+            run_cmd(isol.command("resize2fs")?.arg("-M").arg(MAPPED_OUTPUT))
                 .context("while minimizing fs size")?;
-            ensure!(resize_out.status.success(), "resize2fs failed");
 
             // Now, if the user asked for some free space, we need to give it to
             // them.
@@ -117,10 +107,8 @@ impl PackageFormat for Ext3 {
 
                 let new_size = size + ByteSize::mib(self.free_mb);
                 f.set_len(new_size.0).context("while growing image file")?;
-                rootless.as_root(|| {
-                    run_cmd(isol.command("resize2fs")?.arg("/__antlir2__/out/ext3"))
-                        .context("failed to resize ext3 archive")
-                })??;
+                run_cmd(isol.command("resize2fs")?.arg(MAPPED_OUTPUT))
+                    .context("failed to resize ext3 archive")?;
             }
         };
 
