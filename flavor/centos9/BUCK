@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/flavor:defs.bzl", "flavor")
-load("//antlir/bzl:build_defs.bzl", "http_file")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/bzl/image:build_appliance.bzl", "build_appliance")
 
 flavor(
@@ -11,26 +12,17 @@ flavor(
     visibility = ["PUBLIC"],
 )
 
-hash = "38f1ee19700466ff1a86e5cda92234c2a6ecd11d262ff39a429039b2d1ca97e1"
+sha256 = "6550a924e5af1e1a6847dd8f077c89d14f8a1c3c6ec625335ffb0e842236d262"
+sha1 = "d9fd5458eb0db19e044a98564a819b1cc40220dc"
 
-# Hand-built with. Will replace with a self-hosting antlir image after
-# bootstrapping using this hand-built image
-#
-# $ cat dnf.conf
-# [main]
-# install_weak_deps=False
-#
-# [baseos]
-# baseurl=https://mirror.facebook.net/centos-composes/9/CentOS-Stream-9-20240311.0/compose/BaseOS/x86_64/os/
-#
-# $ sudo dnf -c dnf.conf --installroot $(pwd)/root install dnf python3-dnf
 http_archive(
     name = "build-appliance.tar.zst",
     urls = [
         "https://antlir.s3.us-east-2.amazonaws.com/build_appliance/" +
-        "centos9_{}.tar.zst".format(hash)
+        "centos9_{}.tar.zst".format(sha256),
     ],
-    sha256 = hash,
+    sha256 = sha256,
+    sha1 = sha1,
 )
 
 build_appliance(
@@ -38,7 +30,7 @@ build_appliance(
     src = ":build-appliance.tar.zst",
     visibility = [
         "antlir//antlir/antlir2/flavor:none",
-    ]
+    ],
 )
 
 image.layer(
@@ -47,7 +39,17 @@ image.layer(
     features = [
         "//antlir/antlir2/build_appliance:features",
     ],
-    dnf_available_repos = "//antlir/antlir2/package_managers/dnf/build_appliance:empty-dnf-reposet",
-    dnf_versionlock = "//antlir/antlir2/package_managers/dnf/build_appliance:empty-dnf-versionlock.json",
-    dnf_excluded_rpms = [],
+)
+
+package.unprivileged_dir(
+    name = "build-appliance.dir",
+    layer = ":build-appliance",
+)
+
+buck_genrule(
+    name = "build-appliance.impl.tar.zst",
+    cmd = """
+        tar -cf $TMP/ba.tar -C $(location :build-appliance.dir) .
+        zstd $TMP/ba.tar -o $OUT
+    """,
 )
