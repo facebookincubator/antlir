@@ -8,7 +8,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "cfg_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
 load(":macro.bzl", "package_macro")
-load(":sendstream.bzl", "anon_v1_sendstream")
+load(":sendstream.bzl", "sendstream_v2_anon")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     package = ctx.actions.declare_output("image.btrfs")
@@ -25,12 +25,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "seed_device": ctx.attrs.seed_device,
                 "subvols": {
                     path: {
-                        # needs access to the layer for size calculations :(
-                        "layer": subvol["layer"][LayerInfo].contents.subvol_symlink,
-                        "sendstream": anon_v1_sendstream(
-                            ctx = ctx,
-                            layer = subvol["layer"],
-                        ).artifact("anon_v1_sendstream"),
+                        "sendstream": ctx.actions.anon_target(sendstream_v2_anon, {
+                            "antlir2_packager": ctx.attrs.antlir2_packager,
+                            "compression_level": ctx.attrs.compression_level,
+                            "layer": subvol["layer"],
+                            "name": str(subvol["layer"].label.raw_target()),
+                            "_rootless": ctx.attrs._rootless,
+                        }).artifact("sendstream"),
                         "writable": subvol.get("writable"),
                     }
                     for path, subvol in ctx.attrs.subvols.items()

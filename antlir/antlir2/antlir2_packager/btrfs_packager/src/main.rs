@@ -52,7 +52,6 @@ pub const MIN_SHRINK_BYTES: ByteSize = ByteSize::mib(256);
 #[serde(rename_all = "snake_case")]
 pub struct BtrfsSubvol {
     pub sendstream: PathBuf,
-    pub layer: PathBuf,
     pub writable: Option<bool>,
 }
 
@@ -183,7 +182,6 @@ pub fn create_empty_file(output: &Path, size: ByteSize) -> Result<()> {
 /// sendstream size is only correlated to the actual required subvol size in the
 /// loopback for a few reasons:
 ///  * sendstream has different metadata representations
-///  * compression levels are almost definitely different
 ///  * potential deduplication
 ///
 /// Nevertheless, it's a decent input to the estimate of the initial loopback
@@ -196,9 +194,11 @@ fn estimate_subvol_size(subvols: &BTreeMap<PathBuf, BtrfsSubvol>) -> Result<Byte
         let meta = subvol.sendstream.metadata().with_context(|| {
             format!("while checking the size of {}", subvol.sendstream.display())
         })?;
-        total_size += ByteSize::b(meta.len());
+        // sendstreams are smaller than the required space on disk, so add some
+        // extra space to account for that
+        let subvol_estimate = meta.len() + (meta.len() / 5);
+        total_size += ByteSize::b(subvol_estimate);
     }
-
     Ok(total_size)
 }
 

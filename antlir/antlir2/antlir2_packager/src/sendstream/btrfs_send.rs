@@ -7,6 +7,7 @@
 
 use std::path::Path;
 use std::process::Command;
+use std::process::Stdio;
 
 use antlir2_btrfs::SnapshotFlags;
 use antlir2_btrfs::Subvolume;
@@ -41,13 +42,12 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
                 )
             })
     })??;
-    let v1file = retry(Fixed::from_millis(10_000).take(10), || {
-        let v1file = NamedTempFile::new()?;
+    let file = retry(Fixed::from_millis(10_000).take(10), || {
         trace!(
-            "sending v1 {} sendstream to {}",
+            "attempting to send v1 {} sendstream into upgrader",
             snapshot.path().display(),
-            v1file.path().display()
         );
+        let file = NamedTempFile::new()?;
         rootless
             .as_root(|| {
                 let mut cmd = Command::new("btrfs");
@@ -60,31 +60,43 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
                     );
                 }
 
-                if cmd
+                let mut btrfs_send = cmd
                     .arg(snapshot.path())
-                    .stdout(
-                        v1file
-                            .as_file()
-                            .try_clone()
-                            .context("while cloning v1file")?,
-                    )
+                    .stdout(Stdio::piped())
                     .spawn()
-                    .context("while spawning btrfs-send")?
+                    .context("while spawning btrfs-send")?;
+                let upgrader =
+                    buck_resources::get("antlir/antlir2/antlir2_packager/sendstream-upgrade")?;
+                let mut upgrade = Command::new(upgrader)
+                    .arg("--compression-level")
+                    .arg(spec.compression_level.to_string())
+                    .stdin(btrfs_send.stdout.take().expect("this is a pipe"))
+                    .stdout(file.as_file().try_clone()?)
+                    .spawn()
+                    .context("while spawning sendstream-upgrade")?;
+
+                if !btrfs_send
                     .wait()
                     .context("while waiting for btrfs-send")?
                     .success()
                 {
-                    Ok(v1file)
-                } else {
-                    Err(anyhow!("btrfs-send failed"))
+                    return Err(anyhow!("btrfs-send failed"));
                 }
+                if !upgrade
+                    .wait()
+                    .context("while waiting for sendstream-upgrade")?
+                    .success()
+                {
+                    return Err(anyhow!("sendstream-upgrade failed"));
+                }
+                Ok(file)
             })
             .context("rootless failed")?
     })
     .map_err(Error::msg)
     .context("btrfs-send failed too many times")?;
 
-    if let Err(PersistError { file, error }) = v1file.persist(out) {
+    if let Err(PersistError { file, error }) = file.persist(out) {
         warn!("failed to persist tempfile, falling back on full copy: {error:?}");
         std::fs::copy(file.path(), out).context("while copying sendstream to output")?;
     }
