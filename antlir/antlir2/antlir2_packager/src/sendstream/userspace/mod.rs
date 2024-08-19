@@ -10,7 +10,6 @@ use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::BufReader;
-use std::io::BufWriter;
 use std::io::Read;
 use std::io::Write;
 use std::os::unix::ffi::OsStrExt;
@@ -18,9 +17,12 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
+use std::process::Stdio;
 use std::time::Duration;
 use std::time::UNIX_EPOCH;
 
+use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -39,12 +41,21 @@ const BLAKE3_KEY: &str = "74dbd000-062c-498b-92fc-3e4b7efdcab4";
 pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
     let rootless = antlir2_rootless::init().context("while initializing rootless")?;
     let canonical_layer = layer.canonicalize()?;
-    let mut f = BufWriter::new(std::fs::File::create(out).context("while creating output file")?);
+
+    let upgrader = buck_resources::get("antlir/antlir2/antlir2_packager/sendstream-upgrade")?;
+    let mut upgrade = Command::new(upgrader)
+        .arg("--compression-level")
+        .arg(spec.compression_level.to_string())
+        .stdin(Stdio::piped())
+        .stdout(File::create(out).context("while creating output file")?)
+        .spawn()
+        .context("while spawning sendstream-upgrade")?;
+
+    let mut f = upgrade.stdin.take().expect("this is a pipe");
 
     // Write the magic sentinel and version number. This packager always
-    // produces uncompressed v1 sendstreams, and then we conditionally
-    // compress or upgrade them to v2 using
-    // `antlir/btrfs_send_stream_upgrade` afterwards
+    // produces uncompressed v1 sendstreams, and lets the sendstream-upgrade
+    // command upgrade it to v2
     f.write_all(b"btrfs-stream\0")?;
     f.write_all(&1u32.to_le_bytes())?;
 
@@ -315,8 +326,16 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
     }
 
     f.write_all(&command::end())?;
+    drop(f);
 
-    Ok(())
+    let status = upgrade
+        .wait()
+        .context("while waiting for sendstream-upgrade to finish")?;
+    if !status.success() {
+        Err(anyhow!("sendstream-upgrade failed: {status}"))
+    } else {
+        Ok(())
+    }
 }
 
 fn get_xattrs(path: &Path) -> Result<HashMap<OsString, Vec<u8>>> {
