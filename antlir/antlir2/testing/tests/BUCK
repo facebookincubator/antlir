@@ -27,6 +27,7 @@ image.layer(
     }),
     features = [
         feature.rpms_install(rpms = [
+            "python3",
             "systemd",
             # @oss-disable
             "foobar",

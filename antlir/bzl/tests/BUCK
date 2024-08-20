@@ -18,7 +18,10 @@ export_file(name = "cheese-dropin.conf")
 image.layer(
     name = "systemd_feature-layer",
     features = [
-        feature.rpms_install(rpms = ["systemd"]),
+        feature.rpms_install(rpms = [
+            "python3",
+            "systemd",
+        ]),
         # A target with a dest
         systemd.install_unit(
             ":cheese-export.service",
