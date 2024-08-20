@@ -3,7 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//linking:shared_libraries.bzl", "SharedLibraryInfo")
+load(
+    "@prelude//linking:shared_libraries.bzl",
+    "SharedLibraryInfo",
+    "create_shlib_symlink_tree",
+    "traverse_shared_library_info",
+)
 load("@prelude//rust:link_info.bzl", "RustLinkInfo")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
@@ -23,24 +28,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     plugin = ctx.actions.declare_output("{}.so".format(ctx.label.name))
     ctx.actions.copy_file(plugin, plugin_src)
 
-    lib_dir = ctx.actions.declare_output("lib", dir = True)
-
     # Copy all the .so's that this plugin links against (at the time of writing,
     # this is exclusively libbtrfsutil.so). This shouldn't really be necessary,
     # but when building in @mode/opt and on RE, the dependencies get dropped and
     # we get left with only the plugin .so and none of its dependencies
-    lib_dir_map = {}
-    for rust_dep in [ctx.attrs.lib] + ctx.attrs.deps:
-        if RustLinkInfo not in rust_dep:
-            continue
-        for dep in rust_dep[RustLinkInfo].exported_link_deps:
-            for item in dep[SharedLibraryInfo].set.traverse():
-                lib_dir_map.update({
-                    shlib.soname.ensure_str(): shlib.lib.output
-                    for shlib in item.libraries
-                })
-
-    ctx.actions.copied_dir(lib_dir, lib_dir_map)
+    shlib_info = ctx.attrs.lib[SharedLibraryInfo]
+    shared_libs = traverse_shared_library_info(shlib_info)
+    lib_dir = create_shlib_symlink_tree(
+        actions = ctx.actions,
+        out = "lib",
+        shared_libs = shared_libs,
+    )
 
     return [
         FeaturePluginInfo(plugin = plugin, libs = lib_dir),
