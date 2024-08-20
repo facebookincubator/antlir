@@ -17,6 +17,7 @@ use json_arg::JsonFile;
 
 mod btrfs;
 mod cpio;
+mod erofs;
 mod ext;
 mod gpt;
 mod rpm;
@@ -100,6 +101,7 @@ fn main() -> Result<()> {
     match args.spec.into_inner() {
         Spec::Btrfs(p) => p.build(&args.out),
         Spec::Cpio(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Erofs(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Ext3(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Gpt(p) => p.build(&args.out),
         Spec::Rpm(p) => p.build(&args.out, layer.context("layer required for this format")?),
