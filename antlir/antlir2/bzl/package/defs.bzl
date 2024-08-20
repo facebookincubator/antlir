@@ -376,11 +376,23 @@ _unprivileged_dir, _unprivileged_dir_anon = _new_package_rule(
     sudo = True,
 )
 
+_erofs, _erofs_anon = _new_package_rule(
+    format = "erofs",
+    sudo = True,
+    rule_attrs = {
+        "compression": attrs.option(attrs.string(), default = None),
+        "label": attrs.option(attrs.string(), default = None),
+    },
+    uses_build_appliance = True,
+    can_be_partition = True,
+)
+
 package = struct(
     btrfs = btrfs,
     cpio = package_macro(_cpio),
     cpio_gz = package_macro(_cpio_gz),
     cpio_zst = package_macro(_cpio_zst),
+    erofs = package_macro(_erofs),
     ext3 = package_macro(_ext3),
     gpt = gpt,
     rpm = package_macro(_rpm, always_rootless = True),
