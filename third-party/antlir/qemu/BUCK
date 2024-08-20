@@ -11,9 +11,9 @@ oncall("antlir")
 third_party.build(
     name = "qemu",
     src = third_party.source("qemu"),
-    compatible_with = [
-        "//antlir/antlir2/os:centos8",
-        "//antlir/antlir2/os:centos9",
+    compatible_with_os = [
+        "centos8",
+        "centos9",
     ],
     features = [
         feature.rpms_install(rpms = [

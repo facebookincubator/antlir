@@ -4,12 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:expect.bzl", "expect")
-load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless_config_set", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
 
@@ -663,7 +663,9 @@ def layer(
         use_default_os_from_package: bool | None = None,
         default_rou: str | None = None,
         rootless: bool | None = None,
+        compatible_with_os: list[str] | Select | None = None,
         visibility: list[str] | None = None,
+        compatible_with = None,
         **kwargs):
     """
     Create a new image layer
@@ -716,12 +718,34 @@ def layer(
     if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
 
+    # Annoyingly, we can only accept target_compatible_with because we need to
+    # indicate a *HARD* requirement for `os:linux`, which is impossible with
+    # compatible_with, and the two cannot be mixed
+    if compatible_with:
+        fail("compatible_with cannot be used on image layers, use target_compatible_with instead")
+    target_compatible_with = selects.apply(
+        kwargs.pop("target_compatible_with", []),
+        lambda tcw: (tcw or []) + ["ovr_config//os:linux"],
+    )
+    if compatible_with_os:
+        target_compatible_with = selects.apply(
+            selects.join(
+                tcw = target_compatible_with,
+                oses = select({
+                    "//antlir/antlir2/os:" + os: ["//antlir/antlir2/os:" + os]
+                    for os in compatible_with_os
+                }),
+            ),
+            lambda sels: sels.tcw,
+        )
+
     return layer_rule(
         name = name,
         default_os = default_os,
         # @oss-disable
         rootless = rootless,
         visibility = get_visibility(visibility),
+        target_compatible_with = target_compatible_with,
         _implicit_image_test = "antlir//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
         _materialize_to_subvol = "antlir//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol",

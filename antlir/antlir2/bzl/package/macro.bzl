@@ -33,7 +33,7 @@ def package_macro(
             kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
             expect(rootless != True, "this package type always needs root, remove this flag since it does not work")
             rootless = False
-            kwargs["compatible_with"] = kwargs.pop("compatible_with", []) + [rootless_cfg.refs["rooted"]]
+            kwargs["target_compatible_with"] = kwargs.pop("target_compatible_with", []) + [rootless_cfg.refs["rooted"]]
         elif rootless == None:
             rootless = get_antlir2_rootless()
         if always_rootless:
