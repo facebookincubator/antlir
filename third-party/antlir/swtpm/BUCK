@@ -16,9 +16,9 @@ export_file(name = "00_configure")
 third_party.build(
     name = "swtpm",
     src = third_party.source("swtpm"),
-    compatible_with = [
-        "//antlir/antlir2/os:centos8",
-        "//antlir/antlir2/os:centos9",
+    compatible_with_os = [
+        "centos8",
+        "centos9",
     ],
     features = [
         feature.rpms_install(rpms = [
