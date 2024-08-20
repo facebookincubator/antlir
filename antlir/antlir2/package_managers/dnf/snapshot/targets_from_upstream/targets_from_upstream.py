@@ -12,11 +12,12 @@
 
 import argparse
 import pprint
+import shutil
 import tempfile
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import ParseResult, urljoin, urlparse, urlunparse
 
 import createrepo_c as cr
@@ -35,6 +36,7 @@ class rpm(object):
     xml: str
     sha1: Optional[str] = None
     sha256: Optional[str] = None
+    visibility: Optional[List[str]] = None
 
 
 @dataclass
@@ -59,7 +61,13 @@ class repo_set(object):
     visibility: List[str]
 
 
-def snapshot_repo(args, base_url: ParseResult) -> str:
+@dataclass
+class SnapshottedRepo(object):
+    repo: repo
+    rpms: Dict[str, List[Tuple[rpm, xml]]]
+
+
+def snapshot_repo(args, base_url: ParseResult) -> SnapshottedRepo:
     repo_id = base_url.path.strip("/").replace("/", "_")
     base_url = urlunparse(base_url)
     repomd = requests.get(urljoin(base_url, "repodata/repomd.xml"))
@@ -75,9 +83,6 @@ def snapshot_repo(args, base_url: ParseResult) -> str:
         for r in repomd.values()
     }
 
-    targets = []
-    rpm_target_names = []
-
     with ExitStack() as stack:
         xml_files = {
             typ: stack.enter_context(tempfile.NamedTemporaryFile("wb")) for typ in xmls
@@ -86,67 +91,95 @@ def snapshot_repo(args, base_url: ParseResult) -> str:
             xml_files[typ].write(body)
             xml_files[typ].flush()
 
+        rpm_targets_files = {}
+        rpm_targets = []
+
         for pkg in cr.PackageIterator(
             xml_files["primary"].name,
             xml_files["filelists"].name,
             xml_files["other"].name,
         ):
-            target_name = pkg.nevra().replace("^", "").replace(":", "/")
+            target_name = f"{pkg.epoch}-{pkg.version}-{pkg.release}.{pkg.arch}".replace(
+                "^", "_"
+            ).replace(":", "_")
             url = urljoin(base_url, pkg.location_href)
             pkg.location_href = str(
                 Path("Packages") / pkg.pkgId / (pkg.nevra() + ".rpm")
             )
-            targets.append(
-                xml(
-                    name=target_name + "--xml",
-                    primary=cr.xml_dump_primary(pkg),
-                    filelists=cr.xml_dump_filelists(pkg),
-                    other=cr.xml_dump_other(pkg),
+            rpm_targets_files.setdefault(pkg.name, [])
+            rpm_targets_files[pkg.name].append(
+                (
+                    rpm(
+                        name=target_name,
+                        rpm_name=pkg.name,
+                        epoch=int(pkg.epoch),
+                        version=pkg.version,
+                        release=pkg.release,
+                        arch=pkg.arch,
+                        url=url,
+                        xml=":" + target_name + "--xml",
+                        visibility=["//" + str(args.dst) + "/..."],
+                        **{pkg.checksum_type: pkg.pkgId},
+                    ),
+                    xml(
+                        name=target_name + "--xml",
+                        primary=cr.xml_dump_primary(pkg),
+                        filelists=cr.xml_dump_filelists(pkg),
+                        other=cr.xml_dump_other(pkg),
+                    ),
                 )
             )
-            targets.append(
-                rpm(
-                    name=target_name,
-                    rpm_name=pkg.name,
-                    epoch=int(pkg.epoch),
-                    version=pkg.version,
-                    release=pkg.release,
-                    arch=pkg.arch,
-                    url=url,
-                    xml=":" + target_name + "--xml",
-                    **{pkg.checksum_type: pkg.pkgId}
-                )
+            rpm_targets.append(
+                "//" + str(args.dst) + "/rpms/" + pkg.name + ":" + target_name
             )
-            rpm_target_names.append(":" + target_name)
 
-    targets = sorted(repr(t) for t in targets)
-    source = """# \x40generated
-load("@antlir//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
-load("@antlir//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
-load("@antlir//antlir/antlir2/package_managers/dnf/rules:xml.bzl", "xml")
-
-"""
-    source += (
-        pprint.pformat(repo(name=repo_id, rpms=rpm_target_names, visibility=["PUBLIC"]))
-        + "\n\n\n"
+    return SnapshottedRepo(
+        repo=repo(name=repo_id, rpms=rpm_targets, visibility=["PUBLIC"]),
+        rpms=rpm_targets_files,
     )
-    source += "\n\n".join(targets)
-
-    return source
 
 
 def main(args) -> None:
     args.dst.mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(args.dst)
     repos = {}
+    rpms = {}
     for base_url in args.baseurls:
-        source = snapshot_repo(args, base_url)
-        buck_file = args.dst / base_url.path.lstrip("/") / "BUCK"
+        snap = snapshot_repo(args, base_url)
+        repo_dir = args.dst / base_url.path.lstrip("/")
+        buck_file = repo_dir / "BUCK"
         buck_file.parent.mkdir(parents=True, exist_ok=True)
         with open(buck_file, "w") as f:
-            f.write(source)
+            f.write(
+                """# \x40generated
+load("@antlir//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
+"""
+            )
+            f.write(repr(snap.repo))
+            f.write("\n")
+        for rpm_name, this in snap.rpms.items():
+            rpms.setdefault(rpm_name, [])
+            rpms[rpm_name].extend(this)
 
         repo_id = base_url.path.strip("/").replace("/", "_")
         repos[base_url.path.strip("/")] = repo_id
+
+    for rpm_name, rpms in rpms.items():
+        rpm_dir = args.dst / "rpms" / rpm_name
+        rpm_dir.mkdir(parents=True, exist_ok=True)
+        with open(rpm_dir / "BUCK", "w") as f:
+            f.write(
+                """# \x40generated
+load("@antlir//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
+load("@antlir//antlir/antlir2/package_managers/dnf/rules:xml.bzl", "xml")
+"""
+            )
+            for rpm, xml in rpms:
+                f.write(repr(rpm))
+                f.write("\n")
+                f.write(repr(xml))
+                f.write("\n")
+
     with open(args.dst / "BUCK", "w") as f:
         f.write("# \x40generated\n")
         f.write(
