@@ -31,7 +31,7 @@ rust_binary(
     name = "btrfs_send_stream_upgrade",
     srcs = ["src/main.rs"],
     visibility = [
-        "PUBLIC",
+        "PUBLIC", # @oss-enable
     ],
     deps = [
         "anyhow",

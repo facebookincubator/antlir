@@ -1,5 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "internal_external", "rust_binary")
 
 oncall("antlir")
 
@@ -10,7 +10,10 @@ rust_binary(
         "ovr_config//os:linux",
     ],
     resources = {
-        "sendstream-upgrade": "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade",
+        "sendstream-upgrade": internal_external(
+            fb = "//antlir/btrfs_send_stream_upgrade/facebook:sendstream-upgrade",
+            oss = "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade",
+        ),
     },
     visibility = ["PUBLIC"],
     deps = [
