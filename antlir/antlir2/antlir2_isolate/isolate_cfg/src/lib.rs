@@ -17,20 +17,26 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 use serde::Serialize;
+use serde_with::serde_as;
 
 /// Everything needed to know how to isolate an image compilation.
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IsolationContext<'a> {
     pub layer: Cow<'a, Path>,
     /// See [IsolationContextBuilder::platform]
+    #[serde_as(as = "Vec<(_, _)>")]
     pub platform: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
     /// Directory in which to invoke the provided command.
     pub working_directory: Option<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::setenv]
+    #[serde_as(as = "Vec<(_, _)>")]
     pub setenv: BTreeMap<Cow<'a, OsStr>, Cow<'a, OsStr>>,
     /// See [IsolationContextBuilder::inputs]
+    #[serde_as(as = "Vec<(_, _)>")]
     pub inputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
     /// See [IsolationContextBuilder::outputs]
+    #[serde_as(as = "Vec<(_, _)>")]
     pub outputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
     /// See [InvocationType]
     pub invocation_type: InvocationType,
