@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "4e39e10e5312f72030054b4fd711bb26519f33aa",
+    rev = "25ab1e4ce88955766ef2a531e90893845d18f143",
     visibility = [],
 )
 
@@ -126,6 +126,23 @@ cargo.rust_library(
     crate = "adler",
     crate_root = "adler-1.0.2.crate/src/lib.rs",
     edition = "2015",
+    visibility = [],
+)
+
+http_archive(
+    name = "adler2-2.0.0.crate",
+    sha256 = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627",
+    strip_prefix = "adler2-2.0.0",
+    urls = ["https://static.crates.io/crates/adler2/2.0.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "adler2-2.0.0",
+    srcs = [":adler2-2.0.0.crate"],
+    crate = "adler2",
+    crate_root = "adler2-2.0.0.crate/src/lib.rs",
+    edition = "2021",
     visibility = [],
 )
 
@@ -1025,7 +1042,7 @@ cargo.rust_library(
     deps = [
         ":brotli-6.0.0",
         ":bzip2-0.4.4",
-        ":flate2-1.0.31",
+        ":flate2-1.0.32",
         ":futures-core-0.3.30",
         ":futures-io-0.3.30",
         ":memchr-2.7.4",
@@ -4079,24 +4096,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.19.crate",
-    sha256 = "7eddf1c00919f37952199f7dbc834789cd33356ed10278ee40c8572b8fb88cf2",
-    strip_prefix = "clap_complete-4.5.19",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.19/download"],
+    name = "clap_complete-4.5.20.crate",
+    sha256 = "2aedc27e53da9ff495f5da6f4325390e71f46f886022b618303042e8ccf4bcac",
+    strip_prefix = "clap_complete-4.5.20",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.20/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.19-clap_complete",
+    actual = ":clap_complete-4.5.20-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.19-clap_complete",
-    srcs = [":clap_complete-4.5.19.crate"],
+    name = "clap_complete-4.5.20-clap_complete",
+    srcs = [":clap_complete-4.5.20.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.19.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.20.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
@@ -7316,23 +7333,23 @@ cargo.rust_library(
 
 alias(
     name = "flate2",
-    actual = ":flate2-1.0.31",
+    actual = ":flate2-1.0.32",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "flate2-1.0.31.crate",
-    sha256 = "7f211bbe8e69bbd0cfdea405084f128ae8b4aaa6b0b522fc8f2b009084797920",
-    strip_prefix = "flate2-1.0.31",
-    urls = ["https://static.crates.io/crates/flate2/1.0.31/download"],
+    name = "flate2-1.0.32.crate",
+    sha256 = "9c0596c1eac1f9e04ed902702e9878208b336edc9d6fddc8a48387349bab3666",
+    strip_prefix = "flate2-1.0.32",
+    urls = ["https://static.crates.io/crates/flate2/1.0.32/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "flate2-1.0.31",
-    srcs = [":flate2-1.0.31.crate"],
+    name = "flate2-1.0.32",
+    srcs = [":flate2-1.0.32.crate"],
     crate = "flate2",
-    crate_root = "flate2-1.0.31.crate/src/lib.rs",
+    crate_root = "flate2-1.0.32.crate/src/lib.rs",
     edition = "2018",
     features = [
         "any_impl",
@@ -7343,7 +7360,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":crc32fast-1.4.2",
-        ":miniz_oxide-0.7.4",
+        ":miniz_oxide-0.8.0",
     ],
 )
 
@@ -11634,6 +11651,25 @@ cargo.rust_library(
     deps = [":adler-1.0.2"],
 )
 
+http_archive(
+    name = "miniz_oxide-0.8.0.crate",
+    sha256 = "e2d80299ef12ff69b16a84bb182e3b9df68b5a91574d3d4fa6e41b65deec4df1",
+    strip_prefix = "miniz_oxide-0.8.0",
+    urls = ["https://static.crates.io/crates/miniz_oxide/0.8.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "miniz_oxide-0.8.0",
+    srcs = [":miniz_oxide-0.8.0.crate"],
+    crate = "miniz_oxide",
+    crate_root = "miniz_oxide-0.8.0.crate/src/lib.rs",
+    edition = "2021",
+    features = ["with-alloc"],
+    visibility = [],
+    deps = [":adler2-2.0.0"],
+)
+
 alias(
     name = "mio",
     actual = ":mio-0.7.14",
@@ -11941,7 +11977,7 @@ cargo.rust_library(
     deps = [
         ":bytes-1.7.1",
         ":crossbeam-0.8.4",
-        ":flate2-1.0.31",
+        ":flate2-1.0.32",
         ":futures-core-0.3.30",
         ":futures-sink-0.3.30",
         ":futures-util-0.3.30",
@@ -12013,7 +12049,7 @@ cargo.rust_library(
         ":bytes-1.7.1",
         ":chrono-0.4.38",
         ":crc32fast-1.4.2",
-        ":flate2-1.0.31",
+        ":flate2-1.0.32",
         ":frunk-0.4.2",
         ":lazy_static-1.5.0",
         ":lexical-6.1.1",
@@ -13047,7 +13083,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":crc32fast-1.4.2",
-        ":flate2-1.0.31",
+        ":flate2-1.0.32",
         ":hashbrown-0.12.3",
         ":indexmap-1.9.3",
         ":memchr-2.7.4",
@@ -13083,7 +13119,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":flate2-1.0.31",
+        ":flate2-1.0.32",
         ":memchr-2.7.4",
         ":ruzstd-0.5.0",
     ],
@@ -15194,7 +15230,7 @@ cargo.rust_library(
         ":bitflags-1.3.2",
         ":byteorder-1.5.0",
         ":chrono-0.4.38",
-        ":flate2-1.0.31",
+        ":flate2-1.0.32",
         ":hex-0.4.3",
         ":lazy_static-1.5.0",
         ":rustix-0.36.17",
