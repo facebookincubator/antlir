@@ -8,6 +8,8 @@ rust_binary(
     compatible_with = [
         "ovr_config//os:linux",
     ],
+    link_group_map = [],
+    link_style = "static",
     visibility = ["//antlir/antlir2/antlir2_isolate/isolate_unshare:"],
     deps = [
         "anyhow",
