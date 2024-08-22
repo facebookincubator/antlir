@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "25ab1e4ce88955766ef2a531e90893845d18f143",
+    rev = "0807d6294074d18a474281193ec5d9b335551304",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "7af2ab6b31f079b894bc37c7c39ded3b6c6d1242",
+    rev = "d6cc74db4462428a2808693166118a10848bb605",
     visibility = [],
 )
 
@@ -2981,8 +2981,36 @@ cargo.rust_library(
     crate = "bytemuck",
     crate_root = "bytemuck-1.17.0.crate/src/lib.rs",
     edition = "2018",
-    features = ["min_const_generics"],
+    features = [
+        "bytemuck_derive",
+        "derive",
+        "min_const_generics",
+    ],
     visibility = [],
+    deps = [":bytemuck_derive-1.7.1"],
+)
+
+http_archive(
+    name = "bytemuck_derive-1.7.1.crate",
+    sha256 = "0cc8b54b395f2fcfbb3d90c47b01c7f444d94d05bdeb775811dec868ac3bbc26",
+    strip_prefix = "bytemuck_derive-1.7.1",
+    urls = ["https://static.crates.io/crates/bytemuck_derive/1.7.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "bytemuck_derive-1.7.1",
+    srcs = [":bytemuck_derive-1.7.1.crate"],
+    crate = "bytemuck_derive",
+    crate_root = "bytemuck_derive-1.7.1.crate/src/lib.rs",
+    edition = "2018",
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.36",
+        ":syn-2.0.75",
+    ],
 )
 
 alias(
@@ -4096,24 +4124,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.20.crate",
-    sha256 = "2aedc27e53da9ff495f5da6f4325390e71f46f886022b618303042e8ccf4bcac",
-    strip_prefix = "clap_complete-4.5.20",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.20/download"],
+    name = "clap_complete-4.5.22.crate",
+    sha256 = "9340e41703683548f486fdfdce615b0520dd220d18b1d4ce5abbc87d461c221b",
+    strip_prefix = "clap_complete-4.5.22",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.22/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.20-clap_complete",
+    actual = ":clap_complete-4.5.22-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.20-clap_complete",
-    srcs = [":clap_complete-4.5.20.crate"],
+    name = "clap_complete-4.5.22-clap_complete",
+    srcs = [":clap_complete-4.5.22.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.20.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.22.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
