@@ -6,10 +6,16 @@ oncall("antlir")
 image.layer(
     name = "deps",
     features = [
-        feature.rpms_install(rpms = [
-            "grub2-efi-x64",
-            "grub2-efi-x64-modules",
-        ]),
+        feature.rpms_install(subjects = select({
+            "ovr_config//cpu:arm64": [
+                "grub2-efi-aa64",
+                "grub2-efi-aa64-modules",
+            ],
+            "ovr_config//cpu:x86_64": [
+                "grub2-efi-x64",
+                "grub2-efi-x64-modules",
+            ],
+        })),
     ],
     visibility = [],
 )
@@ -43,7 +49,10 @@ image.layer(
         ),
         feature.ensure_subdirs_exist(
             into_dir = "/grub2",
-            subdirs_to_create = "x86_64-efi",
+            subdirs_to_create = select({
+                "ovr_config//cpu:arm64": "arm64-efi",
+                "ovr_config//cpu:x86_64": "x86_64-efi",
+            }),
         ),
         feature.ensure_subdirs_exist(
             into_dir = "/",
@@ -54,14 +63,26 @@ image.layer(
             subdirs_to_create = "entries",
         ),
         feature.clone(
-            dst_path = "/EFI/centos/grubx64.efi",
+            dst_path = select({
+                "ovr_config//cpu:arm64": "/EFI/centos/grubaa64.efi",
+                "ovr_config//cpu:x86_64": "/EFI/centos/grubx64.efi",
+            }),
             src_layer = ":deps",
-            src_path = "/boot/efi/EFI/centos/grubx64.efi",
+            src_path = select({
+                "ovr_config//cpu:arm64": "/boot/efi/EFI/centos/grubaa64.efi",
+                "ovr_config//cpu:x86_64": "/boot/efi/EFI/centos/grubx64.efi",
+            }),
         ),
         feature.clone(
-            dst_path = "/EFI/BOOT/BOOTX64.efi",
+            dst_path = select({
+                "ovr_config//cpu:arm64": "/EFI/BOOT/BOOTAA64.efi",
+                "ovr_config//cpu:x86_64": "/EFI/BOOT/BOOTX64.efi",
+            }),
             src_layer = ":deps",
-            src_path = "/boot/efi/EFI/centos/grubx64.efi",
+            src_path = select({
+                "ovr_config//cpu:arm64": "/boot/efi/EFI/centos/grubaa64.efi",
+                "ovr_config//cpu:x86_64": "/boot/efi/EFI/centos/grubx64.efi",
+            }),
         ),
         feature.install(
             src = "grub.cfg",
@@ -69,9 +90,15 @@ image.layer(
         ),
     ] + [
         feature.clone(
-            dst_path = "/grub2/x86_64-efi/{}.mod".format(i),
+            dst_path = select({
+                "ovr_config//cpu:arm64": "/grub2/arm64-efi/{}.mod".format(i),
+                "ovr_config//cpu:x86_64": "/grub2/x86_64-efi/{}.mod".format(i),
+            }),
             src_layer = ":deps",
-            src_path = "/usr/lib/grub/x86_64-efi/{}.mod".format(i),
+            src_path = select({
+                "ovr_config//cpu:arm64": "/usr/lib/grub/arm64-efi/{}.mod".format(i),
+                "ovr_config//cpu:x86_64": "/usr/lib/grub/x86_64-efi/{}.mod".format(i),
+            }),
         )
         for i in grub2_modules
     ],

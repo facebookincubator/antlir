@@ -42,14 +42,26 @@ image.layer(
             subdirs_to_create = "entries",
         ),
         feature.clone(
-            dst_path = "/EFI/systemd/systemd-bootx64.efi",
+            dst_path = select({
+                "ovr_config//cpu:arm64": "/EFI/systemd/systemd-bootaa64.efi",
+                "ovr_config//cpu:x86_64": "/EFI/systemd/systemd-bootx64.efi",
+            }),
             src_layer = ":deps",
-            src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
+            src_path = select({
+                "ovr_config//cpu:arm64": "/usr/lib/systemd/boot/efi/systemd-bootaa64.efi",
+                "ovr_config//cpu:x86_64": "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
+            }),
         ),
         feature.clone(
-            dst_path = "/EFI/BOOT/BOOTX64.efi",
+            dst_path = select({
+                "ovr_config//cpu:arm64": "/EFI/BOOT/BOOTAA64.efi",
+                "ovr_config//cpu:x86_64": "/EFI/BOOT/BOOTX64.efi",
+            }),
             src_layer = ":deps",
-            src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
+            src_path = select({
+                "ovr_config//cpu:arm64": "/usr/lib/systemd/boot/efi/systemd-bootaa64.efi",
+                "ovr_config//cpu:x86_64": "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
+            }),
         ),
     ],
     visibility = ["PUBLIC"],
