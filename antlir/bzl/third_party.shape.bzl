@@ -4,10 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 script_t = record(
-    prepare = field(str | None, default = None),
-    build = str,
-    install = str,
-    patches = field(list[str] | None, default = None),
+    prepare = field(str | Select | None, default = None),
+    build = str | Select,
+    install = str | Select,
+    patches = field(list[str] | Select | None, default = None),
 )
 
 dep_t = record(

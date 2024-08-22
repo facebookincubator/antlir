@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:third_party.bzl", "third_party")
 
@@ -54,16 +55,21 @@ third_party.build(
     script = third_party.script(
         build = "make",
         install = "make install",
-        prepare = """
+        prepare = selects.apply(
+            select({
+                "ovr_config//cpu:arm64": "",
+                "ovr_config//cpu:x86_64": "--enable-avx2",
+            }),
+            lambda arch_flags: """
 export MAKEFLAGS=-j
 
 ./configure \\
     --target-list=x86_64-softmmu,aarch64-softmmu \\
-    --prefix="${OUTPUT}" \\
+    --prefix="${{OUTPUT}}" \\
     --without-default-features \\
     --disable-download \\
+    {arch_flags} \\
     --enable-attr \\
-    --enable-avx2 \\
     --enable-cap-ng \\
     --enable-kvm \\
     --enable-numa \\
@@ -75,7 +81,8 @@ export MAKEFLAGS=-j
     --enable-vhost-user \\
     --enable-virtfs \\
     --enable-zstd
-        """,
+        """.format(arch_flags = arch_flags),
+        ),
     ),
     visibility = [
         "//antlir/third-party/...",

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load(":build_defs.bzl", "buck_genrule", "internal_external", third_party_shim = "third_party")
@@ -23,7 +24,11 @@ def _build(name, features, script, src, deps = None, dnf_additional_repos = None
     buck_genrule(
         name = name + "__build_script",
         out = "out",
-        cmd = ("""
+        cmd = selects.apply(selects.join(
+            script_prepare = script.prepare,
+            script_build = script.build,
+            script_install = script.install,
+        ), lambda sels: ("""
 cat > $TMP/out << 'EOF'
 #!/bin/bash
 
@@ -52,14 +57,14 @@ mv $TMP/out $OUT
 chmod +x $OUT
         """).format(
             src = SRC_TGZ,
-            prepare = script.prepare if script.prepare else "",
-            build = script.build,
-            install = script.install,
+            prepare = sels.script_prepare if sels.script_prepare else "",
+            build = sels.script_build,
+            install = sels.script_install,
             deps_dir = DEPS_DIR,
             patches_dir = PATCHES_DIR,
             src_dir = SRC_DIR,
             output_dir = OUTPUT_DIR,
-        ),
+        )),
     )
 
     image.layer(
