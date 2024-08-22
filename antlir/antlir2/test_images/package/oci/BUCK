@@ -1,0 +1,59 @@
+# @oss-disable
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:oci.bzl", "oci")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+
+oncall("antlir")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.install_text(
+            dst = "/entrypoint.sh",
+            mode = "a+rx",
+            text = """#!/bin/bash
+if [ "$1" != "foo" ]; then
+    echo "Expected $1=foo"
+fi
+echo "Entrypoint!"
+""",
+        ),
+        feature.rpms_install(rpms = ["bash"]),
+    ],
+)
+
+oci(
+    name = "oci",
+    entrypoint = [
+        "/entrypoint.sh",
+        "foo",
+    ],
+    layer = ":layer",
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = [
+            "podman",
+            "python3",
+        ]),
+    ],
+)
+
+image_python_test(
+    name = "test",
+    srcs = ["test.py"],
+    env = {
+        "OCI": "$(location :oci)",
+    },
+    # This test does not work under architecture emulation. Mark it as such in
+    # buck-land, and also disable scheduling CI for aarch64
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # @oss-disable
+    layer = ":test-layer",
+)
