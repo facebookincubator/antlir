@@ -20,6 +20,7 @@ mod cpio;
 mod erofs;
 mod ext;
 mod gpt;
+mod oci;
 mod rpm;
 mod sendstream;
 mod spec;
@@ -104,6 +105,7 @@ fn main() -> Result<()> {
         Spec::Erofs(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Ext3(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Gpt(p) => p.build(&args.out),
+        Spec::Oci(p) => p.build(&args.out),
         Spec::Rpm(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Sendstream(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Squashfs(p) => p.build(&args.out, layer.context("layer required for this format")?),

@@ -349,7 +349,7 @@ _tar_gz = _new_compressed_package_rule(
     compressor = "gzip",
 )
 
-_tar_zst = _new_compressed_package_rule(
+tar_zst_rule = _new_compressed_package_rule(
     default_compression_level = 15,
     uncompressed = _tar_anon,
     compressor = "zstd",
@@ -404,7 +404,7 @@ package = struct(
     squashfs = package_macro(_squashfs),
     tar = package_macro(_tar),
     tar_gz = package_macro(_tar_gz),
-    tar_zst = package_macro(_tar_zst),
+    tar_zst = package_macro(tar_zst_rule),
     unprivileged_dir = package_macro(_unprivileged_dir),
     vfat = package_macro(_vfat),
 )

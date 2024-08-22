@@ -15,6 +15,7 @@ pub enum Spec {
     Erofs(crate::erofs::Erofs),
     Ext3(crate::ext::Ext3),
     Gpt(crate::gpt::Gpt),
+    Oci(crate::oci::Oci),
     Rpm(crate::rpm::Rpm),
     Sendstream(crate::sendstream::Sendstream),
     Squashfs(crate::squashfs::Squashfs),
