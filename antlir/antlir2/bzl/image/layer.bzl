@@ -724,8 +724,14 @@ def layer(
     if compatible_with:
         fail("compatible_with cannot be used on image layers, use target_compatible_with instead")
     target_compatible_with = selects.apply(
-        kwargs.pop("target_compatible_with", []),
-        lambda tcw: (tcw or []) + ["ovr_config//os:linux"],
+        selects.join(
+            user = kwargs.pop("target_compatible_with", []),
+            os = select({
+                "DEFAULT": ["ovr_config//os:linux"],
+                "ovr_config//os:macos": ["ovr_config//os:macos"],
+            }),
+        ),
+        lambda sels: (sels.user or []) + sels.os,
     )
     if compatible_with_os:
         target_compatible_with = selects.apply(
