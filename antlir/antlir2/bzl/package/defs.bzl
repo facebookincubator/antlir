@@ -180,7 +180,9 @@ def _compressed_impl(
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
             "out": "uncompressed",
-        } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys},
+        } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys} | (
+            {"dot_meta": ctx.attrs.dot_meta} if ctx.attrs.dot_meta != None else {}
+        ),
     ).artifact("package")
     package = ctx.actions.declare_output(ctx.label.name)
 
@@ -245,6 +247,7 @@ def _new_compressed_package_rule(
         ),
         attrs = default_attrs | common_attrs | rule_attrs | {
             "compression_level": attrs.int(default = default_compression_level),
+            "dot_meta": attrs.option(attrs.bool(), default = None),
         },
         cfg = package_cfg,
     )
@@ -337,6 +340,7 @@ _tar, _tar_anon = _new_package_rule(
     format = "tar",
     sudo = True,
     uses_build_appliance = True,
+    force_extension = "tar",
 )
 
 _tar_gz = _new_compressed_package_rule(
