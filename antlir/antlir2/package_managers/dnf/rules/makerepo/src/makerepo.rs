@@ -20,6 +20,7 @@ use clap::Parser;
 use clap::ValueEnum;
 use digest::Digest;
 use flate2::write::GzEncoder;
+use flate2::GzBuilder;
 use quick_xml::events::BytesEnd;
 use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
@@ -122,10 +123,11 @@ impl XmlFile<BufWriter<File>, Sha256> {
         let w = BufWriter::new(f);
         let mut inner = match compress {
             Compress::None => XmlFileInner::Uncompressed(DigestWriter::new(w)),
-            Compress::Gzip => XmlFileInner::Gzipped(DigestWriter::new(GzEncoder::new(
-                DigestWriter::new(w),
-                flate2::Compression::default(),
-            ))),
+            Compress::Gzip => XmlFileInner::Gzipped(DigestWriter::new(
+                GzBuilder::new()
+                    .mtime(0) // deterministic output
+                    .write(DigestWriter::new(w), flate2::Compression::default()),
+            )),
         };
         inner.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")?;
         let element = match basename {
