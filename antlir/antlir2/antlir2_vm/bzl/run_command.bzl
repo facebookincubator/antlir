@@ -13,7 +13,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "test",
         cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
-        cmd_args(ctx.attrs.vm_host[VMHostInfo].runtime_spec, format = "--runtime-spec={}"),
         cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
         # (ab)use custom test command to run our random command
         "custom",

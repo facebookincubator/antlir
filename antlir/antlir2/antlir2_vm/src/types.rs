@@ -240,16 +240,6 @@ pub(crate) struct MachineOpts {
     pub(crate) use_legacy_share: bool,
 }
 
-/// Location of various binary and data we need to operate the VM
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub(crate) struct RuntimeOpts {
-    pub(crate) qemu_system: String,
-    pub(crate) qemu_img: String,
-    pub(crate) firmware: String,
-    pub(crate) roms_dir: String,
-    pub(crate) swtpm: String,
-}
-
 #[cfg(test)]
 mod test {
     use clap::Parser;

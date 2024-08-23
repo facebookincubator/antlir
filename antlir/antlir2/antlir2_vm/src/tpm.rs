@@ -16,7 +16,6 @@ use thiserror::Error;
 use tracing::Level;
 use tracing_subscriber::filter::LevelFilter;
 
-use crate::runtime::get_runtime;
 use crate::types::QemuDevice;
 
 /// TPM 2.0 device
@@ -50,7 +49,7 @@ impl TPMDevice {
     }
 
     fn start_tpm(state_dir: &Path) -> Result<()> {
-        let mut command = Command::new(&get_runtime().swtpm);
+        let mut command = Command::new("swtpm");
         command
             .arg("socket")
             .arg("--tpm2")
@@ -71,7 +70,7 @@ impl TPMDevice {
             command.arg("--log").arg("level=20");
         }
         command.spawn().map_err(|err| TPMError::TPMProcessError {
-            msg: format!("Failed to spawn {}", get_runtime().swtpm),
+            msg: "Failed to spawn swtpm".to_string(),
             err,
         })?;
         Ok(())
