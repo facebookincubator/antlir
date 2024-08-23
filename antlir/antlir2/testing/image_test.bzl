@@ -104,6 +104,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
             env = env,
             run_from_project_root = True,
+            default_executor = CommandExecutorConfig(
+                local_enabled = True,
+                # Image test requires local subvolume and cannot be run on RE
+                remote_enabled = False,
+            ),
         ),
         RunInfo(test_cmd),
         DefaultInfo(
