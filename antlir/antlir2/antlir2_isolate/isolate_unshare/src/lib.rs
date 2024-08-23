@@ -51,12 +51,15 @@ impl<'a> IsolatedContext<'a> {
                 .expect("isolate_unshare_preexec is always present"),
         );
 
-        cmd.arg(
-            serde_json::to_string(&self.0)
-                .map_err(|e| Error::Serialize(e, format!("{:#?}", self.0)))?,
-        );
-        cmd.arg(program);
-        cmd.arg("--");
+        cmd.arg("main")
+            .arg(
+                serde_json::to_string(&self.0)
+                    .map_err(|e| Error::Serialize(e, format!("{:#?}", self.0)))?,
+            )
+            .arg(program)
+            .arg("--")
+            // LSAN does not work under PID namespaces, so disable it
+            .env("ASAN_OPTIONS", "detect_leaks=0");
 
         Ok(cmd)
     }
