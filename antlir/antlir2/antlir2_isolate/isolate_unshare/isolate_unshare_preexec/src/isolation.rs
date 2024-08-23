@@ -16,8 +16,8 @@ use antlir2_path::PathExt;
 use anyhow::Context;
 use anyhow::Result;
 use cap_std::fs::Dir;
+use cap_std::fs::OpenOptionsExt as _;
 use isolate_cfg::IsolationContext;
-use nix::errno::Errno;
 use nix::mount::mount;
 use nix::mount::MsFlags;
 use nix::sched::unshare;
@@ -205,22 +205,17 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
         } else {
             dst.clone().into_owned()
         };
-        if ft.is_dir() {
+        let dst = if ft.is_dir() {
             match newroot.create_dir_all(dst.strip_abs()) {
                 Ok(()) => Ok(()),
                 Err(e) if e.kind() == ErrorKind::AlreadyExists => Ok(()),
                 Err(e) => Err(e),
             }
             .with_context(|| format!("while creating mountpoint '{}'", dst.display()))?;
-            let dst = newroot.open_dir(dst.strip_abs())?;
-            mount(
-                Some(src.as_ref()),
-                &dst.abspath(),
-                None::<&str>,
-                MsFlags::MS_BIND | MsFlags::MS_REC,
-                None::<&str>,
-            )
-            .with_context(|| format!("while mounting '{}'", dst.abspath().display()))?;
+            newroot
+                .open_dir(dst.strip_abs())
+                .context("while opening mountpoint")?
+                .into_std_file()
         } else {
             if let Some(parent) = dst.parent() {
                 match newroot.create_dir_all(parent.strip_abs()) {
@@ -230,78 +225,39 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
                 }
                 .with_context(|| format!("while creating parent dir '{}'", parent.display()))?;
             }
-
             match newroot.open_with(
                 dst.strip_abs(),
                 cap_std::fs::OpenOptions::new()
                     .create(true)
                     .truncate(false)
-                    .write(true),
+                    .write(true)
+                    .custom_flags(libc::O_NOFOLLOW),
             ) {
-                Ok(_) => Ok(()),
-                Err(e) if e.kind() == ErrorKind::AlreadyExists => Ok(()),
-                // The target path could already exist but be a broken symlink
-                // in which case this will return ENOENT, but since we use
-                // MS_NOSYMFOLLOW the mount call might still succeed.
-                Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
-                // We get ROFS even if the file already exists, so maybe the
-                // following mount still has a chance of working
-                Err(e) if e.kind() == ErrorKind::ReadOnlyFilesystem => Ok(()),
+                Ok(f) => Ok(f),
+                // We get ROFS if the file already exist, so just open it
+                Err(e) if e.kind() == ErrorKind::ReadOnlyFilesystem => {
+                    newroot.open(dst.strip_abs())
+                }
                 Err(e) => Err(e),
             }
-            .with_context(|| {
-                format!("while creating bind mount dst file for '{}'", dst.display())
-            })?;
-            let dst = newroot.open(dst.strip_abs())?;
-            mount(
-                Some(src.as_ref()),
-                &dst.abspath(),
-                None::<&str>,
-                MsFlags::MS_BIND | MS_NOSYMFOLLOW,
-                None::<&str>,
-            )
-            .with_context(|| {
-                if !src.exists() {
-                    format!(
-                        "bind src '{}' for '{}' does not exist",
-                        src.display(),
-                        dst.abspath().display()
-                    )
-                } else {
-                    format!(
-                        "while mounting {} on {}",
-                        src.display(),
-                        dst.abspath().display()
-                    )
-                }
-            })?;
-        }
+            .with_context(|| format!("while creating bind mount dst file for '{}'", dst.display()))?
+            .into_std()
+        };
+        mount(
+            Some(src.as_ref()),
+            &dst.abspath(),
+            None::<&str>,
+            MsFlags::MS_BIND | MsFlags::MS_REC | MS_NOSYMFOLLOW,
+            None::<&str>,
+        )
+        .with_context(|| format!("while mounting '{}'", dst.abspath().display()))?;
 
-        // MS_BIND ignores MS_RDONLY, so let's go try to make all the readonly
-        // binds actually readonly.
-        // TODO(T185979228) we should also check for any
-        // recursive bind mounts brought in by the first bind mount (since it
-        // necessarily has MS_REC)
+        // MS_BIND ignores MS_RDONLY, so use the new mount api to make it
+        // actually readonly.
         if ro {
-            let dst = newroot.abspath().join_abs(dst);
-            match mount(
-                Some("none"),
-                &dst,
-                None::<&str>,
-                MsFlags::MS_REMOUNT | MsFlags::MS_BIND | MsFlags::MS_REC | MsFlags::MS_RDONLY,
-                None::<&str>,
-            ) {
-                Ok(()) => Ok(()),
-                Err(Errno::EPERM) => {
-                    // If we failed to make it readonly, carry on anyway. We
-                    // can't gain any new privileges here accidentally, so it's
-                    // OK to ignore the fact that some mounts like /mnt/gvfs
-                    // cannot be made readonly for whatever reason
-                    Ok(())
-                }
-                Err(e) => Err(std::io::Error::from(e)),
-            }
-            .with_context(|| format!("while making mount '{}' readonly", dst.display()))?;
+            let dst_mountpoint = dst.abspath();
+            crate::new_mount_api::make_mount_readonly(&dst_mountpoint)
+                .with_context(|| format!("while making '{}' readonly", dst_mountpoint.display()))?;
         }
     }
 
@@ -382,6 +338,13 @@ impl DirExt for Dir {
 }
 
 impl DirExt for cap_std::fs::File {
+    fn abspath(&self) -> PathBuf {
+        std::fs::read_link(format!("/proc/self/fd/{}", self.as_raw_fd()))
+            .expect("failed to read /proc/self/fd to find open path")
+    }
+}
+
+impl DirExt for std::fs::File {
     fn abspath(&self) -> PathBuf {
         std::fs::read_link(format!("/proc/self/fd/{}", self.as_raw_fd()))
             .expect("failed to read /proc/self/fd to find open path")
