@@ -9,7 +9,6 @@ mod disk;
 mod isolation;
 mod net;
 mod pci;
-mod runtime;
 mod share;
 mod ssh;
 mod tpm;
@@ -39,11 +38,9 @@ use tracing_subscriber::prelude::*;
 use crate::isolation::is_isolated;
 use crate::isolation::isolated;
 use crate::isolation::Platform;
-use crate::runtime::set_runtime;
 use crate::share::NinePShare;
 use crate::share::VirtiofsShare;
 use crate::types::MachineOpts;
-use crate::types::RuntimeOpts;
 use crate::types::VMArgs;
 use crate::utils::create_tpx_logs;
 use crate::utils::env_names_to_kvpairs;
@@ -75,9 +72,6 @@ struct RunCmdArgs {
     /// Json-encoded file for VM machine configuration
     #[arg(long)]
     machine_spec: JsonFile<MachineOpts>,
-    /// Json-encoded file describing paths of binaries required by VM
-    #[arg(long)]
-    runtime_spec: JsonFile<RuntimeOpts>,
     /// Expects the VM to timeout or terminate early
     #[arg(long)]
     expect_failure: bool,
@@ -112,7 +106,6 @@ fn run(args: &RunCmdArgs) -> Result<()> {
     if !is_isolated()? {
         return Err(anyhow!("run must be called from inside container"));
     }
-    debug!("RuntimeOpts: {:?}", args.runtime_spec);
     debug!("MachineOpts: {:?}", args.machine_spec);
     debug!("VMArgs: {:?}", args.vm_args);
 
@@ -129,8 +122,6 @@ fn run(args: &RunCmdArgs) -> Result<()> {
         vm_args.mode.command = Some(vec!["exit".into()]);
     }
 
-    set_runtime(args.runtime_spec.clone().into_inner())
-        .map_err(|_| anyhow!("Failed to set runtime"))?;
     let machine_opts = args.machine_spec.clone().into_inner();
     let result = if machine_opts.use_legacy_share {
         VM::<NinePShare>::new(machine_opts, vm_args)?.run()
@@ -211,8 +202,6 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
         .arg("run")
         .arg("--machine-spec")
         .arg(args.run_cmd_args.machine_spec.path())
-        .arg("--runtime-spec")
-        .arg(args.run_cmd_args.runtime_spec.path())
         .args(vm_args.to_args());
 
     let status = log_command(&mut command).status()?;
@@ -340,9 +329,7 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
     command
         .arg("run")
         .arg("--machine-spec")
-        .arg(args.run_cmd_args.machine_spec.path())
-        .arg("--runtime-spec")
-        .arg(args.run_cmd_args.runtime_spec.path());
+        .arg(args.run_cmd_args.machine_spec.path());
     if args.run_cmd_args.expect_failure {
         command.arg("--expect-failure");
     }

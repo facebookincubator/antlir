@@ -40,7 +40,6 @@ use crate::net::VirtualNICError;
 use crate::net::VirtualNICs;
 use crate::pci::PCIBridgeError;
 use crate::pci::PCIBridges;
-use crate::runtime::get_runtime;
 use crate::share::Share;
 use crate::share::ShareError;
 use crate::share::Shares;
@@ -394,7 +393,10 @@ impl<S: Share> VM<S> {
         if let Some(tpm) = &self.tpm {
             args.extend(tpm.qemu_args());
         }
-        let mut command = Command::new(&get_runtime().qemu_system);
+        let mut command = Command::new(match self.machine.arch {
+            CpuIsa::AARCH64 => "qemu-system-aarch64",
+            CpuIsa::X86_64 => "qemu-system-x86_64",
+        });
         command = self.redirect_input_output(command)?;
         let command = command.args(&args);
 
@@ -749,11 +751,11 @@ impl<S: Share> VM<S> {
                 "-drive",
                 &format!(
                     "if=pflash,format=raw,unit=0,file={},readonly=on",
-                    get_runtime().firmware,
+                    match self.machine.arch {
+                        CpuIsa::AARCH64 => "/usr/share/edk2/aarch64/QEMU_EFI.fd",
+                        CpuIsa::X86_64 => "/usr/share/edk2/ovmf/OVMF_CODE.fd",
+                    }
                 ),
-                // ROM
-                "-L",
-                &get_runtime().roms_dir,
             ]
             .iter()
             .map(|x| x.into())
@@ -793,10 +795,8 @@ mod test {
     use std::thread;
 
     use super::*;
-    use crate::runtime::set_runtime;
     use crate::share::VirtiofsShare;
     use crate::types::NonDiskBootOpts;
-    use crate::types::RuntimeOpts;
     use crate::types::VMArgs;
     use crate::utils::qemu_args_to_string;
 
@@ -833,17 +833,6 @@ mod test {
         }
     }
 
-    fn set_bogus_runtime() {
-        set_runtime(RuntimeOpts {
-            qemu_system: "qemu-system".to_string(),
-            qemu_img: "qemu-img".to_string(),
-            firmware: "edk2-arch-code.fd".to_string(),
-            roms_dir: "roms".to_string(),
-            swtpm: "swtpm".to_string(),
-        })
-        .expect("Failed to set fake runtime");
-    }
-
     #[test]
     fn test_arch_emulation_args() {
         let mut vm = get_vm_no_disk();
@@ -865,7 +854,6 @@ mod test {
     #[test]
     fn test_common_qemu_args() {
         let mut vm = get_vm_no_disk();
-        set_bogus_runtime();
         let common_args =
             qemu_args_to_string(&vm.common_qemu_args().expect("Failed to build qemu args"));
         assert!(common_args.contains("-cpu "));
@@ -875,10 +863,9 @@ mod test {
             "-chardev socket,path={}/vmtest_notify-one.sock,id=notify,server=on",
             vm.state_dir.to_str().expect("Invalid tempdir path"),
         )));
-        assert!(
-            common_args.contains("if=pflash,format=raw,unit=0,file=edk2-arch-code.fd,readonly=on")
-        );
-        assert!(common_args.contains("-L roms"));
+        assert!(common_args.contains(
+            "if=pflash,format=raw,unit=0,file=/usr/share/edk2/ovmf/OVMF_CODE.fd,readonly=on"
+        ));
 
         vm.machine.serial_index = 2;
         let common_args =

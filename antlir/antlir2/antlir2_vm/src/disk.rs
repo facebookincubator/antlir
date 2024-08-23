@@ -17,7 +17,6 @@ use tracing::debug;
 use crate::isolation::IsolationError;
 use crate::isolation::Platform;
 use crate::pci::PCIBridges;
-use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
 use crate::types::QemuDevice;
 use crate::utils::run_command_capture_output;
@@ -67,7 +66,7 @@ impl QCow2DiskBuilder {
 impl QCow2Disk {
     /// Create a temporary disk with qemu-img inside state directory.
     fn create_temp_disk(&mut self) -> Result<()> {
-        let mut cmd = Command::new(&get_runtime().qemu_img);
+        let mut cmd = Command::new("qemu-img");
         cmd.arg("create")
             .arg("-f")
             .arg("qcow2")
@@ -81,7 +80,7 @@ impl QCow2Disk {
 
         if let Some(size) = self.opts.additional_mib {
             if size != 0 {
-                let mut cmd = Command::new(&get_runtime().qemu_img);
+                let mut cmd = Command::new("qemu-img");
                 cmd.arg("resize")
                     .arg(self.disk_file_name().as_os_str())
                     .arg(&format!("+{}M", size));

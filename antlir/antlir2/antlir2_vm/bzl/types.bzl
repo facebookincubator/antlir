@@ -22,6 +22,5 @@ DiskInfo = provider(fields = [
 VMHostInfo = provider(fields = [
     "image",  # Container image to execute the VM in
     "machine_spec",  # Generated json that fully describes a VM's hardware and boot configuration
-    "runtime_spec",  # Generated json containing binaries and other info for running the VM
     "vm_exec",  # Antlir2 VM executable
 ])

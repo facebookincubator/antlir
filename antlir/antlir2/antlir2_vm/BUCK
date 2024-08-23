@@ -27,6 +27,25 @@ rust_binary(
     ],
 )
 
+feature.new(
+    name = "vm-firmwares",
+    features = [
+        feature.rpms_install(rpms = [
+            "edk2-ovmf",
+            "edk2-aarch64",
+        ]),
+        # QEMU aarch64 expects the firmware to be exactly 64M, but the edk2
+        # firwmare for aarch64 is not padded, so just extend it during the image
+        # build instead of at runtime
+        feature.genrule(
+            bash = """
+                truncate -s 64M /usr/share/edk2/aarch64/QEMU_EFI.fd
+            """,
+            user = "root",
+        ),
+    ],
+)
+
 # We isolate VM inside systemd-nspawn container. This is the image layer
 # for the container with tools we need for VM tests.
 image.layer(
@@ -38,7 +57,10 @@ image.layer(
             "iproute",  # for NIC configuration
             "numactl-libs",  # for qemu-system
             "openssh-clients",  # for ssh shell
-            "pixman",  # for qemu-system
+            "qemu-system-x86",  # run a VM
+            "qemu-system-aarch64",  # run a VM
+            "qemu-img",  # manipulate disk images
+            "swtpm",  # emulate TPM in software
             "systemd-container",  # for systemd-detect-virt
             "virtiofsd",  # rust virtiofsd
         ]),
@@ -52,6 +74,7 @@ image.layer(
         # unique setup to just SSH into the local VM
         feature.remove(path = "/etc/ssh/ssh_config.d"),
         feature.ensure_dirs_exist(dirs = "/antlir"),
+        ":vm-firmwares",
     ],
     visibility = ["PUBLIC"],
 )

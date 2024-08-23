@@ -29,7 +29,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     common_args = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
-        cmd_args(ctx.attrs.vm_host[VMHostInfo].runtime_spec, format = "--runtime-spec={}"),
         cmd_args([k for k in ctx.attrs.test[ExternalRunnerTestInfo].env], format = "--passenv={}"),
     )
 
@@ -118,6 +117,7 @@ _vm_test = rule(
             will be executed at the second boot."),
             default = None,
         ),
+        "labels": attrs.list(attrs.string(), default = []),
         "postmortem": attrs.bool(
             doc = "If true, the test is run after VM is terminated and its console log is accessible \
             through env $CONSOLE_OUTPUT. This is usually combined with @expect_failure to validate \
@@ -223,6 +223,7 @@ def _implicit_vm_test(
         postmortem = postmortem,
         compatible_with = kwargs.get("compatible_with"),
         target_compatible_with = kwargs.get("target_compatible_with"),
+        labels = ["uses_sudo"],
     )
 
 vm_cpp_test = partial(

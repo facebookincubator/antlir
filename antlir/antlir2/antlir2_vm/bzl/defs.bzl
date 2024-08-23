@@ -5,7 +5,6 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/linux/vm/console:defs.bzl", "TTY_NAME")
 load(":run_command.bzl", "vm_run_command")
 load(":test.bzl", "vm_cpp_test", "vm_python_test", "vm_rust_test", "vm_sh_test")
@@ -68,32 +67,14 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     )
     return machine_json, machine_json_args
 
-def _runtime_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
-    """Generate the json file to pass runtime information to the VM"""
-    runtime_json = ctx.actions.declare_output("runtime.json")
-    runtime_json_args = ctx.actions.write_json(
-        runtime_json,
-        {
-            "firmware": ensure_single_output(ctx.attrs.firmware),
-            "qemu_img": ensure_single_output(ctx.attrs.qemu_img),
-            "qemu_system": ensure_single_output(ctx.attrs.qemu_system),
-            "roms_dir": ensure_single_output(ctx.attrs.roms_dir),
-            "swtpm": ensure_single_output(ctx.attrs.swtpm),
-        },
-        with_inputs = True,
-    )
-    return runtime_json, runtime_json_args
-
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     """Create the json specs used as input for VM target."""
     machine_json, machine_json_args = _machine_json(ctx)
-    runtime_json, runtime_json_args = _runtime_json(ctx)
     run_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_exec[RunInfo]),
         "isolate",
         cmd_args(ctx.attrs.image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(machine_json_args, format = "--machine-spec={}"),
-        cmd_args(runtime_json_args, format = "--runtime-spec={}"),
     )
     if ctx.attrs.timeout_secs:
         run_cmd = cmd_args(
@@ -114,7 +95,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "console": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--console"))],
                 "container": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--container"))],
                 "machine_json": [DefaultInfo(machine_json)],
-                "runtime_json": [DefaultInfo(runtime_json)],
             },
         ),
         RunInfo(run_cmd),
@@ -122,7 +102,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             vm_exec = ctx.attrs.vm_exec,
             image = ctx.attrs.image,
             machine_spec = machine_json_args,
-            runtime_spec = runtime_json_args,
         ),
     ]
 
@@ -183,40 +162,10 @@ _vm_host = rule(
         ),
     } | {
         # VM runtime. Genearlly shouldn't be overwritten
-        "firmware": attrs.default_only(
-            attrs.exec_dep(
-                default = arch_select(
-                    aarch64 = "antlir//antlir/vm/runtime:edk2-aarch64-code.fd",
-                    x86_64 = "antlir//antlir/vm/runtime:edk2-x86_64-code.fd",
-                ),
-            ),
-            doc = "firmware for the VM",
-        ),
         "image": attrs.exec_dep(
             providers = [LayerInfo],
             default = "antlir//antlir/antlir2/antlir2_vm:container-image",
             doc = "container image to execute the VM inside",
-        ),
-        "qemu_img": attrs.default_only(
-            attrs.exec_dep(default = "antlir//antlir/vm/runtime:qemu-img"),
-            doc = "qemu-img binary for manipulating disk images",
-        ),
-        "qemu_system": attrs.default_only(
-            attrs.exec_dep(
-                default = arch_select(
-                    aarch64 = "antlir//antlir/vm/runtime:qemu-system-aarch64",
-                    x86_64 = "antlir//antlir/vm/runtime:qemu-system-x86_64",
-                ),
-            ),
-            doc = "qemu-system binary that should match target arch",
-        ),
-        "roms_dir": attrs.default_only(
-            attrs.exec_dep(default = "antlir//antlir/vm/runtime:roms"),
-            doc = "ROMs for the VM",
-        ),
-        "swtpm": attrs.default_only(
-            attrs.exec_dep(default = "antlir//antlir/vm/runtime:swtpm"),
-            doc = "Software TPM binary for the VM",
         ),
         "vm_exec": attrs.default_only(
             attrs.exec_dep(
