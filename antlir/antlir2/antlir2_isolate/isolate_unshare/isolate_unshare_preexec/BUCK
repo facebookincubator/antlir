@@ -16,6 +16,8 @@ rust_binary(
         "cap-std",
         "clap",
         "nix",
+        "serde_json",
+        "tokio",
         "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
         "//antlir/antlir2/antlir2_path:antlir2_path",
         "//antlir/util/cli/json_arg:json_arg",
