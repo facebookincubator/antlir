@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "f7f5cea58d64741b83e34d5a32623ffd6b6295d9",
+    rev = "c82427f1772b69b902a18e2613901a51e00384d9",
     visibility = [],
 )
 
@@ -1070,7 +1070,7 @@ cargo.rust_library(
     deps = [
         ":async-task-4.7.1",
         ":concurrent-queue-2.5.0",
-        ":fastrand-2.1.0",
+        ":fastrand-2.1.1",
         ":futures-lite-2.3.0",
         ":slab-0.4.9",
     ],
@@ -1751,7 +1751,7 @@ cargo.rust_binary(
         "std",
     ],
     visibility = [],
-    deps = [":cc-1.1.13"],
+    deps = [":cc-1.1.14"],
 )
 
 buildscript_run(
@@ -2736,7 +2736,7 @@ cargo.rust_library(
         ":dunce-1.0.5",
         ":once_cell-1.19.0",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":thiserror-1.0.63",
     ],
 )
@@ -3490,18 +3490,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.13.crate",
-    sha256 = "72db2f7947ecee9b03b510377e8bb9077afa27176fdbff55c51027e976fdcc48",
-    strip_prefix = "cc-1.1.13",
-    urls = ["https://static.crates.io/crates/cc/1.1.13/download"],
+    name = "cc-1.1.14.crate",
+    sha256 = "50d2eb3cd3d1bf4529e31c215ee6f93ec5a3d536d9f578f93d9d33ee19562932",
+    strip_prefix = "cc-1.1.14",
+    urls = ["https://static.crates.io/crates/cc/1.1.14/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.13",
-    srcs = [":cc-1.1.13.crate"],
+    name = "cc-1.1.14",
+    srcs = [":cc-1.1.14.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.13.crate/src/lib.rs",
+    crate_root = "cc-1.1.14.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4274,7 +4274,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.51.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.1.13"],
+    deps = [":cc-1.1.14"],
 )
 
 cargo.rust_library(
@@ -4578,7 +4578,7 @@ cargo.rust_library(
     },
     rustc_flags = ["@$(location :cookie-0.16.2-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [":time-0.3.17"],
+    deps = [":time-0.3.36"],
 )
 
 cargo.rust_binary(
@@ -4623,7 +4623,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":percent-encoding-2.3.1",
-        ":time-0.3.17",
+        ":time-0.3.36",
     ],
 )
 
@@ -4679,8 +4679,8 @@ cargo.rust_library(
         ":publicsuffix-2.2.3",
         ":serde-1.0.208",
         ":serde_derive-1.0.208",
-        ":serde_json-1.0.125",
-        ":time-0.3.17",
+        ":serde_json-1.0.127",
+        ":time-0.3.36",
         ":url-2.5.2",
     ],
 )
@@ -5313,7 +5313,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.13",
+        ":cc-1.1.14",
         ":cxxbridge-flags-1.0.126",
     ],
 )
@@ -5804,7 +5804,7 @@ cargo.rust_library(
     deps = [
         ":schemafy-0.5.2",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
     ],
 )
 
@@ -5835,6 +5835,29 @@ cargo.rust_library(
         ":quote-1.0.37",
         ":syn-1.0.109-syn1",
     ],
+)
+
+http_archive(
+    name = "deranged-0.3.11.crate",
+    sha256 = "b42b6fa04a440b495c8b04d0e71b707c585f83cb9cb28cf8cd0d976c315e31b4",
+    strip_prefix = "deranged-0.3.11",
+    urls = ["https://static.crates.io/crates/deranged/0.3.11/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "deranged-0.3.11",
+    srcs = [":deranged-0.3.11.crate"],
+    crate = "deranged",
+    crate_root = "deranged-0.3.11.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "alloc",
+        "powerfmt",
+        "std",
+    ],
+    visibility = [],
+    deps = [":powerfmt-0.2.0"],
 )
 
 alias(
@@ -7103,18 +7126,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "fastrand-2.1.0.crate",
-    sha256 = "9fc0510504f03c51ada170672ac806f1f105a88aa97a5281117e1ddc3368e51a",
-    strip_prefix = "fastrand-2.1.0",
-    urls = ["https://static.crates.io/crates/fastrand/2.1.0/download"],
+    name = "fastrand-2.1.1.crate",
+    sha256 = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6",
+    strip_prefix = "fastrand-2.1.1",
+    urls = ["https://static.crates.io/crates/fastrand/2.1.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "fastrand-2.1.0",
-    srcs = [":fastrand-2.1.0.crate"],
+    name = "fastrand-2.1.1",
+    srcs = [":fastrand-2.1.1.crate"],
     crate = "fastrand",
-    crate_root = "fastrand-2.1.0.crate/src/lib.rs",
+    crate_root = "fastrand-2.1.1.crate/src/lib.rs",
     edition = "2018",
     features = [
         "alloc",
@@ -7223,7 +7246,7 @@ cargo.rust_library(
         ":num-traits-0.2.19",
         ":ordered-float-3.9.2",
         ":panic-message-0.3.0",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":thiserror-1.0.63",
     ],
 )
@@ -7255,7 +7278,7 @@ cargo.rust_library(
         ":num-traits-0.2.19",
         ":ordered-float-1.1.1",
         ":panic-message-0.3.0",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":thiserror-1.0.63",
     ],
 )
@@ -8047,7 +8070,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":fastrand-2.1.0",
+        ":fastrand-2.1.1",
         ":futures-core-0.3.30",
         ":futures-io-0.3.30",
         ":parking-2.2.0",
@@ -8277,6 +8300,36 @@ cargo.rust_library(
     },
     visibility = [],
     deps = [":cfg-if-1.0.0"],
+)
+
+alias(
+    name = "getset",
+    actual = ":getset-0.1.2",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "getset-0.1.2.crate",
+    sha256 = "e45727250e75cc04ff2846a66397da8ef2b3db8e40e0cef4df67950a07621eb9",
+    strip_prefix = "getset-0.1.2",
+    urls = ["https://static.crates.io/crates/getset/0.1.2/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "getset-0.1.2",
+    srcs = [":getset-0.1.2.crate"],
+    crate = "getset",
+    crate_root = "getset-0.1.2.crate/src/lib.rs",
+    edition = "2018",
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":proc-macro-error-1.0.4",
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.37",
+        ":syn-1.0.109-syn1",
+    ],
 )
 
 alias(
@@ -8640,7 +8693,7 @@ cargo.rust_library(
         ":pest-2.7.11",
         ":pest_derive-2.7.11",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":thiserror-1.0.63",
         ":walkdir-2.5.0",
     ],
@@ -9119,7 +9172,7 @@ cargo.rust_library(
         ":once_cell-1.19.0",
         ":regex-1.10.6",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":serde_urlencoded-0.7.1",
         ":tokio-1.39.3",
     ],
@@ -10756,7 +10809,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.13",
+        ":cc-1.1.14",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -11235,7 +11288,7 @@ cargo.rust_library(
     deps = [
         ":bitflags-1.3.2",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":serde_repr-0.1.19",
         ":url-2.5.2",
     ],
@@ -12021,7 +12074,7 @@ cargo.rust_library(
         ":pin-project-1.1.5",
         ":priority-queue-1.4.0",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":socket2-0.4.10",
         ":thiserror-1.0.63",
         ":tokio-1.39.3",
@@ -12066,7 +12119,7 @@ cargo.rust_library(
     ],
     named_deps = {
         "bigdecimal03": ":bigdecimal-0.3.1",
-        "time03": ":time-0.3.17",
+        "time03": ":time-0.3.36",
     },
     rustc_flags = ["@$(location :mysql_common-0.29.2-build-script-run[rustc_flags])"],
     visibility = [],
@@ -12089,7 +12142,7 @@ cargo.rust_library(
         ":rust_decimal-1.36.0",
         ":saturating-0.1.0",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":sha1-0.10.6",
         ":sha2-0.10.8",
         ":smallvec-1.13.2",
@@ -12116,7 +12169,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.1.13",
+        ":cc-1.1.14",
         ":cmake-0.1.51",
         ":subprocess-0.2.9",
     ],
@@ -12734,6 +12787,23 @@ cargo.rust_library(
     deps = [":num-traits-0.2.19"],
 )
 
+http_archive(
+    name = "num-conv-0.1.0.crate",
+    sha256 = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9",
+    strip_prefix = "num-conv-0.1.0",
+    urls = ["https://static.crates.io/crates/num-conv/0.1.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "num-conv-0.1.0",
+    srcs = [":num-conv-0.1.0.crate"],
+    crate = "num_conv",
+    crate_root = "num-conv-0.1.0.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+)
+
 alias(
     name = "num-derive",
     actual = ":num-derive-0.3.3",
@@ -13183,6 +13253,46 @@ cargo.rust_library(
 )
 
 alias(
+    name = "oci-spec",
+    actual = ":oci-spec-0.6.8",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "oci-spec-0.6.8.crate",
+    sha256 = "3f5a3fe998d50101ae009351fec56d88a69f4ed182e11000e711068c2f5abf72",
+    strip_prefix = "oci-spec-0.6.8",
+    urls = ["https://static.crates.io/crates/oci-spec/0.6.8/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "oci-spec-0.6.8",
+    srcs = [":oci-spec-0.6.8.crate"],
+    crate = "oci_spec",
+    crate_root = "oci-spec-0.6.8.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "default",
+        "distribution",
+        "image",
+        "runtime",
+    ],
+    visibility = [],
+    deps = [
+        ":derive_builder-0.20.0",
+        ":getset-0.1.2",
+        ":once_cell-1.19.0",
+        ":regex-1.10.6",
+        ":serde-1.0.208",
+        ":serde_json-1.0.127",
+        ":strum-0.26.3",
+        ":strum_macros-0.26.4",
+        ":thiserror-1.0.63",
+    ],
+)
+
+alias(
     name = "once_cell",
     actual = ":once_cell-1.19.0",
     visibility = ["PUBLIC"],
@@ -13371,7 +13481,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.13",
+        ":cc-1.1.14",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -14457,7 +14567,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":atomic-waker-1.1.2",
-        ":fastrand-2.1.0",
+        ":fastrand-2.1.1",
         ":futures-io-0.3.30",
     ],
 )
@@ -14688,6 +14798,23 @@ buildscript_run(
         "fallback",
     ],
     version = "1.7.0",
+)
+
+http_archive(
+    name = "powerfmt-0.2.0.crate",
+    sha256 = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391",
+    strip_prefix = "powerfmt-0.2.0",
+    urls = ["https://static.crates.io/crates/powerfmt/0.2.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "powerfmt-0.2.0",
+    srcs = [":powerfmt-0.2.0.crate"],
+    crate = "powerfmt",
+    crate_root = "powerfmt-0.2.0.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
 )
 
 http_archive(
@@ -16712,7 +16839,7 @@ cargo.rust_library(
         ":futures-util-0.3.30",
         ":http-0.2.12",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":serde_urlencoded-0.7.1",
         ":sync_wrapper-0.1.2",
         ":tower-service-0.3.3",
@@ -16852,7 +16979,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.13"],
+    deps = [":cc-1.1.14"],
 )
 
 buildscript_run(
@@ -16934,7 +17061,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.13"],
+    deps = [":cc-1.1.14"],
 )
 
 buildscript_run(
@@ -17217,7 +17344,7 @@ cargo.rust_library(
         ":rand-0.8.5",
         ":rkyv-0.7.45",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
     ],
 )
 
@@ -18286,7 +18413,7 @@ cargo.rust_library(
         ":schemafy_lib-0.5.2",
         ":serde-1.0.208",
         ":serde_derive-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":serde_repr-0.1.19",
         ":syn-1.0.109-syn1",
     ],
@@ -18309,7 +18436,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
     ],
 )
 
@@ -18335,7 +18462,7 @@ cargo.rust_library(
         ":schemafy_core-0.5.2",
         ":serde-1.0.208",
         ":serde_derive-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":syn-1.0.109-syn1",
     ],
 )
@@ -18829,26 +18956,26 @@ cargo.rust_library(
 
 alias(
     name = "serde_json",
-    actual = ":serde_json-1.0.125",
+    actual = ":serde_json-1.0.127",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "serde_json-1.0.125.crate",
-    sha256 = "83c8e735a073ccf5be70aa8066aa984eaf2fa000db6c8d0100ae605b366d31ed",
-    strip_prefix = "serde_json-1.0.125",
-    urls = ["https://static.crates.io/crates/serde_json/1.0.125/download"],
+    name = "serde_json-1.0.127.crate",
+    sha256 = "8043c06d9f82bd7271361ed64f415fe5e12a77fdb52e573e7f06a516dea329ad",
+    strip_prefix = "serde_json-1.0.127",
+    urls = ["https://static.crates.io/crates/serde_json/1.0.127/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "serde_json-1.0.125",
-    srcs = [":serde_json-1.0.125.crate"],
+    name = "serde_json-1.0.127",
+    srcs = [":serde_json-1.0.127.crate"],
     crate = "serde_json",
-    crate_root = "serde_json-1.0.125.crate/src/lib.rs",
+    crate_root = "serde_json-1.0.127.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :serde_json-1.0.125-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :serde_json-1.0.127-build-script-run[out_dir])",
     },
     features = [
         "default",
@@ -18857,7 +18984,7 @@ cargo.rust_library(
         "std",
         "unbounded_depth",
     ],
-    rustc_flags = ["@$(location :serde_json-1.0.125-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :serde_json-1.0.127-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":itoa-1.0.11",
@@ -18868,10 +18995,10 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "serde_json-1.0.125-build-script-build",
-    srcs = [":serde_json-1.0.125.crate"],
+    name = "serde_json-1.0.127-build-script-build",
+    srcs = [":serde_json-1.0.127.crate"],
     crate = "build_script_build",
-    crate_root = "serde_json-1.0.125.crate/build.rs",
+    crate_root = "serde_json-1.0.127.crate/build.rs",
     edition = "2021",
     features = [
         "default",
@@ -18884,9 +19011,9 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "serde_json-1.0.125-build-script-run",
+    name = "serde_json-1.0.127-build-script-run",
     package_name = "serde_json",
-    buildscript_rule = ":serde_json-1.0.125-build-script-build",
+    buildscript_rule = ":serde_json-1.0.127-build-script-build",
     features = [
         "default",
         "float_roundtrip",
@@ -18894,7 +19021,7 @@ buildscript_run(
         "std",
         "unbounded_depth",
     ],
-    version = "1.0.125",
+    version = "1.0.127",
 )
 
 alias(
@@ -19030,7 +19157,7 @@ cargo.rust_library(
     deps = [
         ":hex-0.4.3",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":serde_with_macros-1.5.2",
     ],
 )
@@ -19645,7 +19772,7 @@ cargo.rust_library(
         ":slog-2.7.0",
         ":term-0.7.0",
         ":thread_local-1.1.8",
-        ":time-0.3.17",
+        ":time-0.3.36",
     ],
 )
 
@@ -20059,7 +20186,7 @@ cargo.rust_library(
         ":ref-cast-1.0.23",
         ":regex-1.10.6",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":starlark_derive-0.12.0",
         ":starlark_map-0.12.0",
         ":starlark_syntax-0.12.0",
@@ -20385,7 +20512,9 @@ cargo.rust_library(
     crate_root = "strum-0.26.3.crate/src/lib.rs",
     edition = "2018",
     features = [
+        "default",
         "derive",
+        "std",
         "strum_macros",
     ],
     visibility = [],
@@ -21084,7 +21213,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":cfg-if-1.0.0",
-        ":fastrand-2.1.0",
+        ":fastrand-2.1.1",
         ":once_cell-1.19.0",
     ],
 )
@@ -21136,7 +21265,7 @@ cargo.rust_library(
         ":rand-0.8.5",
         ":regex-1.10.6",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":slug-0.1.6",
         ":unic-segment-0.9.0",
     ],
@@ -21497,23 +21626,23 @@ cargo.rust_library(
 
 alias(
     name = "time",
-    actual = ":time-0.3.17",
+    actual = ":time-0.3.36",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "time-0.3.17.crate",
-    sha256 = "a561bf4617eebd33bca6434b988f39ed798e527f51a1e797d0ee4f61c0a38376",
-    strip_prefix = "time-0.3.17",
-    urls = ["https://static.crates.io/crates/time/0.3.17/download"],
+    name = "time-0.3.36.crate",
+    sha256 = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885",
+    strip_prefix = "time-0.3.36",
+    urls = ["https://static.crates.io/crates/time/0.3.36/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "time-0.3.17",
-    srcs = [":time-0.3.17.crate"],
+    name = "time-0.3.36",
+    srcs = [":time-0.3.36.crate"],
     crate = "time",
-    crate_root = "time-0.3.17.crate/src/lib.rs",
+    crate_root = "time-0.3.36.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -21525,43 +21654,46 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
+        ":deranged-0.3.11",
         ":itoa-1.0.11",
+        ":num-conv-0.1.0",
+        ":powerfmt-0.2.0",
         ":serde-1.0.208",
-        ":time-core-0.1.0",
-        ":time-macros-0.2.6",
+        ":time-core-0.1.2",
+        ":time-macros-0.2.18",
     ],
 )
 
 http_archive(
-    name = "time-core-0.1.0.crate",
-    sha256 = "2e153e1f1acaef8acc537e68b44906d2db6436e2b35ac2c6b42640fff91f00fd",
-    strip_prefix = "time-core-0.1.0",
-    urls = ["https://static.crates.io/crates/time-core/0.1.0/download"],
+    name = "time-core-0.1.2.crate",
+    sha256 = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3",
+    strip_prefix = "time-core-0.1.2",
+    urls = ["https://static.crates.io/crates/time-core/0.1.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "time-core-0.1.0",
-    srcs = [":time-core-0.1.0.crate"],
+    name = "time-core-0.1.2",
+    srcs = [":time-core-0.1.2.crate"],
     crate = "time_core",
-    crate_root = "time-core-0.1.0.crate/src/lib.rs",
+    crate_root = "time-core-0.1.2.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
 )
 
 http_archive(
-    name = "time-macros-0.2.6.crate",
-    sha256 = "d967f99f534ca7e495c575c62638eebc2898a8c84c119b89e250477bc4ba16b2",
-    strip_prefix = "time-macros-0.2.6",
-    urls = ["https://static.crates.io/crates/time-macros/0.2.6/download"],
+    name = "time-macros-0.2.18.crate",
+    sha256 = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf",
+    strip_prefix = "time-macros-0.2.18",
+    urls = ["https://static.crates.io/crates/time-macros/0.2.18/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "time-macros-0.2.6",
-    srcs = [":time-macros-0.2.6.crate"],
+    name = "time-macros-0.2.18",
+    srcs = [":time-macros-0.2.18.crate"],
     crate = "time_macros",
-    crate_root = "time-macros-0.2.6.crate/src/lib.rs",
+    crate_root = "time-macros-0.2.18.crate/src/lib.rs",
     edition = "2021",
     features = [
         "formatting",
@@ -21569,7 +21701,10 @@ cargo.rust_library(
     ],
     proc_macro = True,
     visibility = [],
-    deps = [":time-core-0.1.0"],
+    deps = [
+        ":num-conv-0.1.0",
+        ":time-core-0.1.2",
+    ],
 )
 
 alias(
@@ -23011,7 +23146,7 @@ cargo.rust_library(
         ":proc-mounts-0.3.0",
         ":rand-0.8.5",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":tempfile-3.12.0",
         ":thiserror-1.0.63",
         ":uefisettings_backend_thrift-0.1.0",
@@ -23045,7 +23180,7 @@ cargo.rust_binary(
         ":proc-mounts-0.3.0",
         ":rand-0.8.5",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":tempfile-3.12.0",
         ":thiserror-1.0.63",
         ":uefisettings-0.1.4",
@@ -24101,7 +24236,7 @@ cargo.rust_library(
         ":rustls-pemfile-2.1.3",
         ":scoped-tls-1.0.1",
         ":serde-1.0.208",
-        ":serde_json-1.0.125",
+        ":serde_json-1.0.127",
         ":serde_urlencoded-0.7.1",
         ":tokio-1.39.3",
         ":tokio-rustls-0.25.0",
