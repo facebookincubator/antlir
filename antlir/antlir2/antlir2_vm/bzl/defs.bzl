@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/linux/vm/console:defs.bzl", "TTY_NAME")
 load(":run_command.bzl", "vm_run_command")
 load(":test.bzl", "vm_cpp_test", "vm_python_test", "vm_rust_test", "vm_sh_test")
@@ -73,7 +73,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     run_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_exec[RunInfo]),
         "isolate",
-        cmd_args(ctx.attrs.image[LayerInfo].subvol_symlink, format = "--image={}"),
+        cmd_args(ensure_single_output(ctx.attrs.image), format = "--image={}"),
         cmd_args(machine_json_args, format = "--machine-spec={}"),
     )
     if ctx.attrs.timeout_secs:
@@ -163,9 +163,8 @@ _vm_host = rule(
     } | {
         # VM runtime. Genearlly shouldn't be overwritten
         "image": attrs.exec_dep(
-            providers = [LayerInfo],
-            default = "antlir//antlir/antlir2/antlir2_vm:container-image",
-            doc = "container image to execute the VM inside",
+            default = "antlir//antlir/antlir2/antlir2_vm:container-dir",
+            doc = "container image directory to execute the VM inside",
         ),
         "vm_exec": attrs.default_only(
             attrs.exec_dep(

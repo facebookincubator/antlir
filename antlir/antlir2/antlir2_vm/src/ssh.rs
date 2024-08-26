@@ -6,17 +6,20 @@
  */
 
 use std::collections::HashMap;
+use std::io::Write;
 use std::net::Ipv6Addr;
-use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
+use std::sync::Arc;
 
+use once_cell::sync::OnceCell;
+use tempfile::NamedTempFile;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub(crate) enum GuestSSHError {
-    #[error("Expected private key does not exist at {0}")]
-    PrivKeyError(String),
+    #[error("Error writing private key to file: {0}")]
+    PrivKey(std::io::Error),
 }
 
 type Result<T> = std::result::Result<T, GuestSSHError>;
@@ -26,18 +29,24 @@ type Result<T> = std::result::Result<T, GuestSSHError>;
 pub(crate) struct GuestSSHCommand {
     /// ssh_config options for connection
     options: HashMap<String, String>,
-    /// Path to private key file
-    privkey: PathBuf,
+    /// ssh client private key file
+    privkey: Arc<NamedTempFile>,
 }
+
+static PRIVKEY: OnceCell<Arc<NamedTempFile>> = OnceCell::new();
 
 impl GuestSSHCommand {
     /// Creates a new `GuestSSHCommand` with default options
     pub(crate) fn new() -> Result<GuestSSHCommand> {
-        const BUCK_KEY_PATH: &str = "/antlir/.privkey";
-        let privkey = PathBuf::from(BUCK_KEY_PATH);
-        if !privkey.exists() {
-            return Err(GuestSSHError::PrivKeyError(BUCK_KEY_PATH.to_string()));
-        }
+        let privkey = PRIVKEY
+            .get_or_try_init(|| {
+                let mut privkey = NamedTempFile::new().map_err(GuestSSHError::PrivKey)?;
+                privkey
+                    .write_all(include_bytes!("./ssh/privkey"))
+                    .map_err(GuestSSHError::PrivKey)?;
+                Ok(Arc::new(privkey))
+            })?
+            .clone();
 
         Ok(GuestSSHCommand {
             options: [
@@ -67,7 +76,7 @@ impl GuestSSHCommand {
         self.options.iter().for_each(|(name, value)| {
             command.arg("-o").arg(format!("{}={}", name, value));
         });
-        command.arg("-i").arg(&self.privkey);
+        command.arg("-i").arg(self.privkey.path());
         command.arg(format!("root@{}%vm0", self.guest_ipv6_addr_ll()));
         command
     }
@@ -96,12 +105,16 @@ mod test {
             &self.options
         }
         fn get_key(&self) -> &str {
-            self.privkey.to_str().expect("Invalid private key path")
+            self.privkey
+                .path()
+                .to_str()
+                .expect("Invalid private key path")
         }
     }
 
     /// Bypass normal `new` due to checks that may not hold for unit tests
     fn new() -> GuestSSHCommand {
+        let privkey = Arc::new(NamedTempFile::new().expect("Failed to create temp file"));
         GuestSSHCommand {
             options: [
                 ("UserKnownHostsFile", "/dev/null"),
@@ -113,7 +126,7 @@ mod test {
             .iter()
             .map(|(x, y)| (x.to_string(), y.to_string()))
             .collect(),
-            privkey: PathBuf::from("/root/whatever"),
+            privkey,
         }
     }
 
