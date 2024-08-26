@@ -16,6 +16,7 @@ mod types;
 mod utils;
 mod vm;
 
+use std::collections::HashSet;
 use std::env;
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -30,12 +31,12 @@ use clap::Subcommand;
 use image_test_lib::KvPair;
 use image_test_lib::Test;
 use json_arg::JsonFile;
+use maplit::hashset;
 use tempfile::tempdir;
 use tracing::debug;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::prelude::*;
 
-use crate::isolation::is_isolated;
 use crate::isolation::isolated;
 use crate::isolation::Platform;
 use crate::share::NinePShare;
@@ -103,9 +104,6 @@ struct IsolateCmdArgs {
 /// Actually starting the VM. This needs to be inside an ephemeral container as
 /// lots of resources relies on container for clean up.
 fn run(args: &RunCmdArgs) -> Result<()> {
-    if !is_isolated()? {
-        return Err(anyhow!("run must be called from inside container"));
-    }
     debug!("MachineOpts: {:?}", args.machine_spec);
     debug!("VMArgs: {:?}", args.vm_args);
 
@@ -195,7 +193,18 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
         _console_dir = dir;
     }
 
-    let isolated = isolated(&args.image, envs, vm_args.get_container_output_dirs())?;
+    antlir2_rootless::unshare_new_userns()?;
+    antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
+
+    let isolated = isolated(
+        &args.image,
+        envs,
+        vm_args
+            .get_container_output_dirs()
+            .into_iter()
+            .chain(writable_devices())
+            .collect(),
+    )?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     let mut command = isolated.command(exe)?;
     command
@@ -291,19 +300,35 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: Vec<String>) -> Result<Validat
     })
 }
 
+fn writable_outputs(validated_args: &ValidatedVMArgs) -> HashSet<PathBuf> {
+    let mut outputs = validated_args.inner.get_container_output_dirs();
+    outputs.extend(writable_devices());
+    outputs
+}
+
+fn writable_devices() -> HashSet<PathBuf> {
+    hashset! {
+        // Carry over virtualization support
+        "/dev/kvm".into(),
+        // And tap networking devices
+        "/dev/net/tun".into(),
+        // And other device nodes needed by qemu
+        "/dev/urandom".into(),
+        // RW bind-mount /dev/fuse for running XAR.
+        // More details in antlir/antlir2/testing/image_test/src/main.rs.
+        "/dev/fuse".into(),
+    }
+}
+
 /// For some tests, an explicit "list test" step is run against the test binary
 /// to discover the tests to run. This command is not our intended test to
 /// execute, so it's unnecessarily wasteful to execute it inside the VM. We
 /// directly run it inside the container without booting VM.
 fn list_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<Command> {
-    let mut output_dirs = validated_args.inner.get_container_output_dirs();
-    // RW bind-mount /dev/fuse for running XAR.
-    // More details in antlir/antlir2/testing/image_test/src/main.rs.
-    output_dirs.insert(PathBuf::from("/dev/fuse"));
     let isolated = isolated(
         &args.image,
         validated_args.inner.command_envs.clone(),
-        output_dirs,
+        writable_outputs(validated_args),
     )?;
     let mut inner_cmd = validated_args
         .inner
@@ -322,7 +347,7 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
     let isolated = isolated(
         &args.image,
         validated_args.inner.command_envs.clone(),
-        validated_args.inner.get_container_output_dirs(),
+        writable_outputs(validated_args),
     )?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     let mut command = isolated.command(exe)?;
@@ -345,6 +370,8 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
 /// from the test command.
 fn test(args: &IsolateCmdArgs) -> Result<()> {
     let validated_args = get_test_vm_args(&args.run_cmd_args.vm_args, args.passenv.clone())?;
+    antlir2_rootless::unshare_new_userns()?;
+    antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
     let mut command = if validated_args.is_list {
         list_test_command(args, &validated_args)
     } else {
