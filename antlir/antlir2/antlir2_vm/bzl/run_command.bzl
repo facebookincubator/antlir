@@ -4,14 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":types.bzl", "VMHostInfo")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     run_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
         "test",
-        cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
+        cmd_args(ensure_single_output(ctx.attrs.vm_host[VMHostInfo].image), format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
         cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
         # (ab)use custom test command to run our random command

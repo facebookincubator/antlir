@@ -8,8 +8,8 @@
 # @oss-disable
 # @oss-disable
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 
 load("//antlir/bzl:oss_shim.bzl", "NAMING_ROLLOUT_LABEL", "special_tags", "fully_qualified_test_name_rollout") # @oss-enable
@@ -27,7 +27,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # @oss-disable
 
     common_args = cmd_args(
-        cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
+        cmd_args(ensure_single_output(ctx.attrs.vm_host[VMHostInfo].image), format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
         cmd_args([k for k in ctx.attrs.test[ExternalRunnerTestInfo].env], format = "--passenv={}"),
     )

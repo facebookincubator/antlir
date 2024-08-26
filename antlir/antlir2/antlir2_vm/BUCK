@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 oncall("antlir")
@@ -7,6 +8,9 @@ oncall("antlir")
 rust_binary(
     name = "antlir2_vm",
     srcs = glob(["src/**/*.rs"]),
+    mapped_srcs = {
+        "//antlir/linux/vm/ssh:privkey": "src/ssh/privkey",
+    },
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
@@ -46,8 +50,8 @@ feature.new(
     ],
 )
 
-# We isolate VM inside systemd-nspawn container. This is the image layer
-# for the container with tools we need for VM tests.
+# We isolate VM inside a container. This is the image layer for the container
+# with tools we need for VM tests.
 image.layer(
     name = "container-image",
     features = [
@@ -64,11 +68,6 @@ image.layer(
             "systemd-container",  # for systemd-detect-virt
             "virtiofsd",  # rust virtiofsd
         ]),
-        feature.install(
-            src = "//antlir/linux/vm/ssh:privkey",
-            dst = "/antlir/.privkey",
-            mode = "u+r",
-        ),
         # Don't let random configurations sneak in - we want this tightly
         # controlled since it's a very constrained environment and a somewhat
         # unique setup to just SSH into the local VM
@@ -76,5 +75,11 @@ image.layer(
         feature.ensure_dirs_exist(dirs = "/antlir"),
         ":vm-firmwares",
     ],
+    visibility = [],
+)
+
+package.unprivileged_dir(
+    name = "container-dir",
+    layer = ":container-image",
     visibility = ["PUBLIC"],
 )
