@@ -8,18 +8,15 @@
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::env;
+use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
 
-use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::IsolatedContext;
 use antlir2_isolate::IsolationContext;
 use image_test_lib::KvPair;
 use once_cell::sync::OnceCell;
 use thiserror::Error;
-use tracing::debug;
-
-use crate::utils::log_command;
 
 #[derive(Error, Debug)]
 pub(crate) enum IsolationError {
@@ -96,25 +93,15 @@ pub(crate) fn isolated(
     let repo = Platform::repo_root()?;
     let mut builder = IsolationContext::builder(image);
     builder
-        .register(true)
         .platform(Platform::get().clone())
         .working_directory(repo.clone())
+        .tmpfs(Path::new("/run"))
+        .tmpfs(Path::new("/mnt/xarfuse"))
         .outputs(outputs);
     builder.setenv(
         envs.into_iter()
             .map(|p| (p.key, p.value))
             .collect::<BTreeMap<_, _>>(),
     );
-    Ok(nspawn(builder.build())?)
-}
-
-/// Basic check if current environment is isolated
-/// TODO: Linux specific
-pub(crate) fn is_isolated() -> Result<bool> {
-    let mut command = Command::new("systemd-detect-virt");
-    command.arg("-c");
-    let output = log_command(&mut command).output()?.stdout;
-    let virt = std::str::from_utf8(&output)?.trim();
-    debug!("systemd-detect-virt returned: {}", virt);
-    Ok(virt != "none")
+    Ok(unshare(builder.build())?)
 }

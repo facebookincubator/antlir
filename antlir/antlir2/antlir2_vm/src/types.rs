@@ -176,8 +176,6 @@ impl VMArgs {
                 outputs.insert(env::current_dir().expect("current dir must be valid"));
             }
         }
-        // Carry over virtualization support
-        outputs.insert("/dev/kvm".into());
         outputs
     }
 }
@@ -326,11 +324,6 @@ mod test {
 
     #[test]
     fn test_get_container_output_dirs() {
-        let args = VMArgs::default();
-        assert_eq!(
-            args.get_container_output_dirs(),
-            HashSet::from(["/dev/kvm".into()])
-        );
         let args = VMArgs {
             output_dirs: vec!["/foo/bar".into(), "/baz".into()],
             console_output_file: Some("/tmp/whatever".into()),
@@ -338,12 +331,7 @@ mod test {
         };
         assert_eq!(
             args.get_container_output_dirs(),
-            HashSet::from([
-                "/foo/bar".into(),
-                "/baz".into(),
-                "/tmp".into(),
-                "/dev/kvm".into()
-            ])
+            HashSet::from(["/foo/bar".into(), "/baz".into(), "/tmp".into(),])
         );
     }
 }
