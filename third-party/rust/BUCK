@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "88ec5c7487423c9ea968b69028b3cfd64994e34b",
+    rev = "3424a17406199d78bd63ad8e994d6cd76fbeb080",
     visibility = [],
 )
 
@@ -2041,7 +2041,7 @@ cargo.rust_library(
         ":lazy_static-1.5.0",
         ":lazycell-1.3.0",
         ":log-0.4.22",
-        ":prettyplease-0.2.21",
+        ":prettyplease-0.2.22",
         ":proc-macro2-1.0.86",
         ":quote-1.0.37",
         ":regex-1.10.6",
@@ -14993,29 +14993,29 @@ cargo.rust_library(
 
 alias(
     name = "prettyplease",
-    actual = ":prettyplease-0.2.21",
+    actual = ":prettyplease-0.2.22",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "prettyplease-0.2.21.crate",
-    sha256 = "a909e6e8053fa1a5ad670f5816c7d93029ee1fa8898718490544a6b0d5d38b3e",
-    strip_prefix = "prettyplease-0.2.21",
-    urls = ["https://static.crates.io/crates/prettyplease/0.2.21/download"],
+    name = "prettyplease-0.2.22.crate",
+    sha256 = "479cf940fbbb3426c32c5d5176f62ad57549a0bb84773423ba8be9d089f5faba",
+    strip_prefix = "prettyplease-0.2.22",
+    urls = ["https://static.crates.io/crates/prettyplease/0.2.22/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "prettyplease-0.2.21",
-    srcs = [":prettyplease-0.2.21.crate"],
+    name = "prettyplease-0.2.22",
+    srcs = [":prettyplease-0.2.22.crate"],
     crate = "prettyplease",
-    crate_root = "prettyplease-0.2.21.crate/src/lib.rs",
+    crate_root = "prettyplease-0.2.22.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "CARGO_PKG_VERSION": "0.2.21",
+        "CARGO_PKG_VERSION": "0.2.22",
     },
     features = ["verbatim"],
-    rustc_flags = ["@$(location :prettyplease-0.2.21-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :prettyplease-0.2.22-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":proc-macro2-1.0.86",
@@ -15024,24 +15024,24 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "prettyplease-0.2.21-build-script-build",
-    srcs = [":prettyplease-0.2.21.crate"],
+    name = "prettyplease-0.2.22-build-script-build",
+    srcs = [":prettyplease-0.2.22.crate"],
     crate = "build_script_build",
-    crate_root = "prettyplease-0.2.21.crate/build.rs",
+    crate_root = "prettyplease-0.2.22.crate/build.rs",
     edition = "2021",
     env = {
-        "CARGO_PKG_VERSION": "0.2.21",
+        "CARGO_PKG_VERSION": "0.2.22",
     },
     features = ["verbatim"],
     visibility = [],
 )
 
 buildscript_run(
-    name = "prettyplease-0.2.21-build-script-run",
+    name = "prettyplease-0.2.22-build-script-run",
     package_name = "prettyplease",
-    buildscript_rule = ":prettyplease-0.2.21-build-script-build",
+    buildscript_rule = ":prettyplease-0.2.22-build-script-build",
     features = ["verbatim"],
-    version = "0.2.21",
+    version = "0.2.22",
 )
 
 alias(
