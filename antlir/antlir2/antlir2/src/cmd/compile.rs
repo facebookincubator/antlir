@@ -146,11 +146,18 @@ impl Compile {
                     // the last version of it.
                     match Subvolume::open(&self.output) {
                         Ok(old_subvol) => {
-                            if let Err(e) = old_subvol.delete() {
+                            if let Err((mut old_subvol, e)) = old_subvol.delete() {
                                 warn!(
                                     "couldn't delete old subvol '{}': {e:?}",
-                                    self.output.display()
+                                    old_subvol.path().display()
                                 );
+                                let _ = old_subvol.set_readonly(false);
+                                if let Err(e) = std::fs::remove_dir_all(old_subvol.path()) {
+                                    warn!(
+                                        "couldn't delete contents of old subvol '{}': {e:?}",
+                                        old_subvol.path().display()
+                                    );
+                                }
                             }
                         }
                         Err(e) => {
