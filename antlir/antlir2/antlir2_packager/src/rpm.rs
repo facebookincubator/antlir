@@ -19,6 +19,7 @@ use anyhow::Context;
 use anyhow::Result;
 use chrono::prelude::*;
 use itertools::Itertools;
+#[cfg(feature = "libcap")]
 use libcap::FileExt as _;
 use nix::unistd::Gid;
 use nix::unistd::Group;
@@ -268,6 +269,7 @@ AutoProv: {autoprov}
                     continue;
                 }
                 let f = std::fs::File::open(entry.path())?;
+                #[cfg(feature = "libcap")]
                 if let Some(caps) = f.get_capabilities()? {
                     let caps = caps.to_text()?;
                     spec.push_str("%caps(");

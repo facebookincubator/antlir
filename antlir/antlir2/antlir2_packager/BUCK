@@ -9,6 +9,10 @@ rust_binary(
     compatible_with = [
         "ovr_config//os:linux",
     ],
+    features = select({
+        "//antlir/antlir2/libcap:available": ["libcap"],
+        "DEFAULT": [],
+    }),
     resources = {
         "sendstream-upgrade": internal_external(
             fb = "//antlir/btrfs_send_stream_upgrade/facebook:sendstream-upgrade",
@@ -45,9 +49,11 @@ rust_binary(
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
-        "//antlir/antlir2/libcap:libcap",
         "//antlir/util/cli/json_arg:json_arg",
-    ],
+    ] + select({
+        "//antlir/antlir2/libcap:available": ["//antlir/antlir2/libcap:libcap"],
+        "DEFAULT": [],
+    }),
 )
 
 feature.new(

@@ -1,12 +1,22 @@
-load("//antlir/bzl:build_defs.bzl", "internal_external", "rust_bindgen_library", "rust_library")
+# @oss-disable
+load("//antlir/bzl:build_defs.bzl", "alias", "internal_external", "rust_bindgen_library", "rust_library")
 
 oncall("antlir")
 
+# We can't actually select on arvr modes because of exec platform shenanigans,
+# so we have to create this alias that lets us make things unavailable under
+# arvr modes.
+# https://fb.workplace.com/groups/asktp/posts/3317571605206390
+alias(
+    name = "available",
+    # @oss-disable
+    actual = "ovr_config//os:linux", # @oss-enable
+    visibility = ["//antlir/..."],
+)
+
 rust_bindgen_library(
     name = "libcap-sys",
-    compatible_with = [
-        "ovr_config//os:linux",
-    ],
+    compatible_with = [":available"],
     cpp_deps = [
         internal_external(
             fb = "third-party//libcap:cap",
@@ -21,6 +31,7 @@ rust_bindgen_library(
 rust_library(
     name = "libcap",
     srcs = glob(["src/*.rs"]),
+    compatible_with = [":available"],
     deps = [
         "libc",
         ":libcap-sys",
