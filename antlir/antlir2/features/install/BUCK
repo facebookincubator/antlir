@@ -1,40 +1,24 @@
-# @oss-disable
-load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
-load("//antlir/bzl:build_defs.bzl", "internal_external")
 
 oncall("antlir")
 
-base_deps = [
-    "anyhow",
-    "base64",
-    "hex",
-    "serde_json",
-    "serde_with",
-    "walkdir",
-    "xattr",
-    "//antlir/antlir2/antlir2_users:antlir2_users",
-]
-
-optional_deps = select({
-    "DEFAULT": [],
-    "ovr_config//os:linux": (
-        # @oss-disable
-        ["//antlir/antlir2/libcap:libcap"] # @oss-enable
-    ),
-})
-
 feature_impl(
     name = "install",
-    features = internal_external(
-        # We can't actually select on arvr modes because of exec platform shenanigans
-        # https://fb.workplace.com/groups/asktp/posts/3317571605206390
-        # @oss-disable
-        fb = [], # @oss-enable
-        oss = ["setcap"],
-    ),
-    deps = selects.apply(
-        optional_deps,
-        lambda d: base_deps + d,
-    ),
+    features = select({
+        "//antlir/antlir2/libcap:available": ["setcap"],
+        "DEFAULT": [],
+    }),
+    deps = [
+        "anyhow",
+        "base64",
+        "hex",
+        "serde_json",
+        "serde_with",
+        "walkdir",
+        "xattr",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ] + select({
+        "//antlir/antlir2/libcap:available": ["//antlir/antlir2/libcap:libcap"],
+        "DEFAULT": [],
+    }),
 )

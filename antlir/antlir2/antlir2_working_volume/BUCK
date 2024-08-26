@@ -1,3 +1,4 @@
+# @oss-disable
 load("@prelude//utils:buckconfig.bzl", "read_bool")
 load("//antlir/bzl:build_defs.bzl", "is_facebook", "rust_library")
 
@@ -23,6 +24,11 @@ win_mode = read_bool(
 
 linux = not mac_mode and not win_mode
 
+can_use_scuba = linux and is_facebook and (
+    # @oss-disable
+    True # @oss-enable
+)
+
 rust_library(
     name = "antlir2_working_volume",
     srcs = glob(["src/**/*.rs"]),
@@ -37,10 +43,10 @@ rust_library(
         "//common/rust/fbwhoami:fbwhoami",
         "//common/rust/scuba:scuba",
         "//common/rust/shed/scuba_sample:scuba_sample",
-    ] if linux else []),
+    ] if can_use_scuba else []),
     rustc_flags = [
         "--cfg=scuba",
-    ] if (linux and is_facebook) else [],
+    ] if can_use_scuba else [],
     deps = [
         "nix",
         "thiserror",
