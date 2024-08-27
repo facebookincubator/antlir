@@ -30,7 +30,10 @@ image.layer(
 image.layer(
     name = "test-layer-timezone-utc",
     features = [
-        feature.rpms_install(rpms = ["coreutils"]),
+        feature.rpms_install(rpms = [
+            "coreutils",
+            "python3",
+        ]),
         linux.time.timezone(zone = "UTC"),
     ],
 )
@@ -47,7 +50,10 @@ image_python_test(
 image.layer(
     name = "test-layer-timezone-us-pacific",
     features = [
-        feature.rpms_install(rpms = ["coreutils"]),
+        feature.rpms_install(rpms = [
+            "coreutils",
+            "python3",
+        ]),
         linux.time.timezone(zone = "US/Pacific"),
     ],
 )
@@ -89,7 +95,10 @@ linux.release.file(
 image.layer(
     name = "test-layer-os-release",
     features = [
-        feature.rpms_install(rpms = ["coreutils"]),
+        feature.rpms_install(rpms = [
+            "coreutils",
+            "python3",
+        ]),
         linux.release.install(
             api_versions = {
                 "BAR": 22,
