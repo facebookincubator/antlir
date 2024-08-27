@@ -55,9 +55,6 @@ jobs:
             --disable //antlir/antlir2/test_images/cfg/target_arch/... \
             --disable //antlir/antlir2/testing/tests:booted-image-test-that-should-fail \
             --disable //antlir/antlir2/testing/tests:test-sh-booted-requires-units \
-            --disable //antlir/bzl/linux/tests:test-os-release \
-            --disable //antlir/bzl/linux/tests:test-timezone-us-pacific \
-            --disable //antlir/bzl/linux/tests:test-timezone-utc \
             --disable //antlir/bzl/shape2/... \
             --disable //antlir/bzl/tests/shapes/... \
             --disable //antlir/rust:gen-modules-bzl-unittest \
