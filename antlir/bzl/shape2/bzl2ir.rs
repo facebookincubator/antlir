@@ -35,7 +35,6 @@ use starlark::starlark_simple_value;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
 use starlark::values::dict::UnpackDictEntries;
-use starlark::values::function::NativeFunction;
 use starlark::values::list_or_tuple::UnpackListOrTuple;
 use starlark::values::starlark_value;
 use starlark::values::structs::AllocStruct;
@@ -171,18 +170,18 @@ impl<'v> TryToType for Value<'v> {
     fn try_to_type(&self, reg: &TypeRegistry) -> Result<Arc<ir::Type>> {
         if let Some(tid) = self.downcast_ref::<TypeId>() {
             reg.get(*tid).ok_or_else(|| anyhow!("{:?} not found", tid))
-        } else if let Some(nf) = self.downcast_ref::<NativeFunction>() {
-            Ok(Arc::new(match nf.to_string().as_str() {
+        } else if let Some(ty) = self.downcast_ref::<StarlarkType>() {
+            Ok(ty.0.clone())
+        } else {
+            // Test for native functions. FIXME(JakobDegen) it would be more correct to implement
+            // this check by comparing against the global value.
+            Ok(Arc::new(match self.to_string().as_str() {
                 "bool" => ir::Type::Primitive(ir::Primitive::Bool),
                 "int" => ir::Type::Primitive(ir::Primitive::I32),
                 "str" => ir::Type::Primitive(ir::Primitive::String),
                 "path" => ir::Type::Primitive(ir::Primitive::Path),
-                _ => bail!("expected a primitive, found a function '{}'", nf),
+                _ => bail!("cannot convert {:?} to type", self),
             }))
-        } else if let Some(ty) = self.downcast_ref::<StarlarkType>() {
-            Ok(ty.0.clone())
-        } else {
-            Err(anyhow!("cannot convert {:?} to type", self))
         }
     }
 }
