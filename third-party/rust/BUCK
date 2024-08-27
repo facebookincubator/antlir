@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "3424a17406199d78bd63ad8e994d6cd76fbeb080",
+    rev = "b53011a2f15163aa4f9f1fba42e31e8ad55a9c42",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "d6cc74db4462428a2808693166118a10848bb605",
+    rev = "7d5bc110e2e3b98c39ea43e5d45ebb0ab7e8ccdd",
     visibility = [],
 )
 
@@ -1751,7 +1751,7 @@ cargo.rust_binary(
         "std",
     ],
     visibility = [],
-    deps = [":cc-1.1.14"],
+    deps = [":cc-1.1.15"],
 )
 
 buildscript_run(
@@ -2425,7 +2425,7 @@ cargo.rust_library(
         ":arrayref-0.3.8",
         ":arrayvec-0.7.6",
         ":cfg-if-1.0.0",
-        ":constant_time_eq-0.3.0",
+        ":constant_time_eq-0.3.1",
         ":digest-0.10.7",
     ],
 )
@@ -3490,18 +3490,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.14.crate",
-    sha256 = "50d2eb3cd3d1bf4529e31c215ee6f93ec5a3d536d9f578f93d9d33ee19562932",
-    strip_prefix = "cc-1.1.14",
-    urls = ["https://static.crates.io/crates/cc/1.1.14/download"],
+    name = "cc-1.1.15.crate",
+    sha256 = "57b6a275aa2903740dc87da01c62040406b8812552e97129a63ea8850a17c6e6",
+    strip_prefix = "cc-1.1.15",
+    urls = ["https://static.crates.io/crates/cc/1.1.15/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.14",
-    srcs = [":cc-1.1.14.crate"],
+    name = "cc-1.1.15",
+    srcs = [":cc-1.1.15.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.14.crate/src/lib.rs",
+    crate_root = "cc-1.1.15.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4274,7 +4274,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.51.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.1.14"],
+    deps = [":cc-1.1.15"],
 )
 
 cargo.rust_library(
@@ -4514,18 +4514,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "constant_time_eq-0.3.0.crate",
-    sha256 = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2",
-    strip_prefix = "constant_time_eq-0.3.0",
-    urls = ["https://static.crates.io/crates/constant_time_eq/0.3.0/download"],
+    name = "constant_time_eq-0.3.1.crate",
+    sha256 = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6",
+    strip_prefix = "constant_time_eq-0.3.1",
+    urls = ["https://static.crates.io/crates/constant_time_eq/0.3.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "constant_time_eq-0.3.0",
-    srcs = [":constant_time_eq-0.3.0.crate"],
+    name = "constant_time_eq-0.3.1",
+    srcs = [":constant_time_eq-0.3.1.crate"],
     crate = "constant_time_eq",
-    crate_root = "constant_time_eq-0.3.0.crate/src/lib.rs",
+    crate_root = "constant_time_eq-0.3.1.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
 )
@@ -4551,6 +4551,24 @@ cargo.rust_library(
     crate_root = "convert_case-0.4.0.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
+)
+
+http_archive(
+    name = "convert_case-0.6.0.crate",
+    sha256 = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca",
+    strip_prefix = "convert_case-0.6.0",
+    urls = ["https://static.crates.io/crates/convert_case/0.6.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "convert_case-0.6.0",
+    srcs = [":convert_case-0.6.0.crate"],
+    crate = "convert_case",
+    crate_root = "convert_case-0.6.0.crate/src/lib.rs",
+    edition = "2018",
+    visibility = [],
+    deps = [":unicode-segmentation-1.11.0"],
 )
 
 alias(
@@ -5313,7 +5331,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.14",
+        ":cc-1.1.15",
         ":cxxbridge-flags-1.0.126",
     ],
 )
@@ -6093,6 +6111,111 @@ cargo.rust_library(
         ":proc-macro2-1.0.86",
         ":quote-1.0.37",
         ":syn-2.0.76",
+    ],
+)
+
+http_archive(
+    name = "derive_more-1.0.0.crate",
+    sha256 = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05",
+    strip_prefix = "derive_more-1.0.0",
+    urls = ["https://static.crates.io/crates/derive_more/1.0.0/download"],
+    visibility = [],
+)
+
+alias(
+    name = "derive_more-1",
+    actual = ":derive_more-1.0.0-derive_more-1",
+    visibility = ["PUBLIC"],
+)
+
+cargo.rust_library(
+    name = "derive_more-1.0.0-derive_more-1",
+    srcs = [":derive_more-1.0.0.crate"],
+    crate = "derive_more",
+    crate_root = "derive_more-1.0.0.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "add",
+        "add_assign",
+        "as_ref",
+        "constructor",
+        "debug",
+        "default",
+        "deref",
+        "deref_mut",
+        "display",
+        "error",
+        "from",
+        "from_str",
+        "full",
+        "index",
+        "index_mut",
+        "into",
+        "into_iterator",
+        "is_variant",
+        "mul",
+        "mul_assign",
+        "not",
+        "std",
+        "sum",
+        "try_from",
+        "try_into",
+        "try_unwrap",
+        "unwrap",
+    ],
+    visibility = [],
+    deps = [":derive_more-impl-1.0.0"],
+)
+
+http_archive(
+    name = "derive_more-impl-1.0.0.crate",
+    sha256 = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22",
+    strip_prefix = "derive_more-impl-1.0.0",
+    urls = ["https://static.crates.io/crates/derive_more-impl/1.0.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "derive_more-impl-1.0.0",
+    srcs = [":derive_more-impl-1.0.0.crate"],
+    crate = "derive_more_impl",
+    crate_root = "derive_more-impl-1.0.0.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "add",
+        "add_assign",
+        "as_ref",
+        "constructor",
+        "debug",
+        "default",
+        "deref",
+        "deref_mut",
+        "display",
+        "error",
+        "from",
+        "from_str",
+        "index",
+        "index_mut",
+        "into",
+        "into_iterator",
+        "is_variant",
+        "mul",
+        "mul_assign",
+        "not",
+        "sum",
+        "try_from",
+        "try_into",
+        "try_unwrap",
+        "unwrap",
+    ],
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":convert_case-0.6.0",
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.37",
+        ":syn-2.0.76",
+        ":unicode-xid-0.2.5",
     ],
 )
 
@@ -10809,7 +10932,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.14",
+        ":cc-1.1.15",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -12169,7 +12292,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.1.14",
+        ":cc-1.1.15",
         ":cmake-0.1.51",
         ":subprocess-0.2.9",
     ],
@@ -13481,7 +13604,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.14",
+        ":cc-1.1.15",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -16979,7 +17102,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.14"],
+    deps = [":cc-1.1.15"],
 )
 
 buildscript_run(
@@ -17061,7 +17184,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.14"],
+    deps = [":cc-1.1.15"],
 )
 
 buildscript_run(
@@ -20169,7 +20292,7 @@ cargo.rust_library(
         ":cmp_any-0.8.1",
         ":debugserver-types-0.5.0",
         ":derivative-2.2.0",
-        ":derive_more-0.99.18",
+        ":derive_more-1.0.0-derive_more-1",
         ":display_container-0.9.0",
         ":dupe-0.9.0",
         ":either-1.13.0",
@@ -20261,7 +20384,7 @@ cargo.rust_library(
         ":annotate-snippets-0.9.2",
         ":anyhow-1.0.86",
         ":derivative-2.2.0",
-        ":derive_more-0.99.18",
+        ":derive_more-1.0.0-derive_more-1",
         ":dupe-0.9.0",
         ":lalrpop-util-0.19.12",
         ":logos-0.12.1",
