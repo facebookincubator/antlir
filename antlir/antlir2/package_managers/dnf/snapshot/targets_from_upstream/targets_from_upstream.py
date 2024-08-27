@@ -38,6 +38,12 @@ class rpm(object):
     sha256: Optional[str] = None
     visibility: Optional[List[str]] = None
 
+    @property
+    def pkgid(self) -> str:
+        checksum = self.sha256 or self.sha1
+        assert checksum is not None
+        return checksum
+
 
 @dataclass
 class xml(object):
@@ -99,9 +105,11 @@ def snapshot_repo(args, base_url: ParseResult) -> SnapshottedRepo:
             xml_files["filelists"].name,
             xml_files["other"].name,
         ):
-            target_name = f"{pkg.epoch}-{pkg.version}-{pkg.release}.{pkg.arch}".replace(
+            target_name = f"{pkg.epoch}-{pkg.version}-{pkg.release}.{pkg.arch}-{pkg.pkgId[:5]}".replace(
                 "^", "_"
-            ).replace(":", "_")
+            ).replace(
+                ":", "_"
+            )
             url = urljoin(base_url, pkg.location_href)
             pkg.location_href = str(
                 Path("Packages") / pkg.pkgId / (pkg.nevra() + ".rpm")
@@ -164,7 +172,7 @@ load("@antlir//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
         repo_id = base_url.path.strip("/").replace("/", "_")
         repos[base_url.path.strip("/")] = repo_id
 
-    for rpm_name, rpms in rpms.items():
+    for rpm_name, versions in rpms.items():
         rpm_dir = args.dst / "rpms" / rpm_name
         rpm_dir.mkdir(parents=True, exist_ok=True)
         with open(rpm_dir / "BUCK", "w") as f:
@@ -174,7 +182,8 @@ load("@antlir//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
 load("@antlir//antlir/antlir2/package_managers/dnf/rules:xml.bzl", "xml")
 """
             )
-            for rpm, xml in rpms:
+            versions = {rpm.pkgid: (rpm, xml) for (rpm, xml) in versions}
+            for rpm, xml in versions.values():
                 f.write(repr(rpm))
                 f.write("\n")
                 f.write(repr(xml))
