@@ -1,0 +1,26 @@
+load("@prelude//:rules.bzl", "platform")
+load("@prelude//platforms:defs.bzl", "execution_platform", "host_configuration")
+load(":defs.bzl", "nativelink_platform", "exec_platforms")
+
+nativelink_platform(
+    name = "nativelink",
+    cpu_configuration = "config//cpu:x86_64",
+    os_configuration = "config//os:linux",
+    visibility = ["PUBLIC"],
+)
+
+execution_platform(
+    name = "host",
+    cpu_configuration = host_configuration.cpu,
+    os_configuration = host_configuration.os,
+    use_windows_path_separators = host_info().os.is_windows,
+    visibility = ["PUBLIC"],
+)
+
+exec_platforms(
+    name = "exec-platforms",
+    platforms = [
+        ":nativelink",
+        ":host",
+    ]
+)
