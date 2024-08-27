@@ -43,7 +43,7 @@ def _compile(
         *,
         ctx: AnalysisContext,
         identifier: str,
-        parent: LayerContents | None,
+        parent: LayerContents | typing.Any | None,
         logs: OutputArtifact,
         rootless: bool,
         target_arch: str,
