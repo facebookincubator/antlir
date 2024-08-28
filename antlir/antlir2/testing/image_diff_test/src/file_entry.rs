@@ -19,6 +19,11 @@ use antlir2_facts::fact::user::User;
 use antlir2_mode::Mode;
 use anyhow::Context;
 use anyhow::Result;
+use base64::alphabet::STANDARD;
+use base64::engine::general_purpose::GeneralPurpose;
+use base64::engine::general_purpose::GeneralPurposeConfig;
+use base64::engine::DecodePaddingMode;
+use base64::Engine;
 use md5::Digest;
 use md5::Md5;
 use serde::de::Error as _;
@@ -26,6 +31,12 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
+
+// Bring back the pre 0.20 bevahiour and allow either padded or un-padded base64 strings at decode time.
+const STANDARD_INDIFFERENT: GeneralPurpose = GeneralPurpose::new(
+    &STANDARD,
+    GeneralPurposeConfig::new().with_decode_padding_mode(DecodePaddingMode::Indifferent),
+);
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
@@ -232,7 +243,7 @@ impl<'de> Deserialize<'de> for XattrData {
             let bytes = hex::decode(hex_value).map_err(D::Error::custom)?;
             Ok(Self(bytes))
         } else if let Some(b64) = s.strip_prefix("0s") {
-            let bytes = base64::decode(b64).map_err(D::Error::custom)?;
+            let bytes = STANDARD_INDIFFERENT.decode(b64).map_err(D::Error::custom)?;
             Ok(Self(bytes))
         } else {
             Ok(Self(s.into_bytes()))
