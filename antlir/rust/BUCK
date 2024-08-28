@@ -1,3 +1,4 @@
+# @oss-disable
 load("//antlir/bzl:build_defs.bzl", "echo", "export_file", "python_library", "rust_binary", "rust_python_extension")
 load(":modules.bzl", "extension_modules", "extension_rust_targets")
 
@@ -54,6 +55,8 @@ rust_binary(
     test_deps = [
         "pretty_assertions",
     ],
+    # Test relies on the repo which is not present on aarch64 RE
+    # @oss-disable
     deps = [
         "anyhow",
         "serde",

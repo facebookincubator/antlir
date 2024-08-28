@@ -1,3 +1,4 @@
+# @oss-disable
 load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file", "python_binary", "python_library", "rust_binary", "rust_library", "third_party")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
@@ -87,6 +88,8 @@ rust_library(
         "anyhow",
         "tempfile",
     ],
+    # Test relies on the repo which is not present on aarch64 RE
+    # @oss-disable
     visibility = ["PUBLIC"],
     deps = [
         "thiserror",
