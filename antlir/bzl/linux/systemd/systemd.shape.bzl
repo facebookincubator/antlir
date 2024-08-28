@@ -19,6 +19,7 @@ service_t = shape.shape(
     type = shape.field(str, default = "oneshot"),
     slice = shape.field(str, optional = True),
     environment_file = shape.field(str, optional = True),
+    environment = shape.field(shape.dict(str, str), optional = True),
     exec_start = shape.field(shape.list(str), optional = True),
     standard_output = shape.field(str, optional = True),
 )

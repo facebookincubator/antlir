@@ -14,6 +14,9 @@ ExecStart={{ cmd }}
 {% endfor %}
 TimeoutStartSec=15min
 TimeoutStopSec=90s
+{% for key, val in environment.items() %}
+Environment={{ key }}={{ val }}
+{% endfor %}
 {% if standard_output %}
 StandardOutput={{ standard_output }}
 {% endif %}
