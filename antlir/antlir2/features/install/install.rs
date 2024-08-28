@@ -30,6 +30,11 @@ use antlir2_users::GroupId;
 use antlir2_users::Id;
 use antlir2_users::UserId;
 use anyhow::Context;
+use base64::alphabet::STANDARD;
+use base64::engine::general_purpose::GeneralPurpose;
+use base64::engine::general_purpose::GeneralPurposeConfig;
+use base64::engine::DecodePaddingMode;
+use base64::Engine;
 #[cfg(feature = "setcap")]
 use libcap::Capabilities;
 #[cfg(feature = "setcap")]
@@ -43,6 +48,12 @@ use serde_with::DisplayFromStr;
 use tracing::debug;
 use walkdir::WalkDir;
 use xattr::FileExt as _;
+
+// Bring back the pre 0.20 bevahiour and allow either padded or un-padded base64 strings at decode time.
+const STANDARD_INDIFFERENT: GeneralPurpose = GeneralPurpose::new(
+    &STANDARD,
+    GeneralPurposeConfig::new().with_decode_padding_mode(DecodePaddingMode::Indifferent),
+);
 
 pub type Feature = Install;
 
@@ -181,7 +192,7 @@ impl<'de> Deserialize<'de> for XattrValue {
             let bytes = hex::decode(hex_value).map_err(D::Error::custom)?;
             Ok(Self(bytes))
         } else if let Some(b64) = s.strip_prefix("0s") {
-            let bytes = base64::decode(b64).map_err(D::Error::custom)?;
+            let bytes = STANDARD_INDIFFERENT.decode(b64).map_err(D::Error::custom)?;
             Ok(Self(bytes))
         } else {
             Ok(Self(s.into_bytes()))
