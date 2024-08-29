@@ -172,3 +172,15 @@ fn repo_mount_is_readonly() {
         err.kind()
     );
 }
+
+/// Loopback interface should be available to bind on
+#[test]
+fn loopback_interface() {
+    // this function is running in an image_test which is already isolated, so
+    // no need to spawn another nested isolated process
+    assert_eq!(
+        std::env::var("container").expect("invalid container env var"),
+        "antlir2",
+    );
+    std::net::TcpListener::bind("[::1]:0").expect("failed to bind to socket");
+}
