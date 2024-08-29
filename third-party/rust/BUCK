@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "a1640538a09c7aac72ed01bc2c7f9d6d63bee353",
+    rev = "ac97902210b9006f433e4c8847c4d57af1e79eaf",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "2ebc8be66b0eb93a41bb96c745619383dd5907c2",
+    rev = "4d3265822b48912005da502b14c83bb6c9c60f09",
     visibility = [],
 )
 
@@ -84,7 +84,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":cpp_demangle-0.4.3",
+        ":cpp_demangle-0.4.4",
         ":fallible-iterator-0.3.0",
         ":gimli-0.28.1",
         ":memmap2-0.5.10",
@@ -1786,12 +1786,6 @@ cargo.rust_library(
     visibility = [],
 )
 
-alias(
-    name = "base64",
-    actual = ":base64-0.13.1",
-    visibility = ["PUBLIC"],
-)
-
 http_archive(
     name = "base64-0.13.1.crate",
     sha256 = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8",
@@ -1811,6 +1805,12 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
+)
+
+alias(
+    name = "base64",
+    actual = ":base64-0.21.7",
+    visibility = ["PUBLIC"],
 )
 
 http_archive(
@@ -4750,18 +4750,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cpp_demangle-0.4.3.crate",
-    sha256 = "7e8227005286ec39567949b33df9896bcadfa6051bccca2488129f108ca23119",
-    strip_prefix = "cpp_demangle-0.4.3",
-    urls = ["https://static.crates.io/crates/cpp_demangle/0.4.3/download"],
+    name = "cpp_demangle-0.4.4.crate",
+    sha256 = "96e58d342ad113c2b878f16d5d034c03be492ae460cdbc02b7f0f2284d310c7d",
+    strip_prefix = "cpp_demangle-0.4.4",
+    urls = ["https://static.crates.io/crates/cpp_demangle/0.4.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cpp_demangle-0.4.3",
-    srcs = [":cpp_demangle-0.4.3.crate"],
+    name = "cpp_demangle-0.4.4",
+    srcs = [":cpp_demangle-0.4.4.crate"],
     crate = "cpp_demangle",
-    crate_root = "cpp_demangle-0.4.3.crate/src/lib.rs",
+    crate_root = "cpp_demangle-0.4.4.crate/src/lib.rs",
     edition = "2018",
     features = ["alloc"],
     visibility = [],
@@ -7360,7 +7360,7 @@ cargo.rust_library(
     deps = [
         ":anyhow-1.0.86",
         ":async-trait-0.1.81",
-        ":base64-0.13.1",
+        ":base64-0.21.7",
         ":bufsize-1.0.7",
         ":bytes-1.7.1",
         ":futures-0.3.30",
@@ -17381,7 +17381,7 @@ cargo.rust_binary(
     edition = "2021",
     features = ["async-timeout"],
     visibility = [],
-    deps = [":rustc_version-0.4.0"],
+    deps = [":rustc_version-0.4.1"],
 )
 
 buildscript_run(
@@ -17549,23 +17549,23 @@ cargo.rust_library(
 
 alias(
     name = "rustc_version",
-    actual = ":rustc_version-0.4.0",
+    actual = ":rustc_version-0.4.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "rustc_version-0.4.0.crate",
-    sha256 = "bfa0f585226d2e68097d4f95d113b15b83a82e819ab25717ec0590d9584ef366",
-    strip_prefix = "rustc_version-0.4.0",
-    urls = ["https://static.crates.io/crates/rustc_version/0.4.0/download"],
+    name = "rustc_version-0.4.1.crate",
+    sha256 = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92",
+    strip_prefix = "rustc_version-0.4.1",
+    urls = ["https://static.crates.io/crates/rustc_version/0.4.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rustc_version-0.4.0",
-    srcs = [":rustc_version-0.4.0.crate"],
+    name = "rustc_version-0.4.1",
+    srcs = [":rustc_version-0.4.1.crate"],
     crate = "rustc_version",
-    crate_root = "rustc_version-0.4.0.crate/src/lib.rs",
+    crate_root = "rustc_version-0.4.1.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
     deps = [":semver-1.0.23"],
