@@ -42,9 +42,6 @@ impl<'a> IsolatedContext<'a> {
         if self.0.register {
             return Err(Error::UnsupportedSetting("register"));
         }
-        if self.0.enable_network {
-            return Err(Error::UnsupportedSetting("enable_network"));
-        }
 
         let mut cmd = Command::new(
             buck_resources::get("antlir/antlir2/antlir2_isolate/isolate_unshare/preexec")

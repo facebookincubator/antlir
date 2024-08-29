@@ -20,6 +20,7 @@ use nix::sched::unshare;
 use nix::sched::CloneFlags;
 
 mod isolation;
+pub(crate) mod net;
 pub(crate) mod new_mount_api;
 mod pid1;
 use pid1::Pid1Args;

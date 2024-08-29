@@ -51,11 +51,16 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
         // isolate_unshare crate already ensures that these are not configured
         invocation_type: _,
         register: _,
-        enable_network: _,
+        enable_network,
     } = isol;
 
-    unshare(CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWNET | CloneFlags::CLONE_NEWUTS)
-        .context("while unsharing into new namespaces")?;
+    let mut clone_flags = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUTS;
+    if !enable_network {
+        clone_flags |= CloneFlags::CLONE_NEWNET;
+    }
+
+    unshare(clone_flags).context("while unsharing into new namespaces")?;
+
     // Remount / as private so that we don't let any changes escape back to the
     // parent mount namespace.
     // This is basically equivalent to `mount --make-rprivate /`
@@ -67,6 +72,10 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
         None::<&str>,
     )
     .context("while making / private")?;
+
+    // Ensure that the loopback interface is up in our new network namespace in
+    // case anything wants to bind to it for whatever reason
+    crate::net::bring_loopback_up().context("while bringing up loopback interface")?;
 
     let scratch = Path::new("/tmp/__antlir2__");
     create_dir_all(scratch)
