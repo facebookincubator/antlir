@@ -8,7 +8,7 @@ rust_library(
     doctests = False,  # FIXME
     deps = [
         "anyhow",
-        "derive_more",
+        "derive_more-1",
         "serde",
         "serde_json",
     ],
@@ -26,7 +26,7 @@ rust_binary(
         "allocative",
         "anyhow",
         "clap",
-        "derive_more",
+        "derive_more-1",
         "serde",
         "serde_json",
         "slotmap",
@@ -43,7 +43,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "derive_more",
+        "derive_more-1",
         "handlebars",
         "itertools",
         "serde",

@@ -9,7 +9,6 @@
 
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 

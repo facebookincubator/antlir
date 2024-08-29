@@ -21,7 +21,7 @@ rust_library(
     test_srcs = glob(["testdata/*"]),
     deps = [
         "bytes",
-        "derive_more",
+        "derive_more-1",
         "hex",
         "nix",
         "nom",

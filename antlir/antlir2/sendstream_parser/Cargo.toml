@@ -16,7 +16,7 @@ path = "src/lib.rs"
 
 [dependencies]
 bytes = { version = "1.6.0", features = ["serde"] }
-derive_more = "0.99.17"
+derive_more = { version = "1.0.0", features = ["full"] }
 hex = "0.4.3"
 nix = "0.25"
 nom = "7.1"

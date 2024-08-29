@@ -154,7 +154,7 @@ impl TypeRegistry {
 }
 
 #[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize, Allocative)]
-#[display(fmt = "{:?}", self)]
+#[display("{:?}", self)]
 #[repr(transparent)]
 #[allocative(skip)]
 struct StarlarkType(Arc<ir::Type>);
@@ -207,7 +207,7 @@ impl<'v> TryToField for Value<'v> {
 }
 
 #[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize, Allocative)]
-#[display(fmt = "{:?}", self)]
+#[display("{:?}", self)]
 #[repr(transparent)]
 #[allocative(skip)]
 struct StarlarkField(ir::Field);

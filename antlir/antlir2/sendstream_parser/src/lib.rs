@@ -15,7 +15,6 @@
 #![deny(clippy::expect_used)]
 
 use std::borrow::Cow;
-use std::ops::Deref;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 
