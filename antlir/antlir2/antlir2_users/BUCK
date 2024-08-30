@@ -14,7 +14,7 @@ rust_library(
         "rstest",
     ],
     deps = [
-        "derive_more-1",
+        "derive_more",
         "nix",
         "nom",
         "serde",

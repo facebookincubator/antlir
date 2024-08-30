@@ -6,7 +6,7 @@ rust_library(
     name = "antlir2_isolate",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "derive_more-1",
+        "derive_more",
         "thiserror",
         "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
         "//antlir/antlir2/antlir2_isolate/isolate_nspawn:isolate_nspawn",
