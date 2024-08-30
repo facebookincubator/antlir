@@ -9,6 +9,10 @@ oncall("antlir")
 
 shape.impl(
     name = "test.shape",
+    languages = [
+        "python",
+        "rust",
+    ],
     rust_crate = "test_shape",
     test_only_rc_bzl2_ir = True,
     deps = [
