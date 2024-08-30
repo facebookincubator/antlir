@@ -283,6 +283,7 @@ _rpm, _rpm_anon = _new_package_rule(
         "changelog": attrs.option(attrs.string(), default = None),
         "conflicts": attrs.list(attrs.string(), default = []),
         "description": attrs.option(attrs.string(), default = None),
+        "disable_build_id_links": attrs.bool(default = False),
         "disable_strip": attrs.bool(default = False),
         "epoch": attrs.int(default = 0),
         "extra_files": attrs.list(attrs.string(), default = []),
