@@ -19,4 +19,8 @@ export_file(
 
 shape.impl(
     name = "target.shape",
+    languages = [
+        "python",
+        "rust",
+    ],
 )

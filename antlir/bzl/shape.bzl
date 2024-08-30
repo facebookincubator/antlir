@@ -309,7 +309,14 @@ _shape_rule = rule(
     },
 )
 
-def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False, **kwargs):  # pragma: no cover
+def _impl(
+        *,
+        name,
+        deps = (),
+        languages = (),
+        visibility = None,
+        test_only_rc_bzl2_ir: bool = False,
+        **kwargs):  # pragma: no cover
     if not name.endswith(".shape"):
         fail("shape.impl target must be named with a .shape suffix")
 
@@ -330,31 +337,33 @@ def _impl(name, deps = (), visibility = None, test_only_rc_bzl2_ir: bool = False
         **default_target_platform_kwargs()
     )
 
-    python_library(
-        name = "{}-python".format(name),
-        srcs = {":{}[src][python]".format(name): "__init__.py"},
-        base_module = native.package_name() + "." + name.replace(".shape", ""),
-        deps = ["antlir//antlir:shape"] + ["{}-python".format(d) for d in deps],
-        visibility = visibility,
-        **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
-    )
-    rust_library(
-        name = "{}-rust".format(name),
-        crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
-        mapped_srcs = {":{}[src][rust]".format(name): "src/lib.rs"},
-        deps = ["{}-rust".format(d) for d in deps] + [
-            "antlir//antlir/bzl/shape2:shape",
-            "anyhow",
-            "fbthrift",
-            "serde",
-            "serde_json",
-            "typed-builder",
-        ],
-        visibility = visibility,
-        unittests = False,
-        allow_unused_crate_dependencies = True,
-        **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
-    )
+    if "python" in languages:
+        python_library(
+            name = "{}-python".format(name),
+            srcs = {":{}[src][python]".format(name): "__init__.py"},
+            base_module = native.package_name() + "." + name.replace(".shape", ""),
+            deps = ["antlir//antlir:shape"] + ["{}-python".format(d) for d in deps],
+            visibility = visibility,
+            **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
+        )
+    if "rust" in languages:
+        rust_library(
+            name = "{}-rust".format(name),
+            crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
+            mapped_srcs = {":{}[src][rust]".format(name): "src/lib.rs"},
+            deps = ["{}-rust".format(d) for d in deps] + [
+                "antlir//antlir/bzl/shape2:shape",
+                "anyhow",
+                "fbthrift",
+                "serde",
+                "serde_json",
+                "typed-builder",
+            ],
+            visibility = visibility,
+            unittests = False,
+            allow_unused_crate_dependencies = True,
+            **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
+        )
 
 def _json_string(instance):
     """
