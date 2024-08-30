@@ -196,6 +196,23 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
                 )
                 .with_context(|| format!("while mounting device node '{devname}'"))?;
             }
+
+            // Things like `sem_open` requires a usable `/dev/shm`.
+            tmpfs
+                .create_dir("shm")
+                .context("while creating directory 'shm'")?;
+            let dir = tmpfs
+                .open_dir("shm")
+                .context("while opening shm mountpoint")?
+                .into_std_file();
+            nix::mount::mount(
+                None::<&str>,
+                &dir.abspath(),
+                Some("tmpfs"),
+                MsFlags::empty(),
+                None::<&str>,
+            )
+            .context("while mounting shm")?;
         }
     }
 

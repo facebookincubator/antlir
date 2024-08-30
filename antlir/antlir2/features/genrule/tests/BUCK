@@ -216,3 +216,19 @@ image.layer(
     ],
     parent_layer = ":base",
 )
+
+image.layer(
+    name = "SemLock",
+    features = [
+        feature.rpms_install(rpms = ["python3"]),
+        feature.genrule(
+            cmd = [
+                "/usr/bin/python3",
+                "-c",
+                "import multiprocessing.synchronize\nsl = multiprocessing.synchronize.Semaphore(ctx=None)\nwith sl:\n  print(\"locked\")",
+            ],
+            user = "root",
+        ),
+    ],
+    parent_layer = ":base",
+)
