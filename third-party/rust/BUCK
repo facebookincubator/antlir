@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "a221c37a03201e6735cc5ac0781e8cbacfdf6d03",
+    rev = "1000892c7e94d1049b144fe3d6c7ac8b5364d945",
     visibility = [],
 )
 
@@ -7685,97 +7685,99 @@ cargo.rust_library(
 
 alias(
     name = "frunk",
-    actual = ":frunk-0.4.2",
+    actual = ":frunk-0.4.3",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "frunk-0.4.2.crate",
-    sha256 = "11a351b59e12f97b4176ee78497dff72e4276fb1ceb13e19056aca7fa0206287",
-    strip_prefix = "frunk-0.4.2",
-    urls = ["https://static.crates.io/crates/frunk/0.4.2/download"],
+    name = "frunk-0.4.3.crate",
+    sha256 = "874b6a17738fc273ec753618bac60ddaeac48cb1d7684c3e7bd472e57a28b817",
+    strip_prefix = "frunk-0.4.3",
+    urls = ["https://static.crates.io/crates/frunk/0.4.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "frunk-0.4.2",
-    srcs = [":frunk-0.4.2.crate"],
+    name = "frunk-0.4.3",
+    srcs = [":frunk-0.4.3.crate"],
     crate = "frunk",
-    crate_root = "frunk-0.4.2.crate/src/lib.rs",
+    crate_root = "frunk-0.4.3.crate/src/lib.rs",
     edition = "2021",
     features = [
+        "alloc",
         "default",
         "frunk_proc_macros",
         "proc-macros",
-        "std",
         "validated",
     ],
     visibility = [],
     deps = [
-        ":frunk_core-0.4.2",
-        ":frunk_derives-0.4.2",
-        ":frunk_proc_macros-0.1.2",
+        ":frunk_core-0.4.3",
+        ":frunk_derives-0.4.3",
+        ":frunk_proc_macros-0.1.3",
+        ":serde-1.0.209",
     ],
 )
 
 http_archive(
-    name = "frunk_core-0.4.2.crate",
-    sha256 = "af2469fab0bd07e64ccf0ad57a1438f63160c69b2e57f04a439653d68eb558d6",
-    strip_prefix = "frunk_core-0.4.2",
-    urls = ["https://static.crates.io/crates/frunk_core/0.4.2/download"],
+    name = "frunk_core-0.4.3.crate",
+    sha256 = "3529a07095650187788833d585c219761114005d5976185760cf794d265b6a5c",
+    strip_prefix = "frunk_core-0.4.3",
+    urls = ["https://static.crates.io/crates/frunk_core/0.4.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "frunk_core-0.4.2",
-    srcs = [":frunk_core-0.4.2.crate"],
+    name = "frunk_core-0.4.3",
+    srcs = [":frunk_core-0.4.3.crate"],
     crate = "frunk_core",
-    crate_root = "frunk_core-0.4.2.crate/src/lib.rs",
+    crate_root = "frunk_core-0.4.3.crate/src/lib.rs",
     edition = "2021",
-    features = ["std"],
+    features = ["alloc"],
     visibility = [],
+    deps = [":serde-1.0.209"],
 )
 
 http_archive(
-    name = "frunk_derives-0.4.2.crate",
-    sha256 = "b0fa992f1656e1707946bbba340ad244f0814009ef8c0118eb7b658395f19a2e",
-    strip_prefix = "frunk_derives-0.4.2",
-    urls = ["https://static.crates.io/crates/frunk_derives/0.4.2/download"],
+    name = "frunk_derives-0.4.3.crate",
+    sha256 = "e99b8b3c28ae0e84b604c75f721c21dc77afb3706076af5e8216d15fd1deaae3",
+    strip_prefix = "frunk_derives-0.4.3",
+    urls = ["https://static.crates.io/crates/frunk_derives/0.4.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "frunk_derives-0.4.2",
-    srcs = [":frunk_derives-0.4.2.crate"],
+    name = "frunk_derives-0.4.3",
+    srcs = [":frunk_derives-0.4.3.crate"],
     crate = "frunk_derives",
-    crate_root = "frunk_derives-0.4.2.crate/src/lib.rs",
+    crate_root = "frunk_derives-0.4.3.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
     deps = [
-        ":frunk_proc_macro_helpers-0.1.2",
+        ":frunk_proc_macro_helpers-0.1.3",
         ":quote-1.0.37",
         ":syn-2.0.77",
     ],
 )
 
 http_archive(
-    name = "frunk_proc_macro_helpers-0.1.2.crate",
-    sha256 = "35b54add839292b743aeda6ebedbd8b11e93404f902c56223e51b9ec18a13d2c",
-    strip_prefix = "frunk_proc_macro_helpers-0.1.2",
-    urls = ["https://static.crates.io/crates/frunk_proc_macro_helpers/0.1.2/download"],
+    name = "frunk_proc_macro_helpers-0.1.3.crate",
+    sha256 = "05a956ef36c377977e512e227dcad20f68c2786ac7a54dacece3746046fea5ce",
+    strip_prefix = "frunk_proc_macro_helpers-0.1.3",
+    urls = ["https://static.crates.io/crates/frunk_proc_macro_helpers/0.1.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "frunk_proc_macro_helpers-0.1.2",
-    srcs = [":frunk_proc_macro_helpers-0.1.2.crate"],
+    name = "frunk_proc_macro_helpers-0.1.3",
+    srcs = [":frunk_proc_macro_helpers-0.1.3.crate"],
     crate = "frunk_proc_macro_helpers",
-    crate_root = "frunk_proc_macro_helpers-0.1.2.crate/src/lib.rs",
+    crate_root = "frunk_proc_macro_helpers-0.1.3.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
     deps = [
-        ":frunk_core-0.4.2",
+        ":frunk_core-0.4.3",
         ":proc-macro2-1.0.86",
         ":quote-1.0.37",
         ":syn-2.0.77",
@@ -7783,24 +7785,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "frunk_proc_macros-0.1.2.crate",
-    sha256 = "71b85a1d4a9a6b300b41c05e8e13ef2feca03e0334127f29eca9506a7fe13a93",
-    strip_prefix = "frunk_proc_macros-0.1.2",
-    urls = ["https://static.crates.io/crates/frunk_proc_macros/0.1.2/download"],
+    name = "frunk_proc_macros-0.1.3.crate",
+    sha256 = "67e86c2c9183662713fea27ea527aad20fb15fee635a71081ff91bf93df4dc51",
+    strip_prefix = "frunk_proc_macros-0.1.3",
+    urls = ["https://static.crates.io/crates/frunk_proc_macros/0.1.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "frunk_proc_macros-0.1.2",
-    srcs = [":frunk_proc_macros-0.1.2.crate"],
+    name = "frunk_proc_macros-0.1.3",
+    srcs = [":frunk_proc_macros-0.1.3.crate"],
     crate = "frunk_proc_macros",
-    crate_root = "frunk_proc_macros-0.1.2.crate/src/lib.rs",
+    crate_root = "frunk_proc_macros-0.1.3.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
     deps = [
-        ":frunk_core-0.4.2",
-        ":frunk_proc_macro_helpers-0.1.2",
+        ":frunk_core-0.4.3",
+        ":frunk_proc_macro_helpers-0.1.3",
         ":quote-1.0.37",
         ":syn-2.0.77",
     ],
@@ -12039,7 +12041,7 @@ cargo.rust_library(
         ":chrono-0.4.38",
         ":crc32fast-1.4.2",
         ":flate2-1.0.33",
-        ":frunk-0.4.2",
+        ":frunk-0.4.3",
         ":lazy_static-1.5.0",
         ":lexical-6.1.1",
         ":num-bigint-0.4.6",
