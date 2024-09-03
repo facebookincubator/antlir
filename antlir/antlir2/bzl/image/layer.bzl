@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//utils:expect.bzl", "expect")
+load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless_config_set", "get_antlir2_rootless")
@@ -658,6 +658,7 @@ def layer(
         # by a type hint inside feature.bzl. Feature targets or
         # InlineFeatureInfo providers are accepted, at any level of nesting
         features = [],
+        parent_layer: str | Select | None = None,
         default_os: str | None = None,
         # TODO: remove this flag when all images are using this new mechanism
         use_default_os_from_package: bool | None = None,
@@ -666,6 +667,9 @@ def layer(
         compatible_with_os: list[str] | Select | None = None,
         visibility: list[str] | None = None,
         compatible_with = None,
+        # mark whether or not this was an implicit layer that must inherit its
+        # parent flavor configuration
+        implicit_layer_reason: str | None = None,
         **kwargs):
     """
     Create a new image layer
@@ -680,6 +684,14 @@ def layer(
     # TODO(vmagro): codemod existing callsites to use default_os directly
     if kwargs.get("flavor", None) and default_os:
         fail("default_os= is preferred, stop setting flavor=")
+
+    # Some layers must inherit their parent flavor and not the package setting,
+    # but this should be a narrow use case mainly limited to antlir-owned macros.
+    if implicit_layer_reason:
+        kwargs["labels"] = kwargs.pop("labels", []) + ["anltir2-implicit-layer=" + implicit_layer_reason]
+        kwargs.pop("default_os", None)
+        default_os = None
+        kwargs["flavor"] = expect_non_none(parent_layer, msg = "parent_layer required for implicit layers") + "[flavor]"
 
     force_flavor = kwargs.pop("force_flavor", None)
     if force_flavor:
@@ -747,6 +759,7 @@ def layer(
 
     return layer_rule(
         name = name,
+        parent_layer = parent_layer,
         default_os = default_os,
         # @oss-disable
         rootless = rootless,
