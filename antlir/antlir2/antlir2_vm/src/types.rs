@@ -210,6 +210,10 @@ impl FromStr for CpuIsa {
     }
 }
 
+/// Mount runtime platform (aka /usr/local/fbcode) from the host.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub(crate) struct MountPlatformDecision(pub(crate) bool);
+
 /// Everything we need to create and run the VM
 #[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct MachineOpts {
@@ -226,6 +230,8 @@ pub(crate) struct MachineOpts {
     pub(crate) num_nics: usize,
     /// Maximum number of combined channels for each virtual NIC. Setting it to 1 disables multi-queue
     pub(crate) max_combined_channels: usize,
+    /// Mount runtime platform (aka /usr/local/fbcode) from the host.
+    pub(crate) mount_platform: MountPlatformDecision,
     /// initrd and data if not booting from disk
     pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
     /// Index of serial port

@@ -50,6 +50,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             } if ctx.attrs.boot else None,
             "hostname": ctx.attrs.hostname,
             "layer": ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
+            "mount_platform": ctx.attrs.mount_platform,
             "mounts": mounts,
             "pass_env": ctx.attrs.test[ExternalRunnerTestInfo].env.keys(),
             "rootless": ctx.attrs._rootless,
@@ -152,6 +153,10 @@ _image_test = rule(
         "image_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_test:image-test")),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "mount_platform": attrs.bool(
+            default = True,
+            doc = "Mount runtime platform (aka /usr/local/fbcode) from the host",
+        ),
         "run_as_user": attrs.string(default = "root"),
         "test": attrs.dep(providers = [ExternalRunnerTestInfo]),
         "_rootless": rootless_cfg.is_rootless_attr,
@@ -180,6 +185,7 @@ def _implicit_image_test(
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         # @oss-disable
+        mount_platform: bool | None = None,
         rootless: bool | None = None,
         _static_list_wrapper: str | None = None,
         exec_compatible_with: list[str] | Select | None = None,
@@ -246,6 +252,7 @@ def _implicit_image_test(
         hostname = hostname,
         default_os = default_os,
         # @oss-disable
+        mount_platform = mount_platform,
         rootless = rootless,
         _static_list_wrapper = _static_list_wrapper,
         exec_compatible_with = exec_compatible_with,

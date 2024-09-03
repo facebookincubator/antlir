@@ -57,6 +57,8 @@ struct TestSpec {
     /// Set these env vars in the test environment based on what is present in the parent
     pass_env: Vec<String>,
     #[serde(default)]
+    /// Mount runtime platform (aka /usr/local/fbcode) from the host
+    mount_platform: bool,
     /// Mounts required by the layer-under-test
     mounts: HashMap<PathBuf, PathBuf>,
     /// Run the test in an unprivileged user namespace
@@ -133,11 +135,12 @@ fn main() -> Result<()> {
         // repo to be available
         repo.as_path(),
         #[cfg(facebook)]
-        Path::new("/usr/local/fbcode"),
-        #[cfg(facebook)]
         Path::new("/mnt/gvfs"),
-    ])
-    .inputs([
+    ]);
+    if cfg!(facebook) && spec.mount_platform {
+        ctx.platform([Path::new("/usr/local/fbcode")]);
+    }
+    ctx.inputs([
         // tests often read resource files from the repo
         repo.as_path(),
     ])

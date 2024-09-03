@@ -796,6 +796,7 @@ mod test {
 
     use super::*;
     use crate::share::VirtiofsShare;
+    use crate::types::MountPlatformDecision;
     use crate::types::NonDiskBootOpts;
     use crate::types::VMArgs;
     use crate::utils::qemu_args_to_string;
@@ -1050,7 +1051,9 @@ mod test {
 
     #[test]
     fn test_get_all_shares_opts() {
-        Platform::set().expect("Failed to query platform");
+        let mount_platform = MountPlatformDecision(true);
+        Platform::set(&mount_platform).expect("Failed to query platform");
+
         let outputs = HashSet::from([PathBuf::from("/path")]);
         let opt = ShareOpts {
             path: PathBuf::from("/path"),
