@@ -18,6 +18,8 @@ use image_test_lib::KvPair;
 use once_cell::sync::OnceCell;
 use thiserror::Error;
 
+use crate::types::MountPlatformDecision;
+
 #[derive(Error, Debug)]
 pub(crate) enum IsolationError {
     #[error("Failed to find repo root: `{0}`")]
@@ -54,20 +56,20 @@ impl Platform {
 
     /// Query the environment and set PLATFORM. Should be called exactly once
     /// before `get` is invoked.
-    pub(crate) fn set() -> Result<()> {
+    pub(crate) fn set(mount_platform: &MountPlatformDecision) -> Result<()> {
         let repo = Platform::repo_root()?;
-        let platform = Platform {
-            paths: HashSet::from([
-                repo,
-                #[cfg(facebook)]
-                PathBuf::from("/usr/local/fbcode"),
-                #[cfg(facebook)]
-                PathBuf::from("/mnt/gvfs"),
-            ]),
-        };
+
+        let mut paths = HashSet::from([
+            repo,
+            #[cfg(facebook)]
+            PathBuf::from("/mnt/gvfs"),
+        ]);
+        if cfg!(facebook) && mount_platform.0 {
+            paths.insert(PathBuf::from("/usr/local/fbcode"));
+        }
 
         PLATFORM
-            .set(platform)
+            .set(Platform { paths })
             .map_err(|_| IsolationError::PlatformError)
     }
 

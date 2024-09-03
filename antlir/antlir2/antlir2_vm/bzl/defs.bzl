@@ -52,6 +52,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             "disks": [d[DiskInfo] for d in disks],
             "max_combined_channels": ctx.attrs.max_combined_channels,
             "mem_mib": ctx.attrs.mem_mib,
+            "mount_platform": ctx.attrs.mount_platform,
             "non_disk_boot_opts": {
                 "append": append,
                 "initrd": ctx.attrs.initrd,
@@ -149,6 +150,10 @@ _vm_host = rule(
             attrs.source(),
             default = None,
             doc = "kernel image to boot from when not booting from disk",
+        ),
+        "mount_platform": attrs.bool(
+            default = True,
+            doc = "Mount runtime platform (aka /usr/local/fbcode) from the host",
         ),
         "sidecar_services": attrs.list(
             attrs.arg(),

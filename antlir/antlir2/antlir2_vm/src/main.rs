@@ -42,6 +42,7 @@ use crate::isolation::Platform;
 use crate::share::NinePShare;
 use crate::share::VirtiofsShare;
 use crate::types::MachineOpts;
+use crate::types::MountPlatformDecision;
 use crate::types::VMArgs;
 use crate::utils::create_tpx_logs;
 use crate::utils::env_names_to_kvpairs;
@@ -106,6 +107,9 @@ struct IsolateCmdArgs {
 fn run(args: &RunCmdArgs) -> Result<()> {
     debug!("MachineOpts: {:?}", args.machine_spec);
     debug!("VMArgs: {:?}", args.vm_args);
+
+    // Respect user's decision whether to use host's platform or not.
+    Platform::set(&args.machine_spec.mount_platform)?;
 
     let mut vm_args = args.vm_args.clone();
     if args.postmortem {
@@ -178,6 +182,10 @@ fn run(args: &RunCmdArgs) -> Result<()> {
 /// Enter isolated container and then respawn itself inside it with `run`
 /// command and its parameters.
 fn respawn(args: &IsolateCmdArgs) -> Result<()> {
+    // The inner antlir2_vm process will need fbcode runtime to start.
+    // It may then decide whether to use host's platform for the actual test.
+    Platform::set(&MountPlatformDecision(true))?;
+
     let mut vm_args = args.run_cmd_args.vm_args.clone();
     let envs = env_names_to_kvpairs(args.passenv.clone());
     vm_args.command_envs = envs.clone();
@@ -369,6 +377,10 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
 /// inputs instead of allowing caller to pass them in. Some inputs are parsed
 /// from the test command.
 fn test(args: &IsolateCmdArgs) -> Result<()> {
+    // The inner antlir2_vm process will need fbcode runtime to start.
+    // It may then decide whether to use host's platform for the actual test.
+    Platform::set(&MountPlatformDecision(true))?;
+
     let validated_args = get_test_vm_args(&args.run_cmd_args.vm_args, args.passenv.clone())?;
     antlir2_rootless::unshare_new_userns()?;
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
@@ -401,10 +413,8 @@ fn main() -> Result<()> {
                 .expect("Invalid logging level set by env"),
         )
         .init();
-    Platform::set()?;
 
     debug!("Args: {:?}", env::args());
-
     let cli = Cli::parse();
     match &cli.command {
         Commands::Isolate(args) => respawn(args),
