@@ -31,7 +31,8 @@ def all_images_in_package_use_default_os(yes: bool = True):
     )
 
 def should_all_images_in_package_use_default_os() -> bool:
-    return read_package_value(_ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY) or (
-        # @oss-disable
-        True # @oss-enable
-    )
+    pkg = read_package_value(_ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY)
+    if pkg == None:
+        return True
+    else:
+        return pkg
