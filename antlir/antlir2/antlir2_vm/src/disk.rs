@@ -78,7 +78,7 @@ impl QCow2Disk {
         }
         run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskCreationError)?;
 
-        if let Some(size) = self.opts.additional_mib {
+        if let Some(size) = self.opts.free_mib {
             if size != 0 {
                 let mut cmd = Command::new("qemu-img");
                 cmd.arg("resize")

@@ -41,7 +41,7 @@ pub(crate) struct QCow2DiskOpts {
     pub(crate) base_image: Option<PathBuf>,
     /// Resize the disk to provide additional space. This will also be size of entire
     /// disk if `base_image` was not given.
-    pub(crate) additional_mib: Option<usize>,
+    pub(crate) free_mib: Option<usize>,
     /// Corresponds to driver for -device qemu arg. For disks, this is the interface.
     /// Examples: virtio-blk, nvme
     pub(crate) interface: String,
