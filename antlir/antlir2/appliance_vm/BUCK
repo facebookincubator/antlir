@@ -1,109 +1,32 @@
-load("@prelude//:rules.bzl", "git_fetch")
-load("//antlir/antlir2/bzl:selects.bzl", "selects")
-load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
-load("//antlir/bzl:build_defs.bzl", "export_file")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "internal_external")
 
 oncall("antlir")
 
-git_fetch(
-    name = "kernel.git",
-    # @oss-disable
-    repo = "https://github.com/torvalds/linux.git", # @oss-enable
-    # @oss-disable
-    rev = "a38297e3fb012ddfa7ce0321a7e5a8daeb1872b6", # @oss-enable
-)
-
-export_file(
-    name = "kernelconfig.x86_64",
-)
-
-export_file(
-    name = "kernelconfig.aarch64",
-)
-
-genrule_in_image(
+alias(
     name = "kernel",
-    out = "vmlinuz",
-    bash = selects.apply(
-        selects.join(
-            out = select({
-                "ovr_config//cpu:arm64": "arch/arm64/boot/Image.gz",
-                "ovr_config//cpu:x86_64": "arch/x86/boot/bzImage",
-            }),
-            config = select({
-                "ovr_config//cpu:arm64": ":kernelconfig.aarch64",
-                "ovr_config//cpu:x86_64": ":kernelconfig.x86_64",
-            }),
-            make_arch = select({
-                "ovr_config//cpu:arm64": "arm64",
-                "ovr_config//cpu:x86_64": "x86_64",
-            }),
-        ),
-        lambda sel: """
-            odir=`realpath $BUCK_SCRATCH_PATH`
-            cp $(location {config}) "$odir/.config"
-            make O="$odir" -C $(location :kernel.git) ARCH={arch} LLVM=1 -j`nproc`
-            cp "$odir/{out}" $OUT
-        """.format(
-            out = sel.out,
-            arch = sel.make_arch,
-            config = sel.config,
-        ),
+    actual = internal_external(
+        fb = "//antlir/antlir2/appliance_vm/facebook:msdk[vmlinuz]",
+        oss = "//antlir/antlir2/appliance_vm/impl:kernel",
     ),
-    exec_layer = ":build-appliance",
+    visibility = ["PUBLIC"],
 )
 
-image.layer(
-    name = "build-appliance",
-    features = [
-        # common RPMs
-        feature.rpms_install(subjects = [
-            "bc",
-            "binutils-devel",
-            "bison",
-            "ccache",
-            "clang",
-            "clang-libs",
-            "compiler-rt",
-            "cpio",
-            "dwarves",
-            "elfutils-libelf-devel",
-            "flex",
-            "gcc",
-            "git",
-            "hostname",
-            "kmod",
-            "libcap-devel",
-            "lld",
-            "llvm",
-            "llvm-libs",
-            "m4",
-            "make",
-            "openssl",
-            "openssl-devel",
-            "perl",
-            "python3",
-            "rpm-build",
-            "rsync",
-            "sed",
-            "tar",
-            "which",
-            "xz",
-            "zstd",
-        ]),
-        # x86_64 common RPMs
-        feature.rpms_install(subjects = select({
-            "DEFAULT": [],
-            "ovr_config//cpu:x86_64": [
-                "kpatch-build",
-            ],
-        })),
-        feature.remove(
-            must_exist = False,
-            path = "/usr/lib/rpm/macros.d/macros.kmp",
-        ),
-        "//antlir/antlir2/genrule_in_image:prep",
-    ],
+buck_genrule(
+    name = "crosvm-host",
+    out = "crosvm-host",
+    bash = """
+        echo '#!/bin/bash' > $OUT
+        echo 'exec crosvm $@' >> $OUT
+        chmod +x $OUT
+    """,
+    executable = True,
+)
+
+alias(
+    name = "crosvm",
+    actual = internal_external(
+        fb = "//antlir/antlir2/appliance_vm/facebook:msdk[crosvm]",
+        oss = ":crosvm-host",
+    ),
+    visibility = ["PUBLIC"],
 )
