@@ -52,7 +52,7 @@ fn main() -> Result<()> {
         for i in 1..=(cwd_vec.len() - 1) {
             let cwd_prefix = cwd_vec[1..=i].iter().collect::<PathBuf>();
             if !layer_root.join(&cwd_prefix).exists() {
-                builder.inputs(Path::new(&Component::RootDir).join(cwd_prefix));
+                builder.outputs(Path::new(&Component::RootDir).join(cwd_prefix));
                 break;
             }
         }
