@@ -688,7 +688,7 @@ def layer(
     # Some layers must inherit their parent flavor and not the package setting,
     # but this should be a narrow use case mainly limited to antlir-owned macros.
     if implicit_layer_reason:
-        kwargs["labels"] = kwargs.pop("labels", []) + ["anltir2-implicit-layer=" + implicit_layer_reason]
+        kwargs["labels"] = kwargs.pop("labels", []) + ["antlir2-implicit-layer=" + implicit_layer_reason]
         kwargs.pop("default_os", None)
         default_os = None
         kwargs["flavor"] = expect_non_none(parent_layer, msg = "parent_layer required for implicit layers") + "[flavor]"
