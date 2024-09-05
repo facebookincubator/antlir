@@ -1,38 +1,23 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/bzl:build_defs.bzl", "python_unittest")
+load("//antlir/antlir2/test_images/package:defs.bzl", "test_in_layer")
 
 oncall("antlir")
 
-image.layer(
-    name = "layer",
-    features = [
-        feature.ensure_dirs_exist(
-            dirs = "/foo/bar",
-        ),
-        feature.install_text(
-            dst = "/foo/bar/baz",
-            group = 43,
-            text = "baz\n",
-            user = 42,
-        ),
-        feature.ensure_file_symlink(
-            link = "/baz-sym",
-            target = "/foo/bar/baz",
-        ),
-    ],
-)
-
 package.tar(
     name = "test.tar",
-    layer = ":layer",
+    layer = "//antlir/antlir2/test_images/package:standard",
 )
 
-python_unittest(
+test_in_layer(
     name = "test-tar",
-    srcs = ["test.py"],
-    resources = {
-        ":test.tar": "test.tar",
-    },
+    layer_features = [
+        feature.ensure_dirs_exist(dirs = "/package"),
+        feature.install(
+            src = ":test.tar",
+            dst = "/package.tar",
+        ),
+        feature.rpms_install(rpms = ["tar"]),
+    ],
+    stub = "stub.rs",
 )
