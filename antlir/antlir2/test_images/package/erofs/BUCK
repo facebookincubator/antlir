@@ -1,45 +1,23 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+load("//antlir/antlir2/test_images/package:defs.bzl", "test_in_layer")
 
 oncall("antlir")
 
-image.layer(
-    name = "layer",
-    features = [
-        feature.ensure_dirs_exist(
-            dirs = "/test",
-            mode = "u+wrx",  # make sure only root can read it
-        ),
-        feature.install_text(
-            dst = "/test/file",
-            mode = 0o000,  # make sure only root can read it
-            text = "Hello\n",
-        ),
-    ],
-)
-
 package.erofs(
-    name = "simple.erofs",
-    layer = ":layer",
+    name = "standard.erofs",
+    layer = "//antlir/antlir2/test_images/package:standard",
 )
 
-image.layer(
-    name = "test-layer",
-    features = [
-        feature.rpms_install(rpms = [
-            "erofs-utils",
-            "python3",
-        ]),
+test_in_layer(
+    name = "test-erofs",
+    layer_features = [
+        feature.ensure_dirs_exist(dirs = "/package"),
+        feature.install(
+            src = ":standard.erofs",
+            dst = "/package.erofs",
+        ),
+        feature.rpms_install(rpms = ["erofs-fuse"]),
     ],
-)
-
-image_python_test(
-    name = "test",
-    srcs = ["test.py"],
-    layer = ":test-layer",
-    resources = {
-        ":simple.erofs": "simple.erofs",
-    },
+    stub = "stub.rs",
 )

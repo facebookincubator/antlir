@@ -1,142 +1,93 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/bzl/package:btrfs.bzl", "BtrfsSubvol")
-load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/bzl/package:gpt.bzl", "Partition", "PartitionType")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file")
+load(":defs.bzl", "package_feature", "test_in_layer")
 
 oncall("antlir")
 
-image.layer(
-    name = "btrfs-test-1",
-    features = [
-        feature.ensure_dirs_exist(dirs = "/btrfs_test_1"),
-        feature.ensure_dirs_exist(dirs = "/btrfs_test_2_mnt"),
-    ],
+buck_genrule(
+    name = "antlir2-large-file-256M",
+    out = "f",
+    cmd = "yes antlir2-large-file | head -c 256M > $OUT",
 )
 
 image.layer(
-    name = "btrfs-test-2",
+    name = "standard",
     features = [
-        feature.ensure_dirs_exist(dirs = "/btrfs_test_2"),
-    ],
-)
-
-image.layer(
-    name = "btrfs-test-3",
-    features = [
-        feature.ensure_dirs_exist(dirs = "/btrfs_test_3"),
-    ],
-)
-
-image.layer(
-    name = "vfat-layer",
-    features = [
-        feature.ensure_dirs_exist(dirs = "/EFI/BOOT"),
         feature.install(
-            src = "//antlir:empty",
-            dst = "/EFI/BOOT/test",
+            src = ":antlir2-large-file-256M",
+            dst = "/antlir2-large-file-256M",
+        ),
+        feature.ensure_dirs_exist(dirs = "/default-dir"),
+        feature.install_text(
+            dst = "/only-readable-by-root",
+            mode = 0o000,
+            text = "Only readable by root",
+        ),
+        feature.install_text(
+            dst = "/default-dir/executable",
             mode = "a+rx",
+            text = "#!/bin/bash\necho hello",
         ),
-    ],
-)
-
-package.vfat(
-    name = "vfat-layer.vfat",
-    fat_size = 16,
-    label = "NONE",
-    layer = ":vfat-layer",
-    size_mb = 128,
-)
-
-package.cpio_gz(
-    name = "vfat-layer.cpio.gz",
-    layer = ":vfat-layer",
-)
-
-package.cpio_zst(
-    name = "vfat-layer.cpio.zst",
-    layer = ":vfat-layer",
-)
-
-package.sendstream_v2(
-    name = "btrfs-test-3.sendstream.v2",
-    layer = ":btrfs-test-3",
-)
-
-package.squashfs(
-    name = "vfat-layer.squashfs",
-    layer = ":vfat-layer",
-)
-
-package.btrfs(
-    name = "btrfs-layer-test.btrfs",
-    compression_level = 2,
-    default_subvol = "/",
-    free_mb = 10,
-    label = "test-btrfs",
-    subvols = {
-        "/test_1": BtrfsSubvol(
-            layer = ":btrfs-test-1",
-        ),
-        "/test_1/btrfs_test_2_mnt": BtrfsSubvol(
-            layer = ":btrfs-test-2",
-            writable = True,
-        ),
-        "/test_3": BtrfsSubvol(
-            layer = ":btrfs-test-3",
-            writable = False,
-        ),
-    },
-)
-
-package.tar_gz(
-    name = "vfat-layer.tar.gz",
-    layer = ":vfat-layer",
-)
-
-package.gpt(
-    name = "test-disk.gpt",
-    block_size = 512,
-    partitions = [
-        Partition(
-            src = ":vfat-layer.vfat",
-            type = PartitionType("esp"),
-        ),
-        Partition(
-            src = ":btrfs-layer-test.btrfs",
-            label = "/",
-        ),
-    ],
-)
-
-image.layer(
-    name = "incremental-parent",
-    features = [
         feature.install_text(
-            dst = "/foo",
-            text = "foo",
+            dst = "/i-am-owned-by-nonstandard",
+            group = 43,
+            text = "42:43",
+            user = 42,
         ),
-    ],
-)
-
-package.sendstream_v2(
-    name = "incremental-parent.sendstream.v2",
-    layer = ":incremental-parent",
-)
-
-image.layer(
-    name = "incremental-child",
-    features = [
         feature.install_text(
-            dst = "/bar",
-            text = "bar",
+            dst = "/i-have-xattrs",
+            text = "xattrs are cool",
+            xattrs = {
+                "user.baz": "qux",
+                "user.foo": "bar",
+            },
+        ),
+        feature.install(
+            src = "antlir//antlir:empty",
+            dst = "/i-have-caps",
+            xattrs = {
+                "security.capability": "0sAQAAAoAAAAAAAAAAAAAAAAAAAAA=",
+            },
+        ),
+        feature.ensure_file_symlink(
+            link = "/absolute-file-symlink",
+            target = "/default-dir/executable",
+        ),
+        feature.ensure_file_symlink(
+            link = "/default-dir/relative-file-symlink",
+            target = "executable",
+        ),
+        feature.ensure_dir_symlink(
+            link = "/absolute-dir-symlink",
+            target = "/default-dir",
+        ),
+        feature.ensure_dir_symlink(
+            link = "/relative-dir-symlink",
+            target = "default-dir",
         ),
     ],
-    parent_layer = ":incremental-parent",
 )
 
-package.sendstream_v2(
-    name = "incremental.sendstream.v2",
-    incremental_parent = ":incremental-parent.sendstream.v2",
-    layer = ":incremental-child",
+export_file(
+    name = "standard_tests.rs",
+    visibility = [
+        "antlir//antlir/antlir2/test_images/package/...",
+    ],
+)
+
+# Run the standard tests against the layer directly to ensure that it's being
+# built correctly
+test_in_layer(
+    name = "test-raw-layer",
+    layer_features = [
+        feature.ensure_dirs_exist(dirs = "/layer"),
+        feature.layer_mount(
+            mountpoint = "/layer",
+            source = ":standard",
+        ),
+        feature.rpms_install(rpms = ["basesystem"]),
+    ],
+    omit_package_features = [package_feature("dot_meta")],
+    stub = "raw_layer.rs",
 )
