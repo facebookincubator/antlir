@@ -104,7 +104,7 @@ DEFAULT_APPLETS = [
 
 def _install(
         *,
-        src,
+        src = "antlir//antlir/bzl/linux:busybox-src",
         applets: list[str] = DEFAULT_APPLETS,
         install_dir = "/usr/bin",
         src_path = "/usr/sbin/busybox"):
