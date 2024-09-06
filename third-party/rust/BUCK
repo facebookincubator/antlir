@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "6ae36b2dca4823f80cb566293151403b186034d7",
+    rev = "cdd4a2b2bd6eee61797c66ba064432d6013944fe",
     visibility = [],
 )
 
@@ -1186,7 +1186,7 @@ cargo.rust_library(
         ":futures-lite-2.3.0",
         ":parking-2.2.0",
         ":polling-3.7.3",
-        ":rustix-0.38.35",
+        ":rustix-0.38.36",
         ":slab-0.4.9",
         ":tracing-0.1.40",
     ],
@@ -1257,7 +1257,7 @@ cargo.rust_library(
                 ":async-io-2.3.4",
                 ":async-signal-0.2.10",
                 ":async-task-4.7.1",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
             ],
         ),
         "linux-x86_64": dict(
@@ -1266,23 +1266,23 @@ cargo.rust_library(
                 ":async-io-2.3.4",
                 ":async-signal-0.2.10",
                 ":async-task-4.7.1",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
             ],
         ),
         "macos-arm64": dict(
             deps = [
                 ":async-io-2.3.4",
                 ":async-signal-0.2.10",
-                ":rustix-0.38.35",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
+                ":rustix-0.38.36",
             ],
         ),
         "macos-x86_64": dict(
             deps = [
                 ":async-io-2.3.4",
                 ":async-signal-0.2.10",
-                ":rustix-0.38.35",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
+                ":rustix-0.38.36",
             ],
         ),
         "windows-gnu": dict(
@@ -1352,7 +1352,7 @@ cargo.rust_library(
             deps = [
                 ":async-io-2.3.4",
                 ":futures-io-0.3.30",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
                 ":signal-hook-registry-1.4.2",
             ],
         ),
@@ -1360,7 +1360,7 @@ cargo.rust_library(
             deps = [
                 ":async-io-2.3.4",
                 ":futures-io-0.3.30",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
                 ":signal-hook-registry-1.4.2",
             ],
         ),
@@ -1368,7 +1368,7 @@ cargo.rust_library(
             deps = [
                 ":async-io-2.3.4",
                 ":futures-io-0.3.30",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
                 ":signal-hook-registry-1.4.2",
             ],
         ),
@@ -1376,7 +1376,7 @@ cargo.rust_library(
             deps = [
                 ":async-io-2.3.4",
                 ":futures-io-0.3.30",
-                ":rustix-0.38.35",
+                ":rustix-0.38.36",
                 ":signal-hook-registry-1.4.2",
             ],
         ),
@@ -1519,7 +1519,7 @@ cargo.rust_library(
     crate_root = "atomic-0.6.0.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":bytemuck-1.17.1"],
+    deps = [":bytemuck-1.18.0"],
 )
 
 http_archive(
@@ -2110,7 +2110,7 @@ cargo.rust_library(
     deps = [
         ":array-init-2.1.0",
         ":binrw_derive-0.14.0",
-        ":bytemuck-1.17.1",
+        ":bytemuck-1.18.0",
     ],
 )
 
@@ -2963,23 +2963,23 @@ cargo.rust_library(
 
 alias(
     name = "bytemuck",
-    actual = ":bytemuck-1.17.1",
+    actual = ":bytemuck-1.18.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "bytemuck-1.17.1.crate",
-    sha256 = "773d90827bc3feecfb67fab12e24de0749aad83c74b9504ecde46237b5cd24e2",
-    strip_prefix = "bytemuck-1.17.1",
-    urls = ["https://static.crates.io/crates/bytemuck/1.17.1/download"],
+    name = "bytemuck-1.18.0.crate",
+    sha256 = "94bbb0ad554ad961ddc5da507a12a29b14e4ae5bda06b19f575a3e6079d2e2ae",
+    strip_prefix = "bytemuck-1.18.0",
+    urls = ["https://static.crates.io/crates/bytemuck/1.18.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "bytemuck-1.17.1",
-    srcs = [":bytemuck-1.17.1.crate"],
+    name = "bytemuck-1.18.0",
+    srcs = [":bytemuck-1.18.0.crate"],
     crate = "bytemuck",
-    crate_root = "bytemuck-1.17.1.crate/src/lib.rs",
+    crate_root = "bytemuck-1.18.0.crate/src/lib.rs",
     edition = "2018",
     features = [
         "bytemuck_derive",
@@ -3349,16 +3349,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "windows-gnu": dict(
             deps = [
@@ -3427,16 +3427,16 @@ cargo.rust_library(
     features = ["default"],
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
     },
     rustc_flags = ["@$(location :cap-std-3.2.0-build-script-run[rustc_flags])"],
@@ -4120,24 +4120,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.25.crate",
-    sha256 = "18d7f143a7e709cbe6c34853dcd3bb1370c7e1bb4d9e7310ca8cb40b490ae035",
-    strip_prefix = "clap_complete-4.5.25",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.25/download"],
+    name = "clap_complete-4.5.26.crate",
+    sha256 = "205d5ef6d485fa47606b98b0ddc4ead26eb850aaa86abfb562a94fb3280ecba0",
+    strip_prefix = "clap_complete-4.5.26",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.26/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.25-clap_complete",
+    actual = ":clap_complete-4.5.26-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.25-clap_complete",
-    srcs = [":clap_complete-4.5.25.crate"],
+    name = "clap_complete-4.5.26-clap_complete",
+    srcs = [":clap_complete-4.5.26.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.25.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.26.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
@@ -7335,16 +7335,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "windows-gnu": dict(
             deps = [":windows-sys-0.52.0"],
@@ -7824,16 +7824,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "windows-gnu": dict(
             deps = [":windows-sys-0.52.0"],
@@ -11385,7 +11385,7 @@ cargo.rust_library(
     crate_root = "memfd-0.6.4.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":rustix-0.38.35"],
+    deps = [":rustix-0.38.36"],
 )
 
 alias(
@@ -14571,16 +14571,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "windows-gnu": dict(
             deps = [
@@ -16536,7 +16536,9 @@ cargo.rust_library(
         "default",
         "json",
         "serde_json",
+        "socks",
         "stream",
+        "tokio-socks",
         "tokio-util",
         "wasm-streams",
         "webpki-roots",
@@ -16559,6 +16561,7 @@ cargo.rust_library(
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.14",
                 ":tokio-1.40.0",
+                ":tokio-socks-0.5.2",
                 ":tokio-util-0.7.12",
                 ":webpki-roots-0.25.4",
             ],
@@ -16580,6 +16583,7 @@ cargo.rust_library(
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.14",
                 ":tokio-1.40.0",
+                ":tokio-socks-0.5.2",
                 ":tokio-util-0.7.12",
                 ":webpki-roots-0.25.4",
             ],
@@ -16602,6 +16606,7 @@ cargo.rust_library(
                 ":pin-project-lite-0.2.14",
                 ":system-configuration-0.5.1",
                 ":tokio-1.40.0",
+                ":tokio-socks-0.5.2",
                 ":tokio-util-0.7.12",
                 ":webpki-roots-0.25.4",
             ],
@@ -16624,6 +16629,7 @@ cargo.rust_library(
                 ":pin-project-lite-0.2.14",
                 ":system-configuration-0.5.1",
                 ":tokio-1.40.0",
+                ":tokio-socks-0.5.2",
                 ":tokio-util-0.7.12",
                 ":webpki-roots-0.25.4",
             ],
@@ -16645,6 +16651,7 @@ cargo.rust_library(
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.14",
                 ":tokio-1.40.0",
+                ":tokio-socks-0.5.2",
                 ":tokio-util-0.7.12",
                 ":webpki-roots-0.25.4",
                 ":winreg-0.50.0",
@@ -16667,6 +16674,7 @@ cargo.rust_library(
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.14",
                 ":tokio-1.40.0",
+                ":tokio-socks-0.5.2",
                 ":tokio-util-0.7.12",
                 ":webpki-roots-0.25.4",
                 ":winreg-0.50.0",
@@ -17491,26 +17499,26 @@ buildscript_run(
 
 alias(
     name = "rustix",
-    actual = ":rustix-0.38.35",
+    actual = ":rustix-0.38.36",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "rustix-0.38.35.crate",
-    sha256 = "a85d50532239da68e9addb745ba38ff4612a242c1c7ceea689c4bc7c2f43c36f",
-    strip_prefix = "rustix-0.38.35",
-    urls = ["https://static.crates.io/crates/rustix/0.38.35/download"],
+    name = "rustix-0.38.36.crate",
+    sha256 = "3f55e80d50763938498dd5ebb18647174e0c76dc38c5505294bb224624f30f36",
+    strip_prefix = "rustix-0.38.36",
+    urls = ["https://static.crates.io/crates/rustix/0.38.36/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rustix-0.38.35",
-    srcs = [":rustix-0.38.35.crate"],
+    name = "rustix-0.38.36",
+    srcs = [":rustix-0.38.36.crate"],
     crate = "rustix",
-    crate_root = "rustix-0.38.35.crate/src/lib.rs",
+    crate_root = "rustix-0.38.36.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :rustix-0.38.35-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :rustix-0.38.36-build-script-run[out_dir])",
     },
     features = [
         "alloc",
@@ -17576,7 +17584,7 @@ cargo.rust_library(
             deps = [":windows-sys-0.52.0"],
         ),
     },
-    rustc_flags = ["@$(location :rustix-0.38.35-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :rustix-0.38.36-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":bitflags-2.6.0",
@@ -17585,10 +17593,10 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "rustix-0.38.35-build-script-build",
-    srcs = [":rustix-0.38.35.crate"],
+    name = "rustix-0.38.36-build-script-build",
+    srcs = [":rustix-0.38.36.crate"],
     crate = "build_script_build",
-    crate_root = "rustix-0.38.35.crate/build.rs",
+    crate_root = "rustix-0.38.36.crate/build.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -17612,9 +17620,9 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "rustix-0.38.35-build-script-run",
+    name = "rustix-0.38.36-build-script-run",
     package_name = "rustix",
-    buildscript_rule = ":rustix-0.38.35-build-script-build",
+    buildscript_rule = ":rustix-0.38.36-build-script-build",
     features = [
         "alloc",
         "default",
@@ -17633,7 +17641,7 @@ buildscript_run(
         "time",
         "use-libc-auxv",
     ],
-    version = "0.38.35",
+    version = "0.38.36",
 )
 
 alias(
@@ -19386,23 +19394,23 @@ cargo.rust_library(
 
 alias(
     name = "similar-asserts",
-    actual = ":similar-asserts-1.5.0",
+    actual = ":similar-asserts-1.6.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "similar-asserts-1.5.0.crate",
-    sha256 = "e041bb827d1bfca18f213411d51b665309f1afb37a04a5d1464530e13779fc0f",
-    strip_prefix = "similar-asserts-1.5.0",
-    urls = ["https://static.crates.io/crates/similar-asserts/1.5.0/download"],
+    name = "similar-asserts-1.6.0.crate",
+    sha256 = "cfe85670573cd6f0fa97940f26e7e6601213c3b0555246c24234131f88c5709e",
+    strip_prefix = "similar-asserts-1.6.0",
+    urls = ["https://static.crates.io/crates/similar-asserts/1.6.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "similar-asserts-1.5.0",
-    srcs = [":similar-asserts-1.5.0.crate"],
+    name = "similar-asserts-1.6.0",
+    srcs = [":similar-asserts-1.6.0.crate"],
     crate = "similar_asserts",
-    crate_root = "similar-asserts-1.5.0.crate/src/lib.rs",
+    crate_root = "similar-asserts-1.6.0.crate/src/lib.rs",
     edition = "2018",
     features = [
         "default",
@@ -20960,16 +20968,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "windows-gnu": dict(
             deps = [":windows-sys-0.59.0"],
@@ -21206,16 +21214,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.35"],
+            deps = [":rustix-0.38.36"],
         ),
         "windows-gnu": dict(
             deps = [":windows-sys-0.48.0"],
@@ -21825,25 +21833,52 @@ cargo.rust_library(
     ],
 )
 
-alias(
-    name = "tokio-stream",
-    actual = ":tokio-stream-0.1.15",
-    visibility = ["PUBLIC"],
-)
-
 http_archive(
-    name = "tokio-stream-0.1.15.crate",
-    sha256 = "267ac89e0bec6e691e5813911606935d77c476ff49024f98abcea3e7b15e37af",
-    strip_prefix = "tokio-stream-0.1.15",
-    urls = ["https://static.crates.io/crates/tokio-stream/0.1.15/download"],
+    name = "tokio-socks-0.5.2.crate",
+    sha256 = "0d4770b8024672c1101b3f6733eab95b18007dbe0847a8afe341fcf79e06043f",
+    strip_prefix = "tokio-socks-0.5.2",
+    urls = ["https://static.crates.io/crates/tokio-socks/0.5.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tokio-stream-0.1.15",
-    srcs = [":tokio-stream-0.1.15.crate"],
+    name = "tokio-socks-0.5.2",
+    srcs = [":tokio-socks-0.5.2.crate"],
+    crate = "tokio_socks",
+    crate_root = "tokio-socks-0.5.2.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "tokio",
+    ],
+    visibility = [],
+    deps = [
+        ":either-1.13.0",
+        ":futures-util-0.3.30",
+        ":thiserror-1.0.63",
+        ":tokio-1.40.0",
+    ],
+)
+
+alias(
+    name = "tokio-stream",
+    actual = ":tokio-stream-0.1.16",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "tokio-stream-0.1.16.crate",
+    sha256 = "4f4e6ce100d0eb49a2734f8c0812bcd324cf357d21810932c5df6b96ef2b86f1",
+    strip_prefix = "tokio-stream-0.1.16",
+    urls = ["https://static.crates.io/crates/tokio-stream/0.1.16/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "tokio-stream-0.1.16",
+    srcs = [":tokio-stream-0.1.16.crate"],
     crate = "tokio_stream",
-    crate_root = "tokio-stream-0.1.15.crate/src/lib.rs",
+    crate_root = "tokio-stream-0.1.16.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -24009,7 +24044,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":either-1.13.0",
-        ":rustix-0.38.35",
+        ":rustix-0.38.36",
     ],
 )
 
@@ -24729,7 +24764,7 @@ cargo.rust_library(
         ),
     },
     visibility = [],
-    deps = [":rustix-0.38.35"],
+    deps = [":rustix-0.38.36"],
 )
 
 http_archive(
