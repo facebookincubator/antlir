@@ -42,19 +42,6 @@ other words, the `default_os` attribute of any `parent_layer`s is ignored.
 
 :::
 
-:::caution
-
-Since not all images have been opted into this model, you need a flag in your
-`PACKAGE` file to enable this feature.
-
-```python title="fbcode/my_team/my_image/PACKAGE"
-load("//antlir/antlir2/os:package.bzl", "all_images_in_package_use_default_os")
-
-all_images_in_package_use_default_os()
-```
-
-:::
-
 ## Base Image Recommendations
 
 ### Target Hierarchy
