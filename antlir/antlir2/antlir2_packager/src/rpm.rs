@@ -272,16 +272,18 @@ AutoProv: {autoprov}
                 if relpath == Path::new("/") {
                     continue;
                 }
-                let f = std::fs::File::open(entry.path())?;
-                #[cfg(feature = "libcap")]
-                if let Some(caps) = f.get_capabilities()? {
-                    let caps = caps.to_text()?;
-                    spec.push_str("%caps(");
-                    spec.push_str(&caps);
-                    spec.push_str(") ");
+                if !entry.file_type().is_symlink() {
+                    let f = std::fs::File::open(entry.path())?;
+                    #[cfg(feature = "libcap")]
+                    if let Some(caps) = f.get_capabilities()? {
+                        let caps = caps.to_text()?;
+                        spec.push_str("%caps(");
+                        spec.push_str(&caps);
+                        spec.push_str(") ");
+                    }
                 }
-
-                let metadata = f.metadata().context("while getting file metadata")?;
+                let metadata = std::fs::symlink_metadata(entry.path())
+                    .context("while getting file metadata")?;
                 let group_name = Group::from_gid(Gid::from_raw(metadata.st_gid()))
                     .context("while getting group name")?
                     .expect("must be a valid group");
