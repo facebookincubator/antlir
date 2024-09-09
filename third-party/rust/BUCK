@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "9ccdb9673696d158806ff87be8594a05be6180df",
+    rev = "970063a6552fa9f4bd4e76f5a41165b69da8cc4c",
     visibility = [],
 )
 
@@ -95,21 +95,21 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "addr2line-0.22.0.crate",
-    sha256 = "6e4503c46a5c0c7844e948c9a4d6acd9f50cccb4de1c48eb9e291ea17470c678",
-    strip_prefix = "addr2line-0.22.0",
-    urls = ["https://static.crates.io/crates/addr2line/0.22.0/download"],
+    name = "addr2line-0.24.1.crate",
+    sha256 = "f5fb1d8e4442bd405fdfd1dacb42792696b0cf9cb15882e5d097b742a676d375",
+    strip_prefix = "addr2line-0.24.1",
+    urls = ["https://static.crates.io/crates/addr2line/0.24.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "addr2line-0.22.0",
-    srcs = [":addr2line-0.22.0.crate"],
+    name = "addr2line-0.24.1",
+    srcs = [":addr2line-0.24.1.crate"],
     crate = "addr2line",
-    crate_root = "addr2line-0.22.0.crate/src/lib.rs",
+    crate_root = "addr2line-0.24.1.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":gimli-0.29.0"],
+    deps = [":gimli-0.31.0"],
 )
 
 http_archive(
@@ -1665,27 +1665,24 @@ cargo.rust_library(
 
 alias(
     name = "backtrace",
-    actual = ":backtrace-0.3.73",
+    actual = ":backtrace-0.3.74",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "backtrace-0.3.73.crate",
-    sha256 = "5cc23269a4f8976d0a4d2e7109211a419fe30e8d88d677cd60b6bc79c5732e0a",
-    strip_prefix = "backtrace-0.3.73",
-    urls = ["https://static.crates.io/crates/backtrace/0.3.73/download"],
+    name = "backtrace-0.3.74.crate",
+    sha256 = "8d82cb332cdfaed17ae235a638438ac4d4839913cc2af585c3c6746e8f8bee1a",
+    strip_prefix = "backtrace-0.3.74",
+    urls = ["https://static.crates.io/crates/backtrace/0.3.74/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "backtrace-0.3.73",
-    srcs = [":backtrace-0.3.73.crate"],
+    name = "backtrace-0.3.74",
+    srcs = [":backtrace-0.3.74.crate"],
     crate = "backtrace",
-    crate_root = "backtrace-0.3.73.crate/src/lib.rs",
+    crate_root = "backtrace-0.3.74.crate/src/lib.rs",
     edition = "2021",
-    env = {
-        "OUT_DIR": "$(location :backtrace-0.3.73-build-script-run[out_dir])",
-    },
     features = [
         "default",
         "std",
@@ -1693,76 +1690,54 @@ cargo.rust_library(
     platform = {
         "linux-arm64": dict(
             deps = [
-                ":addr2line-0.22.0",
+                ":addr2line-0.24.1",
                 ":libc-0.2.158",
-                ":miniz_oxide-0.7.4",
+                ":miniz_oxide-0.8.0",
                 ":object-0.36.4",
             ],
         ),
         "linux-x86_64": dict(
             deps = [
-                ":addr2line-0.22.0",
+                ":addr2line-0.24.1",
                 ":libc-0.2.158",
-                ":miniz_oxide-0.7.4",
+                ":miniz_oxide-0.8.0",
                 ":object-0.36.4",
             ],
         ),
         "macos-arm64": dict(
             deps = [
-                ":addr2line-0.22.0",
+                ":addr2line-0.24.1",
                 ":libc-0.2.158",
-                ":miniz_oxide-0.7.4",
+                ":miniz_oxide-0.8.0",
                 ":object-0.36.4",
             ],
         ),
         "macos-x86_64": dict(
             deps = [
-                ":addr2line-0.22.0",
+                ":addr2line-0.24.1",
                 ":libc-0.2.158",
-                ":miniz_oxide-0.7.4",
+                ":miniz_oxide-0.8.0",
                 ":object-0.36.4",
             ],
         ),
         "windows-gnu": dict(
             deps = [
-                ":addr2line-0.22.0",
+                ":addr2line-0.24.1",
                 ":libc-0.2.158",
-                ":miniz_oxide-0.7.4",
+                ":miniz_oxide-0.8.0",
                 ":object-0.36.4",
+                ":windows-targets-0.52.6",
             ],
         ),
+        "windows-msvc": dict(
+            deps = [":windows-targets-0.52.6"],
+        ),
     },
-    rustc_flags = ["@$(location :backtrace-0.3.73-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":cfg-if-1.0.0",
         ":rustc-demangle-0.1.24",
     ],
-)
-
-cargo.rust_binary(
-    name = "backtrace-0.3.73-build-script-build",
-    srcs = [":backtrace-0.3.73.crate"],
-    crate = "build_script_build",
-    crate_root = "backtrace-0.3.73.crate/build.rs",
-    edition = "2021",
-    features = [
-        "default",
-        "std",
-    ],
-    visibility = [],
-    deps = [":cc-1.1.18"],
-)
-
-buildscript_run(
-    name = "backtrace-0.3.73-build-script-run",
-    package_name = "backtrace",
-    buildscript_rule = ":backtrace-0.3.73-build-script-build",
-    features = [
-        "default",
-        "std",
-    ],
-    version = "0.3.73",
 )
 
 http_archive(
@@ -8426,27 +8401,6 @@ cargo.rust_library(
     ],
 )
 
-http_archive(
-    name = "gimli-0.29.0.crate",
-    sha256 = "40ecd4077b5ae9fd2e9e169b102c6c330d0605168eb0e8bf79952b256dbefffd",
-    strip_prefix = "gimli-0.29.0",
-    urls = ["https://static.crates.io/crates/gimli/0.29.0/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "gimli-0.29.0",
-    srcs = [":gimli-0.29.0.crate"],
-    crate = "gimli",
-    crate_root = "gimli-0.29.0.crate/src/lib.rs",
-    edition = "2018",
-    features = [
-        "read",
-        "read-core",
-    ],
-    visibility = [],
-)
-
 alias(
     name = "gimli",
     actual = ":gimli-0.30.0",
@@ -8485,6 +8439,27 @@ cargo.rust_library(
     ],
 )
 
+http_archive(
+    name = "gimli-0.31.0.crate",
+    sha256 = "32085ea23f3234fc7846555e85283ba4de91e21016dc0455a16286d87a292d64",
+    strip_prefix = "gimli-0.31.0",
+    urls = ["https://static.crates.io/crates/gimli/0.31.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "gimli-0.31.0",
+    srcs = [":gimli-0.31.0.crate"],
+    crate = "gimli",
+    crate_root = "gimli-0.31.0.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "read",
+        "read-core",
+    ],
+    visibility = [],
+)
+
 alias(
     name = "glob",
     actual = ":glob-0.3.1",
@@ -8510,23 +8485,23 @@ cargo.rust_library(
 
 alias(
     name = "globset",
-    actual = ":globset-0.4.14",
+    actual = ":globset-0.4.15",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "globset-0.4.14.crate",
-    sha256 = "57da3b9b5b85bd66f31093f8c408b90a74431672542466497dcbdfdc02034be1",
-    strip_prefix = "globset-0.4.14",
-    urls = ["https://static.crates.io/crates/globset/0.4.14/download"],
+    name = "globset-0.4.15.crate",
+    sha256 = "15f1ce686646e7f1e19bf7d5533fe443a45dbfb990e00629110797578b42fb19",
+    strip_prefix = "globset-0.4.15",
+    urls = ["https://static.crates.io/crates/globset/0.4.15/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "globset-0.4.14",
-    srcs = [":globset-0.4.14.crate"],
+    name = "globset-0.4.15",
+    srcs = [":globset-0.4.15.crate"],
     crate = "globset",
-    crate_root = "globset-0.4.14.crate/src/lib.rs",
+    crate_root = "globset-0.4.15.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -8568,7 +8543,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":bitflags-1.3.2",
-        ":ignore-0.4.22",
+        ":ignore-0.4.23",
         ":walkdir-2.5.0",
     ],
 )
@@ -8590,7 +8565,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":bitflags-2.6.0",
-        ":ignore-0.4.22",
+        ":ignore-0.4.23",
         ":walkdir-2.5.0",
     ],
 )
@@ -9483,23 +9458,23 @@ cargo.rust_library(
 
 alias(
     name = "ignore",
-    actual = ":ignore-0.4.22",
+    actual = ":ignore-0.4.23",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "ignore-0.4.22.crate",
-    sha256 = "b46810df39e66e925525d6e38ce1e7f6e1d208f72dc39757880fcb66e2c58af1",
-    strip_prefix = "ignore-0.4.22",
-    urls = ["https://static.crates.io/crates/ignore/0.4.22/download"],
+    name = "ignore-0.4.23.crate",
+    sha256 = "6d89fd380afde86567dfba715db065673989d6253f42b88179abd3eae47bda4b",
+    strip_prefix = "ignore-0.4.23",
+    urls = ["https://static.crates.io/crates/ignore/0.4.23/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "ignore-0.4.22",
-    srcs = [":ignore-0.4.22.crate"],
+    name = "ignore-0.4.23",
+    srcs = [":ignore-0.4.23.crate"],
     crate = "ignore",
-    crate_root = "ignore-0.4.22.crate/src/lib.rs",
+    crate_root = "ignore-0.4.23.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "windows-gnu": dict(
@@ -9512,7 +9487,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":crossbeam-deque-0.8.5",
-        ":globset-0.4.14",
+        ":globset-0.4.15",
         ":log-0.4.22",
         ":memchr-2.7.4",
         ":regex-automata-0.4.7",
