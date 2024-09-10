@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "970063a6552fa9f4bd4e76f5a41165b69da8cc4c",
+    rev = "3f36d1124a1932e355aa5ee92d5399e74e70ae9a",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "2ed0418812f009bc4feb8cb0f657f81db167e8cd",
+    rev = "70c3ca18fdff52ad2f2d33bbea3d4c7611053b48",
     visibility = [],
 )
 
@@ -4221,10 +4221,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":error-code-3.2.0"],
+            deps = [":error-code-3.3.1"],
         ),
         "windows-msvc": dict(
-            deps = [":error-code-3.2.0"],
+            deps = [":error-code-3.3.1"],
         ),
     },
     visibility = [],
@@ -6943,18 +6943,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "error-code-3.2.0.crate",
-    sha256 = "a0474425d51df81997e2f90a21591180b38eccf27292d755f3e30750225c175b",
-    strip_prefix = "error-code-3.2.0",
-    urls = ["https://static.crates.io/crates/error-code/3.2.0/download"],
+    name = "error-code-3.3.1.crate",
+    sha256 = "a5d9305ccc6942a704f4335694ecd3de2ea531b114ac2d51f5f843750787a92f",
+    strip_prefix = "error-code-3.3.1",
+    urls = ["https://static.crates.io/crates/error-code/3.3.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "error-code-3.2.0",
-    srcs = [":error-code-3.2.0.crate"],
+    name = "error-code-3.3.1",
+    srcs = [":error-code-3.3.1.crate"],
     crate = "error_code",
-    crate_root = "error-code-3.2.0.crate/src/lib.rs",
+    crate_root = "error-code-3.3.1.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
 )
@@ -17720,7 +17720,7 @@ cargo.rust_library(
     deps = [
         ":log-0.4.22",
         ":ring-0.17.8",
-        ":rustls-webpki-0.102.7",
+        ":rustls-webpki-0.102.8",
         ":subtle-2.6.1",
         ":zeroize-1.8.1",
     ],
@@ -17902,18 +17902,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "rustls-webpki-0.102.7.crate",
-    sha256 = "84678086bd54edf2b415183ed7a94d0efb049f1b646a33e22a36f3794be6ae56",
-    strip_prefix = "rustls-webpki-0.102.7",
-    urls = ["https://static.crates.io/crates/rustls-webpki/0.102.7/download"],
+    name = "rustls-webpki-0.102.8.crate",
+    sha256 = "64ca1bc8749bd4cf37b5ce386cc146580777b4e8572c7b97baf22c83f444bee9",
+    strip_prefix = "rustls-webpki-0.102.8",
+    urls = ["https://static.crates.io/crates/rustls-webpki/0.102.8/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rustls-webpki-0.102.7",
-    srcs = [":rustls-webpki-0.102.7.crate"],
+    name = "rustls-webpki-0.102.8",
+    srcs = [":rustls-webpki-0.102.8.crate"],
     crate = "webpki",
-    crate_root = "rustls-webpki-0.102.7.crate/src/lib.rs",
+    crate_root = "rustls-webpki-0.102.8.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
