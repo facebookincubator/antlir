@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "3f36d1124a1932e355aa5ee92d5399e74e70ae9a",
+    rev = "beadae08b7fcc15a6ce366293ea415bbb5e5289d",
     visibility = [],
 )
 
@@ -8317,31 +8317,31 @@ cargo.rust_library(
 
 alias(
     name = "getset",
-    actual = ":getset-0.1.2",
+    actual = ":getset-0.1.3",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "getset-0.1.2.crate",
-    sha256 = "e45727250e75cc04ff2846a66397da8ef2b3db8e40e0cef4df67950a07621eb9",
-    strip_prefix = "getset-0.1.2",
-    urls = ["https://static.crates.io/crates/getset/0.1.2/download"],
+    name = "getset-0.1.3.crate",
+    sha256 = "f636605b743120a8d32ed92fc27b6cde1a769f8f936c065151eb66f88ded513c",
+    strip_prefix = "getset-0.1.3",
+    urls = ["https://static.crates.io/crates/getset/0.1.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "getset-0.1.2",
-    srcs = [":getset-0.1.2.crate"],
+    name = "getset-0.1.3",
+    srcs = [":getset-0.1.3.crate"],
     crate = "getset",
-    crate_root = "getset-0.1.2.crate/src/lib.rs",
+    crate_root = "getset-0.1.3.crate/src/lib.rs",
     edition = "2018",
     proc_macro = True,
     visibility = [],
     deps = [
-        ":proc-macro-error-1.0.4",
+        ":proc-macro-error2-2.0.1",
         ":proc-macro2-1.0.86",
         ":quote-1.0.37",
-        ":syn-1.0.109-syn1",
+        ":syn-2.0.77",
     ],
 )
 
@@ -13200,7 +13200,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":derive_builder-0.20.1",
-        ":getset-0.1.2",
+        ":getset-0.1.3",
         ":once_cell-1.19.0",
         ":regex-1.10.6",
         ":serde-1.0.210",
@@ -15082,6 +15082,55 @@ buildscript_run(
     version = "1.0.4",
 )
 
+http_archive(
+    name = "proc-macro-error-attr2-2.0.0.crate",
+    sha256 = "96de42df36bb9bba5542fe9f1a054b8cc87e172759a1868aa05c1f3acc89dfc5",
+    strip_prefix = "proc-macro-error-attr2-2.0.0",
+    urls = ["https://static.crates.io/crates/proc-macro-error-attr2/2.0.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "proc-macro-error-attr2-2.0.0",
+    srcs = [":proc-macro-error-attr2-2.0.0.crate"],
+    crate = "proc_macro_error_attr2",
+    crate_root = "proc-macro-error-attr2-2.0.0.crate/src/lib.rs",
+    edition = "2021",
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.37",
+    ],
+)
+
+http_archive(
+    name = "proc-macro-error2-2.0.1.crate",
+    sha256 = "11ec05c52be0a07b08061f7dd003e7d7092e0472bc731b4af7bb1ef876109802",
+    strip_prefix = "proc-macro-error2-2.0.1",
+    urls = ["https://static.crates.io/crates/proc-macro-error2/2.0.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "proc-macro-error2-2.0.1",
+    srcs = [":proc-macro-error2-2.0.1.crate"],
+    crate = "proc_macro_error2",
+    crate_root = "proc-macro-error2-2.0.1.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "default",
+        "syn-error",
+    ],
+    visibility = [],
+    deps = [
+        ":proc-macro-error-attr2-2.0.0",
+        ":proc-macro2-1.0.86",
+        ":quote-1.0.37",
+        ":syn-2.0.77",
+    ],
+)
+
 alias(
     name = "proc-macro2",
     actual = ":proc-macro2-1.0.86",
@@ -15112,7 +15161,7 @@ cargo.rust_library(
     ],
     rustc_flags = ["@$(location :proc-macro2-1.0.86-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [":unicode-ident-1.0.12"],
+    deps = [":unicode-ident-1.0.13"],
 )
 
 cargo.rust_binary(
@@ -17046,7 +17095,7 @@ cargo.rust_library(
         ":regex-1.10.6",
         ":relative-path-1.9.3",
         ":syn-2.0.77",
-        ":unicode-ident-1.0.12",
+        ":unicode-ident-1.0.13",
     ],
 )
 
@@ -20629,7 +20678,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.37",
-        ":unicode-ident-1.0.12",
+        ":unicode-ident-1.0.13",
     ],
 )
 
@@ -20670,7 +20719,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.86",
         ":quote-1.0.37",
-        ":unicode-ident-1.0.12",
+        ":unicode-ident-1.0.13",
     ],
 )
 
@@ -23111,23 +23160,23 @@ cargo.rust_library(
 
 alias(
     name = "unicode-ident",
-    actual = ":unicode-ident-1.0.12",
+    actual = ":unicode-ident-1.0.13",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "unicode-ident-1.0.12.crate",
-    sha256 = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b",
-    strip_prefix = "unicode-ident-1.0.12",
-    urls = ["https://static.crates.io/crates/unicode-ident/1.0.12/download"],
+    name = "unicode-ident-1.0.13.crate",
+    sha256 = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe",
+    strip_prefix = "unicode-ident-1.0.13",
+    urls = ["https://static.crates.io/crates/unicode-ident/1.0.13/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "unicode-ident-1.0.12",
-    srcs = [":unicode-ident-1.0.12.crate"],
+    name = "unicode-ident-1.0.13",
+    srcs = [":unicode-ident-1.0.13.crate"],
     crate = "unicode_ident",
-    crate_root = "unicode-ident-1.0.12.crate/src/lib.rs",
+    crate_root = "unicode-ident-1.0.13.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
 )
