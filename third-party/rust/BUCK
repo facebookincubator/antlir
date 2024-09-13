@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "973c222b72a5778d6477e64f00507219d2be890f",
+    rev = "1f9770ea71b645884079d1fe6e5b82189ed5d570",
     visibility = [],
 )
 
@@ -4510,25 +4510,8 @@ cargo.rust_library(
 
 alias(
     name = "convert_case",
-    actual = ":convert_case-0.4.0",
+    actual = ":convert_case-0.6.0",
     visibility = ["PUBLIC"],
-)
-
-http_archive(
-    name = "convert_case-0.4.0.crate",
-    sha256 = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e",
-    strip_prefix = "convert_case-0.4.0",
-    urls = ["https://static.crates.io/crates/convert_case/0.4.0/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "convert_case-0.4.0",
-    srcs = [":convert_case-0.4.0.crate"],
-    crate = "convert_case",
-    crate_root = "convert_case-0.4.0.crate/src/lib.rs",
-    edition = "2018",
-    visibility = [],
 )
 
 http_archive(
@@ -7136,6 +7119,12 @@ cargo.rust_library(
     visibility = [],
 )
 
+alias(
+    name = "fastrand",
+    actual = ":fastrand-2.1.1",
+    visibility = ["PUBLIC"],
+)
+
 http_archive(
     name = "fastrand-2.1.1.crate",
     sha256 = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6",
@@ -9600,6 +9589,7 @@ cargo.rust_library(
     edition = "2021",
     features = [
         "default",
+        "futures",
         "improved_unicode",
         "rayon",
         "tokio",
@@ -9609,6 +9599,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":console-0.15.8",
+        ":futures-core-0.3.30",
         ":number_prefix-0.4.0",
         ":portable-atomic-1.7.0",
         ":rayon-1.10.0",
