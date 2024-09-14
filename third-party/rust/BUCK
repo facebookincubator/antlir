@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "1f9770ea71b645884079d1fe6e5b82189ed5d570",
+    rev = "87b41dc6fc2dced282708ca2f65f0096d2987414",
     visibility = [],
 )
 
@@ -4529,7 +4529,7 @@ cargo.rust_library(
     crate_root = "convert_case-0.6.0.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":unicode-segmentation-1.11.0"],
+    deps = [":unicode-segmentation-1.12.0"],
 )
 
 alias(
@@ -8851,7 +8851,7 @@ cargo.rust_library(
     crate_root = "heck-0.3.3.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":unicode-segmentation-1.11.0"],
+    deps = [":unicode-segmentation-1.12.0"],
 )
 
 http_archive(
@@ -9604,7 +9604,7 @@ cargo.rust_library(
         ":portable-atomic-1.7.0",
         ":rayon-1.10.0",
         ":tokio-1.40.0",
-        ":unicode-segmentation-1.11.0",
+        ":unicode-segmentation-1.12.0",
         ":unicode-width-0.1.13",
     ],
 )
@@ -18094,7 +18094,7 @@ cargo.rust_library(
         ":memchr-2.7.4",
         ":radix_trie-0.2.1",
         ":rustyline-derive-0.10.0",
-        ":unicode-segmentation-1.11.0",
+        ":unicode-segmentation-1.12.0",
         ":unicode-width-0.1.13",
     ],
 )
@@ -19403,7 +19403,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":bstr-1.10.0",
-        ":unicode-segmentation-1.11.0",
+        ":unicode-segmentation-1.12.0",
     ],
 )
 
@@ -23213,23 +23213,23 @@ cargo.rust_library(
 
 alias(
     name = "unicode-segmentation",
-    actual = ":unicode-segmentation-1.11.0",
+    actual = ":unicode-segmentation-1.12.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "unicode-segmentation-1.11.0.crate",
-    sha256 = "d4c87d22b6e3f4a18d4d40ef354e97c90fcb14dd91d7dc0aa9d8a1172ebf7202",
-    strip_prefix = "unicode-segmentation-1.11.0",
-    urls = ["https://static.crates.io/crates/unicode-segmentation/1.11.0/download"],
+    name = "unicode-segmentation-1.12.0.crate",
+    sha256 = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493",
+    strip_prefix = "unicode-segmentation-1.12.0",
+    urls = ["https://static.crates.io/crates/unicode-segmentation/1.12.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "unicode-segmentation-1.11.0",
-    srcs = [":unicode-segmentation-1.11.0.crate"],
+    name = "unicode-segmentation-1.12.0",
+    srcs = [":unicode-segmentation-1.12.0.crate"],
     crate = "unicode_segmentation",
-    crate_root = "unicode-segmentation-1.11.0.crate/src/lib.rs",
+    crate_root = "unicode-segmentation-1.12.0.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
 )
