@@ -148,7 +148,7 @@ def _invert_dict(x):
     return {v: k for k, v in x.items()}
 
 # @lint-ignore BUCKRESTRICTEDSYNTAX
-def _python_library(*, **kwargs):
+def _python_library(**kwargs):
     kwargs["srcs"] = _invert_dict(kwargs.pop("srcs", []))
     kwargs["resources"] = _invert_dict(kwargs.pop("resources", []))
     _wrap_internal(native.python_library, [], kwargs)

@@ -29,7 +29,7 @@ def _new_rule(*, impl, attrs, artifact_promise_mappings = None):
     }
 
     # @lint-ignore BUCKRESTRICTEDSYNTAX
-    def _anon_target(ctx: AnalysisContext, *, **kwargs):
+    def _anon_target(ctx: AnalysisContext, **kwargs):
         for outer, inner in default_outer_attr_names.items():
             if not hasattr(ctx.attrs, outer):
                 fail("rule is not using anon_helpers correctly: missing attr '{}'".format(outer))
