@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl/dnf:reflink.bzl", "REFLINK_FLAVORS", "rpm2extents")
 load("//antlir/bzl:types.bzl", "types")
 
@@ -134,7 +135,7 @@ def common_impl(
         ),
     ]
 
-rpm = rule(
+_rpm = rule(
     impl = _impl,
     attrs = {
         "arch": attrs.string(),
@@ -151,3 +152,5 @@ rpm = rule(
         "xml": attrs.option(attrs.source(doc = "all xml chunks"), default = None),
     },
 )
+
+rpm = rule_with_default_target_platform(_rpm)
