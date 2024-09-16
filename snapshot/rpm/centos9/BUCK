@@ -1,4 +1,12 @@
 # @generated
 load("@antlir//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 
-repo_set(name='repos', repos=['//snapshot/rpm/centos9/centos-stream/9-stream/AppStream/x86_64/os:centos-stream_9-stream_AppStream_x86_64_os', '//snapshot/rpm/centos9/centos-stream/9-stream/BaseOS/x86_64/os:centos-stream_9-stream_BaseOS_x86_64_os', '//snapshot/rpm/centos9/centos-stream/9-stream/CRB/x86_64/os:centos-stream_9-stream_CRB_x86_64_os', '//snapshot/rpm/centos9/centos-stream/SIGs/9-stream/hyperscale/x86_64/packages-main:centos-stream_SIGs_9-stream_hyperscale_x86_64_packages-main', '//snapshot/rpm/centos9/centos-stream/SIGs/9-stream/hyperscale/x86_64/packages-experimental:centos-stream_SIGs_9-stream_hyperscale_x86_64_packages-experimental', '//snapshot/rpm/centos9/centos-stream/SIGs/9-stream/hyperscale/x86_64/packages-facebook:centos-stream_SIGs_9-stream_hyperscale_x86_64_packages-facebook', '//snapshot/rpm/centos9/fedora/epel/9/Everything/x86_64:fedora_epel_9_Everything_x86_64'], visibility=['PUBLIC'])
+repo_set(name='repos',
+         repos=['//snapshot/rpm/centos9/centos-stream/9-stream/AppStream/x86_64/os:centos-stream_9-stream_AppStream_x86_64_os',
+                '//snapshot/rpm/centos9/centos-stream/9-stream/BaseOS/x86_64/os:centos-stream_9-stream_BaseOS_x86_64_os',
+                '//snapshot/rpm/centos9/centos-stream/9-stream/CRB/x86_64/os:centos-stream_9-stream_CRB_x86_64_os',
+                '//snapshot/rpm/centos9/centos-stream/SIGs/9-stream/hyperscale/x86_64/packages-main:centos-stream_SIGs_9-stream_hyperscale_x86_64_packages-main',
+                '//snapshot/rpm/centos9/centos-stream/SIGs/9-stream/hyperscale/x86_64/packages-experimental:centos-stream_SIGs_9-stream_hyperscale_x86_64_packages-experimental',
+                '//snapshot/rpm/centos9/centos-stream/SIGs/9-stream/hyperscale/x86_64/packages-facebook:centos-stream_SIGs_9-stream_hyperscale_x86_64_packages-facebook',
+                '//snapshot/rpm/centos9/fedora/epel/9/Everything/x86_64:fedora_epel_9_Everything_x86_64'],
+         visibility=['PUBLIC'])
