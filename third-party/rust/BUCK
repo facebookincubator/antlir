@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "5ee275022a0f2cb43638d372b870ccd13df395e0",
+    rev = "965653274bc2844a50495dc0e910a5cd639905fd",
     visibility = [],
 )
 
@@ -3458,18 +3458,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.18.crate",
-    sha256 = "b62ac837cdb5cb22e10a256099b4fc502b1dfe560cb282963a974d7abd80e476",
-    strip_prefix = "cc-1.1.18",
-    urls = ["https://static.crates.io/crates/cc/1.1.18/download"],
+    name = "cc-1.1.19.crate",
+    sha256 = "2d74707dde2ba56f86ae90effb3b43ddd369504387e718014de010cec7959800",
+    strip_prefix = "cc-1.1.19",
+    urls = ["https://static.crates.io/crates/cc/1.1.19/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.18",
-    srcs = [":cc-1.1.18.crate"],
+    name = "cc-1.1.19",
+    srcs = [":cc-1.1.19.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.18.crate/src/lib.rs",
+    crate_root = "cc-1.1.19.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4242,7 +4242,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.51.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.1.18"],
+    deps = [":cc-1.1.19"],
 )
 
 cargo.rust_library(
@@ -5289,7 +5289,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.18",
+        ":cc-1.1.19",
         ":cxxbridge-flags-1.0.128",
     ],
 )
@@ -10750,7 +10750,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.18",
+        ":cc-1.1.19",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -12041,7 +12041,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.1.18",
+        ":cc-1.1.19",
         ":cmake-0.1.51",
         ":subprocess-0.2.9",
     ],
@@ -13388,7 +13388,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.18",
+        ":cc-1.1.19",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -14787,29 +14787,29 @@ cargo.rust_library(
 
 alias(
     name = "pretty_assertions",
-    actual = ":pretty_assertions-1.4.0",
+    actual = ":pretty_assertions-1.4.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "pretty_assertions-1.4.0.crate",
-    sha256 = "af7cee1a6c8a5b9208b3cb1061f10c0cb689087b3d8ce85fb9d2dd7a29b6ba66",
-    strip_prefix = "pretty_assertions-1.4.0",
-    urls = ["https://static.crates.io/crates/pretty_assertions/1.4.0/download"],
+    name = "pretty_assertions-1.4.1.crate",
+    sha256 = "3ae130e2f271fbc2ac3a40fb1d07180839cdbbe443c7a27e1e3c13c5cac0116d",
+    strip_prefix = "pretty_assertions-1.4.1",
+    urls = ["https://static.crates.io/crates/pretty_assertions/1.4.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "pretty_assertions-1.4.0",
-    srcs = [":pretty_assertions-1.4.0.crate"],
+    name = "pretty_assertions-1.4.1",
+    srcs = [":pretty_assertions-1.4.1.crate"],
     crate = "pretty_assertions",
-    crate_root = "pretty_assertions-1.4.0.crate/src/lib.rs",
+    crate_root = "pretty_assertions-1.4.1.crate/src/lib.rs",
     edition = "2018",
     features = ["alloc"],
     visibility = [],
     deps = [
         ":diff-0.1.13",
-        ":yansi-0.5.1",
+        ":yansi-1.0.1",
     ],
 )
 
@@ -16816,7 +16816,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.18"],
+    deps = [":cc-1.1.19"],
 )
 
 buildscript_run(
@@ -16898,7 +16898,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.18"],
+    deps = [":cc-1.1.19"],
 )
 
 buildscript_run(
@@ -23736,6 +23736,35 @@ cargo.rust_library(
     visibility = [],
 )
 
+alias(
+    name = "vt100",
+    actual = ":vt100-0.15.2",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "vt100-0.15.2.crate",
+    sha256 = "84cd863bf0db7e392ba3bd04994be3473491b31e66340672af5d11943c6274de",
+    strip_prefix = "vt100-0.15.2",
+    urls = ["https://static.crates.io/crates/vt100/0.15.2/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "vt100-0.15.2",
+    srcs = [":vt100-0.15.2.crate"],
+    crate = "vt100",
+    crate_root = "vt100-0.15.2.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [
+        ":itoa-1.0.11",
+        ":log-0.4.22",
+        ":unicode-width-0.1.13",
+        ":vte-0.11.1",
+    ],
+)
+
 http_archive(
     name = "vte-0.10.1.crate",
     sha256 = "6cbce692ab4ca2f1f3047fcf732430249c0e971bfdd2b234cf2c47ad93af5983",
@@ -23758,6 +23787,33 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":arrayvec-0.5.2",
+        ":utf8parse-0.2.2",
+        ":vte_generate_state_changes-0.1.2",
+    ],
+)
+
+http_archive(
+    name = "vte-0.11.1.crate",
+    sha256 = "f5022b5fbf9407086c180e9557be968742d839e68346af7792b8592489732197",
+    strip_prefix = "vte-0.11.1",
+    urls = ["https://static.crates.io/crates/vte/0.11.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "vte-0.11.1",
+    srcs = [":vte-0.11.1.crate"],
+    crate = "vte",
+    crate_root = "vte-0.11.1.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "arrayvec",
+        "default",
+        "no_std",
+    ],
+    visibility = [],
+    deps = [
+        ":arrayvec-0.7.6",
         ":utf8parse-0.2.2",
         ":vte_generate_state_changes-0.1.2",
     ],
@@ -24820,23 +24876,6 @@ cargo.rust_library(
             deps = [":windows-sys-0.59.0"],
         ),
     },
-    visibility = [],
-)
-
-http_archive(
-    name = "yansi-0.5.1.crate",
-    sha256 = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec",
-    strip_prefix = "yansi-0.5.1",
-    urls = ["https://static.crates.io/crates/yansi/0.5.1/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "yansi-0.5.1",
-    srcs = [":yansi-0.5.1.crate"],
-    crate = "yansi",
-    crate_root = "yansi-0.5.1.crate/src/lib.rs",
-    edition = "2015",
     visibility = [],
 )
 
