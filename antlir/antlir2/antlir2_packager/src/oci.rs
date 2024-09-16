@@ -39,6 +39,7 @@ use sha2::Sha256;
 #[serde(deny_unknown_fields)]
 pub struct Oci {
     tar: PathBuf,
+    tar_zst: PathBuf,
     #[serde(rename = "ref")]
     refname: String,
     target_arch: Arch,
@@ -132,13 +133,19 @@ impl Oci {
             .build()
             .context("while building platform")?;
 
-        let mut tar = Vec::new();
-        BufReader::new(File::open(&self.tar).context("while opening tar")?)
-            .read_to_end(&mut tar)
-            .context("while reading tar")?;
-        let tar = LayerTarZst(Arc::new(tar));
-        let mut layer_descriptor = write(&blobs_dir, &tar).context("while writing layer")?;
+        let mut tar_zst = Vec::new();
+        BufReader::new(File::open(&self.tar_zst).context("while opening tar.zst")?)
+            .read_to_end(&mut tar_zst)
+            .context("while reading tar zst")?;
+        let tar_layer = LayerTarZst(Arc::new(tar_zst));
+        let mut layer_descriptor = write(&blobs_dir, &tar_layer).context("while writing layer")?;
         layer_descriptor.set_platform(Some(platform.clone()));
+
+        let mut uncompressed_tar =
+            BufReader::new(File::open(&self.tar).context("while opening uncompressed tar")?);
+        let mut hasher = Sha256::new();
+        std::io::copy(&mut uncompressed_tar, &mut hasher).context("while hashing tar")?;
+        let rootfs_digest = hex::encode(hasher.finalize());
 
         let image_configuration = ImageConfigurationBuilder::default()
             .architecture(self.target_arch.clone())
@@ -152,7 +159,7 @@ impl Oci {
             .rootfs(
                 RootFsBuilder::default()
                     .typ("layers")
-                    .diff_ids(vec![layer_descriptor.digest().clone()])
+                    .diff_ids(vec![format!("sha256:{rootfs_digest}")])
                     .build()
                     .context("while building rootfs")?,
             )

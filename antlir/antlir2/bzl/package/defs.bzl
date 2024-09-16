@@ -337,7 +337,7 @@ _squashfs, squashfs_anon = _new_package_rule(
     uses_build_appliance = True,
 )
 
-_tar, _tar_anon = _new_package_rule(
+_tar, tar_anon = _new_package_rule(
     format = "tar",
     sudo = True,
     uses_build_appliance = True,
@@ -346,13 +346,13 @@ _tar, _tar_anon = _new_package_rule(
 
 _tar_gz = _new_compressed_package_rule(
     default_compression_level = 3,
-    uncompressed = _tar_anon,
+    uncompressed = tar_anon,
     compressor = "gzip",
 )
 
 tar_zst_rule = _new_compressed_package_rule(
     default_compression_level = 15,
-    uncompressed = _tar_anon,
+    uncompressed = tar_anon,
     compressor = "zstd",
 )
 

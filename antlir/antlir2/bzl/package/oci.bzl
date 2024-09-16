@@ -5,19 +5,24 @@
 
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
-load(":defs.bzl", "common_attrs", "default_attrs", "tar_zst_rule")
+load(":defs.bzl", "common_attrs", "default_attrs", "tar_anon", "tar_zst_rule")
 load(":macro.bzl", "package_macro")
 
 def _impl(ctx: AnalysisContext) -> Promise:
-    def with_anon(tar) -> list[Provider]:
+    def with_anon(tars) -> list[Provider]:
         out = ctx.actions.declare_output(ctx.label.name, dir = True)
-        tar = ensure_single_output(tar)
+
+        # Need both a compressed tar (to actually put in the archive) and
+        # uncompressed (to record the uncompressed checksum)
+        tar = ensure_single_output(tars[0])
+        tar_zst = ensure_single_output(tars[1])
         spec = ctx.actions.write_json(
             "spec.json",
             {"oci": {
                 "entrypoint": ctx.attrs.entrypoint,
                 "ref": ctx.attrs.ref,
                 "tar": tar,
+                "tar_zst": tar_zst,
                 "target_arch": ctx.attrs._target_arch,
             }},
             with_inputs = True,
@@ -37,10 +42,21 @@ def _impl(ctx: AnalysisContext) -> Promise:
             RunInfo(cmd_args(out)),
         ]
 
-    return ctx.actions.anon_target(tar_zst_rule, {"name": str(ctx.attrs.layer.label.raw_target())} | {
+    all_attrs = {
         k: getattr(ctx.attrs, k)
         for k in list(layer_attrs) + list(common_attrs) + list(default_attrs)
-    }).promise.map(with_anon)
+    }
+
+    return ctx.actions.anon_targets([
+        (
+            tar_anon,
+            {"name": str(ctx.attrs.layer.label.raw_target())} | all_attrs,
+        ),
+        (
+            tar_zst_rule,
+            {"name": str(ctx.attrs.layer.label.raw_target())} | all_attrs,
+        ),
+    ]).promise.map(with_anon)
 
 _oci = rule(
     impl = _impl,
