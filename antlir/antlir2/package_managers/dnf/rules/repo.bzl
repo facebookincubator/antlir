@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
@@ -124,10 +125,12 @@ repo_attrs = {
     "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision"), default = None),
 }
 
-repo = rule(
+_repo = rule(
     impl = _impl,
     attrs = repo_attrs,
 )
+
+repo = rule_with_default_target_platform(_repo)
 
 RepoSetInfo = provider(fields = ["repos"])
 
@@ -169,7 +172,7 @@ def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
     ]
 
-repo_set = rule(
+_repo_set = rule(
     impl = _repo_set_impl,
     attrs = {
         "repo_sets": attrs.list(attrs.dep(providers = [RepoSetInfo]), default = []),
@@ -177,3 +180,5 @@ repo_set = rule(
     },
     doc = "Collect a set of repos into a single easy-to-use rule",
 )
+
+repo_set = rule_with_default_target_platform(_repo_set)
