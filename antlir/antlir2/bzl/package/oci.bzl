@@ -44,7 +44,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
 
     all_attrs = {
         k: getattr(ctx.attrs, k)
-        for k in list(layer_attrs) + list(common_attrs) + list(default_attrs)
+        for k in list(layer_attrs) + list(common_attrs) + list(default_attrs) + ["_rootless"]
     }
 
     return ctx.actions.anon_targets([
@@ -58,16 +58,18 @@ def _impl(ctx: AnalysisContext) -> Promise:
         ),
     ]).promise.map(with_anon)
 
-_oci = rule(
+oci_attrs = {
+    "entrypoint": attrs.list(attrs.string(), doc = "Command to run as the main process"),
+    "ref": attrs.string(
+        default = native.read_config("build_info", "revision", "local"),
+        doc = "Ref name for OCI image",
+    ),
+}
+
+oci_rule = rule(
     impl = _impl,
-    attrs = {
-        "entrypoint": attrs.list(attrs.string(), doc = "Command to run as the main process"),
-        "ref": attrs.string(
-            default = native.read_config("build_info", "revision", "local"),
-            doc = "Ref name for OCI image",
-        ),
-    } | layer_attrs | default_attrs | common_attrs,
+    attrs = oci_attrs | layer_attrs | default_attrs | common_attrs,
     cfg = package_cfg,
 )
 
-oci = package_macro(_oci)
+oci = package_macro(oci_rule)
