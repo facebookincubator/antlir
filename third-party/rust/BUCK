@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "965653274bc2844a50495dc0e910a5cd639905fd",
+    rev = "7625ae4bb20a59195d1e0c434b2d421fa43d84c6",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "f9c795f6c8e63567fb142d188f63f15d2251299c",
+    rev = "46f84a1d04e94f2c43f9626a818fa43852d81a78",
     visibility = [],
 )
 
@@ -3623,16 +3623,16 @@ cargo.rust_library(
     ],
     platform = {
         "linux-arm64": dict(
-            deps = [":iana-time-zone-0.1.60"],
+            deps = [":iana-time-zone-0.1.61"],
         ),
         "linux-x86_64": dict(
-            deps = [":iana-time-zone-0.1.60"],
+            deps = [":iana-time-zone-0.1.61"],
         ),
         "macos-arm64": dict(
-            deps = [":iana-time-zone-0.1.60"],
+            deps = [":iana-time-zone-0.1.61"],
         ),
         "macos-x86_64": dict(
-            deps = [":iana-time-zone-0.1.60"],
+            deps = [":iana-time-zone-0.1.61"],
         ),
         "windows-gnu": dict(
             deps = [":windows-targets-0.52.6"],
@@ -9347,18 +9347,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "iana-time-zone-0.1.60.crate",
-    sha256 = "e7ffbb5a1b541ea2561f8c41c087286cc091e21e556a4f09a8f6cbf17b69b141",
-    strip_prefix = "iana-time-zone-0.1.60",
-    urls = ["https://static.crates.io/crates/iana-time-zone/0.1.60/download"],
+    name = "iana-time-zone-0.1.61.crate",
+    sha256 = "235e081f3925a06703c2d0117ea8b91f042756fd6e7a6e5d901e8ca1a996b220",
+    strip_prefix = "iana-time-zone-0.1.61",
+    urls = ["https://static.crates.io/crates/iana-time-zone/0.1.61/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "iana-time-zone-0.1.60",
-    srcs = [":iana-time-zone-0.1.60.crate"],
+    name = "iana-time-zone-0.1.61",
+    srcs = [":iana-time-zone-0.1.61.crate"],
     crate = "iana_time_zone",
-    crate_root = "iana-time-zone-0.1.60.crate/src/lib.rs",
+    crate_root = "iana-time-zone-0.1.61.crate/src/lib.rs",
     edition = "2018",
     features = ["fallback"],
     platform = {
@@ -14962,7 +14962,7 @@ cargo.rust_library(
     crate_root = "proc-macro-crate-3.2.0.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":toml_edit-0.22.20"],
+    deps = [":toml_edit-0.22.21"],
 )
 
 alias(
@@ -22067,7 +22067,7 @@ cargo.rust_library(
         ":serde-1.0.210",
         ":serde_spanned-0.6.7",
         ":toml_datetime-0.6.8",
-        ":toml_edit-0.22.20",
+        ":toml_edit-0.22.21",
     ],
 )
 
@@ -22125,18 +22125,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "toml_edit-0.22.20.crate",
-    sha256 = "583c44c02ad26b0c3f3066fe629275e50627026c51ac2e595cca4c230ce1ce1d",
-    strip_prefix = "toml_edit-0.22.20",
-    urls = ["https://static.crates.io/crates/toml_edit/0.22.20/download"],
+    name = "toml_edit-0.22.21.crate",
+    sha256 = "3b072cee73c449a636ffd6f32bd8de3a9f7119139aff882f44943ce2986dc5cf",
+    strip_prefix = "toml_edit-0.22.21",
+    urls = ["https://static.crates.io/crates/toml_edit/0.22.21/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "toml_edit-0.22.20",
-    srcs = [":toml_edit-0.22.20.crate"],
+    name = "toml_edit-0.22.21",
+    srcs = [":toml_edit-0.22.21.crate"],
     crate = "toml_edit",
-    crate_root = "toml_edit-0.22.20.crate/src/lib.rs",
+    crate_root = "toml_edit-0.22.21.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
