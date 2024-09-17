@@ -1,7 +1,7 @@
 # @oss-disable
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/bzl/package:oci.bzl", "oci")
+load("//antlir/antlir2/bzl/package:docker_archive.bzl", "docker_archive")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 
 oncall("antlir")
@@ -27,8 +27,8 @@ stat --format="%a %u %g" /entrypoint.sh
     ],
 )
 
-oci(
-    name = "oci",
+docker_archive(
+    name = "docker-archive",
     entrypoint = [
         "/entrypoint.sh",
         "foo",
@@ -50,7 +50,7 @@ image_python_test(
     name = "test",
     srcs = ["test.py"],
     env = {
-        "OCI": "$(location :oci)",
+        "DOCKER_ARCHIVE": "$(location :docker-archive)",
     },
     # This test does not work under architecture emulation. Mark it as such in
     # buck-land, and also disable scheduling CI for aarch64

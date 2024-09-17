@@ -10,14 +10,14 @@ from pathlib import Path
 from subprocess import CalledProcessError
 from unittest import TestCase
 
-OCI_PATH: Path = Path(os.environ["OCI"])
+DOCKER_ARCHIVE_PATH: Path = Path(os.environ["DOCKER_ARCHIVE"])
 
 
 class Test(TestCase):
     def load_image(self) -> str:
         try:
             proc = subprocess.run(
-                ["podman", "load", "--input", OCI_PATH],
+                ["podman", "load", "--input", DOCKER_ARCHIVE_PATH],
                 check=True,
                 text=True,
                 capture_output=True,
