@@ -32,7 +32,7 @@ use nix::unistd::User;
 /// still work properly.
 static MS_NOSYMFOLLOW: MsFlags = unsafe { MsFlags::from_bits_unchecked(256) };
 
-#[deny(unused_variables)]
+#[cfg_attr(facebook, deny(unused_variables))]
 pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
     let IsolationContext {
         layer,
@@ -280,6 +280,7 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
 
         // MS_BIND ignores MS_RDONLY, so use the new mount api to make it
         // actually readonly.
+        #[cfg(facebook)]
         if ro {
             let dst_mountpoint = dst.abspath();
             crate::new_mount_api::make_mount_readonly(&dst_mountpoint)
