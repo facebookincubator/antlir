@@ -53,7 +53,7 @@ impl PackageFormat for Erofs {
             cmd.arg("-L").arg(label);
         }
 
-        run_cmd(&mut cmd).context("Failed to build cpio archive")?;
+        run_cmd(&mut cmd).context("while running mkfs.erofs")?;
 
         Ok(())
     }
