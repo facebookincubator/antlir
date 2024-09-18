@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "7625ae4bb20a59195d1e0c434b2d421fa43d84c6",
+    rev = "7f2f793408863b53ca99e26182f0856fd2d87a69",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "46f84a1d04e94f2c43f9626a818fa43852d81a78",
+    rev = "943c0962da07b3f1398d02b0411d91c679e1a1d6",
     visibility = [],
 )
 
@@ -3458,18 +3458,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.19.crate",
-    sha256 = "2d74707dde2ba56f86ae90effb3b43ddd369504387e718014de010cec7959800",
-    strip_prefix = "cc-1.1.19",
-    urls = ["https://static.crates.io/crates/cc/1.1.19/download"],
+    name = "cc-1.1.20.crate",
+    sha256 = "45bcde016d64c21da4be18b655631e5ab6d3107607e71a73a9f53eb48aae23fb",
+    strip_prefix = "cc-1.1.20",
+    urls = ["https://static.crates.io/crates/cc/1.1.20/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.19",
-    srcs = [":cc-1.1.19.crate"],
+    name = "cc-1.1.20",
+    srcs = [":cc-1.1.20.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.19.crate/src/lib.rs",
+    crate_root = "cc-1.1.20.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4092,24 +4092,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.26.crate",
-    sha256 = "205d5ef6d485fa47606b98b0ddc4ead26eb850aaa86abfb562a94fb3280ecba0",
-    strip_prefix = "clap_complete-4.5.26",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.26/download"],
+    name = "clap_complete-4.5.28.crate",
+    sha256 = "9b378c786d3bde9442d2c6dd7e6080b2a818db2b96e30d6e7f1b6d224eb617d3",
+    strip_prefix = "clap_complete-4.5.28",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.28/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.26-clap_complete",
+    actual = ":clap_complete-4.5.28-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.26-clap_complete",
-    srcs = [":clap_complete-4.5.26.crate"],
+    name = "clap_complete-4.5.28-clap_complete",
+    srcs = [":clap_complete-4.5.28.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.26.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.28.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
@@ -4242,7 +4242,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.51.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.1.19"],
+    deps = [":cc-1.1.20"],
 )
 
 cargo.rust_library(
@@ -5289,7 +5289,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.19",
+        ":cc-1.1.20",
         ":cxxbridge-flags-1.0.128",
     ],
 )
@@ -9412,7 +9412,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":unicode-bidi-0.3.15",
-        ":unicode-normalization-0.1.23",
+        ":unicode-normalization-0.1.24",
     ],
 )
 
@@ -9438,7 +9438,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":unicode-bidi-0.3.15",
-        ":unicode-normalization-0.1.23",
+        ":unicode-normalization-0.1.24",
     ],
 )
 
@@ -10750,7 +10750,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.19",
+        ":cc-1.1.20",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -12041,7 +12041,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.1.19",
+        ":cc-1.1.20",
         ":cmake-0.1.51",
         ":subprocess-0.2.9",
     ],
@@ -13388,7 +13388,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.19",
+        ":cc-1.1.20",
         ":pkg-config-0.3.30",
         ":vcpkg-0.2.15",
     ],
@@ -16816,7 +16816,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.19"],
+    deps = [":cc-1.1.20"],
 )
 
 buildscript_run(
@@ -16898,7 +16898,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.19"],
+    deps = [":cc-1.1.20"],
 )
 
 buildscript_run(
@@ -23187,18 +23187,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "unicode-normalization-0.1.23.crate",
-    sha256 = "a56d1686db2308d901306f92a263857ef59ea39678a5458e7cb17f01415101f5",
-    strip_prefix = "unicode-normalization-0.1.23",
-    urls = ["https://static.crates.io/crates/unicode-normalization/0.1.23/download"],
+    name = "unicode-normalization-0.1.24.crate",
+    sha256 = "5033c97c4262335cded6d6fc3e5c18ab755e1a3dc96376350f3d8e9f009ad956",
+    strip_prefix = "unicode-normalization-0.1.24",
+    urls = ["https://static.crates.io/crates/unicode-normalization/0.1.24/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "unicode-normalization-0.1.23",
-    srcs = [":unicode-normalization-0.1.23.crate"],
+    name = "unicode-normalization-0.1.24",
+    srcs = [":unicode-normalization-0.1.24.crate"],
     crate = "unicode_normalization",
-    crate_root = "unicode-normalization-0.1.23.crate/src/lib.rs",
+    crate_root = "unicode-normalization-0.1.24.crate/src/lib.rs",
     edition = "2018",
     features = [
         "default",
