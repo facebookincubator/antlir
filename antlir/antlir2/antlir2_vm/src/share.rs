@@ -223,7 +223,7 @@ impl VirtiofsShare {
         log_command(
             command
                 .arg("--socket-path")
-                .arg(&self.socket_path())
+                .arg(self.socket_path())
                 .arg("--shared-dir")
                 .arg(&self.opts.path)
                 .arg("--cache")
