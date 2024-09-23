@@ -98,8 +98,6 @@ pub(crate) enum VMError {
     TPMError(#[from] TPMError),
     #[error(transparent)]
     TypeError(#[from] TypeError),
-    #[error("Failed to determine platform: {0}")]
-    PlatformDetectionError(String),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
     #[error("Failed to open output file: {path}: {err}")]
@@ -674,17 +672,8 @@ impl<S: Share> VM<S> {
     }
 
     // Query current arch that's executing this binary.
-    fn current_arch(&self) -> Result<CpuIsa> {
-        let uname = Command::new("uname")
-            .arg("-m")
-            .output()
-            .map_err(|e| VMError::PlatformDetectionError(format!("uname command failed: {}", e)))?;
-        let output = String::from_utf8(uname.stdout).map_err(|e| {
-            VMError::PlatformDetectionError(format!("Failed to parse uname output: {}", e))
-        })?;
-        let arch = output.trim();
-        debug!("Detected current execution platform: {}", arch);
-        Ok(CpuIsa::from_str(arch)?)
+    fn current_arch(&self) -> CpuIsa {
+        CpuIsa::from_str(std::env::consts::ARCH).expect("unknown cpu architecture")
     }
 
     // Some args depending on whether the execution platform is same as the
@@ -761,7 +750,7 @@ impl<S: Share> VM<S> {
             .map(|x| x.into())
             .collect(),
         );
-        args.extend(self.arch_emulation_args(self.current_arch()?));
+        args.extend(self.arch_emulation_args(self.current_arch()));
         Ok(args)
     }
 
