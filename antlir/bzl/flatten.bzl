@@ -6,7 +6,6 @@
 # This does incorrect modifications.
 # @lint-ignore-every FBCODEBZLADDLOADS
 
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:types.bzl", "types")
 
 def _flatten_any(lst):
@@ -23,12 +22,11 @@ def _typed_flattener(item_type) -> types.function:
     types.lint_noop(item_type)
 
     # @lint-ignore BUCKLINT
-    t = native.eval_type(list[item_type]) if is_buck2() else ""
+    t = native.eval_type(list[item_type])
 
     def _flatten(lst):
         r = _flatten_any(lst)
-        if is_buck2():
-            t.check_matches(r)
+        t.check_matches(r)
         return r
 
     return _flatten
