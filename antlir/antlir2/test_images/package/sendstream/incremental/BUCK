@@ -36,6 +36,10 @@ image.layer(
             dst = "/to-be-removed/file",
             text = "hello\n",
         ),
+        feature.ensure_file_symlink(
+            link = "/baz",
+            target = "foo",
+        ),
     ],
 )
 
@@ -85,6 +89,11 @@ image.layer(
                 "user.baz": "baz",
                 "user.foo": "qux",
             },
+        ),
+        feature.remove(path = "/baz"),
+        feature.ensure_file_symlink(
+            link = "/baz",
+            target = "bar",
         ),
     ],
     parent_layer = ":parent",
