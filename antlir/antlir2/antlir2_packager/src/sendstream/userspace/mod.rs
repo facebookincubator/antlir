@@ -160,53 +160,74 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
                         continue;
                     }
 
-                    let file_contents_changed = if parent_meta.len() != meta.len() {
-                        true
-                    } else {
-                        let parent_file =
-                            BufReader::new(File::open(&parent_path).with_context(|| {
-                                format!("while opening file {}", parent_path.display())
-                            })?);
-                        let mut hasher = blake3::Hasher::new_derive_key(BLAKE3_KEY);
-                        hasher.update_reader(parent_file).with_context(|| {
-                            format!("while hashing file {}", parent_path.display())
-                        })?;
-                        let parent_hash = hasher.finalize();
-                        let infile =
-                            BufReader::new(File::open(entry.path()).with_context(|| {
-                                format!("while opening file {}", entry.path().display())
-                            })?);
-                        let mut hasher = blake3::Hasher::new_derive_key(BLAKE3_KEY);
-                        hasher.update_reader(infile).with_context(|| {
-                            format!("while hashing file {}", entry.path().display())
-                        })?;
-                        let new_hash = hasher.finalize();
-                        parent_hash != new_hash
-                    };
-
-                    if file_contents_changed {
-                        // TODO: support more efficient updates on
-                        // append-only files (where len > parent_len but
-                        // hash(parent[..parent_len]) == hash(file[..parent_len]))
-                        f.write_all(&command::truncate(relpath, meta.size()))?;
-                        let mut infile =
-                            BufReader::new(File::open(entry.path()).with_context(|| {
-                                format!("while opening file {}", entry.path().display())
-                            })?);
-                        // 60k because we need a little bit of space to to store
-                        // metadata (so can't use a full 16-bit size), and 4k
-                        // boundaries are nice
-                        let mut buf = [0u8; 61440];
-                        let mut offset = 0;
-                        loop {
-                            let read = infile.read(&mut buf).with_context(|| {
-                                format!("while reading from file {}", entry.path().display())
+                    if meta.is_file() {
+                        let file_contents_changed = if parent_meta.len() != meta.len() {
+                            true
+                        } else {
+                            let parent_file =
+                                BufReader::new(File::open(&parent_path).with_context(|| {
+                                    format!("while opening file {}", parent_path.display())
+                                })?);
+                            let mut hasher = blake3::Hasher::new_derive_key(BLAKE3_KEY);
+                            hasher.update_reader(parent_file).with_context(|| {
+                                format!("while hashing file {}", parent_path.display())
                             })?;
-                            if read == 0 {
-                                break;
+                            let parent_hash = hasher.finalize();
+                            let infile =
+                                BufReader::new(File::open(entry.path()).with_context(|| {
+                                    format!("while opening file {}", entry.path().display())
+                                })?);
+                            let mut hasher = blake3::Hasher::new_derive_key(BLAKE3_KEY);
+                            hasher.update_reader(infile).with_context(|| {
+                                format!("while hashing file {}", entry.path().display())
+                            })?;
+                            let new_hash = hasher.finalize();
+                            parent_hash != new_hash
+                        };
+
+                        if file_contents_changed {
+                            // TODO: support more efficient updates on
+                            // append-only files (where len > parent_len but
+                            // hash(parent[..parent_len]) == hash(file[..parent_len]))
+                            f.write_all(&command::truncate(relpath, meta.size()))?;
+                            let mut infile =
+                                BufReader::new(File::open(entry.path()).with_context(|| {
+                                    format!("while opening file {}", entry.path().display())
+                                })?);
+                            // 60k because we need a little bit of space to to store
+                            // metadata (so can't use a full 16-bit size), and 4k
+                            // boundaries are nice
+                            let mut buf = [0u8; 61440];
+                            let mut offset = 0;
+                            loop {
+                                let read = infile.read(&mut buf).with_context(|| {
+                                    format!("1while reading from file {}", entry.path().display())
+                                })?;
+                                if read == 0 {
+                                    break;
+                                }
+                                f.write_all(&command::write(relpath, offset, &buf[..read]))?;
+                                offset += read as u64;
                             }
-                            f.write_all(&command::write(relpath, offset, &buf[..read]))?;
-                            offset += read as u64;
+                        }
+                    }
+
+                    if meta.is_symlink() {
+                        let original_target =
+                            std::fs::read_link(&parent_path).with_context(|| {
+                                format!("while reading link target of {}", parent_path.display())
+                            })?;
+                        let new_target = std::fs::read_link(entry.path()).with_context(|| {
+                            format!("while reading link target of {}", entry.path().display())
+                        })?;
+                        if new_target != original_target {
+                            f.write_all(&command::unlink(relpath))?;
+                            f.write_all(&command::symlink(new_target, relpath, entry.ino()))?;
+                            f.write_all(&command::chown(
+                                relpath,
+                                meta.uid().into(),
+                                meta.gid().into(),
+                            ))?;
                         }
                     }
 
