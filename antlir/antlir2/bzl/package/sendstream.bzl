@@ -36,7 +36,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if not userspace:
         subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     else:
-        subvol_symlink = ctx.attrs.layer[LayerInfo].subvol_symlink
+        subvol_symlink = None
 
     if ctx.attrs.incremental_parent:
         incremental_parent_layer = _find_incremental_parent(
@@ -64,10 +64,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             incremental_parent = ctx.attrs.incremental_parent[SendstreamInfo].layer[LayerInfo].subvol_symlink
         else:
             incremental_parent = ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink
-        if incremental_parent == None:
-            fail("failed to get subvol_symlink from incremental_parent, cannot proceed: {}".format(
-                ctx.attrs.incremental_parent[SendstreamInfo],
-            ))
     else:
         incremental_parent = None
 
@@ -76,7 +72,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         {"sendstream": {
             "compression_level": ctx.attrs.compression_level,
             "incremental_parent": incremental_parent,
-            "subvol_symlink": subvol_symlink.as_output() if not userspace else None,
+            "subvol_symlink": subvol_symlink.as_output() if subvol_symlink else None,
             "userspace": userspace,
             "volume_name": ctx.attrs.volume_name,
         }},
