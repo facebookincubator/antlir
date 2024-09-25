@@ -12,7 +12,6 @@ entirely, but for now this is required to keep buck1 code evaluating.
 # @lint-ignore-every BUCKLINT
 
 load("@prelude//utils:type_defs.bzl", prelude_types = "type_utils")
-load(":build_defs.bzl", "is_buck2")
 load(":structs.bzl", "structs")
 
 def _lint_noop(*_args):
@@ -26,35 +25,14 @@ def _lint_noop(*_args):
     """
     pass
 
-_any = native.typing.Any if is_buck2() else ""
-_bool = bool if is_buck2() else "bool"
-_function = native.typing.Callable if is_buck2() else "function"
-_int = int if is_buck2() else "int"
-_str = str if is_buck2() else "str"
-_struct = struct if is_buck2() else "struct"
-
 def _dict(kt, vt):
-    return dict[kt, vt] if is_buck2() else ""
+    return dict[kt, vt]
 
 def _enum(*values):
-    if is_buck2():
-        # TODO(nga): `enum` can only be called from top-level statement.
-        return native.enum(*values)
-
-    values = list(values)
-
-    # TODO(T139523690)
-    def _buck1_enum(arg):
-        if arg not in values:
-            fail("'{}' not in '{}'".format(arg, values))
-        return arg
-
-    return _buck1_enum
+    # TODO(nga): `enum` can only be called from top-level statement.
+    return native.enum(*values)
 
 def _union(*types):
-    if not is_buck2():
-        return ""
-
     if len(types) <= 1:
         fail("union must have more than 1 type")
 
@@ -67,12 +45,9 @@ def _union(*types):
     return result
 
 def _list(ty):
-    return list[ty] if is_buck2() else ""
+    return list[ty]
 
 def _optional(ty):
-    if not is_buck2():
-        return ""
-
     # TODO(nga): `eval_type` won't be needed
     #   when we switch all types from string literals.
     return native.eval_type(ty) | None
@@ -109,19 +84,19 @@ def _is_autodeps_magicmock(x) -> bool:
 
 types = struct(
     # primitive types
-    bool = _bool,
-    function = _function,
-    int = _int,
+    bool = bool,
+    function = native.typing.Callable,
+    int = int,
     # buck target label
-    label = _str,
-    path = _str,
-    struct = _struct,
+    label = str,
+    path = str,
+    struct = struct,
     # either a target label or a file path
-    source = _str,
+    source = str,
     # target label pointing to an executable
-    exe = _str,
-    str = _str,
-    visibility = _list(_str),
+    exe = str,
+    str = str,
+    visibility = list[str],
     # more complex types
     enum = _enum,
     # TODO: can antlir features be better typed with records and unions?
@@ -129,11 +104,11 @@ types = struct(
     # TODO(nga): this list also had
     #   "InlineFeatureInfo", I have not found references to it
     #   "ParseTimeFeature", which cannot be used easily because of import cycle
-    antlir_feature = [_struct, _str, _any],
+    antlir_feature = [struct, str, native.typing.Any],
 
     # TODO: when we're all buck2, this can enforce the presence of providers.
     # For now it's just a human-readable hint that only enforces on a string.
-    layer_source = _str,
+    layer_source = str,
     shape = _shape,
     # type modifiers
     dict = _dict,
