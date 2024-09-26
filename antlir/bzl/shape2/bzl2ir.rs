@@ -130,9 +130,9 @@ impl<'v> StarlarkValue<'v> for TypeId {
                 args.no_named_args()?;
                 args.positional1(eval.heap())
             }
-            _ => Err(starlark::Error::new(starlark::ErrorKind::Other(anyhow!(
+            _ => Err(starlark::Error::new_other(anyhow!(
                 "only structs and enums are callable, not ({ty:#?})"
-            )))),
+            ))),
         }
     }
 }
