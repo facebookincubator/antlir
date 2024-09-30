@@ -71,6 +71,11 @@ impl VirtualNIC {
         format!("vm{}", self.id)
     }
 
+    /// ID of the virtual interface
+    pub(crate) fn dev_id(&self) -> String {
+        format!("net{}", self.id)
+    }
+
     /// MAC needs to be predicatable so the VM can pre-configure its network.
     /// The MAC address is formatted `self.id`.
     pub(crate) fn guest_mac(&self) -> String {
@@ -112,15 +117,15 @@ impl QemuDevice for VirtualNIC {
         [
             "-netdev",
             &format!(
-                "tap,id=net{id},ifname={dev_name},script=no,downscript=no,queues={queues}",
-                id = self.id,
+                "tap,id={dev_id},ifname={dev_name},script=no,downscript=no,queues={queues}",
+                dev_id = self.dev_id(),
                 dev_name = self.dev_name(),
                 queues = self.max_combined_channels,
             ),
             "-device",
             &format!(
-                "virtio-net-pci,netdev=net{id},mac={mac},mq={mq},vectors={vectors}",
-                id = self.id,
+                "virtio-net-pci,netdev={dev_id},mac={mac},mq={mq},vectors={vectors}",
+                dev_id = self.dev_id(),
                 mac = self.guest_mac(),
                 mq = if self.max_combined_channels > 1 {
                     "on"
