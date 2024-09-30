@@ -239,7 +239,7 @@ struct ValidatedVMArgs {
 /// Record and upload envs for debugging purpose
 #[cfg(not(test))]
 fn record_envs(envs: &[KvPair]) -> Result<()> {
-    let env_file = create_tpx_logs("env", "env vars")?;
+    let env_file = create_tpx_logs("env.txt", "env vars")?;
     if let Some(file) = env_file {
         std::fs::write(
             file,
@@ -301,7 +301,7 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: Vec<String>) -> Result<Validat
     vm_args.output_dirs = test_args.test.output_dirs().into_iter().collect();
     vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
-    vm_args.console_output_file = create_tpx_logs("console", "console logs")?;
+    vm_args.console_output_file = create_tpx_logs("console.txt", "console logs")?;
     Ok(ValidatedVMArgs {
         inner: vm_args,
         is_list,

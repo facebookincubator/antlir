@@ -67,24 +67,25 @@ pub(crate) fn run_command_capture_output(command: &mut Command) -> Result<(), st
 
 /// Return a path to record debugging data. When invoked under tpx, this will be
 /// uploaded as an artifact.
-pub(crate) fn create_tpx_logs(
-    name: &str,
+pub(crate) fn create_tpx_artifacts(
+    filename: &str,
     description: &str,
+    artifact_type: &str,
 ) -> Result<Option<PathBuf>, std::io::Error> {
     // If tpx has provided this artifacts dir, put the logs there so they get
     // uploaded along with the test results
     if let Some(artifacts_dir) = std::env::var_os("TEST_RESULT_ARTIFACTS_DIR") {
         fs::create_dir_all(&artifacts_dir)?;
-        let dst = Path::new(&artifacts_dir).join(format!("{}.txt", name));
+        let dst = Path::new(&artifacts_dir).join(filename);
         // The artifact metadata is set up before running the test so that it
         // still gets uploaded even in case of a timeout
         if let Some(annotations_dir) = std::env::var_os("TEST_RESULT_ARTIFACT_ANNOTATIONS_DIR") {
             fs::create_dir_all(&annotations_dir)?;
             fs::write(
-                Path::new(&annotations_dir).join(format!("{}.txt.annotation", name)),
+                Path::new(&annotations_dir).join(format!("{filename}.annotation")),
                 json!({
                     "type": {
-                        "generic_text_log": {},
+                        artifact_type: {},
                     },
                     "description": description,
                 })
@@ -95,6 +96,22 @@ pub(crate) fn create_tpx_logs(
     } else {
         Ok(None)
     }
+}
+
+/// Create a log file for tpx to upload
+pub(crate) fn create_tpx_logs(
+    filename: &str,
+    description: &str,
+) -> Result<Option<PathBuf>, std::io::Error> {
+    create_tpx_artifacts(filename, description, "generic_text_log")
+}
+
+/// Create a blob file for tpx to upload
+pub(crate) fn create_tpx_blobs(
+    filename: &str,
+    description: &str,
+) -> Result<Option<PathBuf>, std::io::Error> {
+    create_tpx_artifacts(filename, description, "generic_blob")
 }
 
 /// Convert a list of env names into KvPair with its values
