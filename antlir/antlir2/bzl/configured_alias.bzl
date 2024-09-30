@@ -90,7 +90,7 @@ _antlir2_configured_alias_macro = rule_with_default_target_platform(_configured_
 def antlir2_configured_alias(
         *,
         name: str,
-        default_os: str | None = None,
+        default_os: str | Select | None = None,
         rootless: bool | None = None,
         visibility: list[str] | None = None,
         **kwargs):
