@@ -10,6 +10,8 @@
 
 use std::ffi::OsString;
 use std::net::Ipv6Addr;
+use std::ops::Index;
+use std::ops::IndexMut;
 use std::process::Command;
 
 use thiserror::Error;
@@ -157,6 +159,23 @@ impl VirtualNICs {
             .collect();
         Ok(Self(nics?))
     }
+
+    pub(crate) fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl Index<usize> for VirtualNICs {
+    type Output = VirtualNIC;
+    fn index(&self, index: usize) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl IndexMut<usize> for VirtualNICs {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
 }
 
 impl QemuDevice for VirtualNICs {
@@ -219,5 +238,20 @@ mod test {
              -netdev tap,id=net1,ifname=vm1,script=no,downscript=no,queues=128 \
              -device virtio-net-pci,netdev=net1,mac=00:00:00:00:00:02,mq=on,vectors=258"
         )
+    }
+
+    #[test]
+    fn test_nics_access() {
+        let nics = VirtualNICs(vec![VirtualNIC::new(0, 1), VirtualNIC::new(1, 128)]);
+        assert_eq!(nics.len(), 2);
+
+        assert_eq!(nics[1].dev_id(), "net1");
+    }
+
+    #[test]
+    #[should_panic(expected = "index out of bounds: the len is 1 but the index is 1")]
+    fn test_nics_outofbounds_access() {
+        let nics = VirtualNICs(vec![VirtualNIC::new(0, 1)]);
+        nics[1].dev_id();
     }
 }
