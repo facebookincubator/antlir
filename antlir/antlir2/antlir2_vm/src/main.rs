@@ -44,6 +44,7 @@ use crate::share::VirtiofsShare;
 use crate::types::MachineOpts;
 use crate::types::MountPlatformDecision;
 use crate::types::VMArgs;
+use crate::utils::create_tpx_blobs;
 use crate::utils::create_tpx_logs;
 use crate::utils::env_names_to_kvpairs;
 use crate::utils::log_command;
@@ -97,6 +98,9 @@ struct IsolateCmdArgs {
     /// Extra RW bind-mount into the VM for debugging purpose
     #[arg(long)]
     scratch_dir: Option<PathBuf>,
+    /// Whether or not to dump the VM's eth0 traffic to a file. When running the test command, this will set eth0_output_file to a file that will be uploaded to tpx.
+    #[arg(long, default_value_t = false)]
+    dump_eth0_traffic: bool,
     /// Args for run command
     #[clap(flatten)]
     run_cmd_args: RunCmdArgs,
@@ -260,7 +264,11 @@ fn record_envs(_envs: &[KvPair]) -> Result<()> {
 
 /// Further validate `VMArgs` parsed by clap and generate a new `VMArgs` with
 /// content specific to test execution.
-fn get_test_vm_args(orig_args: &VMArgs, cli_envs: Vec<String>) -> Result<ValidatedVMArgs> {
+fn get_test_vm_args(
+    orig_args: &VMArgs,
+    cli_envs: Vec<String>,
+    dump_eth0_traffic: bool,
+) -> Result<ValidatedVMArgs> {
     if orig_args.timeout_secs.is_none() {
         return Err(anyhow!("Test command must specify --timeout-secs."));
     }
@@ -302,6 +310,9 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: Vec<String>) -> Result<Validat
     vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
     vm_args.console_output_file = create_tpx_logs("console.txt", "console logs")?;
+    if dump_eth0_traffic {
+        vm_args.eth0_output_file = create_tpx_blobs("eth0.pcap", "eth0 traffic")?;
+    }
     Ok(ValidatedVMArgs {
         inner: vm_args,
         is_list,
@@ -381,7 +392,11 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     // It may then decide whether to use host's platform for the actual test.
     Platform::set(&MountPlatformDecision(true))?;
 
-    let validated_args = get_test_vm_args(&args.run_cmd_args.vm_args, args.passenv.clone())?;
+    let validated_args = get_test_vm_args(
+        &args.run_cmd_args.vm_args,
+        args.passenv.clone(),
+        args.dump_eth0_traffic,
+    )?;
     antlir2_rootless::unshare_new_userns()?;
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
     let mut command = if validated_args.is_list {
@@ -441,27 +456,28 @@ mod test {
         };
         let mut expected = valid.clone();
         expected.mode.command = Some(vec![OsString::from("whatever")]);
-        let parsed = get_test_vm_args(&valid, vec![]).expect("Parsing should succeed");
+        let parsed = get_test_vm_args(&valid, vec![], false).expect("Parsing should succeed");
         assert_eq!(parsed.inner.mode, expected.mode);
         assert!(!parsed.is_list);
 
         let mut timeout = valid.clone();
         timeout.timeout_secs = None;
-        assert!(get_test_vm_args(&timeout, vec![]).is_err());
+        assert!(get_test_vm_args(&timeout, vec![], false).is_err());
 
         let mut output_dirs = valid.clone();
         output_dirs.output_dirs = vec![PathBuf::from("/some")];
-        assert!(get_test_vm_args(&output_dirs, vec![]).is_err());
+        assert!(get_test_vm_args(&output_dirs, vec![], false).is_err());
 
         let mut command = valid.clone();
         command.mode.command = None;
-        assert!(get_test_vm_args(&command, vec![]).is_err());
+        assert!(get_test_vm_args(&command, vec![], false).is_err());
         command.mode.command = Some(vec![OsString::from("invalid")]);
-        assert!(get_test_vm_args(&command, vec![]).is_err());
+        assert!(get_test_vm_args(&command, vec![], false).is_err());
 
         let env_var_test = valid;
         std::env::set_var("TEST_PILOT_A", "A");
-        let parsed = get_test_vm_args(&env_var_test, vec![]).expect("Parsing should succeed");
+        let parsed =
+            get_test_vm_args(&env_var_test, vec![], false).expect("Parsing should succeed");
         assert!(
             parsed
                 .inner

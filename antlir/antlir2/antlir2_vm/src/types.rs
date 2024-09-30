@@ -96,6 +96,9 @@ pub(crate) struct VMArgs {
     /// Command requires first boot
     #[clap(long)]
     pub(crate) first_boot_command: Option<String>,
+    /// Dump network traffic on eth0 to output to file. By default it is not dumped.
+    #[clap(long)]
+    pub(crate) eth0_output_file: Option<PathBuf>,
     /// Operation for VM to carry out
     #[clap(flatten)]
     pub(crate) mode: VMModeArgs,
@@ -129,6 +132,10 @@ impl VMArgs {
         }
         if let Some(path) = &self.console_output_file {
             args.push("--console-output-file".into());
+            args.push(path.into());
+        }
+        if let Some(path) = &self.eth0_output_file {
+            args.push("--eth0-output-file".into());
             args.push(path.into());
         }
         self.command_envs.iter().for_each(|pair| {
@@ -170,6 +177,14 @@ impl VMArgs {
         let mut outputs = self.get_vm_output_dirs();
         // Console output needs to be accessible for debugging and uploading
         if let Some(file_path) = &self.console_output_file {
+            if let Some(parent) = file_path.parent() {
+                outputs.insert(parent.to_path_buf());
+            } else {
+                outputs.insert(env::current_dir().expect("current dir must be valid"));
+            }
+        }
+        // eth0 output needs to be accessible for debugging and uploading
+        if let Some(file_path) = &self.eth0_output_file {
             if let Some(parent) = file_path.parent() {
                 outputs.insert(parent.to_path_buf());
             } else {

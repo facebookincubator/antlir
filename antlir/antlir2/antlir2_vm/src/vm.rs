@@ -13,6 +13,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::ErrorKind;
 use std::io::Read;
+use std::io::Write;
 use std::net::Shutdown;
 use std::os::unix::net::UnixStream;
 use std::path::Path;
@@ -31,6 +32,7 @@ use thiserror::Error;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
+use tracing::warn;
 use uuid::Uuid;
 
 use crate::disk::QCow2DiskError;
@@ -131,7 +133,20 @@ impl<S: Share> VM<S> {
             &state_dir,
             machine.mem_mib,
         )?;
-        let nics = VirtualNICs::new(machine.num_nics, machine.max_combined_channels)?;
+        let mut nics = VirtualNICs::new(machine.num_nics, machine.max_combined_channels)?;
+        if nics.len() > 0 {
+            if let Err(e) = nics[0].try_dump_file(args.eth0_output_file.clone()) {
+                let err = format!("Failed to set eth0 dump file: {:?}", e);
+                warn!(err);
+                // Leave a hint that we could not set the dump file by writting a textual error in the .pcap file.
+                // This will generate a corrupted .pcap file that an operator can look into to debug and understand what went wrong.
+                if let Some(filename) = args.eth0_output_file.as_ref() {
+                    // If any part of this fail, we don't want to fail the VM creation.
+                    let _ =
+                        fs::File::create(filename).and_then(|mut f| f.write_all(err.as_bytes()));
+                }
+            }
+        }
         let tpm = match machine.use_tpm {
             true => Some(TPMDevice::new(&state_dir)?),
             false => None,
@@ -391,6 +406,7 @@ impl<S: Share> VM<S> {
         if let Some(tpm) = &self.tpm {
             args.extend(tpm.qemu_args());
         }
+
         let mut command = Command::new(match self.machine.arch {
             CpuIsa::AARCH64 => "qemu-system-aarch64",
             CpuIsa::X86_64 => "qemu-system-x86_64",
