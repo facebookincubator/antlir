@@ -12,6 +12,7 @@ use std::ffi::OsString;
 use std::net::Ipv6Addr;
 use std::ops::Index;
 use std::ops::IndexMut;
+use std::path::PathBuf;
 use std::process::Command;
 
 use thiserror::Error;
@@ -27,6 +28,8 @@ pub(crate) struct VirtualNIC {
     id: usize,
     /// Max Combined Channels of the NIC. Multi-queue is disabled when set to 1
     max_combined_channels: usize,
+    /// Dump interface traffic to this file. This is not supported for multi-queue NICs.
+    dump_file: Option<PathBuf>,
 }
 
 #[derive(Error, Debug)]
@@ -35,6 +38,8 @@ pub(crate) enum VirtualNICError {
     IPCmdExecError(#[from] std::io::Error),
     #[error("Error from command: `{0}` ")]
     IPCmdReturnError(String),
+    #[error("Traffic is not dumpable: `{0}` ")]
+    TrafficDumpingNotSupported(String),
 }
 
 type Result<T> = std::result::Result<T, VirtualNICError>;
@@ -46,6 +51,7 @@ impl VirtualNIC {
         Self {
             id,
             max_combined_channels,
+            dump_file: None,
         }
     }
 
@@ -92,6 +98,18 @@ impl VirtualNIC {
             })
     }
 
+    /// Set the file to dump interface traffic to.
+    /// Set to None to disable dumping traffic.
+    pub(crate) fn try_dump_file(&mut self, path: Option<PathBuf>) -> Result<&mut Self> {
+        if self.max_combined_channels > 1 {
+            return Err(VirtualNICError::TrafficDumpingNotSupported(
+                "Can not dump traffic for multi-queue NIC: https://fburl.com/dmblggwc".into(),
+            ));
+        }
+        self.dump_file = path;
+        Ok(self)
+    }
+
     /// Host side IP address. It's fd00:<id>::1.
     fn host_ipv6_addr(&self) -> Ipv6Addr {
         let mut ip: u128 = 0xfd00 << (128 - 16);
@@ -116,7 +134,7 @@ impl VirtualNIC {
 
 impl QemuDevice for VirtualNIC {
     fn qemu_args(&self) -> Vec<OsString> {
-        [
+        let mut vec: Vec<_> = [
             "-netdev",
             &format!(
                 "tap,id={dev_id},ifname={dev_name},script=no,downscript=no,queues={queues}",
@@ -141,7 +159,24 @@ impl QemuDevice for VirtualNIC {
         ]
         .iter()
         .map(|x| x.into())
-        .collect()
+        .collect();
+        if let Some(path) = &self.dump_file {
+            vec.extend(
+                [
+                    "-object",
+                    &format!(
+                        "filter-dump,id=dump0,netdev={},file={}",
+                        self.dev_id(),
+                        path.to_string_lossy()
+                    ),
+                ]
+                .iter()
+                .map(|x| x.into())
+                .collect::<Vec<_>>(),
+            );
+        }
+
+        vec
     }
 }
 
@@ -216,6 +251,38 @@ mod test {
             VirtualNIC::new(0, 1).qemu_args().join(OsStr::new(" ")),
             "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=1 \
             -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=off,vectors=4"
+        )
+    }
+
+    #[test]
+    fn test_qemu_args_with_dump_file() {
+        let dump_file = PathBuf::from("/tmp/dump");
+        let mut nic = VirtualNIC::new(0, 1);
+        nic.try_dump_file(Some(dump_file.clone())).unwrap();
+
+        assert_eq!(
+            nic.qemu_args().join(OsStr::new(" ")),
+            format!(
+                "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=1 \
+            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=off,vectors=4 \
+            -object filter-dump,id=dump0,netdev=net0,file={}",
+                dump_file.to_string_lossy()
+            )
+            .as_str()
+        )
+    }
+
+    #[test]
+    // This test is to make sure that the dump file is not added to the qemu args when it's not supported (multi-queue nics)
+    fn test_qemu_args_with_dump_file_not_supported() {
+        let dump_file = PathBuf::from("/tmp/dump");
+        let mut nic = VirtualNIC::new(0, 2);
+        assert!(nic.try_dump_file(Some(dump_file.clone())).is_err());
+
+        assert_eq!(
+            nic.qemu_args().join(OsStr::new(" ")),
+            "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=2 \
+            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=on,vectors=6"
         )
     }
 
