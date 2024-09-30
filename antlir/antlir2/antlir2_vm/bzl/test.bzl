@@ -44,6 +44,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         test_cmd = cmd_args(test_cmd, "--expect-failure")
     if ctx.attrs.postmortem:
         test_cmd = cmd_args(test_cmd, "--postmortem")
+    if ctx.attrs.dump_eth0:
+        test_cmd = cmd_args(test_cmd, "--dump-eth0-traffic")
+
     test_cmd = cmd_args(
         test_cmd,
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
@@ -109,6 +112,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _vm_test = rule(
     impl = _impl,
     attrs = {
+        "dump_eth0": attrs.bool(
+            doc = "If true, dumps the vm's eth0 traffic to a file. The file location is dictated by testX and uploaded as part of test result",
+            default = bool(read_config("antlir2", "dump_eth0", False)),
+        ),
         "expect_failure": attrs.bool(
             doc = "If true, VM is expected to timeout or fail early.",
         ),
