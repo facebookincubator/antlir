@@ -82,10 +82,13 @@ load("//antlir/bzl:types.bzl", "types")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":cfg.bzl", "feature_cfg")
 
+_ANTLIR_STRICT_TYPE_CHECKS = native.read_config("antlir", "strict-type-checks")
+_ANTLIR_STRICT_BUILD_PHASE_TYPE_CHECKS = native.read_config("antlir", "strict-build-phase-type-checks")
+
 def verify_feature_records(features: list[feature_record | typing.Any]) -> None:
     if (
-        native.read_config("antlir", "strict-type-checks") == None and
-        native.read_config("antlir", "strict-feature-record-type-checks") == None
+        _ANTLIR_STRICT_TYPE_CHECKS == None and
+        _ANTLIR_STRICT_BUILD_PHASE_TYPE_CHECKS == None
     ):
         return
 
