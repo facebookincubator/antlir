@@ -330,7 +330,11 @@ _vfat, _vfat_anon = _new_package_rule(
 )
 
 _squashfs, squashfs_anon = _new_package_rule(
-    rule_attrs = {},
+    rule_attrs = {
+        "compressor": attrs.enum(["zstd", "gzip"], default = "zstd"),
+        "force_gid": attrs.option(attrs.int(), default = None),
+        "force_uid": attrs.option(attrs.int(), default = None),
+    },
     format = "squashfs",
     can_be_partition = True,
     sudo = True,
