@@ -21,6 +21,7 @@ use thiserror::Error;
 /// from the command. This enum parses the expected flags for each type.
 pub enum Test {
     Custom {
+        #[clap(allow_hyphen_values = true)]
         test_cmd: Vec<OsString>,
     },
     Gtest {
@@ -285,10 +286,10 @@ mod test {
 
     #[test]
     fn test_custom() {
-        let arg = TestArgs::parse_from(["test", "custom", "whatever"]);
+        let arg = TestArgs::parse_from(["test", "custom", "whatever", "--list"]);
         assert!(!arg.test.is_list_tests());
         assert_eq!(arg.test.output_dirs(), HashSet::new());
-        assert_eq!(arg.test.into_inner_cmd(), vec!["whatever"]);
+        assert_eq!(arg.test.into_inner_cmd(), vec!["whatever", "--list"]);
     }
 
     #[test]
