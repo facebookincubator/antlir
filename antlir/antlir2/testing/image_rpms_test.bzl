@@ -77,11 +77,6 @@ def _rpm_integrity_test_impl(ctx: AnalysisContext) -> list[Provider]:
         RunInfo(cmd_args(
             ctx.attrs.image_rpms_test[RunInfo],
             "integrity",
-            # image_test generally does not add this because it needs to parse
-            # options intended for the end test in the case of things like
-            # python_unittest. Add -- explicitly so that `image-test` does not
-            # try to parse our rpm test options
-            "--",
             cmd_args(ctx.attrs.ignored_files, format = "--ignored-file={}"),
             cmd_args(ctx.attrs.ignored_rpms, format = "--ignored-rpm={}"),
             "--layer=/layer",
