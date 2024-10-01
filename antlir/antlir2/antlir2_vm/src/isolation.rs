@@ -99,6 +99,7 @@ pub(crate) fn isolated(
         .working_directory(repo.clone())
         .tmpfs(Path::new("/run"))
         .tmpfs(Path::new("/mnt/xarfuse"))
+        .tmpfs(Path::new("/dev/shm"))
         .outputs(outputs);
     builder.setenv(
         envs.into_iter()
