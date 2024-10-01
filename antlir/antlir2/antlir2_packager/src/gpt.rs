@@ -125,22 +125,15 @@ impl Gpt {
         mbr.overwrite_lba0(&mut file).context("while writing mbr")?;
 
         let mut gdisk = gpt::GptConfig::default()
-            .initialized(false)
             .writable(true)
             .logical_block_size(self.block_size.into())
             .create_from_device(Box::new(file), None)
             .context("while creating new gpt")?;
 
-        gdisk
-            .update_partitions(Default::default())
-            .context("while making blank gpt table")?;
-
         if let Some(guid) = self.disk_guid {
-            gdisk
-                .update_guid(Some(
-                    guid.to_string().parse().context("while re-parsing uuid")?,
-                ))
-                .context("while setting guid")?;
+            gdisk.update_guid(Some(
+                guid.to_string().parse().context("while re-parsing uuid")?,
+            ))
         }
 
         for partition in self.partitions.iter() {
