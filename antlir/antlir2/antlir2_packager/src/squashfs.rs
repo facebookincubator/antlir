@@ -8,7 +8,6 @@
 use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Stdio;
 
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
@@ -24,6 +23,9 @@ use crate::PackageFormat;
 #[serde(deny_unknown_fields)]
 pub struct Squashfs {
     build_appliance: BuildAppliance,
+    compressor: Option<String>,
+    force_uid: Option<u32>,
+    force_gid: Option<u32>,
 }
 
 impl PackageFormat for Squashfs {
@@ -43,18 +45,27 @@ impl PackageFormat for Squashfs {
             .working_directory(Path::new("/__antlir2__/working_directory"))
             .build();
 
-        run_cmd(
-            unshare(isol_context)?
-                .command("/usr/sbin/mksquashfs")?
-                .arg("/__antlir2__/root")
-                .arg("/__antlir2__/out/squashfs")
-                .arg("-comp")
-                .arg("zstd")
-                .arg("-noappend")
-                .arg("-one-file-system")
-                .stdout(Stdio::piped()),
-        )
-        .context("Failed to build squashfs")?;
+        let mut mksquashfs = unshare(isol_context)?.command("/usr/sbin/mksquashfs")?;
+
+        // Base options
+        mksquashfs
+            .arg("/__antlir2__/root")
+            .arg("/__antlir2__/out/squashfs")
+            .arg("-noappend")
+            .arg("-one-file-system");
+
+        // Options from the rule
+        if let Some(compressor) = &self.compressor {
+            mksquashfs.arg("-comp").arg(compressor);
+        }
+        if let Some(force_uid) = &self.force_uid {
+            mksquashfs.arg("-force-uid").arg(force_uid.to_string());
+        }
+        if let Some(force_gid) = &self.force_gid {
+            mksquashfs.arg("-force-gid").arg(force_gid.to_string());
+        }
+
+        run_cmd(&mut mksquashfs).context("Failed to build squashfs")?;
 
         Ok(())
     }
