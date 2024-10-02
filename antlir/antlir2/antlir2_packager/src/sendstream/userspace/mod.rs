@@ -65,6 +65,10 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
         .with_context(|| format!("while opening subvol {}", canonical_layer.display()))?;
     let info = subvol.info().context("while getting subvol info")?;
 
+    // NOTE on uuids: each subvolume has its own true (unique) uuid, but we
+    // want to put the "received uuid" (if it exists) in the sendstream so that
+    // they can be accurately identified by the receiver for use with
+    // incremental send/receive.
     if let Some(parent) = &spec.incremental_parent {
         let parent_info = antlir2_btrfs::Subvolume::open(parent)
             .with_context(|| format!("while opening parent subvol {}", parent.display()))?
@@ -80,7 +84,7 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
     } else {
         f.write_all(&command::subvol(
             &spec.volume_name,
-            info.uuid(),
+            info.received_uuid().unwrap_or(info.uuid()),
             info.ctransid(),
         ))?;
     }
