@@ -51,18 +51,21 @@ $ buck2 run //metalos/vm:default-initrd-boot
 [root@vmtest ~]#
 ```
 
-Similarly, one can run the example tests. It will execute the test inside VM and
-report back results.
+Similarly, one can run the example test just like a regular buck test target. We
+will use `//metalos/vm/tests/antlir:rust-test` as an example from now on. You
+can swap this for your test target and everything below should apply. The
+following command will execute the example test inside VM and report back
+results.
 
 ```
 $ buck2 test //metalos/vm/tests/antlir:rust-test
 <test output just like a normal tests>
 ```
 
-The test itself is a normal test written in any supported languages, except that
-it will be executed inside the specified VM when created with VM test macros.
-See the [Test Developer](#for-test-developers) section for more details on the
-test target description.
+The inner test itself is a normal test written in any supported languages,
+except that it will be executed inside the specified VM when created with VM
+test macros. See the [Test Developer](#for-test-developers) section for more
+details on the test target description.
 
 ### Useful Sub Targets
 
