@@ -5,10 +5,6 @@ oncall("antlir")
 rust_binary(
     name = "antlir2",
     srcs = glob(["src/**/*.rs"]),
-    rustc_flags = [
-        "-C",
-        "opt-level=3",
-    ],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
