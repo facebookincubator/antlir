@@ -23,6 +23,7 @@ pub(crate) enum Tlv<'a> {
     XattrName(&'a [u8]),
     XattrData(&'a [u8]),
     Path(&'a Path),
+    PathTo(&'a Path),
     PathLink(&'a Path),
     FileOffset(u64),
     Data(&'a [u8]),
@@ -63,6 +64,7 @@ impl Tlv<'_> {
             Self::XattrName(_) => 13,
             Self::XattrData(_) => 14,
             Self::Path(_) => 15,
+            Self::PathTo(_) => 16,
             Self::PathLink(_) => 17,
             Self::FileOffset(_) => 18,
             Self::Data(_) => 19,
@@ -87,7 +89,7 @@ impl Tlv<'_> {
             | Self::FileOffset(_)
             | Self::CloneCtransid(_) => 8,
             Self::XattrName(x) | Self::XattrData(x) => x.len() as u16,
-            Self::Path(p) | Self::PathLink(p) => p.as_os_str().len() as u16,
+            Self::Path(p) | Self::PathTo(p) | Self::PathLink(p) => p.as_os_str().len() as u16,
             Self::Data(v) => v.len() as u16,
             Self::Atime(_) | Self::Mtime(_) | Self::Ctime(_) => 12, // 64bit sec + 32bit nsec
         }
@@ -106,7 +108,9 @@ impl Tlv<'_> {
             | Self::FileOffset(v)
             | Self::CloneCtransid(v) => TlvData::U64(v.to_le_bytes()),
             Self::XattrName(x) | Self::XattrData(x) => TlvData::Bytes(x),
-            Self::Path(p) | Self::PathLink(p) => TlvData::Bytes(p.as_os_str().as_bytes()),
+            Self::Path(p) | Self::PathTo(p) | Self::PathLink(p) => {
+                TlvData::Bytes(p.as_os_str().as_bytes())
+            }
             Self::Data(v) => TlvData::Bytes(v),
             Self::Atime(t) | Self::Mtime(t) | Self::Ctime(t) => {
                 let duration = t.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default();

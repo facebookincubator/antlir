@@ -216,3 +216,14 @@ where
         .tlv(&Tlv::Size(size))
         .finish()
 }
+
+pub(crate) fn rename<P1, P2>(from: P1, to: P2) -> Vec<u8>
+where
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
+{
+    CommandBuilder::new(9)
+        .tlv(&Tlv::Path(from.as_ref()))
+        .tlv(&Tlv::PathTo(to.as_ref()))
+        .finish()
+}

@@ -28,6 +28,7 @@ use anyhow::Error;
 use anyhow::Result;
 use nix::sys::stat::Mode;
 use tracing::trace;
+use uuid::Uuid;
 use walkdir::DirEntryExt;
 use walkdir::WalkDir;
 
@@ -106,7 +107,10 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
 
         match inodes.entry(entry.ino()) {
             std::collections::hash_map::Entry::Occupied(e) => {
-                f.write_all(&command::hardlink(e.get(), relpath))?;
+                let tmp = Uuid::new_v4().to_string();
+                f.write_all(&command::hardlink(e.get(), &tmp))?;
+                f.write_all(&command::rename(tmp, relpath))?;
+                continue;
             }
             std::collections::hash_map::Entry::Vacant(e) => {
                 e.insert(relpath.to_owned());
@@ -281,7 +285,11 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
                 f.write_all(&command::mkdir(relpath, entry.ino()))?;
             } else if meta.file_type().is_symlink() {
                 let target = std::fs::read_link(entry.path())?;
-                f.write_all(&command::symlink(target, relpath, entry.ino()))?;
+                // create symlink at a temporary path, then rename it to the
+                // real destination - this matches the in-kernel implementation
+                let tmp = Uuid::new_v4().to_string();
+                f.write_all(&command::symlink(target, &tmp, entry.ino()))?;
+                f.write_all(&command::rename(tmp, relpath))?;
             } else if meta.file_type().is_file() {
                 if meta.file_type().is_block_device() || meta.file_type().is_char_device() {
                     f.write_all(&command::mknod(relpath, meta.mode().into(), meta.rdev()))?;
