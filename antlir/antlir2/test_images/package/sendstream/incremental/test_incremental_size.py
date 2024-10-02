@@ -25,6 +25,13 @@ class TestIncrementalSize(unittest.TestCase):
 
     def test_incremental_size(self) -> None:
         self._test_size("parent.sendstream", "child.sendstream")
+        self._test_size("prebuilt-parent.sendstream", "prebuilt-child.sendstream")
 
     def test_incremental_size_rootless(self) -> None:
         self._test_size("parent.sendstream.rootless", "child.sendstream.rootless")
+        self._test_size(
+            "prebuilt-parent.sendstream.rootless", "prebuilt-child.sendstream.rootless"
+        )
+
+    def test_incremental_size_prebuilt(self) -> None:
+        self._test_size("prebuilt-parent.sendstream", "prebuilt-child.sendstream")

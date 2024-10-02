@@ -54,6 +54,25 @@ package.sendstream_v2(
     rootless = True,
 )
 
+image.prebuilt(
+    name = "prebuilt-parent",
+    src = ":parent.sendstream",
+    flavor = ":parent[flavor]",
+    format = "sendstream",
+    visibility = ["//antlir/antlir2/test_images/package/sendstream/incremental/..."],
+)
+
+package.sendstream_v2(
+    name = "prebuilt-parent.sendstream",
+    layer = ":prebuilt-parent",
+)
+
+package.sendstream_v2(
+    name = "prebuilt-parent.sendstream.rootless",
+    layer = ":prebuilt-parent",
+    rootless = True,
+)
+
 buck_genrule(
     name = "child_large_file",
     out = "child_large_file",
@@ -65,8 +84,8 @@ buck_genrule(
     visibility = [],
 )
 
-image.layer(
-    name = "child",
+feature.new(
+    name = "child-features",
     features = [
         feature.install(
             src = ":child_large_file",
@@ -96,6 +115,11 @@ image.layer(
             target = "bar",
         ),
     ],
+)
+
+image.layer(
+    name = "child",
+    features = [":child-features"],
     parent_layer = ":parent",
 )
 
@@ -113,13 +137,22 @@ package.sendstream_v2(
 )
 
 image.layer(
-    name = "foo",
-    features = [
-        feature.install_text(
-            dst = "/foo",
-            text = "foo",
-        ),
-    ],
+    name = "prebuilt-child",
+    features = [":child-features"],
+    parent_layer = ":prebuilt-parent",
+)
+
+package.sendstream_v2(
+    name = "prebuilt-child.sendstream",
+    incremental_parent = ":prebuilt-parent.sendstream",
+    layer = ":prebuilt-child",
+)
+
+package.sendstream_v2(
+    name = "prebuilt-child.sendstream.rootless",
+    incremental_parent = ":prebuilt-parent.sendstream",
+    layer = ":prebuilt-child",
+    rootless = True,
 )
 
 python_unittest(
@@ -130,5 +163,9 @@ python_unittest(
         ":child.sendstream.rootless": "child.sendstream.rootless",
         ":parent.sendstream": "parent.sendstream",
         ":parent.sendstream.rootless": "parent.sendstream.rootless",
+        ":prebuilt-child.sendstream": "prebuilt-child.sendstream",
+        ":prebuilt-child.sendstream.rootless": "prebuilt-child.sendstream.rootless",
+        ":prebuilt-parent.sendstream": "prebuilt-parent.sendstream",
+        ":prebuilt-parent.sendstream.rootless": "prebuilt-parent.sendstream.rootless",
     },
 )

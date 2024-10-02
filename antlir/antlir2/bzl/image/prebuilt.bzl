@@ -123,6 +123,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             label = ctx.label,
             facts_db = facts_db,
             contents = contents,
+            subvol_symlink = contents.subvol_symlink,
             mounts = [],
             flavor = ctx.attrs.flavor,
         ),
@@ -142,7 +143,7 @@ _prebuilt = rule(
         "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
-        "_btrfs": attrs.option(attrs.exec_dep()),
+        "_btrfs": attrs.option(attrs.exec_dep(), default = None),
         "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
         "_overlayfs": attrs.bool(default = False),
         "_rootless": attrs.default_only(attrs.bool(default = select({
