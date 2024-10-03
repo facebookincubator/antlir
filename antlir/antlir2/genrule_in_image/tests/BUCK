@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
-load("//antlir/bzl:build_defs.bzl", "python_unittest")
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_unittest")
 
 oncall("antlir")
 
@@ -76,6 +76,62 @@ genrule_in_image(
     layer = ":layer",
 )
 
+genrule_in_image(
+    name = "cannot-write-to-buck-out",
+    out = "f",
+    bash = """
+        if echo foo > buck-out/foo ;
+        then
+            echo "write should not have worked"
+            exit 1
+        fi
+    """,
+    layer = ":layer",
+)
+
+python_binary(
+    name = "par",
+    srcs = ["par.py"],
+    main_function = "antlir.antlir2.genrule_in_image.tests.par.main",
+)
+
+image.layer(
+    name = "with-xarexec",
+    features = [
+        # @oss-disable
+    ],
+    parent_layer = ":layer",
+)
+
+genrule_in_image(
+    name = "run-exe-par",
+    out = "f",
+    bash = """
+        $(exe :par) $OUT
+    """,
+    layer = ":with-xarexec",
+)
+
+image.layer(
+    name = "with-par",
+    features = [
+        feature.install(
+            src = ":par",
+            dst = "/par",
+        ),
+    ],
+    parent_layer = ":with-xarexec",
+)
+
+genrule_in_image(
+    name = "run-installed-par",
+    out = "f",
+    bash = """
+        /par $OUT
+    """,
+    layer = ":with-par",
+)
+
 python_unittest(
     name = "test",
     srcs = ["test.py"],
@@ -83,6 +139,8 @@ python_unittest(
         "BUCK_SCRATCH_PATH": "$(location :buck-scratch-path)",
         "DEFAULT_OUT": "$(location :default-out)",
         "DOT_DIR": "$(location :dot-dir)",
+        "EXE_PAR": "$(location :run-exe-par)",
+        "INSTALLED_PAR": "$(location :run-installed-par)",
         "NAMED_DIR": "$(location :named-dir)",
         "NAMED_OUTS": "$(location :named-outs)",
         "SINGLE_FILE": "$(location :single-file)",

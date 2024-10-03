@@ -183,7 +183,7 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
                 .symlink_contents("/proc/self/fd", "fd")
                 .context("while creating /dev/fd symlink")?;
 
-            for devname in ["null", "random", "urandom"] {
+            for devname in ["fuse", "null", "random", "urandom"] {
                 let dev = tmpfs
                     .create(devname)
                     .with_context(|| format!("while creating device file '{devname}'"))?;
