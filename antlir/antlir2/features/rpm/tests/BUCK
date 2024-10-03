@@ -172,6 +172,32 @@ test_rpms(
 )
 
 test_rpms(
+    name = "upgrade-not-already-installed",
+    expected = expected_t(
+        installed = [
+            "foo-3-1",
+        ],
+    ),
+    features = [
+        feature.rpms_upgrade(rpms = ["foo"]),
+        ":test-deps",
+    ],
+)
+
+test_rpms(
+    name = "upgrade-not-already-installed-file",
+    expected = expected_t(
+        installed = [
+            "foo-2-1",
+        ],
+    ),
+    features = [
+        feature.rpms_upgrade(rpms = ["//antlir/antlir2/features/rpm/tests/repo:foo-2-1.noarch"]),
+        ":test-deps",
+    ],
+)
+
+test_rpms(
     name = "downgrade",
     expected = expected_t(
         installed = ["foo-1"],
