@@ -42,3 +42,13 @@ class Test(unittest.TestCase):
         f = Path(os.getenv("BUCK_SCRATCH_PATH"))
         self.assertTrue(f.exists())
         self.assertEqual(f.read_text(), "/__genrule_in_image__/buck_scratch_path\n")
+
+    def test_exe_par(self) -> None:
+        f = Path(os.getenv("EXE_PAR"))
+        self.assertTrue(f.exists())
+        self.assertEqual(f.read_text(), "From par\n")
+
+    def test_installed_par(self) -> None:
+        f = Path(os.getenv("INSTALLED_PAR"))
+        self.assertTrue(f.exists())
+        self.assertEqual(f.read_text(), "From par\n")

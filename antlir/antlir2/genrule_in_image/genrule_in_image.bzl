@@ -52,7 +52,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
                 "--dir" if out_is_dir else cmd_args(),
-                "--ephemeral" if ctx.attrs.ephemeral_root else cmd_args(),
                 "--",
                 ctx.attrs.bash,
             ),
@@ -97,7 +96,6 @@ _genrule_in_image = rule(
     attrs = {
         "bash": attrs.arg(),
         "default_out": attrs.option(attrs.string(), default = None),
-        "ephemeral_root": attrs.bool(default = False),
         # TODO: exec_layer should probably be the default (which would make this
         # behave more like a standard genrule)
         "exec_layer": attrs.option(

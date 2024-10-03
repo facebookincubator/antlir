@@ -23,8 +23,6 @@ struct Args {
     layer: PathBuf,
     #[clap(long)]
     rootless: bool,
-    #[clap(long)]
-    ephemeral: bool,
     #[clap(value_enum, long)]
     /// On-disk format of the layer storage
     working_format: WorkingFormat,
@@ -84,7 +82,7 @@ fn main() -> Result<()> {
             .as_ref()
             .map_or(args.layer.as_path(), |o| o.mountpoint()),
     );
-    builder.ephemeral(args.ephemeral);
+    builder.ephemeral(true);
     #[cfg(facebook)]
     builder.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
     let cwd = std::env::current_dir()?;
@@ -93,17 +91,10 @@ fn main() -> Result<()> {
             Path::new("/__genrule_in_image__/working_directory"),
             cwd.as_path(),
         ))
-        // TODO(T185979228) we really should make all submounts recursively
-        // readonly, but that's hard and for now we should at least make sure
-        // that buck-out is readonly
-        .inputs((
-            Path::new("/__genrule_in_image__/working_directory/buck-out"),
-            cwd.join("buck-out"),
-        ))
+        .inputs((cwd.as_path(), cwd.as_path()))
         .working_directory(Path::new("/__genrule_in_image__/working_directory"))
         .tmpfs(Path::new("/tmp"))
-        // TODO(vmagro): make this a devtmpfs after resolving permissions issues
-        .tmpfs(Path::new("/dev"));
+        .devtmpfs(Path::new("/dev"));
 
     if args.out.dir {
         std::fs::create_dir_all(&args.out.out)?;
