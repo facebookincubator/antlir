@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "f5da51e0cb3d69ff2d32d9ca03fd02b30cddd114",
+    rev = "3165a438b2a8fef32621a4a7cf859435fe54f5bd",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "4d719855a52dbcbe4c84d63df6f38dcfd7c93b53",
+    rev = "9efb6cab8bf609b500c9669eabd1bd7944feaa3d",
     visibility = [],
 )
 
@@ -95,21 +95,21 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "addr2line-0.24.1.crate",
-    sha256 = "f5fb1d8e4442bd405fdfd1dacb42792696b0cf9cb15882e5d097b742a676d375",
-    strip_prefix = "addr2line-0.24.1",
-    urls = ["https://static.crates.io/crates/addr2line/0.24.1/download"],
+    name = "addr2line-0.24.2.crate",
+    sha256 = "dfbe277e56a376000877090da837660b4427aad530e3028d44e0bffe4f89a1c1",
+    strip_prefix = "addr2line-0.24.2",
+    urls = ["https://static.crates.io/crates/addr2line/0.24.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "addr2line-0.24.1",
-    srcs = [":addr2line-0.24.1.crate"],
+    name = "addr2line-0.24.2",
+    srcs = [":addr2line-0.24.2.crate"],
     crate = "addr2line",
-    crate_root = "addr2line-0.24.1.crate/src/lib.rs",
+    crate_root = "addr2line-0.24.2.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":gimli-0.31.0"],
+    deps = [":gimli-0.31.1"],
 )
 
 http_archive(
@@ -1738,42 +1738,42 @@ cargo.rust_library(
     platform = {
         "linux-arm64": dict(
             deps = [
-                ":addr2line-0.24.1",
+                ":addr2line-0.24.2",
                 ":libc-0.2.159",
                 ":miniz_oxide-0.8.0",
-                ":object-0.36.4",
+                ":object-0.36.5",
             ],
         ),
         "linux-x86_64": dict(
             deps = [
-                ":addr2line-0.24.1",
+                ":addr2line-0.24.2",
                 ":libc-0.2.159",
                 ":miniz_oxide-0.8.0",
-                ":object-0.36.4",
+                ":object-0.36.5",
             ],
         ),
         "macos-arm64": dict(
             deps = [
-                ":addr2line-0.24.1",
+                ":addr2line-0.24.2",
                 ":libc-0.2.159",
                 ":miniz_oxide-0.8.0",
-                ":object-0.36.4",
+                ":object-0.36.5",
             ],
         ),
         "macos-x86_64": dict(
             deps = [
-                ":addr2line-0.24.1",
+                ":addr2line-0.24.2",
                 ":libc-0.2.159",
                 ":miniz_oxide-0.8.0",
-                ":object-0.36.4",
+                ":object-0.36.5",
             ],
         ),
         "windows-gnu": dict(
             deps = [
-                ":addr2line-0.24.1",
+                ":addr2line-0.24.2",
                 ":libc-0.2.159",
                 ":miniz_oxide-0.8.0",
-                ":object-0.36.4",
+                ":object-0.36.5",
                 ":windows-targets-0.52.6",
             ],
         ),
@@ -3401,7 +3401,7 @@ cargo.rust_library(
         ":fs-set-times-0.20.1",
         ":io-extras-0.18.2",
         ":io-lifetimes-2.0.3",
-        ":ipnet-2.10.0",
+        ":ipnet-2.10.1",
         ":maybe-owned-0.3.4",
     ],
 )
@@ -3507,18 +3507,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.24.crate",
-    sha256 = "812acba72f0a070b003d3697490d2b55b837230ae7c6c6497f05cc2ddbb8d938",
-    strip_prefix = "cc-1.1.24",
-    urls = ["https://static.crates.io/crates/cc/1.1.24/download"],
+    name = "cc-1.1.25.crate",
+    sha256 = "e8d9e0b4957f635b8d3da819d0db5603620467ecf1f692d22a8c2717ce27e6d8",
+    strip_prefix = "cc-1.1.25",
+    urls = ["https://static.crates.io/crates/cc/1.1.25/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.24",
-    srcs = [":cc-1.1.24.crate"],
+    name = "cc-1.1.25",
+    srcs = [":cc-1.1.25.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.24.crate/src/lib.rs",
+    crate_root = "cc-1.1.25.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4291,7 +4291,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.51.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.1.24"],
+    deps = [":cc-1.1.25"],
 )
 
 cargo.rust_library(
@@ -5338,7 +5338,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.24",
+        ":cc-1.1.25",
         ":cxxbridge-flags-1.0.128",
     ],
 )
@@ -8526,18 +8526,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "gimli-0.31.0.crate",
-    sha256 = "32085ea23f3234fc7846555e85283ba4de91e21016dc0455a16286d87a292d64",
-    strip_prefix = "gimli-0.31.0",
-    urls = ["https://static.crates.io/crates/gimli/0.31.0/download"],
+    name = "gimli-0.31.1.crate",
+    sha256 = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f",
+    strip_prefix = "gimli-0.31.1",
+    urls = ["https://static.crates.io/crates/gimli/0.31.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "gimli-0.31.0",
-    srcs = [":gimli-0.31.0.crate"],
+    name = "gimli-0.31.1",
+    srcs = [":gimli-0.31.1.crate"],
     crate = "gimli",
-    crate_root = "gimli-0.31.0.crate/src/lib.rs",
+    crate_root = "gimli-0.31.1.crate/src/lib.rs",
     edition = "2018",
     features = [
         "read",
@@ -9957,18 +9957,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "ipnet-2.10.0.crate",
-    sha256 = "187674a687eed5fe42285b40c6291f9a01517d415fad1c3cbc6a9f778af7fcd4",
-    strip_prefix = "ipnet-2.10.0",
-    urls = ["https://static.crates.io/crates/ipnet/2.10.0/download"],
+    name = "ipnet-2.10.1.crate",
+    sha256 = "ddc24109865250148c2e0f3d25d4f0f479571723792d3802153c60922a4fb708",
+    strip_prefix = "ipnet-2.10.1",
+    urls = ["https://static.crates.io/crates/ipnet/2.10.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "ipnet-2.10.0",
-    srcs = [":ipnet-2.10.0.crate"],
+    name = "ipnet-2.10.1",
+    srcs = [":ipnet-2.10.1.crate"],
     crate = "ipnet",
-    crate_root = "ipnet-2.10.0.crate/src/lib.rs",
+    crate_root = "ipnet-2.10.1.crate/src/lib.rs",
     edition = "2018",
     features = [
         "default",
@@ -10867,7 +10867,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.24",
+        ":cc-1.1.25",
         ":pkg-config-0.3.31",
         ":vcpkg-0.2.15",
     ],
@@ -12158,7 +12158,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.1.24",
+        ":cc-1.1.25",
         ":cmake-0.1.51",
         ":subprocess-0.2.9",
     ],
@@ -13249,18 +13249,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "object-0.36.4.crate",
-    sha256 = "084f1a5821ac4c651660a94a7153d27ac9d8a53736203f58b31945ded098070a",
-    strip_prefix = "object-0.36.4",
-    urls = ["https://static.crates.io/crates/object/0.36.4/download"],
+    name = "object-0.36.5.crate",
+    sha256 = "aedf0a2d09c573ed1d8d85b30c119153926a2b36dce0ab28322c09a117a4683e",
+    strip_prefix = "object-0.36.5",
+    urls = ["https://static.crates.io/crates/object/0.36.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "object-0.36.4",
-    srcs = [":object-0.36.4.crate"],
+    name = "object-0.36.5",
+    srcs = [":object-0.36.5.crate"],
     crate = "object",
-    crate_root = "object-0.36.4.crate/src/lib.rs",
+    crate_root = "object-0.36.5.crate/src/lib.rs",
     edition = "2018",
     features = [
         "archive",
@@ -13505,7 +13505,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.24",
+        ":cc-1.1.25",
         ":pkg-config-0.3.31",
         ":vcpkg-0.2.15",
     ],
@@ -16787,7 +16787,7 @@ cargo.rust_library(
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
                 ":hyper-0.14.30",
-                ":ipnet-2.10.0",
+                ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
                 ":once_cell-1.19.0",
@@ -16809,7 +16809,7 @@ cargo.rust_library(
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
                 ":hyper-0.14.30",
-                ":ipnet-2.10.0",
+                ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
                 ":once_cell-1.19.0",
@@ -16831,7 +16831,7 @@ cargo.rust_library(
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
                 ":hyper-0.14.30",
-                ":ipnet-2.10.0",
+                ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
                 ":once_cell-1.19.0",
@@ -16854,7 +16854,7 @@ cargo.rust_library(
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
                 ":hyper-0.14.30",
-                ":ipnet-2.10.0",
+                ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
                 ":once_cell-1.19.0",
@@ -16877,7 +16877,7 @@ cargo.rust_library(
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
                 ":hyper-0.14.30",
-                ":ipnet-2.10.0",
+                ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
                 ":once_cell-1.19.0",
@@ -16900,7 +16900,7 @@ cargo.rust_library(
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
                 ":hyper-0.14.30",
-                ":ipnet-2.10.0",
+                ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
                 ":once_cell-1.19.0",
@@ -17037,7 +17037,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.24"],
+    deps = [":cc-1.1.25"],
 )
 
 buildscript_run(
@@ -17119,7 +17119,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.24"],
+    deps = [":cc-1.1.25"],
 )
 
 buildscript_run(
