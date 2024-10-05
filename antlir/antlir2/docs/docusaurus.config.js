@@ -19,10 +19,16 @@ import {themes} from 'prism-react-renderer';
   }),
   baseUrl: fbContent({
     internal: '/intern/staticdocs/antlir2/',
-    external: '/antlir/antlir2/'
+    external: '/antlir/'
   }),
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'throw',
+  onBrokenLinks: fbContent({
+    internal: 'throw',
+    external: 'warn',
+  }),
+  onBrokenMarkdownLinks: fbContent({
+    internal: 'throw',
+    external: 'warn',
+  }),
   trailingSlash: true,
   favicon: 'img/favicon.ico',
   organizationName: 'facebookincubator',
