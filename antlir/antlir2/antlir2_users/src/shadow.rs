@@ -175,7 +175,7 @@ impl<'a> ShadowRecord<'a> {
         ) = tuple((
             context("username", take_until1(":")),
             &colon,
-            context("encrypted_password", take_until1(":")),
+            context("encrypted_password", take_until(":")),
             &colon,
             context("last_password_change", nom::combinator::opt(Days::parse)),
             &colon,
@@ -268,7 +268,8 @@ mod tests {
 
     #[test]
     fn parse_etc_shadow() {
-        let src = r#"bin:*:18397:0:99999:7:::
+        let src = r#"root::19760:0:99999:7:::
+bin:*:18397:0:99999:7:::
 "#;
         let shadow = EtcShadow::parse(src).expect("failed to parse");
         // if Display matches the src, we haven't lost any information
