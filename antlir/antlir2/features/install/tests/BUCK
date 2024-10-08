@@ -277,6 +277,30 @@ image_diff_test(
     layer = ":deterministic-split-debuginfo",
 )
 
+# debuginfo splitting should also work even if `src` is not explicitly listed as
+# executable, but contains an ELF binary
+image.layer(
+    name = "split-debuginfo-non-executable",
+    features = [
+        feature.install(
+            src = ":deterministic-binary",
+            dst = "/true",
+            never_use_dev_binary_symlink = True,
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-split-debuginfo-non-executable",
+    diff = select({
+        "ovr_config//cpu:arm64": "deterministic-split-debuginfo.aarch64.toml",
+        "ovr_config//cpu:x86_64": "deterministic-split-debuginfo.x86_64.toml",
+    }),
+    diff_type = "file",
+    layer = ":split-debuginfo-non-executable",
+)
+
 image.layer(
     name = "deterministic-binary-layer",
     features = [

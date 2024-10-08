@@ -161,9 +161,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.text != None:
         src = ctx.actions.write("install_text", ctx.attrs.text)
     if type(src) == "dependency":
+        is_executable = RunInfo in src
         expect(LayerInfo not in src, "Layers ({}) cannot be used as install `src`, consider using feature.mount instead".format(src.label))
         if mode == None:
-            if RunInfo in src:
+            if is_executable:
                 # There is no need for the old buck1 `install_buck_runnable` stuff
                 # in buck2, since we put a dep on the binary directly onto the layer
                 # itself, which forces a rebuild when appropriate.
@@ -175,46 +176,41 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             else:
                 mode = ctx.attrs.default_file_mode or 0o444
 
-        if RunInfo in src:
+        if is_executable:
             # depending on the RunInfo ensures that all the dynamic library
             # dependencies of this binary are made available on the local
             # machine
             required_run_infos.append(src[RunInfo])
 
-            # dev mode binaries don't get stripped, they just get symlinked
-            if ctx.attrs.split_debuginfo and (not ctx.attrs._binaries_require_repo or ctx.attrs.never_use_dev_binary_symlink):
-                split_anon_target = split_binary_anon(
-                    ctx = ctx,
-                    src = src,
-                    objcopy = ctx.attrs._objcopy,
-                )
-                binary_info = binary_record(
-                    installed = installed_binary(
-                        debuginfo = split_anon_target.artifact("debuginfo"),
-                        metadata = split_anon_target.artifact("metadata"),
-                        dwp = split_anon_target.artifact("dwp"),
-                    ),
-                )
-                required_artifacts.extend([
-                    binary_info.installed.debuginfo,
-                    binary_info.installed.metadata,
-                    binary_info.installed.dwp,
-                ])
-                src = split_anon_target.artifact("src")
-            else:
-                src = ensure_single_output(src)
-                if ctx.attrs._binaries_require_repo:
-                    binary_info = binary_record(
-                        dev = True,
-                    )
-                else:
-                    binary_info = None
-                if ctx.attrs.never_use_dev_binary_symlink:
-                    binary_info = None
+        # dev mode binaries don't get stripped, they just get symlinked
+        if ctx.attrs.split_debuginfo and (not ctx.attrs._binaries_require_repo or ctx.attrs.never_use_dev_binary_symlink):
+            split_anon_target = split_binary_anon(
+                ctx = ctx,
+                src = src,
+                objcopy = ctx.attrs._objcopy,
+            )
+            binary_info = binary_record(
+                installed = installed_binary(
+                    debuginfo = split_anon_target.artifact("debuginfo"),
+                    metadata = split_anon_target.artifact("metadata"),
+                    dwp = split_anon_target.artifact("dwp"),
+                ),
+            )
+            required_artifacts.extend([
+                binary_info.installed.debuginfo,
+                binary_info.installed.metadata,
+                binary_info.installed.dwp,
+            ])
+            src = split_anon_target.artifact("src")
         else:
             src = ensure_single_output(src)
             binary_info = None
-            if ctx.attrs.setcap:
+            if is_executable:
+                if ctx.attrs._binaries_require_repo:
+                    binary_info = binary_record(dev = True)
+                if ctx.attrs.never_use_dev_binary_symlink:
+                    binary_info = None
+            elif ctx.attrs.setcap:
                 fail("install src {} is not a binary, setcap should not be used".format(ctx.attrs.src))
     elif type(src) == "artifact":
         # If the source is an artifact, that means it was given as an

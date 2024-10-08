@@ -261,24 +261,10 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
                     }
                     BinaryInfo::Installed(InstalledBinary {
                         debuginfo: _,
-                        dwp,
+                        dwp: _,
                         metadata,
                     }) => {
-                        if self.always_use_gnu_debuglink {
-                            let debug_dst = self.dst.with_extension("debug");
-                            provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                path: debug_dst.to_owned(),
-                                file_type: FileType::File,
-                                mode: 0o444,
-                            })));
-                            if dwp.is_some() {
-                                provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                    path: debug_dst.with_extension("debug.dwp"),
-                                    file_type: FileType::File,
-                                    mode: 0o444,
-                                })));
-                            }
-                        } else if let Some(buildid) = &metadata.buildid {
+                        if let Some(buildid) = &metadata.buildid {
                             let debug_dst = Path::new("/usr/lib/debug/.build-id")
                                 .join(&buildid[..2])
                                 .join(&buildid[2..])
@@ -288,18 +274,11 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
                                 file_type: FileType::Directory,
                                 mode: 0o555,
                             })));
-                            provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                path: debug_dst.to_owned(),
-                                file_type: FileType::File,
-                                mode: 0o444,
-                            })));
-                            if dwp.is_some() {
-                                provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                    path: debug_dst.with_extension("debug.dwp"),
-                                    file_type: FileType::File,
-                                    mode: 0o444,
-                                })));
-                            }
+                            // Note we don't emit a provides for the debug file itself
+                            // as this may be emitted by multiple features, and we don't
+                            // yet have an existing usecase of images needing to require
+                            // it. If that becomes the case, we can emit provides that
+                            // ignore conflicts.
                         }
                     }
                 }

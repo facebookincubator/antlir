@@ -57,19 +57,25 @@ args = parser.parse_args()
 # ensure this exists or buck2 will get mad
 args.objcopy_tmp.touch()
 
-with open(args.binary, mode="rb") as src_f:
-    first_4 = src_f.read(4)
-    is_elf = first_4 == b"\x7fELF"
+if args.binary.is_dir():
+    is_elf = False
+else:
+    with open(args.binary, mode="rb") as src_f:
+        first_4 = src_f.read(4)
+        is_elf = first_4 == b"\x7fELF"
 
 if args.binary_dwp:
-    shutil.copyfile(args.binary_dwp, args.dwp)
+    shutil.copy2(args.binary_dwp, args.dwp)
 else:
     with open(args.dwp, "w") as _f:
         pass
 
 # If this is not an ELF binary, it can't be stripped so just copy the original
 if not is_elf:
-    shutil.copyfile(args.binary, args.stripped)
+    if args.binary.is_dir():
+        shutil.copytree(args.binary, args.stripped, symlinks=True)
+    else:
+        shutil.copy2(args.binary, args.stripped)
     with open(args.debuginfo, "w") as _f:
         pass
     with open(args.metadata, "w") as f:
@@ -180,7 +186,7 @@ split_binary = anon_rule(
     attrs = {
         "cxx_toolchain": attrs.option(attrs.dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]), default = None),
         "objcopy": attrs.option(attrs.exec_dep(), default = None),
-        "src": attrs.dep(providers = [RunInfo]),
+        "src": attrs.dep(),
     },
     artifact_promise_mappings = {
         "debuginfo": lambda x: x[SplitBinaryInfo].debuginfo,
@@ -195,10 +201,8 @@ def split_binary_anon(
         ctx: AnalysisContext,
         src: Dependency,
         objcopy: Dependency) -> AnonTarget:
-    if RunInfo not in src:
-        fail("{} does not have a RunInfo provider".format(src.label))
     return ctx.actions.anon_target(split_binary, {
-        "name": "debuginfo//" + src.label.package + ":" + src.label.name + ("[{}]".format(src.label.sub_target) if src.label.sub_target else ""),
+        "name": "debuginfo//" + src.label.package + ":" + src.label.name,
         "objcopy": objcopy,
         "src": src,
     })
