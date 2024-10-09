@@ -14,6 +14,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
+load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "internal_external", "is_facebook")
 
@@ -39,7 +40,7 @@ def cfg_attrs():
     } | (
         # @oss-disable
         {} # @oss-enable
-    ) | rootless_cfg.attrs
+    ) | rootless_cfg.attrs | systemd_cfg.attrs
 
 def attrs_selected_by_cfg():
     return {
@@ -105,6 +106,7 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
         constraints[package_manager_dnf.setting.label] = package_manager_dnf
 
     constraints = rootless_cfg.transition(refs = refs, attrs = attrs, constraints = constraints)
+    constraints = systemd_cfg.transition(constraints = constraints, refs = refs, attrs = attrs, overwrite = False)
 
     if is_facebook:
         constraints = fb_transition(refs, attrs, constraints, overwrite = False)
@@ -140,6 +142,6 @@ layer_cfg = transition(
     } | (
         # @oss-disable
         {} # @oss-enable
-    ) | os_transition_refs() | rootless_cfg.refs,
+    ) | os_transition_refs() | rootless_cfg.refs | systemd_cfg.refs,
     attrs = cfg_attrs().keys(),
 )
