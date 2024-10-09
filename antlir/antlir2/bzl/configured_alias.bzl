@@ -9,6 +9,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 # @oss-disable
+load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "get_visibility", "is_facebook")
 load("//antlir/bzl:oss_shim.bzl", fb_transition = "ret_none") # @oss-enable
@@ -32,6 +33,12 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
         refs = refs,
         attrs = attrs,
         constraints = constraints,
+        overwrite = True,
+    )
+    constraints = systemd_cfg.transition(
+        constraints = constraints,
+        refs = refs,
+        attrs = attrs,
         overwrite = True,
     )
 
@@ -59,7 +66,7 @@ _transition = transition(
     } | (
         # @oss-disable
         {} # @oss-enable
-    ) | os_transition_refs() | rootless_cfg.refs,
+    ) | os_transition_refs() | rootless_cfg.refs | systemd_cfg.refs,
     attrs = cfg_attrs().keys(),
 )
 

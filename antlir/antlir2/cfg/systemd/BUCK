@@ -1,0 +1,26 @@
+load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
+
+oncall("antlir")
+
+constraint_setting(
+    name = "systemd-setting",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "systemd-cd",
+    constraint_setting = ":systemd-setting",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "systemd-stable",
+    constraint_setting = ":systemd-setting",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "systemd-canary",
+    constraint_setting = ":systemd-setting",
+    visibility = ["PUBLIC"],
+)

@@ -9,6 +9,7 @@ load("//antlir/antlir2/bzl/image:cfg.bzl", _cfg_attrs = "cfg_attrs")
 
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
+load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
@@ -38,6 +39,12 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
         refs = refs,
         attrs = attrs,
         constraints = constraints,
+        overwrite = True,
+    )
+    constraints = systemd_cfg.transition(
+        constraints = constraints,
+        refs = refs,
+        attrs = attrs,
         overwrite = True,
     )
 
@@ -70,6 +77,6 @@ package_cfg = transition(
     } | (
         # @oss-disable
         {} # @oss-enable
-    ) | rootless_cfg.refs,
+    ) | rootless_cfg.refs | systemd_cfg.refs,
     attrs = cfg_attrs().keys(),
 )
