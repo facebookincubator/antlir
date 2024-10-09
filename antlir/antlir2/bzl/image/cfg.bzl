@@ -134,14 +134,12 @@ layer_cfg = transition(
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
         "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:dnf",
-        "rooted": "antlir//antlir/antlir2/antlir2_rootless:rooted",
-        "rootless": "antlir//antlir/antlir2/antlir2_rootless:rootless",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
         "working_format.btrfs": "antlir//antlir/antlir2/cfg:btrfs",
         "working_format.overlayfs": "antlir//antlir/antlir2/cfg:overlayfs",
     } | (
         # @oss-disable
         {} # @oss-enable
-    ) | os_transition_refs(),
+    ) | os_transition_refs() | rootless_cfg.refs,
     attrs = cfg_attrs().keys(),
 )
