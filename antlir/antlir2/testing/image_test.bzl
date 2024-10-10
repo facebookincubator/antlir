@@ -16,7 +16,7 @@ load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "internal_external", "is_facebook", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl:systemd.bzl", systemd_bzl = "systemd")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
 
 HIDE_TEST_LABELS = [special_tags.disabled, special_tags.test_is_invisible_to_testpilot]
@@ -185,6 +185,7 @@ def _implicit_image_test(
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         # @oss-disable
+        systemd: str | None = None,
         mount_platform: bool | None = None,
         rootless: bool | None = None,
         _static_list_wrapper: str | None = None,
@@ -217,7 +218,7 @@ def _implicit_image_test(
             name = "{}--bootable-layer".format(name),
             parent_layer = layer,
             features = [
-                systemd.install_unit(
+                systemd_bzl.install_unit(
                     "antlir//antlir/antlir2/testing/image_test:antlir2_image_test.service",
                     force = True,
                 ),
@@ -226,6 +227,7 @@ def _implicit_image_test(
             # @oss-disable
             rootless = rootless,
             implicit_layer_reason = "image_test_boot",
+            systemd = "inherit-parent",
         )
         layer = ":{}--bootable-layer".format(name)
 
@@ -252,6 +254,7 @@ def _implicit_image_test(
         hostname = hostname,
         default_os = default_os,
         # @oss-disable
+        systemd = systemd or "inherit-parent",
         mount_platform = mount_platform,
         rootless = rootless,
         _static_list_wrapper = _static_list_wrapper,
@@ -279,6 +282,7 @@ def image_python_test(
         layer: str,
         default_os: str | None = None,
         default_rou: str | None = None,
+        systemd: str | None = None,
         **kwargs):
     test_layer = layer
     if not REPO_CFG.artifacts_require_repo and is_facebook:
@@ -294,6 +298,7 @@ def image_python_test(
             default_os = default_os,
             # @oss-disable
             implicit_layer_reason = "image_test_xarexec",
+            systemd = "inherit-parent",
         )
         test_layer = ":{}".format(test_layer)
 
@@ -303,6 +308,7 @@ def image_python_test(
         layer = test_layer,
         default_os = default_os,
         # @oss-disable
+        systemd = systemd,
         _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-py",
         **kwargs
     )
