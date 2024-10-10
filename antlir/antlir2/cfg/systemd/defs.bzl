@@ -17,11 +17,14 @@ def _transition(*, constraints, refs: struct, attrs: struct, overwrite: bool):
         elif attrs.systemd == "canary":
             systemd_canary = refs.systemd_canary[ConstraintValueInfo]
             constraints[setting.label] = systemd_canary
+        elif attrs.systemd == "inherit-parent":
+            pass
         else:
             fail("unknown systemd config '{}'".format(attrs.systemd))
     if not attrs.systemd and setting.label not in constraints:
-        systemd_stable = refs.systemd_stable[ConstraintValueInfo]
-        constraints[systemd_stable.setting.label] = systemd_stable
+        constraints[setting.label] = refs.systemd_stable[ConstraintValueInfo]
+    if attrs.systemd == "inherit-parent":
+        constraints.pop(setting.label, None)
 
     return constraints
 
@@ -34,6 +37,6 @@ systemd_cfg = struct(
         "systemd_stable": "antlir//antlir/antlir2/cfg/systemd:systemd-stable",
     },
     attrs = {
-        "systemd": attrs.option(attrs.enum(["cd", "stable", "canary"]), default = None),
+        "systemd": attrs.option(attrs.enum(["cd", "stable", "canary", "inherit-parent"]), default = None),
     },
 )
