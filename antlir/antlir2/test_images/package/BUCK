@@ -66,6 +66,15 @@ image.layer(
             link = "/relative-dir-symlink",
             target = "default-dir",
         ),
+        feature.ensure_dirs_exist(dirs = "/hardlink"),
+        feature.install_text(
+            dst = "/hardlink/hello",
+            text = "Hello world\n",
+        ),
+        feature.hardlink(
+            link = "/hardlink/aloha",
+            target = "/hardlink/hello",
+        ),
     ],
 )
 

@@ -8,6 +8,7 @@ load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
 
 package_feature = enum(
     "dot_meta",
+    "hardlink_ino_eq",
     "xattr",
 )
 
