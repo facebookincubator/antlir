@@ -5,17 +5,22 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeSet;
+use std::collections::VecDeque;
 use std::os::fd::AsRawFd;
 use std::path::Path;
+use std::path::PathBuf;
 
 #[cfg(feature = "dot_meta")]
 use buck_label::Label;
+use cap_std::fs::DirEntry;
 use cap_std::fs::MetadataExt;
 #[cfg(feature = "xattr")]
 use libcap::FileExt as _;
 #[cfg(feature = "xattr")]
 use maplit::btreemap;
 use nix::fcntl::readlinkat;
+use pretty_assertions::assert_eq;
 #[cfg(feature = "xattr")]
 use xattr::FileExt as _;
 
@@ -122,6 +127,7 @@ fn directory() {
     assert_eq!(meta.uid(), 0);
     assert_eq!(meta.gid(), 0);
     assert_eq!(meta.mode() & 0o777, 0o755);
+    assert!(meta.file_type().is_dir())
 }
 
 #[test]
@@ -190,4 +196,59 @@ fn dot_meta() {
             .starts_with("antlir/antlir2/test_images/package"),
         "label '{label}' not in expected package"
     );
+}
+
+#[test]
+fn no_unexpected_files() {
+    let package = stub::open();
+    let mut all_files = BTreeSet::new();
+    let mut queue: VecDeque<(PathBuf, DirEntry)> = package
+        .entries()
+        .expect("failed to read root")
+        .map(|e| e.expect("failed to read root"))
+        .map(|e| (e.file_name().into(), e))
+        .collect();
+    while let Some((path, entry)) = queue.pop_front() {
+        let meta = entry.metadata().expect("failed to stat");
+        if meta.is_dir() {
+            queue.extend(
+                entry
+                    .open_dir()
+                    .expect("failed to open as dir")
+                    .entries()
+                    .expect("failed to read dir")
+                    .map(|e| e.expect("failed to read dir"))
+                    .map(|e| (path.join(e.file_name()), e)),
+            );
+        }
+        all_files.insert(path);
+    }
+    let mut expected_files: BTreeSet<_> = [
+        "absolute-dir-symlink",
+        "absolute-file-symlink",
+        "antlir2-large-file-256M",
+        "default-dir",
+        "default-dir/executable",
+        "default-dir/relative-file-symlink",
+        "hardlink",
+        "hardlink/aloha",
+        "hardlink/hello",
+        "i-am-owned-by-nonstandard",
+        "i-have-caps",
+        "i-have-xattrs",
+        "only-readable-by-root",
+        "relative-dir-symlink",
+    ]
+    .into_iter()
+    .map(PathBuf::from)
+    .collect();
+    #[cfg(feature = "dot_meta")]
+    {
+        expected_files.insert(".meta".into());
+        expected_files.insert(".meta/target".into());
+    }
+    #[cfg(feature = "format_ext3")]
+    expected_files.insert("lost+found".into());
+
+    assert_eq!(expected_files, all_files);
 }
