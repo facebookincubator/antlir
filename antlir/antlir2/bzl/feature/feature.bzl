@@ -67,6 +67,7 @@ load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary_rule"
 # @oss-disable
 load("//antlir/antlir2/features/genrule:genrule.bzl", "genrule_rule")
 load("//antlir/antlir2/features/group:group.bzl", "group_rule")
+load("//antlir/antlir2/features/hardlink:hardlink.bzl", "hardlink_rule")
 load("//antlir/antlir2/features/install:install.bzl", "install_rule")
 load("//antlir/antlir2/features/mount:mount.bzl", "mount_rule")
 load("//antlir/antlir2/features/remove:remove.bzl", "remove_rule")
@@ -112,6 +113,7 @@ _anon_rules = {
     # @oss-disable
     "genrule": genrule_rule,
     "group": group_rule,
+    "hardlink": hardlink_rule,
     "install": install_rule,
     "mount": mount_rule,
     "remove": remove_rule,

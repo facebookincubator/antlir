@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::fs::File;
 use std::process::Command;
 
 use cap_std::fs::Dir;

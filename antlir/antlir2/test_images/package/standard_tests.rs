@@ -5,16 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::BTreeMap;
-use std::ffi::OsString;
 use std::os::fd::AsRawFd;
 use std::path::Path;
 
 #[cfg(feature = "dot_meta")]
 use buck_label::Label;
 use cap_std::fs::MetadataExt;
-use cap_std::fs::OpenOptions;
-use cap_std::fs::OpenOptionsExt;
 #[cfg(feature = "xattr")]
 use libcap::FileExt as _;
 #[cfg(feature = "xattr")]
@@ -49,7 +45,7 @@ fn xattrs() {
         .open("i-have-xattrs")
         .expect("failed to open")
         .into_std();
-    let xattrs: BTreeMap<OsString, Vec<u8>> = f
+    let xattrs: std::collections::BTreeMap<std::ffi::OsString, Vec<u8>> = f
         .list_xattr()
         .expect("failed to list xattrs")
         .map(|k| {
@@ -158,6 +154,23 @@ fn dir_relative_symlink() {
     let target =
         readlinkat(package.as_raw_fd(), "relative-dir-symlink").expect("failed to readlink");
     assert_eq!(target, Path::new("default-dir"));
+}
+
+#[test]
+fn hardlink() {
+    let package = stub::open();
+    let hardlink = package
+        .open_dir("hardlink")
+        .expect("failed to open /hardlink dir");
+    let hello = hardlink.metadata("hello").expect("failed stat hello");
+    let aloha = hardlink.metadata("aloha").expect("failed stat aloha");
+    // Certain filesystems may not report the inode as the same when mounted
+    // (specifically, erofsfuse at the time of this writing), but nlink will
+    // still be correct
+    assert_eq!(hello.nlink(), 2);
+    assert_eq!(aloha.nlink(), 2);
+    #[cfg(feature = "hardlink_ino_eq")]
+    assert_eq!(hello.ino(), aloha.ino());
 }
 
 #[cfg(feature = "dot_meta")]
