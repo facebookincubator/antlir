@@ -163,13 +163,6 @@ rust_binary(
     unittests = False,
 )
 
-# hide that this is a binary using an export_file, otherwise antlir2 will apply
-# the binary split debuginfo feature
-export_file(
-    name = "true-rs.unstripped",
-    src = ":true-rs",
-)
-
 python_binary(
     name = "true-py",
     srcs = ["true.py"],
@@ -193,8 +186,9 @@ image.layer(
             dst = "/usr/bin/true-rs",
         ),
         feature.install(
-            src = ":true-rs.unstripped",
+            src = ":true-rs",
             dst = "/usr/bin/true-rs.unstripped",
+            split_debuginfo = False,
         ),
         feature.install(
             src = ":true-py",
