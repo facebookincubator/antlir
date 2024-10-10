@@ -1,0 +1,44 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/cfg/strip_antlir_config:strip_antlir_config.bzl", "strip_antlir_config")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+
+oncall("antlir")
+
+prelude = native
+
+prelude.write_file(
+    name = "os-name",
+    out = "os-name",
+    content = select({
+        "//antlir/antlir2/os:centos9": ["centos9"],
+        "DEFAULT": ["no-configuration"],
+    }),
+)
+
+strip_antlir_config(
+    name = "os-name.unconfigured",
+    actual = ":os-name",
+)
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.rpms_install(rpms = ["basesystem"]),
+        feature.install(
+            src = ":os-name",
+            dst = "/os-name",
+        ),
+        feature.install(
+            src = ":os-name.unconfigured",
+            dst = "/os-name.unconfigured",
+        ),
+    ],
+)
+
+image_rust_test(
+    name = "test",
+    srcs = ["test.rs"],
+    crate_root = "test.rs",
+    layer = ":layer",
+)
