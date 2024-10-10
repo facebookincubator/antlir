@@ -107,6 +107,25 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
 
         match inodes.entry(entry.ino()) {
             std::collections::hash_map::Entry::Occupied(e) => {
+                if let Some(parent) = &spec.incremental_parent {
+                    let parent_path = parent.join(relpath);
+                    match parent_path.symlink_metadata() {
+                        Ok(parent_meta) => {
+                            // hardlink already exists in child, skip
+                            if parent_meta.ino() == meta.ino() {
+                                continue;
+                            }
+                            // otherwise, continue on to create it below
+                        }
+                        // new file in child, fallthrough to non-incremental path
+                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                        Err(e) => {
+                            return Err(
+                                Error::from(e).context("while getting parent file metadata")
+                            );
+                        }
+                    }
+                }
                 let tmp = Uuid::new_v4().to_string();
                 f.write_all(&command::hardlink(e.get(), &tmp))?;
                 f.write_all(&command::rename(tmp, relpath))?;
@@ -119,7 +138,7 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
 
         if let Some(parent) = &spec.incremental_parent {
             let parent_path = parent.join(relpath);
-            match parent_path.metadata() {
+            match parent_path.symlink_metadata() {
                 Ok(parent_meta) => {
                     if meta.is_dir() {
                         // If this is a directory, the only thing we need to
@@ -269,12 +288,11 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
                     }
                     continue;
                 }
-                Err(e) => match e.kind() {
-                    std::io::ErrorKind::NotFound => {} // completely new file
-                    _ => {
-                        return Err(Error::from(e).context("while getting parent file metadata"));
-                    }
-                },
+                // completely new file, fallthrough to non-incremental path
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => {
+                    return Err(Error::from(e).context("while getting parent file metadata"));
+                }
             };
         }
 
