@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
 
@@ -52,7 +53,7 @@ def test_in_layer(
         deps: list[str] = []):
     image.layer(
         name = name + "-layer",
-        features = layer_features,
+        features = [feature.rpms_install(rpms = ["basesystem"])] + layer_features,
     )
     image_rust_test(
         name = name,
