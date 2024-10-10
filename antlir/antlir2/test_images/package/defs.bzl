@@ -32,12 +32,16 @@ def _rust_test_attrs(
     features = [package_feature(f) for f in package_feature.values()]
     for f in omit_features:
         features.remove(f)
-    deps = ["cap-std", "nix"] + deps
+    deps = ["cap-std", "nix", "pretty_assertions"] + deps
     for f in features:
         deps += _feature_deps.get(f, [])
+
+    rust_features = [f.value for f in features]
+    format = native.package_name().split("/")[-1]
+    rust_features.append("format_" + format)
     return {
         "deps": deps,
-        "features": [f.value for f in features],
+        "features": rust_features,
         "mapped_srcs": {
             "//antlir/antlir2/test_images/package:standard_tests.rs": "src/lib.rs",
             stub: "src/stub.rs",
