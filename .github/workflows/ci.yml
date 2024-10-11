@@ -15,8 +15,9 @@ jobs:
         with:
           submodules: true
       - uses: facebook/install-dotslash@latest
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly
           targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
       - name: BTRFS-ify antlir2-out
         run: |
@@ -51,8 +52,7 @@ jobs:
             --disable //antlir/antlir2/sendstream_parser:sendstream_parser-unittest \
             --disable //antlir/antlir2/test_images/cfg/os/... \
             --disable //antlir/antlir2/test_images/cfg/target_arch/... \
-            --disable //antlir/antlir2/test_images/package/erofs/... \
-            --disable //antlir/antlir2/test_images/package/tar/... \
+            --disable //antlir/antlir2/test_images/package/... \
             --disable //antlir/antlir2/testing/tests:booted-image-test-that-should-fail \
             --disable //antlir/antlir2/testing/tests:test-sh-booted-requires-units \
             --disable //antlir/bzl/shape2/... \
