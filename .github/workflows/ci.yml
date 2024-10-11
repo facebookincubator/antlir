@@ -15,8 +15,9 @@ jobs:
         with:
           submodules: true
       - uses: facebook/install-dotslash@latest
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly
           targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
       - name: BTRFS-ify antlir2-out
         run: |
