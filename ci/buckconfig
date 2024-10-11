@@ -1,0 +1,12 @@
+[buck2]
+  file_watcher=notify
+
+[buck2_re_client]
+  action_cache_address = grpc://127.0.0.1:50051
+  engine_address = grpc://127.0.0.1:50051
+  cas_address = grpc://127.0.0.1:50051
+  tls = false
+  instance_name = main
+
+[build]
+  execution_platforms = antlir//platforms:exec-platforms

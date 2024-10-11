@@ -14,10 +14,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+
       - uses: facebook/install-dotslash@latest
       - uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
           targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
+
       - name: BTRFS-ify antlir2-out
         run: |
           mkdir antlir2-out
@@ -25,15 +28,39 @@ jobs:
           mkfs.btrfs ${{ runner.temp }}/image.btrfs
           sudo mount ${{ runner.temp }}/image.btrfs antlir2-out
           sudo chown -R $(id -u):$(id -g) antlir2-out
-      - name: Install deps
+      - name: Install system deps
         run: |
           sudo apt install \
             cpio jq libcap-dev systemd-container
 
-      - name: Disable watchman
+      - name: Install nativelink
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: nativelink
+          git: https://github.com/TraceMachina/nativelink
+          tag: v0.5.3
+
+      - name: Restore buck2 cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /tmp/nativelink
+          key: nativelink-${{ steps.rust-toolchain.outputs.cachekey }}
+          restore-keys: |
+            nativelink-
+
+      - uses: JarvusInnovations/background-action@v1
+        name: Start NativeLink
+        with:
+          run: |
+            nativelink ci/nativelink.json &
+          wait-on: |
+            tcp:localhost:50051
+
+      - name: Setup CI buckconfig
         run: |
-          echo '[buck2]' >> .buckconfig
-          echo 'file_watcher=notify' >> .buckconfig
+          cp ci/buckconfig .buckconfig.local
 
       - name: Test target graph
         run: |
@@ -65,6 +92,13 @@ jobs:
       - name: Build tests
         run: |
           ./buck2 build --keep-going @${{ runner.temp }}/tests.txt
+
+      - name: Upload buck2 cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /tmp/nativelink
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
       - name: Run tests
         run: |
