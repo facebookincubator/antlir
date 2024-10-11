@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "64642946d1cc737ba2d9fd99d322cdace2e607c9",
+    rev = "c8c356bc3d4703264c8b9853395fe8c510dddb23",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "781e1694d5cc28673218a3e243f5f36198fed3fc",
+    rev = "dfdd63ef988d72dec8ec2c6fdade82300e09acc0",
     visibility = [],
 )
 
@@ -1003,23 +1003,23 @@ cargo.rust_library(
 
 alias(
     name = "async-compression",
-    actual = ":async-compression-0.4.13",
+    actual = ":async-compression-0.4.14",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "async-compression-0.4.13.crate",
-    sha256 = "7e614738943d3f68c628ae3dbce7c3daffb196665f82f8c8ea6b65de73c79429",
-    strip_prefix = "async-compression-0.4.13",
-    urls = ["https://static.crates.io/crates/async-compression/0.4.13/download"],
+    name = "async-compression-0.4.14.crate",
+    sha256 = "998282f8f49ccd6116b0ed8a4de0fbd3151697920e7c7533416d6e25e76434a7",
+    strip_prefix = "async-compression-0.4.14",
+    urls = ["https://static.crates.io/crates/async-compression/0.4.14/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "async-compression-0.4.13",
-    srcs = [":async-compression-0.4.13.crate"],
+    name = "async-compression-0.4.14",
+    srcs = [":async-compression-0.4.14.crate"],
     crate = "async_compression",
-    crate_root = "async-compression-0.4.13.crate/src/lib.rs",
+    crate_root = "async-compression-0.4.14.crate/src/lib.rs",
     edition = "2018",
     features = [
         "brotli",
@@ -3507,18 +3507,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.1.28.crate",
-    sha256 = "2e80e3b6a3ab07840e1cae9b0666a63970dc28e8ed5ffbcdacbfc760c281bfc1",
-    strip_prefix = "cc-1.1.28",
-    urls = ["https://static.crates.io/crates/cc/1.1.28/download"],
+    name = "cc-1.1.29.crate",
+    sha256 = "58e804ac3194a48bb129643eb1d62fcc20d18c6b8c181704489353d13120bcd1",
+    strip_prefix = "cc-1.1.29",
+    urls = ["https://static.crates.io/crates/cc/1.1.29/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.1.28",
-    srcs = [":cc-1.1.28.crate"],
+    name = "cc-1.1.29",
+    srcs = [":cc-1.1.29.crate"],
     crate = "cc",
-    crate_root = "cc-1.1.28.crate/src/lib.rs",
+    crate_root = "cc-1.1.29.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4285,7 +4285,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.51.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.1.28"],
+    deps = [":cc-1.1.29"],
 )
 
 cargo.rust_library(
@@ -5332,7 +5332,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.28",
+        ":cc-1.1.29",
         ":cxxbridge-flags-1.0.128",
     ],
 )
@@ -8827,6 +8827,7 @@ cargo.rust_library(
         "ahash",
         "default",
         "inline-more",
+        "nightly",
         "raw",
     ],
     visibility = [],
@@ -8890,6 +8891,7 @@ cargo.rust_library(
         "default-hasher",
         "equivalent",
         "inline-more",
+        "nightly",
         "raw-entry",
     ],
     visibility = [],
@@ -10891,7 +10893,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.1.28",
+        ":cc-1.1.29",
         ":pkg-config-0.3.31",
         ":vcpkg-0.2.15",
     ],
@@ -12182,7 +12184,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.1.28",
+        ":cc-1.1.29",
         ":cmake-0.1.51",
         ":subprocess-0.2.9",
     ],
@@ -13529,7 +13531,7 @@ cargo.rust_binary(
     edition = "2018",
     visibility = [],
     deps = [
-        ":cc-1.1.28",
+        ":cc-1.1.29",
         ":pkg-config-0.3.31",
         ":vcpkg-0.2.15",
     ],
@@ -13711,6 +13713,12 @@ cargo.rust_library(
     crate_root = "overload-0.1.1.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
+)
+
+alias(
+    name = "owo-colors",
+    actual = ":owo-colors-3.5.0",
+    visibility = ["PUBLIC"],
 )
 
 http_archive(
@@ -17037,7 +17045,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.1.28"],
+    deps = [":cc-1.1.29"],
 )
 
 buildscript_run(
@@ -17119,7 +17127,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.1.28"],
+    deps = [":cc-1.1.29"],
 )
 
 buildscript_run(
