@@ -231,6 +231,7 @@ impl RegisterTemplates<Pydantic> for Module {
             templates.read_template("module.pydantic.handlebars")?,
         )
         .context("Trying to register preamble template")?;
+        hb.register_helper("lint-directive", Box::new(py_lint_directive));
         hb.register_helper("type-hint", Box::new(py_type_hint));
         hb.register_helper("literal", Box::new(py_literal));
         Ok(hb)
@@ -390,6 +391,25 @@ impl TypeExt for Type {
         }
     }
 }
+
+trait FieldExt {
+    fn py_lint_directive(&self) -> &str;
+}
+
+impl FieldExt for Field {
+    fn py_lint_directive(&self) -> &str {
+        if let Type::List { .. } = *self.ty {
+            // In py_type_hint() we lie and convert Lists to Tuples to
+            // discourage mutation, so here we pay penance by suppressing
+            // typing errors
+            "  # pyre-ignore: Incompatible attribute type [8]:"
+        } else {
+            ""
+        }
+    }
+}
+
+handlebars_helper!(py_lint_directive: |field: Field| field.py_lint_directive().to_string());
 
 handlebars_helper!(has_default_value: |field: Field| Value::Bool(field.default_value.is_some()));
 handlebars_helper!(py_type_hint: |ty: Type| ty.py_type_hint().to_string());
