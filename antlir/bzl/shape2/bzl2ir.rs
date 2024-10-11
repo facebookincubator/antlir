@@ -117,7 +117,7 @@ impl<'v> StarlarkValue<'v> for TypeId {
     ) -> starlark::Result<Value<'v>> {
         let reg = get_type_registry(eval)?
             .try_borrow()
-            .map_err(starlark::Error::new_other)?;
+            .map_err(starlark::Error::new_native)?;
         let ty = me.try_to_type(&reg)?;
         match ty.as_ref() {
             ir::Type::Complex(ir::ComplexType::Struct(_)) => {
@@ -130,7 +130,7 @@ impl<'v> StarlarkValue<'v> for TypeId {
                 args.no_named_args()?;
                 args.positional1(eval.heap())
             }
-            _ => Err(starlark::Error::new_other(anyhow!(
+            _ => Err(starlark::Error::new_native(anyhow!(
                 "only structs and enums are callable, not ({ty:#?})"
             ))),
         }
@@ -358,7 +358,7 @@ fn shape(builder: &mut GlobalsBuilder) {
     ) -> starlark::Result<TypeId> {
         let mut reg = get_type_registry(eval)?
             .try_borrow_mut()
-            .map_err(starlark::Error::new_other)?;
+            .map_err(starlark::Error::new_native)?;
         let types: Vec<_> = args
             .iterate(eval.heap())?
             .enumerate()
