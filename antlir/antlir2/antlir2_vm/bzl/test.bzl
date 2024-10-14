@@ -6,11 +6,11 @@
 # @oss-disable
 # @oss-disable
 # @oss-disable
-# @oss-disable
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+# @oss-disable
 
 load("//antlir/bzl:oss_shim.bzl", "NAMING_ROLLOUT_LABEL", "special_tags", "fully_qualified_test_name_rollout") # @oss-enable
 load(":types.bzl", "VMHostInfo")
