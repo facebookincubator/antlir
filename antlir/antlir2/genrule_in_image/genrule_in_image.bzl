@@ -20,17 +20,18 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     if ctx.attrs.out and ctx.attrs.outs:
         fail("out and outs cannot be specified together")
     elif ctx.attrs.out:
+        out_name = (None if ctx.attrs.out == "." else ctx.attrs.out.removesuffix("/")) or "out"
         if ctx.attrs.out == "." or ctx.attrs.out.endswith("/"):
             out_is_dir = True
-            out = ctx.actions.declare_output("out", dir = True)
+            out = ctx.actions.declare_output(out_name, dir = True)
         else:
-            out = ctx.actions.declare_output("out")
+            out = ctx.actions.declare_output(out_name)
         default_info = DefaultInfo(out)
         if ctx.attrs.default_out:
             fail("default_out cannot be combined with out")
     elif ctx.attrs.outs:
         out_is_dir = True
-        out = ctx.actions.declare_output("out", dir = True)
+        out = ctx.actions.declare_output("outs", dir = True)
         default_out = out
         if ctx.attrs.default_out:
             default_out = out.project(ctx.attrs.default_out)
