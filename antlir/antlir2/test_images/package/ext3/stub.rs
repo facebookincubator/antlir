@@ -9,17 +9,21 @@ use std::process::Command;
 
 use cap_std::fs::Dir;
 
-pub(crate) fn open() -> Dir {
-    let out = Command::new("fuse2fs")
-        .arg("/package.ext3")
-        .arg("/package")
-        .output()
-        .expect("failed to run fuse2fs");
-    assert!(
-        out.status.success(),
-        "fuse2fs failed:{}",
-        String::from_utf8_lossy(&out.stderr)
-    );
-    Dir::open_ambient_dir("/package", cap_std::ambient_authority())
-        .expect("could not open /package")
+pub(crate) struct StubImpl;
+
+impl crate::Stub for StubImpl {
+    fn open() -> Dir {
+        let out = Command::new("fuse2fs")
+            .arg("/package.ext3")
+            .arg("/package")
+            .output()
+            .expect("failed to run fuse2fs");
+        assert!(
+            out.status.success(),
+            "fuse2fs failed:{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        Dir::open_ambient_dir("/package", cap_std::ambient_authority())
+            .expect("could not open /package")
+    }
 }
