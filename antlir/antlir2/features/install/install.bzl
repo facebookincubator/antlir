@@ -150,10 +150,16 @@ binary_record = record(
     installed = field([installed_binary, None], default = None),
 )
 
+shared_libraries_record = record(
+    so_targets = field(list[Artifact]),
+    dir_name = field(str),
+)
+
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     binary_info = None
     required_run_infos = []
     required_artifacts = []
+    shared_libraries = None
     if not ctx.attrs.src and ctx.attrs.text == None:
         fail("src or text must be set")
     src = ctx.attrs.src
@@ -181,6 +187,25 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             # dependencies of this binary are made available on the local
             # machine
             required_run_infos.append(src[RunInfo])
+
+        src_subtargets = ctx.attrs.src[DefaultInfo].sub_targets
+        if "rpath-tree" in src_subtargets:
+            rpath_tree_info = src_subtargets["rpath-tree"][DefaultInfo]
+            rpath_tree_out = ensure_single_output(rpath_tree_info)
+            required_artifacts.append(rpath_tree_out)
+
+            so_targets = []
+            for so_subtarget in src_subtargets["shared-libraries"][DefaultInfo].sub_targets.values():
+                so_info = so_subtarget[DefaultInfo]
+                so_out = ensure_single_output(so_info)
+                so_targets.append(so_out)
+
+            shared_libraries = shared_libraries_record(
+                so_targets = so_targets,
+                dir_name = rpath_tree_out.basename,
+            )
+
+            required_artifacts.extend(so_targets)
 
         # dev mode binaries don't get stripped, they just get symlinked
         if ctx.attrs.split_debuginfo and (not ctx.attrs._binaries_require_repo or ctx.attrs.never_use_dev_binary_symlink):
@@ -234,6 +259,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 xattrs = ctx.attrs.xattrs,
                 setcap = ctx.attrs.setcap,
                 always_use_gnu_debuglink = ctx.attrs.always_use_gnu_debuglink,
+                shared_libraries = shared_libraries,
             ),
             required_artifacts = [src] + required_artifacts,
             required_run_infos = required_run_infos,

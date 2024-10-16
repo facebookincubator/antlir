@@ -73,6 +73,7 @@ pub struct Install {
     #[cfg(not(feature = "setcap"))]
     pub setcap: Option<String>,
     pub always_use_gnu_debuglink: bool,
+    pub shared_libraries: Option<SharedLibraries>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -104,6 +105,12 @@ pub struct SplitBinaryMetadata {
 pub enum BinaryInfo {
     Dev,
     Installed(InstalledBinary),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+pub struct SharedLibraries {
+    pub so_targets: Vec<BuckOutSource>,
+    pub dir_name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -467,6 +474,26 @@ impl antlir2_compile::CompileFeature for Install {
                         "setcap ({cap}) is not supported on this platform"
                     )
                     .into());
+                }
+            }
+
+            if let Some(shared_libraries) = &self.shared_libraries {
+                // dev mode binaries are symlinked thus already alongside their shared libraries
+                if self.binary_info != Some(BinaryInfo::Dev) {
+                    let shared_lib_dir = dst
+                        .parent()
+                        .expect("must have parent")
+                        .join(&shared_libraries.dir_name);
+                    std::fs::create_dir_all(&shared_lib_dir)?;
+                    for shared_lib in &shared_libraries.so_targets {
+                        copy_with_metadata(
+                            shared_lib,
+                            &shared_lib_dir
+                                .join(shared_lib.file_name().expect("must have filename")),
+                            Some(uid.as_raw()),
+                            Some(gid.as_raw()),
+                        )?;
+                    }
                 }
             }
         }
