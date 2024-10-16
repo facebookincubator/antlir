@@ -13,6 +13,7 @@ use std::path::PathBuf;
 
 #[cfg(feature = "dot_meta")]
 use buck_label::Label;
+use cap_std::fs::Dir;
 use cap_std::fs::DirEntry;
 use cap_std::fs::MetadataExt;
 #[cfg(feature = "xattr")]
@@ -24,11 +25,19 @@ use pretty_assertions::assert_eq;
 #[cfg(feature = "xattr")]
 use xattr::FileExt as _;
 
+trait Stub {
+    fn open() -> Dir;
+    fn absolute_symlink_root() -> &'static Path {
+        Path::new("/")
+    }
+}
+
 mod stub;
+use stub::StubImpl;
 
 #[test]
 fn antlir2_large_file_256m() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let large_file = package
         .read("antlir2-large-file-256M")
         .expect("failed to read");
@@ -45,7 +54,7 @@ fn antlir2_large_file_256m() {
 #[cfg(feature = "xattr")]
 #[test]
 fn xattrs() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let f = package
         .open("i-have-xattrs")
         .expect("failed to open")
@@ -76,7 +85,7 @@ fn xattrs() {
 fn capabilities() {
     // this is basicaly the same as xattrs, but ensures that the
     // security.capability xattr is packaged correctly
-    let package = stub::open();
+    let package = StubImpl::open();
     let f = package
         .open("i-have-caps")
         .expect("failed to open")
@@ -90,7 +99,7 @@ fn capabilities() {
 
 #[test]
 fn ownership() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let meta = package
         .metadata("i-am-owned-by-nonstandard")
         .expect("failed to stat");
@@ -100,7 +109,7 @@ fn ownership() {
 
 #[test]
 fn locked_permissions() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let meta = package
         .metadata("only-readable-by-root")
         .expect("failed to stat");
@@ -111,7 +120,7 @@ fn locked_permissions() {
 
 #[test]
 fn executable() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let meta = package
         .metadata("default-dir/executable")
         .expect("failed to stat");
@@ -122,7 +131,7 @@ fn executable() {
 
 #[test]
 fn directory() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let meta = package.metadata("default-dir").expect("failed to stat");
     assert_eq!(meta.uid(), 0);
     assert_eq!(meta.gid(), 0);
@@ -132,15 +141,18 @@ fn directory() {
 
 #[test]
 fn file_absolute_symlink() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let target =
         readlinkat(package.as_raw_fd(), "absolute-file-symlink").expect("failed to readlink");
-    assert_eq!(target, Path::new("/default-dir/executable"));
+    assert_eq!(
+        target,
+        StubImpl::absolute_symlink_root().join("default-dir/executable")
+    );
 }
 
 #[test]
 fn file_relative_symlink() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let target = readlinkat(package.as_raw_fd(), "default-dir/relative-file-symlink")
         .expect("failed to readlink");
     assert_eq!(target, Path::new("executable"));
@@ -148,15 +160,18 @@ fn file_relative_symlink() {
 
 #[test]
 fn dir_absolute_symlink() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let target =
         readlinkat(package.as_raw_fd(), "absolute-dir-symlink").expect("failed to readlink");
-    assert_eq!(target, Path::new("/default-dir"));
+    assert_eq!(
+        target,
+        StubImpl::absolute_symlink_root().join("default-dir")
+    );
 }
 
 #[test]
 fn dir_relative_symlink() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let target =
         readlinkat(package.as_raw_fd(), "relative-dir-symlink").expect("failed to readlink");
     assert_eq!(target, Path::new("default-dir"));
@@ -164,7 +179,7 @@ fn dir_relative_symlink() {
 
 #[test]
 fn hardlink() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let hardlink = package
         .open_dir("hardlink")
         .expect("failed to open /hardlink dir");
@@ -182,7 +197,7 @@ fn hardlink() {
 #[cfg(feature = "dot_meta")]
 #[test]
 fn dot_meta() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let target = package
         .read_to_string(".meta/target")
         .expect("failed to read /.meta/target");
@@ -200,7 +215,7 @@ fn dot_meta() {
 
 #[test]
 fn no_unexpected_files() {
-    let package = stub::open();
+    let package = StubImpl::open();
     let mut all_files = BTreeSet::new();
     let mut queue: VecDeque<(PathBuf, DirEntry)> = package
         .entries()

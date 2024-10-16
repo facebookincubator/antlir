@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file")
-load(":defs.bzl", "package_feature", "test_in_layer")
+load(":defs.bzl", "package_feature", "standard_features", "test_in_layer")
 
 oncall("antlir")
 
@@ -14,67 +14,7 @@ buck_genrule(
 image.layer(
     name = "standard",
     features = [
-        feature.install(
-            src = ":antlir2-large-file-256M",
-            dst = "/antlir2-large-file-256M",
-        ),
-        feature.ensure_dirs_exist(dirs = "/default-dir"),
-        feature.install_text(
-            dst = "/only-readable-by-root",
-            mode = 0o000,
-            text = "Only readable by root",
-        ),
-        feature.install_text(
-            dst = "/default-dir/executable",
-            mode = "a+rx",
-            text = "#!/bin/bash\necho hello",
-        ),
-        feature.install_text(
-            dst = "/i-am-owned-by-nonstandard",
-            group = 43,
-            text = "42:43",
-            user = 42,
-        ),
-        feature.install_text(
-            dst = "/i-have-xattrs",
-            text = "xattrs are cool",
-            xattrs = {
-                "user.baz": "qux",
-                "user.foo": "bar",
-            },
-        ),
-        feature.install(
-            src = "antlir//antlir:empty",
-            dst = "/i-have-caps",
-            xattrs = {
-                "security.capability": "0sAQAAAoAAAAAAAAAAAAAAAAAAAAA=",
-            },
-        ),
-        feature.ensure_file_symlink(
-            link = "/absolute-file-symlink",
-            target = "/default-dir/executable",
-        ),
-        feature.ensure_file_symlink(
-            link = "/default-dir/relative-file-symlink",
-            target = "executable",
-        ),
-        feature.ensure_dir_symlink(
-            link = "/absolute-dir-symlink",
-            target = "/default-dir",
-        ),
-        feature.ensure_dir_symlink(
-            link = "/relative-dir-symlink",
-            target = "default-dir",
-        ),
-        feature.ensure_dirs_exist(dirs = "/hardlink"),
-        feature.install_text(
-            dst = "/hardlink/hello",
-            text = "Hello world\n",
-        ),
-        feature.hardlink(
-            link = "/hardlink/aloha",
-            target = "/hardlink/hello",
-        ),
+        standard_features(prefix = "/"),
     ],
 )
 

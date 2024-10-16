@@ -7,6 +7,11 @@
 
 use cap_std::fs::Dir;
 
-pub(crate) fn open() -> Dir {
-    Dir::open_ambient_dir("/layer", cap_std::ambient_authority()).expect("could not open /layer")
+pub(crate) struct StubImpl;
+
+impl crate::Stub for StubImpl {
+    fn open() -> Dir {
+        Dir::open_ambient_dir("/layer", cap_std::ambient_authority())
+            .expect("could not open /layer")
+    }
 }

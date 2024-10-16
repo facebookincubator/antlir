@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/test_images/package:defs.bzl", "package_feature", "test_in_layer")
+load("//antlir/antlir2/test_images/package:defs.bzl", "package_feature", "standard_features", "test_in_layer")
 load("//antlir/bzl:build_defs.bzl", "rust_unittest")
 
 oncall("antlir")
@@ -20,11 +20,19 @@ VARIANTS = {
     },
 }
 
+image.layer(
+    name = "standard",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/standard"),
+        standard_features(prefix = "/standard"),
+    ],
+)
+
 [
     [
         package.sendstream_v2(
             name = name + ".sendstream.v2",
-            layer = "//antlir/antlir2/test_images/package:standard",
+            layer = ":standard",
             rootless = args.get("rootless", None),
             volume_name = args.get("volume_name", None),
         ),
