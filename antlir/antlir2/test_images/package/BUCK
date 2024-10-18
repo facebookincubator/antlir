@@ -8,7 +8,13 @@ oncall("antlir")
 buck_genrule(
     name = "antlir2-large-file-256M",
     out = "f",
-    cmd = "yes antlir2-large-file | head -c 256M > $OUT",
+    bash = """
+        echo antlir2-large-file > $OUT
+        head -c 128M /dev/urandom >> $OUT
+        echo antlir2-large-file >> $OUT
+        head -c 128M /dev/urandom >> $OUT
+        echo antlir2-large-file >> $OUT
+    """,
 )
 
 image.layer(
