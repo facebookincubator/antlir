@@ -101,7 +101,7 @@ impl VirtualNIC {
     /// Set the file to dump interface traffic to.
     /// Set to None to disable dumping traffic.
     pub(crate) fn try_dump_file(&mut self, path: Option<PathBuf>) -> Result<&mut Self> {
-        if self.max_combined_channels > 1 {
+        if path.is_some() && self.max_combined_channels > 1 {
             return Err(VirtualNICError::TrafficDumpingNotSupported(
                 "Can not dump traffic for multi-queue NIC: https://fburl.com/dmblggwc".into(),
             ));
@@ -254,30 +254,61 @@ mod test {
         )
     }
 
+    // This test is to make sure that the dump file is added to the qemu args when it's supported (single-queue nic)
+    // and the dump file is not None.
     #[test]
     fn test_qemu_args_with_dump_file() {
         let dump_file = PathBuf::from("/tmp/dump");
         let mut nic = VirtualNIC::new(0, 1);
-        nic.try_dump_file(Some(dump_file.clone())).unwrap();
+        assert!(nic.try_dump_file(Some(dump_file.clone())).is_ok());
 
         assert_eq!(
             nic.qemu_args().join(OsStr::new(" ")),
             format!(
                 "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=1 \
-            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=off,vectors=4 \
-            -object filter-dump,id=dump0,netdev=net0,file={}",
+                -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=off,vectors=4 \
+                -object filter-dump,id=dump0,netdev=net0,file={}",
                 dump_file.to_string_lossy()
             )
             .as_str()
         )
     }
 
+    // This test is to make sure that the dump file is not added to the qemu args when it's supported (single-queue nic)
+    // but the dump file is None.
     #[test]
-    // This test is to make sure that the dump file is not added to the qemu args when it's not supported (multi-queue nics)
+    fn test_qemu_args_with_dump_file_none() {
+        let mut nic = VirtualNIC::new(0, 1);
+        assert!(nic.try_dump_file(None).is_ok());
+
+        assert_eq!(
+            nic.qemu_args().join(OsStr::new(" ")),
+            "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=1 \
+            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=off,vectors=4"
+        )
+    }
+
+    // This test is to make sure that the dump file is not added to the qemu args when it's not supported (multi-queue nics).
+    // If the dump file is not None, we return an error (which can be used to warn user) and don't add the dump file to the qemu args
+    #[test]
     fn test_qemu_args_with_dump_file_not_supported() {
         let dump_file = PathBuf::from("/tmp/dump");
         let mut nic = VirtualNIC::new(0, 2);
         assert!(nic.try_dump_file(Some(dump_file.clone())).is_err());
+
+        assert_eq!(
+            nic.qemu_args().join(OsStr::new(" ")),
+            "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=2 \
+            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=on,vectors=6"
+        )
+    }
+
+    // This test is to make sure that the dump file is not added to the qemu args when it's not supported (multi-queue nics).
+    // If the dump file is None, we do not return an error (it is a no-op) and don't add the dump file to the qemu args.
+    #[test]
+    fn test_qemu_args_with_dump_file_none_not_supported() {
+        let mut nic = VirtualNIC::new(0, 2);
+        assert!(nic.try_dump_file(None).is_ok());
 
         assert_eq!(
             nic.qemu_args().join(OsStr::new(" ")),
