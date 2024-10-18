@@ -41,14 +41,19 @@ fn antlir2_large_file_256m() {
     let large_file = package
         .read("antlir2-large-file-256M")
         .expect("failed to read");
-    assert_eq!(large_file.len(), 256 * 1024 * 1024);
+    // this line is present 3 times in the file:
     let line = b"antlir2-large-file\n";
-    let mut idx = 0;
-    while idx < large_file.len() {
-        let chunk_len = std::cmp::min(idx + line.len(), large_file.len()) - idx;
-        assert_eq!(&large_file[idx..idx + chunk_len], &line[..chunk_len]);
-        idx += line.len();
-    }
+    assert_eq!(large_file.len(), (256 * 1024 * 1024) + (line.len() * 3));
+    // right at the beginning
+    assert_eq!(&large_file[..line.len()], line);
+    // after 128M of random bytes
+    assert_eq!(
+        &large_file
+            [line.len() + (128 * 1024 * 1024)..line.len() + (128 * 1024 * 1024) + line.len()],
+        line
+    );
+    // at the end
+    assert_eq!(&large_file[large_file.len() - line.len()..], line);
 }
 
 #[cfg(feature = "xattr")]
