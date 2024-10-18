@@ -145,9 +145,13 @@ _vm_test = rule(
 
 vm_test = rule_with_default_target_platform(_vm_test)
 
-def _get_internal_labels(test_rule, run_as_bundle: bool):
+def _get_internal_labels(test_rule, run_as_bundle: bool) -> (list[str], list[str], list[str]):
+    """ Returns a set of labels (inner_labels, wrapper_labels, ci_labels)
+    inner_labels are for the inner test target we wrap with vm
+    wrapper_labels are test labels for the vmtest target
+    ci_labels are CI labels for the vmtest target
+    """
     wrapper_labels = ["heavyweight"]
-    # @oss-disable
     if run_as_bundle:
         wrapper_labels.append(special_tags.run_as_bundle)
     if fully_qualified_test_name_rollout.use_fully_qualified_name():
@@ -173,7 +177,11 @@ def _get_internal_labels(test_rule, run_as_bundle: bool):
     # never schedule any CI on this inner target
     # @oss-disable
 
-    return inner_labels, wrapper_labels
+    # don't run dev mode for vmtests
+    ci_labels = []
+    # @oss-disable
+
+    return inner_labels, wrapper_labels, ci_labels
 
 def _implicit_vm_test(
         test_rule,
@@ -211,6 +219,8 @@ def _implicit_vm_test(
     # @oss-disable
     # @oss-disable
     # @oss-disable
+    labels = ["uses_sudo"]
+    # @oss-disable
 
     inner_test_name = name + "_vm_test_inner"
     test_rule(
@@ -230,7 +240,7 @@ def _implicit_vm_test(
         postmortem = postmortem,
         compatible_with = kwargs.get("compatible_with"),
         target_compatible_with = kwargs.get("target_compatible_with"),
-        labels = ["uses_sudo"],
+        labels = labels,
     )
 
 vm_cpp_test = partial(
