@@ -23,5 +23,3 @@
 
 [buck2]
     file_watcher = watchman
-
-<file:.buckconfig.generated>
