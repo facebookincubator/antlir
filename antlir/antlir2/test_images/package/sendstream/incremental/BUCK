@@ -1,63 +1,32 @@
-load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest")
+load("//antlir/bzl:build_defs.bzl", "rust_unittest")
+load(":defs.bzl", "child_layer")
 
 oncall("antlir")
 
-buck_genrule(
-    name = "parent_large_file",
-    out = "parent_large_file",
-    cmd = """
-        # it's important that this is properly random so that we don't have to
-        # account for compression
-        head -c 100M </dev/urandom >$OUT
-    """,
-    visibility = [],
-)
-
-image.layer(
-    name = "parent",
-    features = [
-        feature.install(
-            src = ":parent_large_file",
-            dst = "/parent_large_file",
-        ),
-        feature.install_text(
-            dst = "/foo",
-            text = "foo\n",
-            xattrs = {
-                "user.bar": "bar",
-                "user.foo": "foo",
-            },
-        ),
-        feature.ensure_dirs_exist(dirs = "/to-be-removed"),
-        feature.install_text(
-            dst = "/to-be-removed/file",
-            text = "hello\n",
-        ),
-        feature.ensure_file_symlink(
-            link = "/baz",
-            target = "foo",
-        ),
-    ],
+child_layer(
+    name = "child",
+    parent_layer = "//antlir/antlir2/test_images/package/sendstream:layer",
 )
 
 package.sendstream_v2(
-    name = "parent.sendstream",
-    layer = ":parent",
+    name = "child.sendstream",
+    incremental_parent = "//antlir/antlir2/test_images/package/sendstream:layer.sendstream.v2",
+    layer = ":child",
 )
 
 package.sendstream_v2(
-    name = "parent.sendstream.rootless",
-    layer = ":parent",
+    name = "child.sendstream.rootless",
+    incremental_parent = "//antlir/antlir2/test_images/package/sendstream:layer-rootless.sendstream.v2",
+    layer = ":child",
     rootless = True,
 )
 
 image.prebuilt(
     name = "prebuilt-parent",
-    src = ":parent.sendstream",
-    flavor = ":parent[flavor]",
+    src = "//antlir/antlir2/test_images/package/sendstream:layer.sendstream.v2",
+    flavor = "//antlir/antlir2/test_images/package/sendstream:layer[flavor]",
     format = "sendstream",
     visibility = ["//antlir/antlir2/test_images/package/sendstream/incremental/..."],
 )
@@ -73,99 +42,39 @@ package.sendstream_v2(
     rootless = True,
 )
 
-buck_genrule(
-    name = "child_large_file",
-    out = "child_large_file",
-    cmd = """
-        # it's important that this is properly random so that we don't have to
-        # account for compression
-        head -c 10M </dev/urandom >$OUT
-    """,
-    visibility = [],
-)
-
-feature.new(
-    name = "child-features",
-    features = [
-        feature.install(
-            src = ":child_large_file",
-            dst = "/child_large_file",
-        ),
-        feature.install_text(
-            dst = "/bar",
-            text = "bar\n",
-        ),
-        feature.remove(
-            path = "/to-be-removed",
-        ),
-        feature.remove(
-            path = "/foo",
-        ),
-        feature.install_text(
-            dst = "/foo",
-            text = "foo\nbar\n",
-            xattrs = {
-                "user.baz": "baz",
-                "user.foo": "qux",
-            },
-        ),
-        feature.remove(path = "/baz"),
-        feature.ensure_file_symlink(
-            link = "/baz",
-            target = "bar",
-        ),
-    ],
-)
-
-image.layer(
-    name = "child",
-    features = [":child-features"],
-    parent_layer = ":parent",
-)
-
-package.sendstream_v2(
-    name = "child.sendstream",
-    incremental_parent = ":parent.sendstream",
-    layer = ":child",
-)
-
-package.sendstream_v2(
-    name = "child.sendstream.rootless",
-    incremental_parent = ":parent.sendstream.rootless",
-    layer = ":child",
-    rootless = True,
-)
-
-image.layer(
-    name = "prebuilt-child",
-    features = [":child-features"],
+child_layer(
+    name = "child-of-prebuilt",
     parent_layer = ":prebuilt-parent",
 )
 
 package.sendstream_v2(
-    name = "prebuilt-child.sendstream",
+    name = "child-of-prebuilt.sendstream",
     incremental_parent = ":prebuilt-parent.sendstream",
-    layer = ":prebuilt-child",
+    layer = ":child-of-prebuilt",
 )
 
 package.sendstream_v2(
-    name = "prebuilt-child.sendstream.rootless",
-    incremental_parent = ":prebuilt-parent.sendstream",
-    layer = ":prebuilt-child",
+    name = "child-of-prebuilt.sendstream.rootless",
+    incremental_parent = ":prebuilt-parent.sendstream.rootless",
+    layer = ":child-of-prebuilt",
     rootless = True,
 )
 
-python_unittest(
+rust_unittest(
     name = "test-incremental-size",
-    srcs = ["test_incremental_size.py"],
+    srcs = ["test_incremental_size.rs"],
     resources = {
-        ":child.sendstream": "child.sendstream",
-        ":child.sendstream.rootless": "child.sendstream.rootless",
-        ":parent.sendstream": "parent.sendstream",
-        ":parent.sendstream.rootless": "parent.sendstream.rootless",
-        ":prebuilt-child.sendstream": "prebuilt-child.sendstream",
-        ":prebuilt-child.sendstream.rootless": "prebuilt-child.sendstream.rootless",
-        ":prebuilt-parent.sendstream": "prebuilt-parent.sendstream",
-        ":prebuilt-parent.sendstream.rootless": "prebuilt-parent.sendstream.rootless",
+        "child-of-prebuilt.sendstream": ":child-of-prebuilt.sendstream",
+        "child-of-prebuilt.sendstream.rootless": ":child-of-prebuilt.sendstream.rootless",
+        "child.sendstream": ":child.sendstream",
+        "child.sendstream.rootless": ":child.sendstream.rootless",
+        "parent.sendstream": "//antlir/antlir2/test_images/package/sendstream:layer.sendstream.v2",
+        "parent.sendstream.rootless": "//antlir/antlir2/test_images/package/sendstream:layer-rootless.sendstream.v2",
+        "prebuilt-parent.sendstream": ":prebuilt-parent.sendstream",
+        "prebuilt-parent.sendstream.rootless": ":prebuilt-parent.sendstream.rootless",
     },
+    deps = [
+        "buck-resources",
+        "bytesize",
+    ],
 )

@@ -25,11 +25,12 @@ _feature_deps = {
     ],
 }
 
-def _rust_test_attrs(
+def rust_test_attrs(
         *,
         stub: str,
         deps: list[str] = [],
-        omit_features: list[package_feature] = []):
+        omit_features: list[package_feature] = [],
+        rust_features: list[str] = []):
     features = [package_feature(f) for f in package_feature.values()]
     for f in omit_features:
         features.remove(f)
@@ -37,7 +38,7 @@ def _rust_test_attrs(
     for f in features:
         deps += _feature_deps.get(f, [])
 
-    rust_features = [f.value for f in features]
+    rust_features = list(rust_features) + [f.value for f in features]
     format = native.package_name().split("/")[-1]
     rust_features.append("format_" + format)
     return {
@@ -63,7 +64,7 @@ def test_in_layer(
     image_rust_test(
         name = name,
         layer = ":{}-layer".format(name),
-        **_rust_test_attrs(
+        **rust_test_attrs(
             stub = stub,
             deps = deps,
             omit_features = omit_package_features,
