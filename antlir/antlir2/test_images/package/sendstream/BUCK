@@ -21,10 +21,31 @@ VARIANTS = {
 }
 
 image.layer(
-    name = "standard",
+    name = "layer",
     features = [
         feature.ensure_dirs_exist(dirs = "/standard"),
         standard_features(prefix = "/standard"),
+        feature.install_text(
+            dst = "/hello",
+            text = "Hello\n",
+        ),
+        feature.ensure_dirs_exist(dirs = "/to-be-removed"),
+        feature.install_text(
+            dst = "/to-be-removed/file",
+            text = "I will be deleted\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/i-will-get-new-xattrs",
+            xattrs = {
+                "user.bar": "bar",
+                "user.foo": "foo",
+            },
+        ),
+        feature.ensure_file_symlink(
+            link = "/aloha",
+            target = "/hello",
+        ),
     ],
 )
 
@@ -32,7 +53,7 @@ image.layer(
     [
         package.sendstream_v2(
             name = name + ".sendstream.v2",
-            layer = ":standard",
+            layer = ":layer",
             rootless = args.get("rootless", None),
             volume_name = args.get("volume_name", None),
         ),
