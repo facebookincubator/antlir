@@ -236,9 +236,9 @@ fn globals() -> Globals {
         LibraryExtension::Json,
         LibraryExtension::Typing,
     ])
-    .with_struct("unittest", unittest)
+    .with_namespace("unittest", unittest)
     .with(saving_fail)
-    .with_struct("native", native)
+    .with_namespace("native", native)
     .build()
 }
 
