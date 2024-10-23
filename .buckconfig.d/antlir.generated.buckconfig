@@ -1,11 +1,14 @@
 # @generated
 [cells]
-    generated = generated
+    gh_facebookincubator_antlir_generated = generated
+
+[cell_aliases]
+    generated = gh_facebookincubator_antlir_generated
 
 [external_cells]
-    generated = git
+    gh_facebookincubator_antlir_generated = git
 
-[external_cell_generated]
+[external_cell_gh_facebookincubator_antlir_generated]
     git_origin = https://github.com/facebookincubator/antlir
-    commit_hash = c05953b146f99ec1c007d1265754265c1a224ee8
+    commit_hash = 80bd45c58ca6c8e5581b41584daa30fc186a1e06
 
