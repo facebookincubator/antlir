@@ -416,7 +416,7 @@ impl FileLoader for Dependencies {
             let module = Module::new();
             {
                 let mut evaluator: Evaluator = Evaluator::new(&module);
-                let globals = bzl_globals().with_struct("shape_impl", shape).build();
+                let globals = bzl_globals().with_namespace("shape_impl", shape).build();
                 evaluator
                     .eval_module(ast, &globals)
                     .map_err(starlark::Error::into_anyhow)?;
