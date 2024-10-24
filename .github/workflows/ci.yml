@@ -8,8 +8,7 @@ defaults:
 jobs:
   test:
     runs-on:
-      # this runner comes with 150GB of disk space
-      labels: 4-core-ubuntu
+      labels: 8-core-ubuntu
     steps:
       - uses: actions/checkout@v4
         with:
