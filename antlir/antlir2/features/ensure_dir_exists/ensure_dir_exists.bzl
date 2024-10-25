@@ -50,7 +50,7 @@ def ensure_subdirs_exist(
 
 def ensure_dirs_exist(
         *,
-        dirs: str,
+        dirs: str | Select,
         mode: int | str = 0o755,
         user: str = "root",
         group: str = "root"):
