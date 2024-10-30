@@ -70,7 +70,7 @@ def _rust_common(rule, **kwargs):
     deps = selects.apply(kwargs.pop("deps", []), lambda deps: [_normalize_rust_dep(d) for d in deps])
     named_deps = selects.apply(kwargs.pop("named_deps", {}), lambda named_deps: {
         key: _normalize_rust_dep(_ensure_dep_is_public(d))
-        for key, d in named_deps.items()
+        for key, d in (named_deps or {}).items()
     })
     rule(deps = deps, named_deps = named_deps, **kwargs)
 
