@@ -3,7 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-def _transition(*, constraints, refs: struct, attrs: struct, overwrite: bool):
+def _transition(
+        *,
+        constraints,
+        refs: struct,
+        attrs: struct,
+        overwrite: bool = False):
     setting = refs.systemd_setting[ConstraintSettingInfo]
     if attrs.systemd and (
         (setting.label not in constraints) or

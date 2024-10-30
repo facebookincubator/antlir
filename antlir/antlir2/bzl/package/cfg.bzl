@@ -45,7 +45,6 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
         constraints = constraints,
         refs = refs,
         attrs = attrs,
-        overwrite = True,
     )
 
     if is_facebook:
