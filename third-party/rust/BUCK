@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "4f716ae19df1e83922679b6cd1fd367a525eb6a7",
+    rev = "d1736f86179fc2abb1302717b1524e95e68c6cd3",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "893a1bf204189220c59c759242e98151c3188ce0",
+    rev = "cc11a3fff37eb5c8a4d99773b2000e85f7617af0",
     visibility = [],
 )
 
@@ -1071,7 +1071,7 @@ cargo.rust_library(
         ":async-task-4.7.1",
         ":concurrent-queue-2.5.0",
         ":fastrand-2.1.1",
-        ":futures-lite-2.3.0",
+        ":futures-lite-2.4.0",
         ":slab-0.4.9",
     ],
 )
@@ -1094,7 +1094,7 @@ cargo.rust_library(
     deps = [
         ":async-lock-3.4.0",
         ":blocking-1.6.1",
-        ":futures-lite-2.3.0",
+        ":futures-lite-2.4.0",
     ],
 )
 
@@ -1183,7 +1183,7 @@ cargo.rust_library(
         ":cfg-if-1.0.0",
         ":concurrent-queue-2.5.0",
         ":futures-io-0.3.31",
-        ":futures-lite-2.3.0",
+        ":futures-lite-2.4.0",
         ":parking-2.2.1",
         ":polling-3.7.3",
         ":rustix-0.38.38",
@@ -1302,7 +1302,7 @@ cargo.rust_library(
         ":async-lock-3.4.0",
         ":cfg-if-1.0.0",
         ":event-listener-5.3.1",
-        ":futures-lite-2.3.0",
+        ":futures-lite-2.4.0",
         ":tracing-0.1.40",
     ],
 )
@@ -2526,7 +2526,7 @@ cargo.rust_library(
         ":async-channel-2.3.1",
         ":async-task-4.7.1",
         ":futures-io-0.3.31",
-        ":futures-lite-2.3.0",
+        ":futures-lite-2.4.0",
         ":piper-0.2.4",
     ],
 )
@@ -3404,18 +3404,18 @@ buildscript_run(
 )
 
 http_archive(
-    name = "cap-primitives-3.3.0.crate",
-    sha256 = "ff5bcbaf57897c8f14098cc9ad48a78052930a9948119eea01b80ca224070fa6",
-    strip_prefix = "cap-primitives-3.3.0",
-    urls = ["https://static.crates.io/crates/cap-primitives/3.3.0/download"],
+    name = "cap-primitives-3.4.0.crate",
+    sha256 = "f40756d6f89f74c94bec88f05f699144f8437194c71933f4f5bccfc3799afcd2",
+    strip_prefix = "cap-primitives-3.4.0",
+    urls = ["https://static.crates.io/crates/cap-primitives/3.4.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cap-primitives-3.3.0",
-    srcs = [":cap-primitives-3.3.0.crate"],
+    name = "cap-primitives-3.4.0",
+    srcs = [":cap-primitives-3.4.0.crate"],
     crate = "cap_primitives",
-    crate_root = "cap-primitives-3.3.0.crate/src/lib.rs",
+    crate_root = "cap-primitives-3.4.0.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "linux-arm64": dict(
@@ -3443,12 +3443,12 @@ cargo.rust_library(
             ],
         ),
     },
-    rustc_flags = ["@$(location :cap-primitives-3.3.0-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :cap-primitives-3.4.0-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":ambient-authority-0.0.2",
         ":fs-set-times-0.20.1",
-        ":io-extras-0.18.2",
+        ":io-extras-0.18.3",
         ":io-lifetimes-2.0.3",
         ":ipnet-2.10.1",
         ":maybe-owned-0.3.4",
@@ -3456,43 +3456,43 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "cap-primitives-3.3.0-build-script-build",
-    srcs = [":cap-primitives-3.3.0.crate"],
+    name = "cap-primitives-3.4.0-build-script-build",
+    srcs = [":cap-primitives-3.4.0.crate"],
     crate = "build_script_build",
-    crate_root = "cap-primitives-3.3.0.crate/build.rs",
+    crate_root = "cap-primitives-3.4.0.crate/build.rs",
     edition = "2021",
     visibility = [],
 )
 
 buildscript_run(
-    name = "cap-primitives-3.3.0-build-script-run",
+    name = "cap-primitives-3.4.0-build-script-run",
     package_name = "cap-primitives",
-    buildscript_rule = ":cap-primitives-3.3.0-build-script-build",
-    version = "3.3.0",
+    buildscript_rule = ":cap-primitives-3.4.0-build-script-build",
+    version = "3.4.0",
 )
 
 alias(
     name = "cap-std",
-    actual = ":cap-std-3.3.0",
+    actual = ":cap-std-3.4.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "cap-std-3.3.0.crate",
-    sha256 = "e6cf1a22e6eab501e025a9953532b1e95efb8a18d6364bf8a4a7547b30c49186",
-    strip_prefix = "cap-std-3.3.0",
-    urls = ["https://static.crates.io/crates/cap-std/3.3.0/download"],
+    name = "cap-std-3.4.0.crate",
+    sha256 = "af6647a5e437dd776eb6afddd576f81875be203364f02cded18d9c90d8793938",
+    strip_prefix = "cap-std-3.4.0",
+    urls = ["https://static.crates.io/crates/cap-std/3.4.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cap-std-3.3.0",
-    srcs = [":cap-std-3.3.0.crate"],
+    name = "cap-std-3.4.0",
+    srcs = [":cap-std-3.4.0.crate"],
     crate = "cap_std",
-    crate_root = "cap-std-3.3.0.crate/src/lib.rs",
+    crate_root = "cap-std-3.4.0.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :cap-std-3.3.0-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :cap-std-3.4.0-build-script-run[out_dir])",
     },
     features = ["default"],
     platform = {
@@ -3509,31 +3509,31 @@ cargo.rust_library(
             deps = [":rustix-0.38.38"],
         ),
     },
-    rustc_flags = ["@$(location :cap-std-3.3.0-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :cap-std-3.4.0-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
-        ":cap-primitives-3.3.0",
-        ":io-extras-0.18.2",
+        ":cap-primitives-3.4.0",
+        ":io-extras-0.18.3",
         ":io-lifetimes-2.0.3",
     ],
 )
 
 cargo.rust_binary(
-    name = "cap-std-3.3.0-build-script-build",
-    srcs = [":cap-std-3.3.0.crate"],
+    name = "cap-std-3.4.0-build-script-build",
+    srcs = [":cap-std-3.4.0.crate"],
     crate = "build_script_build",
-    crate_root = "cap-std-3.3.0.crate/build.rs",
+    crate_root = "cap-std-3.4.0.crate/build.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
 )
 
 buildscript_run(
-    name = "cap-std-3.3.0-build-script-run",
+    name = "cap-std-3.4.0-build-script-run",
     package_name = "cap-std",
-    buildscript_rule = ":cap-std-3.3.0-build-script-build",
+    buildscript_rule = ":cap-std-3.4.0-build-script-build",
     features = ["default"],
-    version = "3.3.0",
+    version = "3.4.0",
 )
 
 http_archive(
@@ -4184,24 +4184,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.35.crate",
-    sha256 = "07a13ab5b8cb13dbe35e68b83f6c12f9293b2f601797b71bc9f23befdb329feb",
-    strip_prefix = "clap_complete-4.5.35",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.35/download"],
+    name = "clap_complete-4.5.36.crate",
+    sha256 = "86bc73de94bc81e52f3bebec71bc4463e9748f7a59166663e32044669577b0e2",
+    strip_prefix = "clap_complete-4.5.36",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.36/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.35-clap_complete",
+    actual = ":clap_complete-4.5.36-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.35-clap_complete",
-    srcs = [":clap_complete-4.5.35.crate"],
+    name = "clap_complete-4.5.36-clap_complete",
+    srcs = [":clap_complete-4.5.36.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.35.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.36.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
@@ -8205,18 +8205,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "futures-lite-2.3.0.crate",
-    sha256 = "52527eb5074e35e9339c6b4e8d12600c7128b68fb25dcb9fa9dec18f7c25f3a5",
-    strip_prefix = "futures-lite-2.3.0",
-    urls = ["https://static.crates.io/crates/futures-lite/2.3.0/download"],
+    name = "futures-lite-2.4.0.crate",
+    sha256 = "3f1fa2f9765705486b33fd2acf1577f8ec449c2ba1f318ae5447697b7c08d210",
+    strip_prefix = "futures-lite-2.4.0",
+    urls = ["https://static.crates.io/crates/futures-lite/2.4.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "futures-lite-2.3.0",
-    srcs = [":futures-lite-2.3.0.crate"],
+    name = "futures-lite-2.4.0",
+    srcs = [":futures-lite-2.4.0.crate"],
     crate = "futures_lite",
-    crate_root = "futures-lite-2.3.0.crate/src/lib.rs",
+    crate_root = "futures-lite-2.4.0.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -9893,18 +9893,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "io-extras-0.18.2.crate",
-    sha256 = "c9f046b9af244f13b3bd939f55d16830ac3a201e8a9ba9661bfcb03e2be72b9b",
-    strip_prefix = "io-extras-0.18.2",
-    urls = ["https://static.crates.io/crates/io-extras/0.18.2/download"],
+    name = "io-extras-0.18.3.crate",
+    sha256 = "7d45fd7584f9b67ac37bc041212d06bfac0700b36456b05890d36a3b626260eb",
+    strip_prefix = "io-extras-0.18.3",
+    urls = ["https://static.crates.io/crates/io-extras/0.18.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "io-extras-0.18.2",
-    srcs = [":io-extras-0.18.2.crate"],
+    name = "io-extras-0.18.3",
+    srcs = [":io-extras-0.18.3.crate"],
     crate = "io_extras",
-    crate_root = "io-extras-0.18.2.crate/src/lib.rs",
+    crate_root = "io-extras-0.18.3.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     platform = {
@@ -9915,27 +9915,27 @@ cargo.rust_library(
             deps = [":windows-sys-0.52.0"],
         ),
     },
-    rustc_flags = ["@$(location :io-extras-0.18.2-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :io-extras-0.18.3-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [":io-lifetimes-2.0.3"],
 )
 
 cargo.rust_binary(
-    name = "io-extras-0.18.2-build-script-build",
-    srcs = [":io-extras-0.18.2.crate"],
+    name = "io-extras-0.18.3-build-script-build",
+    srcs = [":io-extras-0.18.3.crate"],
     crate = "build_script_build",
-    crate_root = "io-extras-0.18.2.crate/build.rs",
+    crate_root = "io-extras-0.18.3.crate/build.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
 )
 
 buildscript_run(
-    name = "io-extras-0.18.2-build-script-run",
+    name = "io-extras-0.18.3-build-script-run",
     package_name = "io-extras",
-    buildscript_rule = ":io-extras-0.18.2-build-script-build",
+    buildscript_rule = ":io-extras-0.18.3-build-script-build",
     features = ["default"],
-    version = "0.18.2",
+    version = "0.18.3",
 )
 
 http_archive(
