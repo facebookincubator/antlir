@@ -18,7 +18,7 @@ path = "src/lib.rs"
 
 [dependencies]
 serde = { version = "1.0.185", features = ["derive", "rc"] }
-serde_json = { version = "1.0.125", features = ["float_roundtrip", "unbounded_depth"] }
+serde_json = { version = "1.0.132", features = ["float_roundtrip", "unbounded_depth"] }
 toml = "0.8.4"
 
 [dev-dependencies]
