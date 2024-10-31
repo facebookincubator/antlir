@@ -6,6 +6,7 @@
 # @oss-disable
 # @oss-disable
 # @oss-disable
+load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -212,6 +213,11 @@ def _implicit_vm_test(
     # We only execute aarch64 tests on x64 hosts for now and cross-platform
     # emulation is slower. Give more buffer based on additional boot time.
     timeout_secs = timeout_secs or arch_select(x86_64 = 300, aarch64 = 600)
+
+    # try to apply a timeout multiplier if specified on the command line
+    timeout_multiplier = int(read_config("antlir2", "timeout_multiplier", 1))
+    timeout_secs = selects.apply(timeout_secs, lambda x: x * timeout_multiplier)
+
     wrapper_labels = list(labels) if labels else []
     wrapper_labels.extend(_add_outer_labels)
     inner_labels = []
