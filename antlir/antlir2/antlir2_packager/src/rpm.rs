@@ -295,7 +295,15 @@ AutoProv: {autoprov}
                     format!("%attr(-, {}, {}) ", user_name.name, group_name.name).as_str(),
                 );
 
-                spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
+                let mut path_str = relpath
+                    .to_str()
+                    .expect("our paths are always valid utf8")
+                    .to_owned();
+                // Paths with spaces need to be quoted so rpmbuild doesn't die
+                if path_str.contains(" ") {
+                    path_str = format!("\"{path_str}\"");
+                }
+                spec.push_str(&path_str);
                 spec.push('\n');
             }
         } else {
