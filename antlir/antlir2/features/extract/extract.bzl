@@ -21,6 +21,7 @@ This new-and-improved version of extract is capable of extracting buck-built
 binaries without first installing them into a layer.
 """
 
+load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
@@ -29,7 +30,6 @@ load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep_analyze")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "internal_external")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
 def extract_from_layer(
         layer: str | Select,
@@ -67,10 +67,6 @@ def extract_from_layer(
         },
     )
 
-def _should_strip(strip_attr: bool) -> bool:
-    # Only strip if both strip=True and we're in opt mode (standalone binaries)
-    return strip_attr and not REPO_CFG.artifacts_require_repo
-
 def extract_buck_binary(
         src: str | Select,
         dst: str | Select,
@@ -106,14 +102,11 @@ def extract_buck_binary(
         },
         exec_deps = {
             "_analyze": "antlir//antlir/antlir2/features/extract:extract-buck-binary-analyze",
-        } | (
-            {
-                "_objcopy": internal_external(
-                    fb = "fbsource//third-party/binutils:objcopy",
-                    oss = "toolchains//:objcopy",
-                ),
-            } if _should_strip(strip) else {}
-        ),
+            "_objcopy": internal_external(
+                fb = "fbsource//third-party/binutils:objcopy",
+                oss = "toolchains//:objcopy",
+            ),
+        },
         kwargs = {
             "dst": dst,
             "strip": strip,
@@ -144,7 +137,7 @@ extract_from_layer_rule = rule(
 )
 
 def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
-    if _should_strip(ctx.attrs.strip):
+    if ctx.attrs.strip and binaries_require_repo.is_standalone(ctx.attrs.src):
         split_anon_target = split_binary_anon(
             ctx = ctx,
             src = ctx.attrs.src,

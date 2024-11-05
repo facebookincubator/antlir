@@ -50,11 +50,6 @@ def use_rc_target(*, target, exact_match = False):
     return target in REPO_CFG.rc_targets
 
 REPO_CFG = repo_config_t(
-    artifacts_require_repo = (
-        (native.read_config("defaults.cxx_library", "type") == "shared") or
-        (native.read_config("python", "package_style") == "inplace")
-    ) and native.read_config("antlir", "require_repo", "true") == "true",
-
     # Enumerates host mounts required to execute FB binaries in @mode/dev.
     #
     # This is turned into json and loaded by the python side of the

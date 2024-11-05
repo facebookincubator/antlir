@@ -9,13 +9,13 @@
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
+load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "internal_external", "is_facebook", "python_unittest", "rust_unittest")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:systemd.bzl", systemd_bzl = "systemd")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
 
@@ -174,7 +174,7 @@ image_test = rule_with_default_target_platform(_image_test)
 def _implicit_image_test(
         test_rule,
         name: str,
-        layer: str,
+        layer: str | Select,
         run_as_user: str | None = None,
         labels: list[str] | Select | None = None,
         boot: bool = False,
@@ -284,12 +284,10 @@ def image_python_test(
         default_rou: str | None = None,
         systemd: str | None = None,
         **kwargs):
-    test_layer = layer
-    if not REPO_CFG.artifacts_require_repo and is_facebook:
-        # In @mode/opt we need to install fb-xarexec
-        test_layer = name + "--with-xarexec"
+    if is_facebook:
+        with_xarexec = name + "--with-xarexec"
         image.layer(
-            name = test_layer,
+            name = with_xarexec,
             parent_layer = layer,
             features = [
                 feature.rpms_install(rpms = ["fb-xarexec"]),
@@ -300,7 +298,16 @@ def image_python_test(
             implicit_layer_reason = "image_test_xarexec",
             systemd = "inherit-parent",
         )
-        test_layer = ":{}".format(test_layer)
+
+        # In opt modes, we need to use a parent_layer that has fb-xarexec
+        # installed, otherwise the interpreter shebang will be unavailable to
+        # run any installed XARs
+        test_layer = selects.apply(
+            binaries_require_repo.select_value,
+            lambda binaries_require_repo: (":" + with_xarexec) if not binaries_require_repo else layer,
+        )
+    else:
+        test_layer = layer
 
     _implicit_image_test(
         test_rule = python_unittest,

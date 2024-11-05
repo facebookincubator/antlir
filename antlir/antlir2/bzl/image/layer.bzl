@@ -7,6 +7,7 @@ load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless_config_set", "get_antlir2_rootless")
+load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
@@ -141,11 +142,12 @@ def _container_sub_target(
         binary: Dependency | None,
         layer: LayerContents,
         mounts: list[mount_record],
-        rootless: bool) -> list[Provider]:
+        rootless: bool,
+        binaries_require_repo: bool | None) -> list[Provider]:
     if not binary:
         return [DefaultInfo()]
     dev_mode_args = cmd_args()
-    if REPO_CFG.artifacts_require_repo:
+    if binaries_require_repo:
         dev_mode_args = cmd_args(
             "--artifacts-require-repo",
             cmd_args([cmd_args("--bind-mount-ro", p, p) for p in REPO_CFG.host_mounts_for_repo_artifacts]),
@@ -464,6 +466,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                     parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
                 ),
                 rootless = ctx.attrs._rootless,
+                binaries_require_repo = ctx.attrs._binaries_require_repo,
             )
         if layer.overlayfs:
             phase_sub_targets["overlayfs"] = [DefaultInfo(layer.overlayfs.json_file)]
@@ -491,7 +494,13 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     if layer.subvol_symlink:
         subvol_symlink = layer.subvol_symlink
-        sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, layer, mounts, ctx.attrs._rootless)
+        sub_targets["container"] = _container_sub_target(
+            ctx.attrs._run_container,
+            layer,
+            mounts,
+            ctx.attrs._rootless,
+            binaries_require_repo = ctx.attrs._binaries_require_repo,
+        )
     elif ctx.attrs._materialize_to_subvol:
         subvol_symlink = ctx.actions.declare_output("subvol_symlink")
         ctx.actions.run(
@@ -601,6 +610,7 @@ _layer_attrs = {
         default = None,
     ),
     "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
+    "_binaries_require_repo": binaries_require_repo.optional_attr,
     "_dnf_auto_additional_repos": attrs.list(
         attrs.one_of(
             attrs.dep(providers = [RepoInfo]),
@@ -691,7 +701,10 @@ def layer(
         kwargs["labels"] = kwargs.pop("labels", []) + ["antlir2-implicit-layer=" + implicit_layer_reason]
         kwargs.pop("default_os", None)
         default_os = None
-        kwargs["flavor"] = expect_non_none(parent_layer, msg = "parent_layer required for implicit layers") + "[flavor]"
+        kwargs["flavor"] = selects.apply(
+            expect_non_none(parent_layer, msg = "parent_layer required for implicit layers"),
+            lambda parent_layer: parent_layer + "[flavor]",
+        )
 
     force_flavor = kwargs.pop("force_flavor", None)
     if force_flavor:
@@ -768,5 +781,6 @@ def layer(
         _implicit_image_test = "antlir//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
         _materialize_to_subvol = "antlir//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol",
+        _binaries_require_repo = binaries_require_repo.select_value,
         **kwargs
     )

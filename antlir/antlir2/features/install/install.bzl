@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:expect.bzl", "expect")
+load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
@@ -15,7 +16,6 @@ load(
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "internal_external")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:stat.bzl", "stat")
 
 default_permissions = record(
@@ -102,15 +102,7 @@ def install(
             "text": None,
             "user": user,
             "xattrs": xattrs,
-            "_binaries_require_repo": select({
-                # For unknown build modes, we don't know if the repo is
-                # required, so err on the side of caution and include it.
-                "DEFAULT": True,
-                # @oss-disable
-                # @oss-disable
-                # @oss-disable
-                # @oss-disable
-            }),
+            "_binaries_require_repo": binaries_require_repo.select_value,
         },
     )
 
@@ -207,8 +199,24 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
             required_artifacts.extend(so_targets)
 
-        # dev mode binaries don't get stripped, they just get symlinked
-        if ctx.attrs.split_debuginfo and (not ctx.attrs._binaries_require_repo or ctx.attrs.never_use_dev_binary_symlink):
+        # Determining if a binary is standalone or not is surprisingly hard:
+        #
+        # Default to whatever we know about the entire build mode (opt or dev).
+        # If we can't tell from the build mode, assume that binaries are not
+        # standalone to be safe.
+        standalone = not ctx.attrs._binaries_require_repo if ctx.attrs._binaries_require_repo != None else False
+
+        # However, an individual binary may still be standalone, so let's check
+        # the binary instead of solely relying on the mode of the entire build.
+        # We trust the build mode more than inspecting individual binaries, so
+        # we never want to "downgrade" a binary to non-standalone status if the
+        # build mode indicates that every binary is in fact standalone
+        if not standalone:
+            standalone = binaries_require_repo.is_standalone(src)
+
+        # Non-standalone (aka dev-mode) binaries don't get stripped, they just
+        # get symlinked
+        if ctx.attrs.split_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink):
             split_anon_target = split_binary_anon(
                 ctx = ctx,
                 src = src,
@@ -231,7 +239,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             src = ensure_single_output(src)
             binary_info = None
             if is_executable:
-                if ctx.attrs._binaries_require_repo:
+                if not standalone:
                     binary_info = binary_record(dev = True)
                 if ctx.attrs.never_use_dev_binary_symlink:
                     binary_info = None
@@ -300,12 +308,7 @@ install_rule = rule(
             default = "root",
         ),
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
-        "_binaries_require_repo": attrs.bool(
-            # TODO: when D53184737 lands and is used by all features, this
-            # default should be replaced with the select from above
-            default = REPO_CFG.artifacts_require_repo,
-            doc = "Binaries require the repo to run (so should be symlinks into the repo)",
-        ),
+        "_binaries_require_repo": binaries_require_repo.optional_attr,
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
     },
 )
