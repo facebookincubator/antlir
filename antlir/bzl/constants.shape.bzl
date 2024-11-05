@@ -49,7 +49,6 @@ nevra_t = shape.shape(
 # are effectively global and should be treated with extreme caution.
 # Don't be careless.
 repo_config_t = shape.shape(
-    artifacts_require_repo = bool,
     host_mounts_for_repo_artifacts = shape.list(shape.path),
     rc_targets = shape.list(str),
     flavor_alias = shape.field(str, optional = True),
