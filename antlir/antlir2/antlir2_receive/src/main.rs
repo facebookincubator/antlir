@@ -132,6 +132,9 @@ impl Receive {
                     .arg(recv_tmp.path())
                     .arg("-f")
                     .arg(&self.source);
+                if self.rootless {
+                    cmd.arg("--force-decompress");
+                }
                 trace!("receiving sendstream: {cmd:?}");
                 let res = cmd.spawn()?.wait()?;
                 if !res.success() {
