@@ -518,6 +518,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             LayerContents(subvol_symlink = subvol_symlink),
             mounts,
             ctx.attrs._rootless,
+            binaries_require_repo = ctx.attrs._binaries_require_repo,
         )
     else:
         # This won't happen until we migrate more complex targets, since this
