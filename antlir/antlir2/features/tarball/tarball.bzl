@@ -10,7 +10,8 @@ def tarball(
         *,
         src: str,
         into_dir: str,
-        force_root_ownership: bool = False):
+        force_root_ownership: bool = False,
+        strip_components: int = 0):
     return ParseTimeFeature(
         feature_type = "tarball",
         plugin = "antlir//antlir/antlir2/features/tarball:tarball",
@@ -20,6 +21,7 @@ def tarball(
         kwargs = {
             "force_root_ownership": force_root_ownership,
             "into_dir": into_dir,
+            "strip_components": strip_components,
         },
     )
 
@@ -32,6 +34,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 src = ctx.attrs.src,
                 into_dir = ctx.attrs.into_dir,
                 force_root_ownership = ctx.attrs.force_root_ownership,
+                strip_components = ctx.attrs.strip_components,
             ),
             required_artifacts = [ctx.attrs.src],
             plugin = ctx.attrs.plugin[FeaturePluginInfo],
@@ -45,5 +48,6 @@ tarball_rule = rule(
         "into_dir": attrs.string(),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "src": attrs.source(),
+        "strip_components": attrs.int(default = 0),
     },
 )

@@ -10,6 +10,7 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::os::unix::ffi::OsStrExt;
+use std::path::PathBuf;
 
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph_if::item::FileType;
@@ -27,6 +28,7 @@ use anyhow::Result;
 use flate2::read::GzDecoder;
 use serde::Deserialize;
 use tar::Archive;
+use tempfile::TempDir;
 use tracing::warn;
 use zstd::stream::read::Decoder as ZstdDecoder;
 
@@ -37,6 +39,7 @@ pub struct Tarball {
     pub src: BuckOutSource,
     pub into_dir: PathInLayer,
     pub force_root_ownership: bool,
+    pub strip_components: usize,
 }
 
 enum ArchiveReader<'a> {
@@ -94,9 +97,14 @@ impl antlir2_depgraph_if::RequiresProvides for Tarball {
             let entry = entry
                 .context("while iterating over entries")
                 .map_err(|e| e.to_string())?;
-            let path = self
-                .into_dir
-                .join(entry.path().expect("infallible on linux"));
+            let path = self.into_dir.join(
+                entry
+                    .path()
+                    .expect("infallible on linux")
+                    .components()
+                    .skip(self.strip_components)
+                    .collect::<PathBuf>(),
+            );
             if entry.header().entry_type().is_dir() {
                 provides.push(Item::Path(PathItem::Entry(FsEntry {
                     path,
@@ -169,7 +177,37 @@ impl antlir2_compile::CompileFeature for Tarball {
         archive.set_preserve_permissions(true);
         archive.set_preserve_ownerships(!self.force_root_ownership);
         archive.set_unpack_xattrs(true);
-        archive.unpack(ctx.dst_path(&self.into_dir)?)?;
+        if self.strip_components == 0 {
+            archive.unpack(ctx.dst_path(&self.into_dir)?)?;
+        } else {
+            // the 'tar' crate doesn't natively support strip_components, so we
+            // just extract it to a temporary directory and move the contents
+            // over
+            let dst = TempDir::new_in(ctx.root_path())?;
+            archive.unpack(dst.path())?;
+            let mut first_dir = dst.path().to_owned();
+            for _depth in 0..self.strip_components {
+                let entries =
+                    std::fs::read_dir(&first_dir)?.collect::<std::io::Result<Vec<_>>>()?;
+                if entries.len() != 1 {
+                    return Err(anyhow!(
+                        "expected exactly one entry in {} after stripping components, but saw {:?}",
+                        dst.path().display(),
+                        entries.iter().map(|e| e.file_name()).collect::<Vec<_>>(),
+                    )
+                    .into());
+                }
+                first_dir.push(entries[0].file_name());
+            }
+            let final_dst = ctx.dst_path(&self.into_dir)?;
+            std::fs::rename(&first_dir, &final_dst).with_context(|| {
+                format!(
+                    "while moving extracted tarball {} -> {}",
+                    first_dir.display(),
+                    final_dst.display(),
+                )
+            })?;
+        }
         Ok(())
     }
 }

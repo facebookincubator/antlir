@@ -8,6 +8,7 @@ feature_impl(
         "anyhow",
         "flate2",
         "tar",
+        "tempfile",
         "tracing",
         "zstd",
     ],
