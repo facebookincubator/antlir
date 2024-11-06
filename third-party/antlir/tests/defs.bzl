@@ -6,7 +6,7 @@ load("//antlir/bzl:third_party.bzl", "third_party")
 def hello_world_build_test(ver, msg, patches = None):
     third_party.build(
         name = "hello_world.{}.build".format(ver),
-        src = ":hello_world.tgz",
+        src = ":hello_world.tar",
         features = [feature.rpms_install(rpms = ["gcc", "patch"])],
         script = third_party.script(
             build = "gcc -o hello_world hello_world.c",

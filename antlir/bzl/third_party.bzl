@@ -11,13 +11,12 @@ load(":build_defs.bzl", "buck_genrule", "internal_external", third_party_shim = 
 load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third-party-build"
-SRC_TGZ = paths.join(PREFIX, "source.tar.gz")
 PATCHES_DIR = paths.join(PREFIX, "patches")
 SRC_DIR = paths.join(PREFIX, "src")
 DEPS_DIR = paths.join(PREFIX, "deps")
 OUTPUT_DIR = "/output"
 
-def _build(name, features, script, src, deps = None, dnf_additional_repos = None, **kwargs):
+def _build(name, features, script, src, deps = None, **kwargs):
     deps = deps or []
     OUTPUT_DIR = paths.join(DEPS_DIR, name)
 
@@ -35,9 +34,7 @@ cat > $TMP/out << 'EOF'
 set -uex
 set -o pipefail
 
-# unpack the source in build dir
-cd "{src_dir}"
-tar xzf {src} --strip-components=1
+cd {src_dir}
 
 # Patch sources
 for p in \\$(ls -A {patches_dir}); do
@@ -56,7 +53,6 @@ EOF
 mv $TMP/out $OUT
 chmod +x $OUT
         """).format(
-            src = SRC_TGZ,
             prepare = sels.script_prepare if sels.script_prepare else "",
             build = sels.script_build,
             install = sels.script_install,
@@ -73,24 +69,20 @@ chmod +x $OUT
             fb = "antlir//antlir/third-party:build-base",
             oss = "//third-party/antlir:build-base",
         ),
-        dnf_additional_repos = dnf_additional_repos,
         features = features + [
             feature.ensure_dirs_exist(dirs = DEPS_DIR),
             feature.ensure_dirs_exist(dirs = OUTPUT_DIR),
             feature.ensure_dirs_exist(dirs = PATCHES_DIR),
-            feature.ensure_dirs_exist(dirs = SRC_DIR),
-            feature.install(
+            feature.tarball(
                 src = src,
-                dst = SRC_TGZ,
+                into_dir = SRC_DIR,
+                strip_components = 1,
             ),
             feature.install(
                 src = ":" + name + "__build_script",
                 dst = "/build.sh",
                 mode = "a+x",
             ),
-            feature.rpms_install(rpms = [
-                "tar",
-            ]),
         ] + [
             [
                 feature.ensure_dirs_exist(
