@@ -373,7 +373,11 @@ enum ShrinkResult {
     TooSmall,
 }
 
-fn shrink_fs_once(mountpoint: &Path, free_space: Option<ByteSize>) -> Result<ShrinkResult> {
+fn shrink_fs_once(
+    mountpoint: &Path,
+    free_space: Option<ByteSize>,
+    prev_size: Option<ByteSize>,
+) -> Result<ShrinkResult> {
     let out = Command::new(btrfs_tool("btrfs"))
         .arg("inspect-internal")
         .arg("min-dev-size")
@@ -397,6 +401,14 @@ fn shrink_fs_once(mountpoint: &Path, free_space: Option<ByteSize>) -> Result<Shr
     );
 
     info!("btrfs reports minimum device size {min_dev_size}");
+    if let Some(prev_size) = prev_size {
+        if min_dev_size > prev_size {
+            info!(
+                "btrfs minimum device size is larger than previous size {prev_size}, stopping..."
+            );
+            return Ok(ShrinkResult::TooSmall);
+        }
+    }
 
     let new_size = match free_space {
         Some(free_space) => {
@@ -440,7 +452,7 @@ fn shrink_fs(mountpoint: &Path, free_space: Option<ByteSize>) -> Result<ShrinkRe
     loop {
         let span = tracing::trace_span!("shrink_fs", iteration = iteration);
         let _enter = span.enter();
-        match shrink_fs_once(mountpoint, free_space)? {
+        match shrink_fs_once(mountpoint, free_space, prev_size)? {
             ShrinkResult::ShrunkTo(new_new_size) => {
                 // as soon as we stop being able to shrink the fs further, we can say
                 // that this is the true minimum
