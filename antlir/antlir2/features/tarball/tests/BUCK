@@ -2,6 +2,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load(":features.bzl", "tarball_feature_contents")
 
 oncall("antlir")
 
@@ -34,25 +35,7 @@ image.layer(
 image.layer(
     name = "input-tar-layer",
     features = [
-        feature.ensure_dirs_exist(dirs = "/foo"),
-        feature.install_text(
-            dst = "/foo/bar",
-            mode = "a+r,u+ws",
-            text = "I am bar\n",
-        ),
-        feature.ensure_dirs_exist(dirs = "/foo/baz"),
-        feature.install_text(
-            dst = "/foo/baz/qux",
-            mode = "a+r,u+w",
-            text = "I am qux\n",
-        ),
-        feature.install_text(
-            dst = "/foo/owned",
-            group = 1043,
-            mode = "a+r,u+w",
-            text = "I'm owned by antlir\n",
-            user = 1042,
-        ),
+        tarball_feature_contents("/"),
     ],
 )
 
@@ -78,6 +61,21 @@ package.tar_zst(
 )
 
 image.layer(
+    name = "tar-with-leading-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/leading/second"),
+        tarball_feature_contents("/leading/second"),
+    ],
+)
+
+package.tar(
+    name = "tar-with-leading",
+    dot_meta = False,
+    layer = ":tar-with-leading-layer",
+    rootless = True,
+)
+
+image.layer(
     name = "tarball",
     features = [
         feature.tarball(
@@ -96,6 +94,11 @@ image.layer(
             src = ":tar",
             force_root_ownership = True,
             into_dir = "/tar_force_root_ownership",
+        ),
+        feature.tarball(
+            src = ":tar-with-leading",
+            into_dir = "/tar_strip_2_components",
+            strip_components = 2,
         ),
     ],
     parent_layer = ":base",

@@ -258,3 +258,66 @@ group = "root"
 text = """
 I'm owned by antlir
 """
+
+[file.tar_strip_2_components]
+op = "added"
+
+[file.tar_strip_2_components.diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."tar_strip_2_components/foo"]
+op = "added"
+
+[file."tar_strip_2_components/foo".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."tar_strip_2_components/foo/bar"]
+op = "added"
+
+[file."tar_strip_2_components/foo/bar".diff]
+mode = "u+rws,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+I am bar
+"""
+
+[file."tar_strip_2_components/foo/baz"]
+op = "added"
+
+[file."tar_strip_2_components/foo/baz".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."tar_strip_2_components/foo/baz/qux"]
+op = "added"
+
+[file."tar_strip_2_components/foo/baz/qux".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+I am qux
+"""
+
+[file."tar_strip_2_components/foo/owned"]
+op = "added"
+
+[file."tar_strip_2_components/foo/owned".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "antlir"
+group = "antlir"
+text = """
+I'm owned by antlir
+"""
