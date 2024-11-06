@@ -155,7 +155,6 @@ export_file = shim.export_file
 get_visibility = shim.get_visibility
 http_file = shim.http_file
 http_archive = shim.http_archive
-is_buck2 = shim.is_buck2
 is_facebook = shim.is_facebook
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 target_utils = shim.target_utils

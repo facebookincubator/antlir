@@ -171,12 +171,8 @@ def _python_binary(
         "name": name,
     })
 
-def _antlir_buck_env():
-    return "buck2"
-
 def _python_unittest(*args, **kwargs):
     env = kwargs.get("env", {})
-    env["ANTLIR_BUCK"] = _antlir_buck_env()
     kwargs["env"] = env
 
     # tests setting `resources` are very likely to be taking a dep on a layer, so just
@@ -280,7 +276,6 @@ shim = struct(
     cpp_binary = _cpp_binary,
     cpp_library = _cpp_library,
     cpp_unittest = _cpp_unittest,
-    is_buck2 = lambda: True,
     is_facebook = False,
     cxx_genrule = _cxx_genrule,
     export_file = _export_file,
@@ -297,7 +292,7 @@ shim = struct(
     #
     # Utility functions
     #
-    antlir_buck_env = _antlir_buck_env,
+    add_test_framework_label = lambda labels, add: labels + [add],
     config = struct(
         get_platform_for_current_buildfile = lambda: struct(target_platform = None),
     ),
@@ -321,9 +316,6 @@ shim = struct(
     # These `fbcode`-specific configs are not in `.buckconfig` because of
     # https://fb.prod.workplace.com/groups/fbcode/permalink/3264530036917146/
     do_not_use_repo_cfg = {
-        "host_mounts_for_repo_artifacts": " ".join([
-            "/mnt/gvfs",
-        ]),
+        "host_mounts_for_repo_artifacts": "",
     },
-    add_test_framework_label = lambda labels, add: labels + [add],
 )
