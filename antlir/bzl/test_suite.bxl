@@ -1,0 +1,84 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+def _cleanup_package_path(package) -> (str, str):
+    if "//" not in package:
+        package = "//" + package
+    cell, package = package.split("//")
+    if package.endswith("/..."):
+        package, _suffix = package.split("/...")
+    return (cell, package)
+
+def _find_tests(ctx, package) -> bxl.UnconfiguredTargetSet:
+    tests = ctx.uquery().kind("_test$", package)
+    tests = tests - ctx.uquery().attrregexfilter("labels", "^disabled$", tests)
+    tests = tests - ctx.uquery().attrregexfilter("name", "-type-checking$", tests)
+    tests = tests - ctx.uquery().attrregexfilter("name", "^test-package-tests-coverage$", tests)
+    return tests
+
+def _find_tests_impl(ctx) -> None:
+    ctx.output.print(json.encode(_find_tests(ctx, ctx.cli_args.package)))
+
+find_tests = bxl_main(
+    impl = _find_tests_impl,
+    cli_args = {
+        "package": cli_args.string("Package path for test targets."),
+    },
+)
+
+def _test_package_tests_coverage_impl(ctx) -> None:
+    cell, package = _cleanup_package_path(ctx.cli_args.package)
+
+    discovered_tests = {}
+    query_tgt = cell + "//" + package + "/..."
+    for tgt in _find_tests(ctx, query_tgt):
+        if package != tgt.label.package:
+            continue
+        test = tgt.label.name
+        discovered_tests[test] = 1
+    discovered_tests = sorted(discovered_tests.keys())
+    included_tests = [i.name for i in ctx.cli_args.test]
+
+    missing_tests = [i for i in discovered_tests if i not in included_tests]
+    extra_tests = [i for i in included_tests if i not in discovered_tests]
+    if missing_tests == [] and extra_tests == []:
+        return
+    fail("Package tests is missing test targets: {}, and contains extra test targets: {}".format(missing_tests, extra_tests))
+
+test_package_tests_coverage = bxl_main(
+    impl = _test_package_tests_coverage_impl,
+    cli_args = {
+        "package": cli_args.string("Package path for test targets."),
+        "test": cli_args.list(cli_args.target_label("Expected package test targets")),
+    },
+)
+
+def _test_aggregate_packages_coverage_impl(ctx) -> None:
+    discovered_pkgs = {}
+    for package in ctx.cli_args.package_include:
+        cell, package = _cleanup_package_path(package)
+        query_tgt = cell + "//" + package + "/..."
+        for tgt in _find_tests(ctx, query_tgt):
+            path = tgt.label.cell + "//" + tgt.label.package
+            discovered_pkgs[path] = 1
+    discovered_pkgs = sorted(discovered_pkgs.keys())
+
+    package_tests = [
+        i.replace(":package-tests", "")
+        for i in ctx.cli_args.package_test
+    ]
+    missing_pkgs = [i for i in discovered_pkgs if i not in package_tests]
+    extra_pkgs = [i for i in package_tests if i not in discovered_pkgs]
+    if missing_pkgs == [] and extra_pkgs == []:
+        return
+    fail("Aggregate package tests is missing packages: {}, and contains extra packages: {}".format(missing_pkgs, extra_pkgs))
+
+test_aggregate_packages_coverage = bxl_main(
+    impl = _test_aggregate_packages_coverage_impl,
+    cli_args = {
+        "package-include": cli_args.list(cli_args.string("Package paths that package-tests should cover")),
+        "package-test": cli_args.list(cli_args.string("Package test suite path")),
+    },
+)
