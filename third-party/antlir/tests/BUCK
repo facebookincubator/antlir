@@ -15,13 +15,13 @@ oncall("antlir")
 ]]
 
 buck_genrule(
-    name = "hello_world.tgz",
-    out = "hello_world.tgz",
+    name = "hello_world.tar",
+    out = "hello_world.tar",
     cmd = """
         OUT_DIR=\\$(dirname $OUT)
         mkdir -p "$OUT_DIR/hello_world"
         cp "$(location {})" "$OUT_DIR/hello_world/"
-        tar -czf "$OUT" -C "$OUT_DIR" hello_world/hello_world.c
+        tar -cf "$OUT" -C "$OUT_DIR" hello_world/hello_world.c
         rm -rf hello_world/
     """.format(":hello_world.c"),
 )
