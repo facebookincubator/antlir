@@ -5,16 +5,6 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 
-nevra_t = shape.shape(
-    name = shape.field(str),
-    # TODO: Codemod all callsites and update this to be `int`.
-    epoch = shape.field(str),
-    version = shape.field(str),
-    release = shape.field(str),
-    arch = shape.field(str),
-)
-
-#
 # These are repo-specific configuration keys, which can be overridden via
 # the Buck CLI for debugging / development purposes.
 #
@@ -51,5 +41,4 @@ nevra_t = shape.shape(
 repo_config_t = shape.shape(
     host_mounts_for_repo_artifacts = shape.list(shape.path),
     rc_targets = shape.list(str),
-    flavor_alias = shape.field(str, optional = True),
 )

@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:build_defs.bzl", "do_not_use_repo_cfg")
-load(":constants.shape.bzl", "nevra_t", "repo_config_t")
+load(":constants.shape.bzl", "repo_config_t")
 load(":target_helpers.bzl", "normalize_target")
 
 CONFIG_KEY = "antlir"
@@ -22,14 +22,6 @@ def _do_not_use_directly_get_cfg(name, default = None):
 
     return default
 
-# We don't have "globally required" configs because code that requires a
-# config will generally loudly fail on a config value that is None.
-def _get_str_cfg(name, default = None, allow_none = False):
-    ret = _do_not_use_directly_get_cfg(name, default = default)
-    if not allow_none and ret == None:
-        fail("Repo config must set key {}".format(name))
-    return ret
-
 # Defaults to the empty list if the config is not set.
 #
 # We use space to separate plurals because spaces are not allowed in target
@@ -38,9 +30,6 @@ def _get_str_cfg(name, default = None, allow_none = False):
 def _get_str_list_cfg(name, separator = " ", default = None):
     s = _do_not_use_directly_get_cfg(name)
     return s.split(separator) if s else (default or [])
-
-def new_nevra(**kwargs):
-    return nevra_t(**kwargs)
 
 def use_rc_target(*, target, exact_match = False):
     target = normalize_target(target)
@@ -51,23 +40,11 @@ def use_rc_target(*, target, exact_match = False):
 
 REPO_CFG = repo_config_t(
     # Enumerates host mounts required to execute FB binaries in @mode/dev.
-    #
-    # This is turned into json and loaded by the python side of the
-    # `nspawn_in_subvol` sub system.  In the future this would be
-    # implemented via a `Shape` so that the typing can be maintained across
-    # bzl/python.
     host_mounts_for_repo_artifacts = _get_str_list_cfg(
         "host_mounts_for_repo_artifacts",
     ),
-    # KEEP THIS DICTIONARY SMALL.
-    #
-    # For each `feature`, we have to emit as many targets as there are
-    # elements in this list, because we do not know the version set that the
-    # including `image.layer` will use.  This would be fixable if Buck
-    # supported providers like Bazel does.
     rc_targets = [
         (t if t == "all" else normalize_target(t))
         for t in _get_str_list_cfg("rc_targets", separator = ",")
     ],
-    flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
 )
