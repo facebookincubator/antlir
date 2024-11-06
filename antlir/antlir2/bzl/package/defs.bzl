@@ -7,6 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "os_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 load(":btrfs.bzl", "btrfs")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
@@ -56,7 +57,13 @@ def _generic_impl_with_layer(
     if uses_build_appliance:
         spec_opts["build_appliance"] = build_appliance[BuildApplianceInfo].dir
     for key in rule_attr_keys:
-        spec_opts[key] = getattr(ctx.attrs, key)
+        val = getattr(ctx.attrs, key)
+        if type(val) == "dependency":
+            if RunInfo in val:
+                val = val[RunInfo]
+            else:
+                val = ensure_single_output(val)
+        spec_opts[key] = val
 
     spec = ctx.actions.write_json(
         "spec.json",
@@ -310,6 +317,10 @@ _rpm, _rpm_anon = _new_package_rule(
         "summary": attrs.option(attrs.string(), default = None),
         "supplements": attrs.list(attrs.string(), default = []),
         "version": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime HHMMSS"),
+        "_strip": internal_external(
+            fb = attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:strip")),
+            oss = attrs.option(attrs.exec_dep(), default = None),
+        ),
     },
     format = "rpm",
     dot_meta = False,

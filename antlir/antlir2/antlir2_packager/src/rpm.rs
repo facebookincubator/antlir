@@ -82,6 +82,8 @@ pub struct Rpm {
     binary_payload: Option<String>,
     disable_strip: bool,
     disable_build_id_links: bool,
+    #[serde(rename = "_strip")]
+    strip: Option<Vec<String>>,
 }
 
 impl PackageFormat for Rpm {
@@ -238,6 +240,17 @@ AutoProv: {autoprov}
         }
         if self.disable_strip {
             spec.push_str("%define __strip /usr/bin/true\n");
+        } else if let Some(strip) = &self.strip {
+            spec.push_str("%define __strip ");
+            let mut strip = strip.iter();
+            let path = strip.next().context("strip command is empty")?;
+            spec.push_str("/__antlir2__/working_directory/");
+            spec.push_str(path);
+            for arg in strip {
+                spec.push_str(arg);
+                spec.push(' ');
+            }
+            spec.push('\n');
         }
         if self.disable_build_id_links {
             spec.push_str("%define _build_id_links none\n");
@@ -342,6 +355,10 @@ AutoProv: {autoprov}
             .tmpfs(Path::new("/tmp"))
             .tmpfs(Path::new("/dev"))
             .inputs(Path::new("/dev/null"));
+        #[cfg(facebook)]
+        isol_context
+            .platform(Path::new("/usr/local/fbcode"))
+            .platform(Path::new("/mnt/gvfs"));
         let isol_context = isol_context.build();
 
         run_cmd(

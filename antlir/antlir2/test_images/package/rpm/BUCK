@@ -37,7 +37,6 @@ image.layer(
 package.rpm(
     name = "add.rpm",
     # @oss-disable
-    disable_strip = True,  # disable double stripping (fixed later in this stack to not be necessary)
     layer = ":layer",
     license = "none",
     rpm_name = "add",
