@@ -161,6 +161,20 @@ pub(crate) struct PackageArgs {
     out: PathBuf,
 }
 
+fn btrfs_tool(command: &str) -> PathBuf {
+    match buck_resources::get(format!(
+        "antlir/antlir2/antlir2_packager/btrfs_packager/{command}"
+    )) {
+        Ok(path) => path,
+        Err(e) => {
+            #[cfg(facebook)]
+            panic!("btrfs tool '{command}' was not found in buck resources: {e:?}");
+            #[cfg(not(facebook))]
+            return command.into();
+        }
+    }
+}
+
 pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
     let output = command.output().context("Failed to run command")?;
 
@@ -230,7 +244,7 @@ fn estimate_loopback_device_size(
 }
 
 fn create_btrfs(output_path: &Path, label: Option<String>) -> Result<()> {
-    let mut mkfs_cmd = Command::new("mkfs.btrfs");
+    let mut mkfs_cmd = Command::new(btrfs_tool("mkfs.btrfs"));
     mkfs_cmd.arg("--metadata").arg("single");
 
     if let Some(label) = label {
@@ -287,7 +301,7 @@ fn receive_subvol(
     let sendstream = File::open(&subvol.sendstream)
         .with_context(|| format!("while opening sendstream {}", subvol.sendstream.display()))?;
 
-    let mut btrfs_recv = Command::new("btrfs")
+    let mut btrfs_recv = Command::new(btrfs_tool("btrfs"))
         .arg("receive")
         .arg(recv_target.path())
         .stdin(sendstream)
@@ -360,7 +374,7 @@ enum ShrinkResult {
 }
 
 fn shrink_fs_once(mountpoint: &Path, free_space: Option<ByteSize>) -> Result<ShrinkResult> {
-    let out = Command::new("btrfs")
+    let out = Command::new(btrfs_tool("btrfs"))
         .arg("inspect-internal")
         .arg("min-dev-size")
         .arg(mountpoint)
@@ -400,7 +414,7 @@ fn shrink_fs_once(mountpoint: &Path, free_space: Option<ByteSize>) -> Result<Shr
     let new_size = std::cmp::max(MIN_SHRINK_BYTES, new_size);
     info!("shrinking fs to {new_size}");
 
-    let out = Command::new("btrfs")
+    let out = Command::new(btrfs_tool("btrfs"))
         .arg("filesystem")
         .arg("resize")
         .arg(new_size.as_u64().to_string())
@@ -510,7 +524,7 @@ where
         };
 
         run_cmd(
-            Command::new("btrfs")
+            Command::new(btrfs_tool("btrfs"))
                 .arg("subvolume")
                 .arg("set-default")
                 .arg(default_subvol_id.to_string())
@@ -531,8 +545,13 @@ where
     mount_handle.umount(true).context("failed to umount")?;
 
     if seed_device {
-        run_cmd(Command::new("btrfstune").arg("-S").arg("1").arg(ld.path()))
-            .context("while setting seed device")?;
+        run_cmd(
+            Command::new(btrfs_tool("btrfstune"))
+                .arg("-S")
+                .arg("1")
+                .arg(ld.path()),
+        )
+        .context("while setting seed device")?;
     }
 
     ld.detach().context("failed to detatch loopback device")?;
