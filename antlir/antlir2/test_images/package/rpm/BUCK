@@ -31,12 +31,20 @@ image.layer(
             dst = "/usr/bin/add",
             never_use_dev_binary_symlink = True,
         ),
+        feature.ensure_dirs_exist(dirs = "/usr/lib64"),
+        feature.install(
+            src = ":libadd[shared]",
+            # Install at a more specific version path, then ldconfig will
+            # symlink libadd.so.1 (SONAME) to this path during rpmbuild
+            dst = "/usr/lib64/libadd.so.1.2",
+        ),
     ],
 )
 
 package.rpm(
     name = "add.rpm",
     # @oss-disable
+    disable_ldconfig = True,
     layer = ":layer",
     license = "none",
     rpm_name = "add",
