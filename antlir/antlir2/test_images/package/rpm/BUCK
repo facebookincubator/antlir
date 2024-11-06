@@ -1,0 +1,62 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+load("//antlir/bzl:build_defs.bzl", "cpp_binary", "cpp_library")
+
+oncall("antlir")
+
+cpp_library(
+    # @autodeps-skip
+    name = "libadd",
+    srcs = ["add.c"],
+    # the "main" SONAME is like a major version, there may be another point
+    # release tacked on but anything with the same SONAME can be considered
+    # fungible
+    soname = "libadd.so.1",
+)
+
+cpp_binary(
+    # @autodeps-skip
+    name = "add",
+    deps = [":libadd"],
+)
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.install(
+            src = ":add",
+            dst = "/usr/bin/add",
+            never_use_dev_binary_symlink = True,
+        ),
+    ],
+)
+
+package.rpm(
+    name = "add.rpm",
+    # @oss-disable
+    disable_strip = True,  # disable double stripping (fixed later in this stack to not be necessary)
+    layer = ":layer",
+    license = "none",
+    rpm_name = "add",
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = ["rpm"]),
+        feature.install(
+            src = ":add.rpm",
+            dst = "/add.rpm",
+        ),
+    ],
+)
+
+image_python_test(
+    name = "test",
+    srcs = ["test.py"],
+    # @oss-disable
+    layer = ":test-layer",
+)
