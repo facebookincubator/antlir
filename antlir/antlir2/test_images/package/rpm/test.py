@@ -26,3 +26,9 @@ class RpmTest(unittest.TestCase):
         # It should also include debugging stuff, keyed by build-id
         self.assertIn("/usr/lib/.build-id", files)
         self.assertIn("/usr/lib/debug/.build-id", files)
+
+    def test_no_ldconfig(self) -> None:
+        files = _files_in_rpm("/add.rpm")
+        self.assertIn("/usr/lib64/libadd.so.1.2", files)
+        # but ldconfig should not have been run, so the symlink should not exist
+        self.assertNotIn("/usr/lib64/libadd.so.1", files)

@@ -82,6 +82,7 @@ pub struct Rpm {
     binary_payload: Option<String>,
     disable_strip: bool,
     disable_build_id_links: bool,
+    disable_ldconfig: bool,
     #[serde(rename = "_strip")]
     strip: Option<Vec<String>>,
 }
@@ -254,6 +255,9 @@ AutoProv: {autoprov}
         }
         if self.disable_build_id_links {
             spec.push_str("%define _build_id_links none\n");
+        }
+        if self.disable_ldconfig {
+            spec.push_str("%define __brp_ldconfig %{nil}\n");
         }
         if let Some(binary_payload) = &self.binary_payload {
             spec.push_str(&format!("%define _binary_payload {binary_payload}\n"));
