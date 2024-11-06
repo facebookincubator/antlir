@@ -195,7 +195,7 @@ def _implicit_vm_test(
         postmortem: bool = False,
         labels: list[str] | None = None,
         _add_outer_labels: list[str] = [],
-        **kwargs):
+        **kwargs) -> list[str]:
     """Wraps a unit test rule to execute inside a VM. @vm_host must be a VM
     target constructed by `:defs.bzl::vm.host()`.
 
@@ -248,6 +248,7 @@ def _implicit_vm_test(
         target_compatible_with = kwargs.get("target_compatible_with"),
         labels = labels,
     )
+    return [":" + name]
 
 vm_cpp_test = partial(
     _implicit_vm_test,
