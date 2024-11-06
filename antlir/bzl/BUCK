@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "export_file")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 
 oncall("antlir")
@@ -10,6 +10,12 @@ export_file(name = "stat.bzl")
 export_file(name = "sha256.bzl")
 
 export_file(name = "types.bzl")
+
+buck_sh_binary(
+    name = "test_suite.sh",
+    main = "test_suite.sh",
+    visibility = ["PUBLIC"],
+)
 
 export_file(
     name = "99-skip-unit.conf",
