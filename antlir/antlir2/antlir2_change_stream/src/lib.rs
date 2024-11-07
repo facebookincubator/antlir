@@ -89,4 +89,8 @@ impl<C> Change<C> {
     pub fn operation(&self) -> &Operation<C> {
         &self.operation
     }
+
+    pub fn into_operation(self) -> Operation<C> {
+        self.operation
+    }
 }

@@ -38,12 +38,18 @@ use sha2::Sha256;
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Oci {
-    tar: PathBuf,
-    tar_zst: PathBuf,
+    deltas: Vec<Delta>,
     #[serde(rename = "ref")]
     refname: String,
     target_arch: Arch,
     entrypoint: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Delta {
+    tar: PathBuf,
+    tar_zst: PathBuf,
 }
 
 trait Blob {
@@ -133,19 +139,26 @@ impl Oci {
             .build()
             .context("while building platform")?;
 
-        let mut tar_zst = Vec::new();
-        BufReader::new(File::open(&self.tar_zst).context("while opening tar.zst")?)
-            .read_to_end(&mut tar_zst)
-            .context("while reading tar zst")?;
-        let tar_layer = LayerTarZst(Arc::new(tar_zst));
-        let mut layer_descriptor = write(&blobs_dir, &tar_layer).context("while writing layer")?;
-        layer_descriptor.set_platform(Some(platform.clone()));
+        let mut layer_descriptors = Vec::new();
+        let mut rootfs_digest_chain = Vec::new();
+        for delta in &self.deltas {
+            let mut tar_zst = Vec::new();
+            BufReader::new(File::open(&delta.tar_zst).context("while opening tar.zst")?)
+                .read_to_end(&mut tar_zst)
+                .context("while reading tar zst")?;
+            let tar_layer = LayerTarZst(Arc::new(tar_zst));
+            let mut layer_descriptor =
+                write(&blobs_dir, &tar_layer).context("while writing layer")?;
+            layer_descriptor.set_platform(Some(platform.clone()));
+            layer_descriptors.push(layer_descriptor);
 
-        let mut uncompressed_tar =
-            BufReader::new(File::open(&self.tar).context("while opening uncompressed tar")?);
-        let mut hasher = Sha256::new();
-        std::io::copy(&mut uncompressed_tar, &mut hasher).context("while hashing tar")?;
-        let rootfs_digest = hex::encode(hasher.finalize());
+            let mut uncompressed_tar =
+                BufReader::new(File::open(&delta.tar).context("while opening uncompressed tar")?);
+            let mut hasher = Sha256::new();
+            std::io::copy(&mut uncompressed_tar, &mut hasher).context("while hashing tar")?;
+            let layer_hash = hex::encode(hasher.finalize());
+            rootfs_digest_chain.push(format!("sha256:{layer_hash}"));
+        }
 
         let image_configuration = ImageConfigurationBuilder::default()
             .architecture(self.target_arch.clone())
@@ -159,7 +172,7 @@ impl Oci {
             .rootfs(
                 RootFsBuilder::default()
                     .typ("layers")
-                    .diff_ids(vec![format!("sha256:{rootfs_digest}")])
+                    .diff_ids(rootfs_digest_chain)
                     .build()
                     .context("while building rootfs")?,
             )
@@ -172,7 +185,7 @@ impl Oci {
             .schema_version(2u32)
             .media_type(MediaType::ImageManifest)
             .config(image_config_descriptor)
-            .layers(vec![layer_descriptor])
+            .layers(layer_descriptors)
             .build()
             .context("while building image manifest")?;
         let mut image_manifest_descriptor =
