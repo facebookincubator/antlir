@@ -44,6 +44,7 @@ jobs:
           ./buck2 bxl //ci:find_tests.bxl:find_tests -- \
             --disable //antlir/antlir2/antlir2_btrfs/... \
             --disable //antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir-image-test \
+            --disable //antlir/antlir2/antlir2_change_stream/... \
             --disable //antlir/antlir2/antlir2_overlayfs/... \
             --disable //antlir/antlir2/antlir2_vm:antlir2_vm-unittest \
             --disable //antlir/antlir2/genrule_in_image/... \

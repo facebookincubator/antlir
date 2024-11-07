@@ -3,66 +3,94 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
-load(":defs.bzl", "common_attrs", "default_attrs", "tar_anon", "tar_zst_rule")
+load(":defs.bzl", "common_attrs", "default_attrs")
 load(":macro.bzl", "package_macro")
 
-def _impl(ctx: AnalysisContext) -> Promise:
-    def with_anon(tars) -> list[Provider]:
-        out = ctx.actions.declare_output(ctx.label.name, dir = True)
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    layers = [ctx.attrs.layer[LayerInfo]]
+    for _ in range(0, 1000):
+        if not layers[0].parent:
+            break
+        layers.insert(0, layers[0].parent[LayerInfo])
 
-        # Need both a compressed tar (to actually put in the archive) and
-        # uncompressed (to record the uncompressed checksum)
-        tar = ensure_single_output(tars[0])
-        tar_zst = ensure_single_output(tars[1])
-        spec = ctx.actions.write_json(
-            "spec.json",
-            {"oci": {
-                "entrypoint": ctx.attrs.entrypoint,
-                "ref": ctx.attrs.ref,
-                "tar": tar,
-                "tar_zst": tar_zst,
-                "target_arch": ctx.attrs._target_arch,
-            }},
-            with_inputs = True,
-        )
+    layers.insert(0, None)
+    deltas = []
+    for i, (first, next) in enumerate(zip(layers, layers[1:])):
+        uncompressed = ctx.actions.declare_output("layer_{}.tar".format(i))
         ctx.actions.run(
             cmd_args(
-                ctx.attrs._antlir2_packager[RunInfo],
-                "--dir",
-                cmd_args(out.as_output(), format = "--out={}"),
-                cmd_args(spec, format = "--spec={}"),
+                "sudo" if not ctx.attrs._rootless else cmd_args(),
+                ctx.attrs._make_oci_layer[RunInfo],
+                "--rootless" if ctx.attrs._rootless else cmd_args(),
+                cmd_args(first.subvol_symlink, format = "--parent={}") if first else cmd_args(),
+                cmd_args(next.subvol_symlink, format = "--child={}"),
+                cmd_args(uncompressed.as_output(), format = "--out={}"),
             ),
-            category = "antlir2_package",
-            identifier = "oci",
+            local_only = True,  # comparing local subvols
+            category = "oci_layer",
+            identifier = str(i),
         )
-        return [
-            DefaultInfo(out, sub_targets = {"tar": [DefaultInfo(tar)]}),
-            RunInfo(cmd_args(out)),
-        ]
 
-    all_attrs = {
-        k: getattr(ctx.attrs, k)
-        for k in list(layer_attrs) + list(common_attrs) + list(default_attrs) + ["_rootless"]
-    }
+        # the uncompressed tar is needed for hashing, but then we want to put a
+        # compressed tar in the actual archive
+        # need a compressed tar to actually put in the archive, but the
+        compressed = ctx.actions.declare_output("layer_{}.tar.zst".format(i))
+        ctx.actions.run(
+            cmd_args(
+                "zstd",
+                "--compress",
+                "-15",
+                "-T0",  # we like threads
+                uncompressed,
+                "-o",
+                compressed.as_output(),
+            ),
+            category = "oci_layer_compress",
+            identifier = str(i),
+        )
+        deltas.append(struct(
+            tar = uncompressed,
+            tar_zst = compressed,
+        ))
 
-    return ctx.actions.anon_targets([
-        (
-            tar_anon,
-            {"name": str(ctx.attrs.layer.label.raw_target())} | all_attrs,
+    out = ctx.actions.declare_output(ctx.label.name, dir = True)
+    spec = ctx.actions.write_json(
+        "spec.json",
+        {"oci": {
+            "deltas": deltas,
+            "entrypoint": ctx.attrs.entrypoint,
+            "ref": ctx.attrs.ref,
+            "target_arch": ctx.attrs._target_arch,
+        }},
+        with_inputs = True,
+    )
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._antlir2_packager[RunInfo],
+            "--dir",
+            cmd_args(out.as_output(), format = "--out={}"),
+            cmd_args(spec, format = "--spec={}"),
         ),
-        (
-            tar_zst_rule,
-            {"name": str(ctx.attrs.layer.label.raw_target())} | all_attrs,
-        ),
-    ]).promise.map(with_anon)
+        category = "antlir2_package",
+        identifier = "oci",
+    )
+    return [
+        DefaultInfo(out),
+        RunInfo(cmd_args(out)),
+    ]
 
 oci_attrs = {
     "entrypoint": attrs.list(attrs.string(), doc = "Command to run as the main process"),
     "ref": attrs.string(
         default = native.read_config("build_info", "revision", "local"),
         doc = "Ref name for OCI image",
+    ),
+    "_make_oci_layer": attrs.default_only(
+        attrs.exec_dep(
+            default = "antlir//antlir/antlir2/antlir2_packager/make_oci_layer:make-oci-layer",
+        ),
     ),
 }
 

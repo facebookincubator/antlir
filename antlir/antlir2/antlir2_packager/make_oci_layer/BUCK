@@ -1,0 +1,16 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "make-oci-layer",
+    srcs = ["src/main.rs"],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "nix",
+        "tar",
+        "//antlir/antlir2/antlir2_change_stream:antlir2_change_stream",
+    ],
+)

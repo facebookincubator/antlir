@@ -7,6 +7,16 @@ load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 oncall("antlir")
 
 image.layer(
+    name = "base",
+    features = [
+        feature.rpms_install(rpms = [
+            "bash",
+            "coreutils",
+        ]),
+    ],
+)
+
+image.layer(
     name = "layer",
     features = [
         feature.install_text(
@@ -20,11 +30,8 @@ echo "Entrypoint!"
 stat --format="%a %u %g" /entrypoint.sh
 """,
         ),
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
     ],
+    parent_layer = ":base",
 )
 
 oci(
