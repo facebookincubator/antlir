@@ -1,0 +1,233 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+
+oncall("antlir")
+
+image.layer(
+    name = "empty",
+)
+
+image.layer(
+    name = "some",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+        feature.install_text(
+            dst = "/foo/bar/baz",
+            text = "Baz\n",
+            xattrs = {
+                "user.baz": "baz",
+                "user.foo": "foo",
+            },
+        ),
+        feature.ensure_file_symlink(
+            link = "/foo/barbaz",
+            target = "/foo/bar/baz",
+        ),
+    ],
+    parent_layer = ":empty",
+)
+
+image.layer(
+    name = "unlink-file",
+    features = [
+        feature.remove(path = "/foo/bar/baz"),
+    ],
+    parent_layer = ":some",
+)
+
+# For a few more complicated mutations, we need some cli tools since antlir does
+# not offer many mechanisms for arbitrary mutation. To avoid having massive
+# diffs, we need a base layer with some tools in it so that the diff is only our
+# mutations
+image.layer(
+    name = "some-mutation-base",
+    features = [
+        feature.rpms_install(rpms = [
+            "attr",
+            "bash",
+            "coreutils",
+        ]),
+    ],
+    parent_layer = ":some",
+)
+
+image.layer(
+    name = "touch",
+    features = [
+        feature.genrule(
+            bash = """
+                touch /foo/bar/baz
+                touch --no-dereference /foo/barbaz
+            """,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "chown",
+    features = [
+        feature.genrule(
+            bash = """
+                chown 42:43 /foo/bar/baz
+                chown --no-dereference 42:43 /foo/barbaz
+            """,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "chmod",
+    features = [
+        feature.genrule(
+            bash = """
+                chmod u+sx /foo/bar/baz
+                chmod 700 /foo/bar
+            """,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "change-file-contents",
+    features = [
+        feature.genrule(
+            bash = "echo Changed-Contents >> /foo/bar/baz",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "retarget-symlink",
+    features = [
+        feature.genrule(
+            bash = "ln -sf /qux /foo/barbaz",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "change-xattrs",
+    features = [
+        feature.genrule(
+            bash = """
+                # remove user.foo on /foo/bar/baz
+                setfattr -x user.foo /foo/bar/baz
+                # change user.baz on /foo/bar/baz to 'qux'
+                setfattr -n user.baz -v qux /foo/bar/baz
+                # add user.qux on /foo/bar/baz
+                setfattr -n user.qux -v quux /foo/bar/baz
+
+                # also add an xattr to a directory
+                setfattr -n user.bar -v bar /foo/bar
+            """,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "file-to-dir",
+    features = [
+        feature.genrule(
+            bash = """
+                rm /foo/bar/baz
+                mkdir /foo/bar/baz
+                echo qux > /foo/bar/baz/qux
+            """,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "dir-to-file",
+    features = [
+        feature.genrule(
+            bash = """
+                rm -rf /foo/bar
+                echo bar > /foo/bar
+            """,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = ["coreutils"]),
+        feature.layer_mount(
+            mountpoint = "/empty",
+            source = ":empty",
+        ),
+        feature.layer_mount(
+            mountpoint = "/some",
+            source = ":some",
+        ),
+        feature.layer_mount(
+            mountpoint = "/unlink-file",
+            source = ":unlink-file",
+        ),
+        feature.layer_mount(
+            mountpoint = "/some-mutation-base",
+            source = ":some-mutation-base",
+        ),
+        feature.layer_mount(
+            mountpoint = "/touch",
+            source = ":touch",
+        ),
+        feature.layer_mount(
+            mountpoint = "/chown",
+            source = ":chown",
+        ),
+        feature.layer_mount(
+            mountpoint = "/chmod",
+            source = ":chmod",
+        ),
+        feature.layer_mount(
+            mountpoint = "/change-file-contents",
+            source = ":change-file-contents",
+        ),
+        feature.layer_mount(
+            mountpoint = "/retarget-symlink",
+            source = ":retarget-symlink",
+        ),
+        feature.layer_mount(
+            mountpoint = "/change-xattrs",
+            source = ":change-xattrs",
+        ),
+        feature.layer_mount(
+            mountpoint = "/file-to-dir",
+            source = ":file-to-dir",
+        ),
+        feature.layer_mount(
+            mountpoint = "/dir-to-file",
+            source = ":dir-to-file",
+        ),
+    ],
+)
+
+image_rust_test(
+    name = "test-layer-diffs",
+    srcs = ["test_layer_diffs.rs"],
+    crate_root = "test_layer_diffs.rs",
+    layer = ":test-layer",
+    deps = [
+        "pretty_assertions",
+        "//antlir/antlir2/antlir2_change_stream:antlir2_change_stream",
+    ],
+)
