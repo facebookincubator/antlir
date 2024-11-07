@@ -1,0 +1,16 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("antlir")
+
+rust_library(
+    name = "antlir2_change_stream",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "cap-std",
+        "libc",
+        "serde",
+        "thiserror",
+        "walkdir",
+        "xattr",
+    ],
+)
