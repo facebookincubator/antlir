@@ -11,26 +11,12 @@ oncall("antlir")
 
 image.layer(
     name = "base",
-    # systemd-v253 is broken on aarch64 under qemu-user emulation
-    dnf_additional_repos = select({
-        "ovr_config//cpu:arm64": [
-            "//antlir/antlir2/features/rpm/tests/repo:test-repo",
-            "fbcode//bot_generated/antlir/rpm/fast_snapshot/repos/centos/9/systemd-cd/aarch64:centos/9/systemd-cd/aarch64",
-        ],
-        "ovr_config//cpu:x86_64": [
-            "//antlir/antlir2/features/rpm/tests/repo:test-repo",
-        ],
-    }),
-    dnf_versionlock = select({
-        "ovr_config//cpu:arm64": "//antlir:empty.json",
-        "ovr_config//cpu:x86_64": None,
-    }),
+    dnf_additional_repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
     features = [
         feature.rpms_install(rpms = [
+            "foobar",
             "python3",
             "systemd",
-            # @oss-disable
-            "foobar",
         ]),
         systemd.install_unit("slow-unit.service"),
         systemd.enable_unit(
