@@ -744,6 +744,10 @@ def layer(
     if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
 
+    # Mark images as heavyweight for CI
+    if "heavyweight" not in kwargs.get("labels", []):
+        kwargs["labels"] = kwargs.pop("labels", []) + ["heavyweight"]
+
     # Annoyingly, we can only accept target_compatible_with because we need to
     # indicate a *HARD* requirement for `os:linux`, which is impossible with
     # compatible_with, and the two cannot be mixed
