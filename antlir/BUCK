@@ -63,7 +63,7 @@ python_library(
         "//tupperware/scripts/...",
     ],
     deps = [
-        ":fs_utils_rs",
+        ":fs_utils_rs",  # @autodeps2-fixme-manual
     ],
 )
 
