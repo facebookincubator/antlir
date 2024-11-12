@@ -20,13 +20,14 @@ tests of this type.
 
 import argparse
 import os
-import subprocess
 import sys
 
 
 def main():
     sys.argv.pop(0)
     which = sys.argv.pop(0)
+    spawn = sys.argv.pop(-4)
+    assert spawn == "spawn", f"expected to find and remove 'spawn', but saw {spawn}"
     if which == "cpp":
         parser = argparse.ArgumentParser()
         parser.add_argument("image_test_bin")
