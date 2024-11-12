@@ -99,7 +99,7 @@ fn main() -> anyhow::Result<()> {
         .enable_network(args.enable_network);
     if !args.rootless {
         cmd_builder.invocation_type(match (args.boot, args.pipe) {
-            (true, false) => InvocationType::BootReadOnly,
+            (true, false) => InvocationType::BootInteractive,
             (true, true) => unreachable!("--boot and --pipe are mutually exclusive"),
             (false, true) => InvocationType::Pid2Pipe,
             (false, false) => InvocationType::Pid2Interactive,

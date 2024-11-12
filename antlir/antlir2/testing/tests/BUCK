@@ -17,6 +17,7 @@ image.layer(
             "foobar",
             "python3",
             "systemd",
+            "util-linux",
         ]),
         systemd.install_unit("slow-unit.service"),
         systemd.enable_unit(

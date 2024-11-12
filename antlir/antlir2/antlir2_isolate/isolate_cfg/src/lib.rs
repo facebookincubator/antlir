@@ -66,6 +66,8 @@ pub struct IsolationContext<'a> {
 pub enum InvocationType {
     /// Runs /init from inside the layer as PID 1, sets console as read-only
     BootReadOnly,
+    /// Runs /init from inside the layer as PID 1, sets console as interactive
+    BootInteractive,
     /// Invokes command in layer as PID 2 w/ stub PID 1, sets console as interactive
     Pid2Interactive,
     /// Invokes command in layer as PID 2 w/ stub PID 1, sets console as pipe (helpful
@@ -75,7 +77,7 @@ pub enum InvocationType {
 
 impl InvocationType {
     pub fn booted(&self) -> bool {
-        self == &InvocationType::BootReadOnly
+        (self == &InvocationType::BootReadOnly) || (self == &InvocationType::BootInteractive)
     }
 }
 
