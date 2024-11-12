@@ -25,7 +25,6 @@ rust_binary(
         "serde",
         "tempfile",
         "tracing",
-        "tracing-glog",
         "tracing-subscriber",
         ":image_test_lib",
         "//antlir:find_root",

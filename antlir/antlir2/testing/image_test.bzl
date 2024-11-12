@@ -60,6 +60,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     test_cmd = cmd_args(
         ctx.attrs.image_test[RunInfo],
+        "spawn",
         cmd_args(spec, format = "--spec={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
