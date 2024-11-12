@@ -5,6 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::path::Path;
+
+use rustix::fs::statfs;
+
 #[test]
 fn user() {
     let expected = std::env::var("TEST_USER").expect("TEST_USER not set");
@@ -28,4 +32,19 @@ fn json_env_quoting() {
         )
         .expect("invalid json")
     );
+}
+
+fn test_tmpfs(path: impl AsRef<Path>) {
+    let statfs = statfs(path.as_ref()).expect("failed to statfs");
+    assert_eq!(statfs.f_type, 0x01021994, "f_type was not tmpfs"); // TMPFS_MAGIC
+}
+
+#[test]
+fn tmpfs_tmp() {
+    test_tmpfs("/tmp");
+}
+
+#[test]
+fn tmpfs_run() {
+    test_tmpfs("/run");
 }
