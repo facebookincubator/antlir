@@ -17,6 +17,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     layers.insert(0, None)
     deltas = []
+    sub_targets_layers = {}
     for i, (first, next) in enumerate(zip(layers, layers[1:])):
         uncompressed = ctx.actions.declare_output("layer_{}.tar".format(i))
         ctx.actions.run(
@@ -54,6 +55,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             tar = uncompressed,
             tar_zst = compressed,
         ))
+        sub_targets_layers[str(i)] = [DefaultInfo(sub_targets = {
+            "full": [DefaultInfo(next.subvol_symlink)],
+            "tar": [DefaultInfo(uncompressed)],
+            "tar.zst": [DefaultInfo(compressed)],
+        })]
 
     out = ctx.actions.declare_output(ctx.label.name, dir = True)
     spec = ctx.actions.write_json(
@@ -77,7 +83,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         identifier = "oci",
     )
     return [
-        DefaultInfo(out),
+        DefaultInfo(
+            out,
+            sub_targets = {"layers": [DefaultInfo(sub_targets = sub_targets_layers)]},
+        ),
         RunInfo(cmd_args(out)),
     ]
 
