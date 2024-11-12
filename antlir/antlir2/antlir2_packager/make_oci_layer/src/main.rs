@@ -46,7 +46,7 @@ struct Entry {
 impl Default for Entry {
     fn default() -> Self {
         Self {
-            header: Header::new_gnu(),
+            header: Header::new_ustar(),
             contents: Contents::Unset,
             extensions: Vec::new(),
         }
@@ -112,9 +112,8 @@ fn main() -> Result<()> {
                 header.set_uid(uid as u64);
                 header.set_gid(gid as u64);
             }
-            Operation::SetTimes { atime: _, mtime } => {
-                let header = &mut entries.entry(path).or_default().header;
-                header.set_mtime(mtime.elapsed()?.as_secs());
+            Operation::SetTimes { atime: _, mtime: _ } => {
+                // timestamps make things very non-reproducible
             }
             Operation::HardLink { target } => {
                 let entry = entries.entry(path).or_default();
@@ -169,12 +168,18 @@ fn main() -> Result<()> {
             continue;
         }
         // PAX extensions go ahead of the full entry header
+        entry.extensions.sort();
         builder.append_pax_extensions(
             entry
                 .extensions
                 .iter()
                 .map(|(k, v)| (k.as_str(), v.as_slice())),
         )?;
+        // Timestamps make things non-deterministic even if everything else is
+        // 100% equal. To get around this (and to preempty any bugs from tools
+        // that don't tolerate 0 timestamps very well), choose an arbitrary time
+        // of February 4 2004, the initial launch of thefacebook.com
+        entry.header.set_mtime(1075852800);
         match entry.contents {
             Contents::Link(target) => {
                 builder.append_link(&mut entry.header, path, target)?;
