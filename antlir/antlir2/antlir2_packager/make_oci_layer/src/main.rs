@@ -18,6 +18,7 @@ use std::path::PathBuf;
 use antlir2_change_stream::Iter;
 use antlir2_change_stream::Operation;
 use anyhow::bail;
+use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use nix::sys::stat::major;
@@ -35,6 +36,8 @@ struct Args {
     child: PathBuf,
     #[clap(long)]
     out: PathBuf,
+    #[clap(long)]
+    rootless: bool,
 }
 
 struct Entry {
@@ -62,6 +65,11 @@ enum Contents {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+
+    if args.rootless {
+        antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+    }
+
     let stream: Iter<BufReader<File>> = match &args.parent {
         Some(parent) => Iter::diff(parent, &args.child)?,
         None => Iter::from_empty(&args.child)?,
