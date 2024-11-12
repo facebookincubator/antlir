@@ -8,10 +8,7 @@
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::BufWriter;
-use std::io::Write as _;
-use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -43,7 +40,7 @@ struct Args {
 struct Entry {
     header: Header,
     contents: Contents,
-    extensions: Vec<(Header, Vec<u8>)>,
+    extensions: Vec<(String, Vec<u8>)>,
 }
 
 impl Default for Entry {
@@ -59,7 +56,7 @@ impl Default for Entry {
 enum Contents {
     Unset,
     Link(PathBuf),
-    File(BufReader<File>),
+    File(File),
     Whiteout,
 }
 
@@ -70,7 +67,7 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
 
-    let stream: Iter<BufReader<File>> = match &args.parent {
+    let stream: Iter<File> = match &args.parent {
         Some(parent) => Iter::diff(parent, &args.child)?,
         None => Iter::from_empty(&args.child)?,
     };
@@ -146,19 +143,12 @@ fn main() -> Result<()> {
             }
             Operation::SetXattr { name, value } => {
                 let entry = entries.entry(path).or_default();
-                let mut ext = Header::new_ustar();
-                let mut kv = b"SCHILY.xattr.".to_vec();
-                kv.extend(name.as_bytes());
-                kv.push(b'=');
-                kv.extend(value);
-                kv.push(b'\n');
-                let mut data = Vec::new();
-                write!(&mut data, "{} ", kv.len())?;
-                data.extend(kv);
-                ext.set_entry_type(EntryType::XHeader);
-                ext.set_size(data.len() as u64);
-                ext.set_cksum();
-                entry.extensions.push((ext, data));
+                let mut key = "SCHILY.xattr.".to_owned();
+                key.push_str(
+                    name.to_str()
+                        .with_context(|| format!("xattr name '{name:?}' is not valid UTF-8"))?,
+                );
+                entry.extensions.push((key, value))
             }
             // Removals are represented with special whiteout marker files
             Operation::Unlink | Operation::Rmdir => {
@@ -178,13 +168,19 @@ fn main() -> Result<()> {
         if path == Path::new("") {
             continue;
         }
+        // PAX extensions go ahead of the full entry header
+        builder.append_pax_extensions(
+            entry
+                .extensions
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_slice())),
+        )?;
         match entry.contents {
             Contents::Link(target) => {
                 builder.append_link(&mut entry.header, path, target)?;
             }
-            Contents::File(f) => {
-                entry.header.set_size(f.get_ref().metadata()?.len());
-                builder.append_data(&mut entry.header, path, f)?;
+            Contents::File(mut f) => {
+                builder.append_file(path, &mut f)?;
             }
             Contents::Whiteout => {
                 builder.append_data(&mut entry.header, path, std::io::empty())?;
@@ -195,17 +191,15 @@ fn main() -> Result<()> {
                 // layer.
                 let meta = std::fs::symlink_metadata(args.child.join(&path))?;
                 if meta.is_file() {
-                    let mut f = BufReader::new(File::open(args.child.join(&path))?);
-                    entry.header.set_entry_type(EntryType::Regular);
-                    entry.header.set_size(f.get_ref().metadata()?.len());
-                    builder.append_data(&mut entry.header, path, &mut f)?;
+                    let mut f = File::open(args.child.join(&path))?;
+                    builder.append_file(path, &mut f)?;
                 } else if meta.is_dir() {
                     entry.header.set_entry_type(EntryType::Directory);
                     builder.append_data(&mut entry.header, path, std::io::empty())?;
                 } else if meta.is_symlink() {
                     entry.header.set_entry_type(EntryType::Symlink);
                     let target = std::fs::read_link(args.child.join(&path))?;
-                    builder.append_data(&mut entry.header, path, target.as_os_str().as_bytes())?;
+                    builder.append_link(&mut entry.header, path, target)?;
                 } else {
                     bail!(
                         "not sure what to do with unset contents on filetype {:?}",

@@ -9,16 +9,15 @@ oncall("antlir")
 image.layer(
     name = "base",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(rpms = ["coreutils"]),
     ],
 )
 
 image.layer(
     name = "layer",
     features = [
+        # make sure that RPM installations can be layered
+        feature.rpms_install(rpms = ["bash"]),
         feature.install_text(
             dst = "/entrypoint.sh",
             mode = "a+rx",
