@@ -12,5 +12,6 @@ rust_binary(
         "nix",
         "tar",
         "//antlir/antlir2/antlir2_change_stream:antlir2_change_stream",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
 )
