@@ -16,7 +16,6 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "internal_external", "is_facebook", "python_unittest", "rust_unittest")
-load("//antlir/bzl:systemd.bzl", systemd_bzl = "systemd")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
 
 HIDE_TEST_LABELS = [special_tags.disabled, special_tags.test_is_invisible_to_testpilot]
@@ -115,6 +114,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(
             script,
             sub_targets = {
+                "container": [
+                    RunInfo(cmd_args(
+                        ctx.attrs.layer[DefaultInfo].sub_targets["container"][RunInfo],
+                        "--boot" if ctx.attrs.boot else cmd_args(),
+                    )),
+                    DefaultInfo(),
+                ],
                 "inner_test": ctx.attrs.test.providers,
                 "layer": ctx.attrs.layer.providers,
             },
@@ -218,10 +224,7 @@ def _implicit_image_test(
             name = "{}--bootable-layer".format(name),
             parent_layer = layer,
             features = [
-                systemd_bzl.install_unit(
-                    "antlir//antlir/antlir2/testing/image_test:antlir2_image_test.service",
-                    force = True,
-                ),
+                "antlir//antlir/antlir2/testing/image_test:features",
             ],
             default_os = default_os,
             # @oss-disable

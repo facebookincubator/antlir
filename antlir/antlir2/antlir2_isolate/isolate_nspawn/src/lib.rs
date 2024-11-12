@@ -166,6 +166,10 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
             nspawn_args.push("--boot".into());
             nspawn_args.push("--console=read-only".into());
         }
+        InvocationType::BootInteractive => {
+            nspawn_args.push("--boot".into());
+            nspawn_args.push("--console=interactive".into());
+        }
     }
     if register {
         nspawn_args.push(format!("--machine={}", Uuid::new_v4()).into());

@@ -1,4 +1,6 @@
-load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "export_file", "python_binary", "rust_binary", "rust_library")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "python_binary", "rust_binary", "rust_library")
+load("//antlir/bzl:systemd.bzl", "systemd")
 
 oncall("antlir")
 
@@ -33,8 +35,28 @@ rust_binary(
     ],
 )
 
-export_file(
-    name = "antlir2_image_test.service",
+feature.new(
+    name = "features",
+    features = [
+        # Critical unit that actually runs the test
+        systemd.install_unit(
+            "antlir2_image_test.service",
+            force = True,
+        ),
+        # Debugging features to enhance ergonomics
+        systemd.install_dropin(
+            "autologin.conf",
+            unit = "console-getty.service",
+        ),
+        # Install something that provides a shell, which is necessary for
+        # interactive debugging
+        feature.rpms_install(subjects = ["/bin/sh"]),
+        feature.install(
+            src = "help.sh",
+            dst = "/etc/profile.d/zz-help.sh",
+            mode = "a+rx",
+        ),
+    ],
     visibility = ["PUBLIC"],
 )
 

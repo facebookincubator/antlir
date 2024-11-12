@@ -128,6 +128,7 @@ import {themes} from 'prism-react-renderer';
       prism: {
         theme: themes.github,
         darkTheme: themes.darcula,
+        additionalLanguages: ['systemd'],
       },
     }),
 });
