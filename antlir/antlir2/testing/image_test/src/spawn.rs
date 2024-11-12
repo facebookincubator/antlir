@@ -101,9 +101,9 @@ impl Args {
         .invocation_type(match spec.boot.is_some() {
             true => InvocationType::BootReadOnly,
             false => InvocationType::Pid2Pipe,
-        });
-        ctx.inputs(spec.mounts);
-        ctx.setenv(("ANTLIR2_IMAGE_TEST", "1"));
+        })
+        .inputs(spec.mounts)
+        .setenv(("ANTLIR2_IMAGE_TEST", "1"));
 
         // XARs need /dev/fuse to run. Ideally we could just have this created
         // inside the container. Until
@@ -115,6 +115,9 @@ impl Args {
         if spec.rootless {
             #[cfg(facebook)]
             ctx.tmpfs(Path::new("/mnt/xarfuse"));
+
+            // these should be tmpfs, just like systemd-nspawn does
+            ctx.tmpfs(Path::new("/tmp")).tmpfs(Path::new("/run"));
         }
 
         if let Some(hostname) = spec.hostname {
@@ -134,6 +137,11 @@ impl Args {
 
         match spec.boot {
             Some(boot) => {
+                ensure!(
+                    !spec.rootless,
+                    "TODO(T187078382): booted tests still must use systemd-nspawn and are incompatible with rootless"
+                );
+
                 let container_stdout = container_stdout_file()?;
                 let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
 

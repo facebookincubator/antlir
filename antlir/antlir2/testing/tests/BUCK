@@ -46,6 +46,7 @@ test_variants(
     lang = "rust",
     test_rule = image_rust_test,
     deps = [
+        "rustix",
         "serde_json",
         "whoami",
     ],
