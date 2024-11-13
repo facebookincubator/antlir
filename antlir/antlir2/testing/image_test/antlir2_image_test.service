@@ -14,6 +14,6 @@ FailureAction=exit-force
 # happen). {Failure,Success}Action are still respected when the test process
 # exits either way.
 Type=simple
-Environment=USER=%u
+ExecStart=/__antlir2_image_test__/image-test exec
 StandardOutput=truncate:/antlir2/test_stdout
 StandardError=truncate:/antlir2/test_stderr

@@ -7,6 +7,8 @@
 
 use std::path::Path;
 
+use nix::unistd::getuid;
+use nix::unistd::User;
 use rustix::fs::statfs;
 
 #[test]
@@ -14,6 +16,11 @@ fn user() {
     let expected = std::env::var("TEST_USER").expect("TEST_USER not set");
     let actual = whoami::username();
     assert_eq!(expected, actual);
+    let expected_uid = User::from_name(&expected)
+        .expect("failed to lookup user")
+        .expect("no such user")
+        .uid;
+    assert_eq!(getuid(), expected_uid);
 }
 
 #[test]

@@ -13,7 +13,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
 /// Specification of the test runtime (the rootfs layer, environment, etc)
-pub(crate) struct RuntimeSpec {
+pub(crate) struct Spec {
     /// Path to layer to run the test in
     pub(crate) layer: PathBuf,
     /// Run the test as this user
