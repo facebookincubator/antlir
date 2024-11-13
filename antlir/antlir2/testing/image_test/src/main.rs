@@ -8,16 +8,17 @@
 use anyhow::Result;
 use clap::Parser;
 
+mod exec;
 mod runtime;
 mod shell_help;
 mod spawn;
-
-pub(crate) use runtime::RuntimeSpec;
 
 #[derive(Parser, Debug)]
 enum Args {
     /// Spawn a container to run the test
     Spawn(spawn::Args),
+    /// Execute the test from inside the container
+    Exec(exec::Args),
     ShellHelp(shell_help::Args),
 }
 
@@ -28,6 +29,7 @@ fn main() -> Result<()> {
 
     match args {
         Args::Spawn(a) => a.run(),
+        Args::Exec(a) => a.run(),
         Args::ShellHelp(a) => a.run(),
     }
 }

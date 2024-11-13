@@ -12,7 +12,6 @@ use std::fs::Permissions;
 use std::io::Write;
 use std::os::fd::AsRawFd;
 use std::os::fd::FromRawFd;
-use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
@@ -32,7 +31,8 @@ use tempfile::NamedTempFile;
 use tracing::debug;
 use tracing::trace;
 
-use crate::RuntimeSpec;
+use crate::exec;
+use crate::runtime;
 
 fn make_log_files(_base: &str) -> Result<(NamedTempFile, NamedTempFile)> {
     Ok((NamedTempFile::new()?, NamedTempFile::new()?))
@@ -42,7 +42,7 @@ fn make_log_files(_base: &str) -> Result<(NamedTempFile, NamedTempFile)> {
 #[derive(Parser, Debug)]
 pub(crate) struct Args {
     #[clap(long)]
-    spec: JsonFile<RuntimeSpec>,
+    spec: JsonFile<runtime::Spec>,
     #[clap(subcommand)]
     test: Test,
 }
@@ -189,53 +189,6 @@ impl Args {
                     writeln!(test_unit_dropin, "Wants={unit}")?;
                 }
 
-                writeln!(test_unit_dropin, "[Service]")?;
-
-                writeln!(test_unit_dropin, "User={}", spec.user)?;
-                write!(test_unit_dropin, "WorkingDirectory=")?;
-                let cwd = std::env::current_dir().context("while getting cwd")?;
-                test_unit_dropin.write_all(cwd.as_os_str().as_bytes())?;
-                test_unit_dropin.write_all(b"\n")?;
-
-                write!(test_unit_dropin, "Environment=PWD=")?;
-                test_unit_dropin.write_all(cwd.as_os_str().as_bytes())?;
-                test_unit_dropin.write_all(b"\n")?;
-
-                write!(test_unit_dropin, "ExecStart=")?;
-                let mut iter = self.test.into_inner_cmd().into_iter().peekable();
-                if let Some(exe) = iter.next() {
-                    let realpath = std::fs::canonicalize(&exe)
-                        .with_context(|| format!("while getting absolute path of {exe:?}"))?;
-                    test_unit_dropin.write_all(realpath.as_os_str().as_bytes())?;
-                    if iter.peek().is_some() {
-                        test_unit_dropin.write_all(b" ")?;
-                    }
-                }
-                while let Some(arg) = iter.next() {
-                    test_unit_dropin.write_all(arg.as_os_str().as_bytes())?;
-                    if iter.peek().is_some() {
-                        test_unit_dropin.write_all(b" ")?;
-                    }
-                }
-                test_unit_dropin.write_all(b"\n")?;
-
-                for (key, val) in &setenv {
-                    writeln!(
-                        test_unit_dropin,
-                        "Environment=\"{key}={}\"",
-                        val.replace('"', "\\\"")
-                    )?;
-                }
-                // forward test runner env vars to the inner test
-                for (key, val) in std::env::vars() {
-                    if key.starts_with("TEST_PILOT") {
-                        writeln!(
-                            test_unit_dropin,
-                            "Environment=\"{key}={}\"",
-                            val.replace('"', "\\\"")
-                        )?;
-                    }
-                }
                 // wire the test output to the parent process's std{out,err}
                 ctx.outputs(HashMap::from([
                     (Path::new("/antlir2/test_stdout"), test_stdout.path()),
@@ -244,6 +197,29 @@ impl Args {
                 ctx.inputs((
                     Path::new("/run/systemd/system/antlir2_image_test.service.d/runtime.conf"),
                     test_unit_dropin.path(),
+                ));
+
+                let mut exec_env = setenv.clone();
+                // forward test runner env vars to the inner test
+                for (key, val) in std::env::vars() {
+                    if key.starts_with("TEST_PILOT") {
+                        exec_env.insert(key, val);
+                    }
+                }
+
+                let exec_spec = exec::Spec::builder()
+                    .cmd(self.test.into_inner_cmd())
+                    .user(spec.user)
+                    .working_directory(std::env::current_dir().context("while getting cwd")?)
+                    .env(exec_env)
+                    .build();
+                let exec_spec_file = tempfile::NamedTempFile::new()
+                    .context("while creating temp file for exec spec")?;
+                serde_json::to_writer_pretty(&exec_spec_file, &exec_spec)
+                    .context("while serializing exec spec to file")?;
+                ctx.inputs((
+                    Path::new("/__antlir2_image_test__/exec_spec.json"),
+                    exec_spec_file.path(),
                 ));
 
                 // Register the test container with systemd-machined so manual debugging

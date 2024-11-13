@@ -21,8 +21,11 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "bon",
         "clap",
+        "nix",
         "serde",
+        "serde_json",
         "tempfile",
         "textwrap",
         "tracing",
