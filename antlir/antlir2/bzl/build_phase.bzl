@@ -7,6 +7,10 @@
 # which they are defined in this list. Phases are independently cached, and any
 # changes to features will only cause rebuilds of downstream phases.
 BuildPhase = enum(
+    # Separate out fbpkg installation to a separate phase because they tend to
+    # be very large (in other words, slow to install) and do not change very
+    # often
+    "fbpkg",
     # The feature installs/removes packages with an OS package manager that allows
     # unpredictable side effects (file creation/deletion, {user,group}
     # creation/deletion, etc)
@@ -48,6 +52,7 @@ BuildPhase = enum(
 
 # Quick self-test to ensure that order is correct
 if list(BuildPhase.values()) != [
+    "fbpkg",
     "package_manager",
     "chef_setup",
     "chef_package_manager",
