@@ -42,6 +42,7 @@ LayerInfo = provider(fields = [
     "mounts",  # List of mount features
     "parent",  # Dependency for the parent of the layer, if one exists
     "contents",  # LayerContents record
+    "phase_contents",  # LayerContents broken out by all the internal phases
     # Symlink to local subvolume in antlir2-out/. Kept around for a
     # transitionary period while the whole antlir ecosystem grows to support
     # antlir2_overlayfs

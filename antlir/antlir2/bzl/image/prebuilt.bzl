@@ -8,6 +8,7 @@ load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handle
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load("//antlir/bzl:build_defs.bzl", "internal_external")
@@ -126,6 +127,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             subvol_symlink = contents.subvol_symlink,
             mounts = [],
             flavor = ctx.attrs.flavor,
+            phase_contents = [(
+                BuildPhase("compile"),
+                contents,
+            )],
         ),
         DefaultInfo(subvol_symlink, sub_targets = {
             "debug": [DefaultInfo(sub_targets = {

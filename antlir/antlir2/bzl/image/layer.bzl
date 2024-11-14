@@ -312,6 +312,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     layer = ctx.attrs.parent_layer[LayerInfo].contents if ctx.attrs.parent_layer else None
     facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
     debug_sub_targets = {}
+    phase_contents = []
 
     # See Planner.previous_phase_plans for rationale
     previous_phase_plans = {}
@@ -443,6 +444,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             plans = plans,
             hidden_deps = compile_feature_hidden_deps,
         )
+        phase_contents.append((phase, layer))
 
         facts_db = facts.new_facts_db(
             actions = ctx.actions,
@@ -543,6 +545,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             features = all_features,
             contents = layer,
             subvol_symlink = subvol_symlink,
+            phase_contents = phase_contents,
         ),
     ]
 
