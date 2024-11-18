@@ -278,6 +278,7 @@ def _shape_rule_impl(ctx: AnalysisContext) -> list[Provider]:
         generated_srcs[lang] = src
     return [
         DefaultInfo(sub_targets = {
+            "ir": [DefaultInfo(ir)],
             "src": [DefaultInfo(sub_targets = {
                 lang: [DefaultInfo(src)]
                 for lang, src in generated_srcs.items()

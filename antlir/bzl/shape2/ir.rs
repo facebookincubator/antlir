@@ -181,6 +181,8 @@ pub struct Module {
     pub target: Target,
     pub types: BTreeMap<TypeName, Arc<Type>>,
     pub docstring: Option<DocString>,
+    #[serde(default)]
+    pub deps: BTreeSet<Target>,
 }
 
 impl Module {

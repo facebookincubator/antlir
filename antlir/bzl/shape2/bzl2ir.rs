@@ -8,6 +8,7 @@
 #![feature(get_mut_unchecked)]
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -461,6 +462,7 @@ fn starlark_to_ir(
     f: FrozenModule,
     types: SlotMap<TypeId, Arc<ir::Type>>,
     target: ir::Target,
+    deps: BTreeSet<ir::Target>,
 ) -> Result<ir::Module> {
     let named_types: BTreeMap<ir::TypeName, _> = f
         .names()
@@ -503,6 +505,7 @@ fn starlark_to_ir(
             .docs
             .map(|ds| format!("{}\n{}", ds.summary, ds.details.unwrap_or_else(String::new)))
             .map(|s| s.into()),
+        deps,
     })
 }
 
@@ -529,8 +532,13 @@ fn main() -> Result<()> {
     let (f, types) = eval_and_freeze_module(&opts.deps, ast)
         .with_context(|| format!("while processing {:?}", opts.entrypoint))?;
 
-    let module =
-        starlark_to_ir(f, types, opts.target).context("while converting to high-level IR")?;
+    let module = starlark_to_ir(
+        f,
+        types,
+        opts.target,
+        opts.deps.as_inner().0.keys().cloned().collect(),
+    )
+    .context("while converting to high-level IR")?;
     std::fs::write(
         &opts.out,
         serde_json::to_string_pretty(&module).expect("failed to serialize IR"),
@@ -556,7 +564,12 @@ top = shape.shape(hello=str)
             &Dialect::Extended,
         )?;
         let (f, types) = eval_and_freeze_module(&Dependencies(BTreeMap::new()), ast)?;
-        let m = starlark_to_ir(f, types, "//antlir/shape:simple.shape".try_into()?)?;
+        let m = starlark_to_ir(
+            f,
+            types,
+            "//antlir/shape:simple.shape".try_into()?,
+            Default::default(),
+        )?;
         assert_eq!(
             m,
             ir::Module {
@@ -577,6 +590,7 @@ top = shape.shape(hello=str)
                     })))
                 },
                 docstring: None,
+                deps: Default::default(),
             }
         );
         Ok(())
