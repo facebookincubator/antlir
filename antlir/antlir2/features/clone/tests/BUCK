@@ -30,9 +30,11 @@ image.layer(
             home_dir = "/",
             primary_group = "antlir",
             shell = "/fakeshell",
+            uid = 1000,
             username = "antlir",
         ),
         feature.group_add(
+            gid = 1000,
             groupname = "antlir",
         ),
     ],

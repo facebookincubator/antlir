@@ -27,6 +27,7 @@ image.layer(
     name = "add-group",
     features = [
         feature.group_add(
+            gid = 1000,
             groupname = "antlir",
         ),
     ],
