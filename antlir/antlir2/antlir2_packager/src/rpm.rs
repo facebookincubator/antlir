@@ -277,6 +277,9 @@ AutoProv: {autoprov}
             spec.push_str("%files\n");
             for entry in walkdir::WalkDir::new(layer) {
                 let entry = entry.context("while walking layer")?;
+                if entry.file_type().is_dir() {
+                    continue;
+                }
                 let relpath = Path::new("/").join(
                     entry
                         .path()
@@ -284,30 +287,6 @@ AutoProv: {autoprov}
                         .expect("must be under layer"),
                 );
                 if relpath == Path::new("/") {
-                    continue;
-                }
-                if entry.file_type().is_dir() {
-                    let is_empty = std::fs::read_dir(entry.path())?.next().is_none();
-                    // non-empty directories are not marked as provided in the rpm spec,
-                    // since they are likely to conflict with other RPMs. For example,
-                    // an rpm that installs a binary to /usr/local/bin/foo should not conflict
-                    // with one that installs a binary to /usr/local/bin/bar, but they would
-                    // conflict if they were both declared to provide the dir /usr/local/bin.
-                    // On the other hand, an RPM that explicitly creates an empty directory is
-                    // probably done intentionally, so empty directories are recorded in the spec.
-                    if !is_empty {
-                        continue;
-                    }
-                    let mut dir_path_str = relpath
-                        .to_str()
-                        .expect("our paths are always valid utf8")
-                        .to_owned();
-                    if dir_path_str.contains(" ") {
-                        dir_path_str = format!("\"{dir_path_str}\"");
-                    }
-                    spec.push_str("%dir ");
-                    spec.push_str(&dir_path_str);
-                    spec.push('\n');
                     continue;
                 }
                 if !entry.file_type().is_symlink() {
