@@ -10,6 +10,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "nix",
         "serde_json",
         "tracing",
         "tracing-subscriber",

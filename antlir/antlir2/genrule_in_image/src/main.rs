@@ -16,6 +16,8 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use clap::ValueEnum;
+use nix::unistd::Gid;
+use nix::unistd::Uid;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -117,10 +119,11 @@ fn main() -> Result<()> {
             .setenv(("OUT", "/__genrule_in_image__/out/single_file"));
     }
 
-    if let Some(scratch) = std::env::var_os("BUCK_SCRATCH_PATH") {
+    let scratch = std::env::var_os("BUCK_SCRATCH_PATH").map(PathBuf::from);
+    if let Some(scratch) = scratch.as_ref() {
         builder.outputs((
             Path::new("/__genrule_in_image__/buck_scratch_path"),
-            PathBuf::from(scratch.clone()),
+            scratch.clone(),
         ));
         builder.setenv((
             "BUCK_SCRATCH_PATH",
@@ -138,22 +141,32 @@ fn main() -> Result<()> {
         .context(format!("spawn() failed for {:#?}", cmd))?
         .wait()
         .context(format!("wait() failed for {:#?}", cmd))?;
+
+    if let Some(scratch) = scratch.as_ref() {
+        if let Some((uid, gid)) = rootless.map(|r| r.unprivileged_ids()) {
+            chown_r(scratch, uid, gid)?;
+        }
+    }
+
     ensure!(out.success(), "command failed");
 
     if args.out.dir {
         if let Some((uid, gid)) = rootless.map(|r| r.unprivileged_ids()) {
-            for entry in walkdir::WalkDir::new(&args.out.out)
-                .into_iter()
-                .filter_map(Result::ok)
-            {
-                std::os::unix::fs::chown(
-                    entry.path(),
-                    uid.map(|u| u.as_raw()),
-                    gid.map(|g| g.as_raw()),
-                )?;
-            }
+            chown_r(&args.out.out, uid, gid)?;
         }
     }
 
+    Ok(())
+}
+
+fn chown_r(dir: &Path, uid: Option<Uid>, gid: Option<Gid>) -> std::io::Result<()> {
+    let uid = uid.map(|u| u.as_raw());
+    let gid = gid.map(|g| g.as_raw());
+    for entry in walkdir::WalkDir::new(dir)
+        .into_iter()
+        .filter_map(Result::ok)
+    {
+        std::os::unix::fs::chown(entry.path(), uid, gid)?;
+    }
     Ok(())
 }
