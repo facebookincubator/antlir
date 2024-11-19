@@ -21,6 +21,7 @@ bad_depgraph(
             home_dir = "/",
             primary_group = "root",
             shell = "/fakeshell",
+            uid = 1000,
             username = "antlir",
         ),
         # install /etc/passwd to be owned by 'antlir' which creates the circular
@@ -192,6 +193,7 @@ bad_depgraph(
             primary_group = "root",
             # this will cause a validation error because /fakeshell is not executable
             shell = "/fakeshell",
+            uid = 1000,
             username = "antlir",
         ),
     ],
@@ -241,9 +243,13 @@ good_depgraph(
             home_dir = "/",
             primary_group = "antlir",
             shell = "/fakeshell",
+            uid = 1000,
             username = "antlir",
         ),
-        feature.group_add(groupname = "antlir"),
+        feature.group_add(
+            gid = 1000,
+            groupname = "antlir",
+        ),
         feature.install(
             src = "//antlir:empty",
             dst = "/owned-by-antlir",
@@ -391,6 +397,7 @@ good_depgraph(
             primary_group = "root",
             # /bin/bash is behind a symlink
             shell = "/bin/bash",
+            uid = 1000,
             username = "antlir",
         ),
         feature.ensure_dirs_exist(dirs = "/etc"),
@@ -425,6 +432,7 @@ good_depgraph(
             primary_group = "root",
             # /bin/bash is behind a relative symlink
             shell = "/bin/bash",
+            uid = 1000,
             username = "antlir",
         ),
         feature.ensure_dirs_exist(dirs = "/etc"),
@@ -472,9 +480,11 @@ good_depgraph(
             home_dir = "/home/antlir",
             primary_group = "antlir",
             shell = "/usr/sbin/nologin",
+            uid = 1000,
             username = "antlir",
         ),
         feature.group_add(
+            gid = 1000,
             groupname = "antlir",
         ),
     ],

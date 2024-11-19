@@ -26,8 +26,12 @@ def user_add(
     Example usage:
 
     ```
-    feature.group_add(groupname = "myuser")
+    feature.group_add(
+        gid = 1000,
+        groupname = "myuser",
+    )
     feature.user_add(
+        uid = 1000,
         username = "myuser",
         primary_group = "myuser",
         home_dir = "/home/myuser",
@@ -44,8 +48,7 @@ def user_add(
     user's initial login group or home directory.
 
     - If `username` or `uid` conflicts with existing entries, image build will
-        fail. It is recommended to avoid specifying UID unless absolutely
-        necessary.
+        fail.
     - `primary_group` and `supplementary_groups` are specified as groupnames.
     - `home_dir` must exist
     """

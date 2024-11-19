@@ -30,15 +30,16 @@ Take this `feature.user_add` as an example
 
 ```
 feature.user_add(
-    name = "foo",
-    primary_group = "foo",
+    uid = 1001,
+    username = "foouser",
+    primary_group = "foogroup",
     shell = "/bin/bash",
     home_dir = "/home/foo",
 )
 ```
 
-- No user `foo` can exist already
-- Group `foo` must exist
+- No user `foouser` can exist already
+- Group `foogroup` must exist
 - `/bin/bash` must be a regular file
 - `/bin/bash` must be executable
 - `/home/foo` must exist

@@ -13,8 +13,7 @@ def group_add(
     Add a group entry to /etc/group
 
     Group add semantics generally follow `groupadd`. If groupname or GID
-    conflicts with existing entries, image build will fail. It is recommended to
-    avoid specifying GID unless absolutely necessary.
+    conflicts with existing entries, image build will fail.
     """
     return ParseTimeFeature(
         feature_type = "group",
