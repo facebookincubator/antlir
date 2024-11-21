@@ -19,7 +19,6 @@ use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
 use antlir2_users::passwd::UserRecord;
-use antlir2_users::NextAvailableId;
 use antlir2_users::Password;
 use anyhow::Context;
 use serde::Deserialize;
@@ -75,16 +74,7 @@ impl antlir2_compile::CompileFeature for User {
     #[tracing::instrument(name = "user", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let mut user_db = ctx.user_db()?;
-        let uid = match self.uid {
-            Some(uid) => uid.into(),
-            None => {
-                let uid = user_db
-                    .next_available_id()
-                    .context("no more uids available")?;
-                tracing::trace!("next available uid = {uid}");
-                uid
-            }
-        };
+        let uid = self.uid.context("uid is required")?.into();
         let record = UserRecord {
             name: self.username.clone().into(),
             password: Password::Shadow,

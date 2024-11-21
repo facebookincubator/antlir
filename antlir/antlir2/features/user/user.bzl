@@ -13,11 +13,11 @@ SHELL_NOLOGIN = "/sbin/nologin"
 
 def user_add(
         *,
+        uid: int | Select,
         username: str | Select,
         primary_group: str | Select,
         home_dir: str | Select,
         shell: str | Select = SHELL_NOLOGIN,
-        uid: int | Select | None = None,
         supplementary_groups: list[str | Select] | Select = [],
         comment: str | None = None):
     """
@@ -67,12 +67,12 @@ def user_add(
     )
 
 def standard_user(
+        uid: int,
         username: str,
+        gid: int,
         groupname: str,
         home_dir: str | None = None,
         shell: str = SHELL_BASH,
-        uid: int | None = None,
-        gid: int | None = None,
         supplementary_groups: list[str] = []):
     """
     A convenient function that wraps `group_add`, `user_add`,
@@ -110,7 +110,7 @@ user_rule = data_only_feature_rule(
         "primary_group": attrs.string(),
         "shell": attrs.string(),
         "supplementary_groups": attrs.list(attrs.string()),
-        "uid": attrs.option(attrs.int(), default = None),
+        "uid": attrs.int(),
         "username": attrs.string(),
     },
     feature_type = "user",
