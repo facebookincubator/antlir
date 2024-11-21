@@ -1,0 +1,24 @@
+{
+    "users": {
+        "antlir": {
+            "uid": 1000
+        },
+        "foouser": {
+            "uid": 1001
+        },
+        "demoservice": {
+            "uid": 1002
+        }
+    },
+    "groups": {
+        "antlir": {
+            "gid": 1000
+        },
+        "foogroup": {
+            "gid": 1001
+        },
+        "demoservice": {
+            "gid": 1002
+        }
+    }
+}

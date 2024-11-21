@@ -1,0 +1,10 @@
+{
+    "users": {
+        "systemd-network": {"uid": 192},
+        "systemd-resolve": {"uid": 193}
+    },
+    "groups": {
+        "systemd-network": {"gid": 192},
+        "systemd-resolve": {"gid": 193}
+    }
+}

@@ -1,0 +1,24 @@
+load("@prelude//:paths.bzl", "paths")
+load("//antlir/bzl:build_defs.bzl", "alias", "export_file", "internal_external")
+# @oss-disable
+
+oncall("antlir")
+
+alias(
+    name = "default",
+    actual = internal_external(
+        fb = ":metalos",
+        oss = ":antlir",
+    ),
+    visibility = ["PUBLIC"],
+)
+
+[
+    export_file(
+        name = paths.basename(f).removesuffix(".json"),
+        src = f,
+    )
+    for f in glob(["**/*.json"])
+]
+
+# @oss-disable
