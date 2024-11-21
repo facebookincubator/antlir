@@ -13,7 +13,6 @@ use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
 use antlir2_features::types::GroupName;
 use antlir2_users::group::GroupRecord;
-use antlir2_users::NextAvailableId;
 use antlir2_users::Password;
 use anyhow::Context;
 use serde::Deserialize;
@@ -46,16 +45,7 @@ impl antlir2_compile::CompileFeature for Group {
     #[tracing::instrument(skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let mut groups_db = ctx.groups_db()?;
-        let gid = match self.gid {
-            Some(gid) => gid.into(),
-            None => {
-                let gid = groups_db
-                    .next_available_id()
-                    .context("no more gids available")?;
-                tracing::trace!("next available gid = {gid}");
-                gid
-            }
-        };
+        let gid = self.gid.context("gid is required")?.into();
         let record = GroupRecord {
             name: self.groupname.to_owned().into(),
             password: Password::Shadow,
