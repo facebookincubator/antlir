@@ -34,12 +34,8 @@ def user_add(
     Example usage:
 
     ```
-    feature.group_add(
-        gid = 1000,
-        groupname = "myuser",
-    )
+    feature.group_add(groupname = "myuser")
     feature.user_add(
-        uid = 1000,
         username = "myuser",
         primary_group = "myuser",
         home_dir = "/home/myuser",
