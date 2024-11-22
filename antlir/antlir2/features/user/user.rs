@@ -15,11 +15,15 @@ use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::User as UserItem;
 use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
+use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
 use antlir2_users::passwd::UserRecord;
+use antlir2_users::uidmaps::UidMap;
+use antlir2_users::Id;
 use antlir2_users::Password;
+use antlir2_users::UserId;
 use anyhow::Context;
 use serde::Deserialize;
 use serde::Serialize;
@@ -30,6 +34,7 @@ pub type Feature = User;
 pub struct User {
     pub username: UserName,
     pub uid: Option<u32>,
+    pub uidmap: BuckOutSource,
     pub primary_group: GroupName,
     pub supplementary_groups: Vec<GroupName>,
     pub home_dir: PathInLayer,
@@ -45,6 +50,7 @@ impl antlir2_depgraph_if::RequiresProvides for User {
     }
 
     fn requires(&self) -> Result<Vec<Requirement>, String> {
+        let _ = get_uid(&self.uid, &self.uidmap, &self.username).map_err(|e| format!("{e:#}"))?;
         let mut v = vec![
             Requirement::unordered(
                 ItemKey::Path(self.home_dir.to_owned()),
@@ -74,7 +80,7 @@ impl antlir2_compile::CompileFeature for User {
     #[tracing::instrument(name = "user", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let mut user_db = ctx.user_db()?;
-        let uid = self.uid.context("uid is required")?.into();
+        let uid = get_uid(&self.uid, &self.uidmap, &self.username)?;
         let record = UserRecord {
             name: self.username.clone().into(),
             password: Password::Shadow,
@@ -109,4 +115,18 @@ impl antlir2_compile::CompileFeature for User {
         std::fs::write(ctx.dst_path("/etc/group")?, groups_db.to_string())?;
         Ok(())
     }
+}
+
+fn get_uid(
+    supplied_uid: &Option<u32>,
+    uidmap: &BuckOutSource,
+    username: &UserName,
+) -> anyhow::Result<UserId> {
+    if let Some(uid) = supplied_uid {
+        return Ok(UserId::from_raw(*uid));
+    }
+    let uidmap = UidMap::load(uidmap)?;
+    uidmap
+        .get_uid(username)
+        .with_context(|| format!("user {} not found in uidmap", username))
 }
