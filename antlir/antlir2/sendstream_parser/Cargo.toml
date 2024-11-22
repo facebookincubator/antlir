@@ -18,7 +18,7 @@ path = "src/lib.rs"
 bytes = { version = "1.6.0", features = ["serde"] }
 derive_more = { version = "1.0.0", features = ["full"] }
 hex = "0.4.3"
-nix = "0.25"
+nix = "0.26.4"
 nom = "7.1"
 serde = { version = "1.0.185", features = ["derive", "rc"], optional = true }
 thiserror = "1.0.64"
