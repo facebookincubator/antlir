@@ -30,7 +30,7 @@ Take this `feature.user_add` as an example
 
 ```
 feature.user_add(
-    uid = 1001,
+    uidmap = "antlir",
     username = "foouser",
     primary_group = "foogroup",
     shell = "/bin/bash",

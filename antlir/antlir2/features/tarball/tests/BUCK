@@ -14,12 +14,12 @@ image.layer(
             home_dir = "/",
             primary_group = "antlir",
             shell = "/bin/bash",
-            uid = 1042,
+            uidmap = "antlir",
             username = "antlir",
         ),
         feature.group_add(
-            gid = 1043,
             groupname = "antlir",
+            uidmap = "antlir",
         ),
         feature.ensure_dirs_exist(
             dirs = "/dir",
