@@ -11,9 +11,12 @@ use std::fmt::Formatter;
 pub mod group;
 pub mod passwd;
 pub mod shadow;
+pub mod uidmaps;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("I/O error: {0}")]
+    Io(String),
     #[error("parse error: {0}")]
     Parse(String),
 }

@@ -4,19 +4,27 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load(
+    "//antlir/antlir2/features:feature_info.bzl",
+    "FeatureAnalysis",
+    "ParseTimeFeature",
+)
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_subdirs_exist")
 load("//antlir/antlir2/features/group:group.bzl", "group_add")
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
 
 def user_add(
         *,
-        uid: int | Select,
         username: str | Select,
         primary_group: str | Select,
         home_dir: str | Select,
+        uid: int | Select | None = None,
+        uidmap: str = "default",
         shell: str | Select = SHELL_NOLOGIN,
         supplementary_groups: list[str | Select] | Select = [],
         comment: str | None = None):
@@ -55,6 +63,9 @@ def user_add(
     return ParseTimeFeature(
         feature_type = "user",
         plugin = "antlir//antlir/antlir2/features/user:user",
+        deps = {
+            "uidmap": ("antlir//antlir/uidmaps:" + uidmap) if ":" not in uidmap else uidmap,
+        },
         kwargs = {
             "comment": comment,
             "home_dir": home_dir,
@@ -67,10 +78,11 @@ def user_add(
     )
 
 def standard_user(
-        uid: int,
         username: str,
-        gid: int,
         groupname: str,
+        uid: int | None = None,
+        gid: int | None = None,
+        uidmap: str = "default",
         home_dir: str | None = None,
         shell: str = SHELL_BASH,
         supplementary_groups: list[str] = []):
@@ -85,6 +97,7 @@ def standard_user(
         group_add(
             groupname = groupname,
             gid = gid,
+            uidmap = uidmap,
         ),
         user_add(
             username = username,
@@ -92,6 +105,7 @@ def standard_user(
             home_dir = home_dir,
             shell = shell,
             uid = uid,
+            uidmap = uidmap,
             supplementary_groups = supplementary_groups,
         ),
         ensure_subdirs_exist(
@@ -103,15 +117,39 @@ def standard_user(
         ),
     ]
 
-user_rule = data_only_feature_rule(
-    feature_attrs = {
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    uidmap = ensure_single_output(ctx.attrs.uidmap)
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "user",
+            data = struct(
+                comment = ctx.attrs.comment,
+                home_dir = ctx.attrs.home_dir,
+                primary_group = ctx.attrs.primary_group,
+                shell = ctx.attrs.shell,
+                supplementary_groups = ctx.attrs.supplementary_groups,
+                uid = ctx.attrs.uid,
+                uidmap = uidmap,
+                username = ctx.attrs.username,
+            ),
+            build_phase = BuildPhase("compile"),
+            required_artifacts = [uidmap],
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+        ),
+    ]
+
+user_rule = rule(
+    impl = _impl,
+    attrs = {
         "comment": attrs.option(attrs.string(), default = None),
         "home_dir": attrs.string(),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "primary_group": attrs.string(),
         "shell": attrs.string(),
         "supplementary_groups": attrs.list(attrs.string()),
-        "uid": attrs.int(),
+        "uid": attrs.option(attrs.int()),
+        "uidmap": attrs.dep(),
         "username": attrs.string(),
     },
-    feature_type = "user",
 )
