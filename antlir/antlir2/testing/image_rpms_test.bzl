@@ -13,6 +13,13 @@ load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
 def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
+    src = ctx.attrs.src
+    if src and ctx.attrs.names:
+        fail("'src' and 'names' are mutually exclusive")
+    if not src:
+        if ctx.attrs.names == None:
+            fail("'names' is required if 'src' is omitted")
+        src = ctx.actions.write("names.txt", "\n".join(ctx.attrs.names))
     script = ctx.actions.write(
         "test.sh",
         cmd_args(
@@ -21,7 +28,7 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(
                 ctx.attrs.image_rpms_test[RunInfo],
                 "names",
-                ctx.attrs.src,
+                src,
                 cmd_args(ctx.attrs.layer[LayerInfo].facts_db, format = "--facts-db={}"),
                 cmd_args("--not-installed") if ctx.attrs.not_installed else cmd_args(),
                 cmd_args("$@"),
@@ -47,8 +54,9 @@ _rpm_names_test = rule(
         "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "names": attrs.option(attrs.list(attrs.string()), default = None),
         "not_installed": attrs.bool(default = False),
-        "src": attrs.source(),
+        "src": attrs.option(attrs.source(), default = None),
     } | cfg_attrs(),
     cfg = layer_cfg,
 )
