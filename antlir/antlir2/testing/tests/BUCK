@@ -89,6 +89,17 @@ image_test_rpm_names(
     layer = ":foo-rpms",
 )
 
+image_test_rpm_names(
+    name = "test-foo-rpm-names-on-target",
+    layer = ":foo-rpms",
+    names = [
+        "foo",
+        "foo-empty",
+        "foobar",
+        "foobarbaz",
+    ],
+)
+
 image.layer(
     name = "foo-rpms-not-installed",
     features = [
