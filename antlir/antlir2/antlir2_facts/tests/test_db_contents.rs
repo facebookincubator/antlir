@@ -34,8 +34,8 @@ fn file() {
         .expect("failed to get /feature/foo")
         .expect("/feature/foo did not exist");
     assert_eq!(ent.path(), Path::new("/feature/foo"));
-    assert_eq!(ent.uid(), 42);
-    assert_eq!(ent.gid(), 43);
+    assert_eq!(ent.uid(), 1000);
+    assert_eq!(ent.gid(), 1000);
     assert_eq!(ent.mode(), 0o100444);
     assert!(matches!(ent, DirEntry::RegularFile(_)));
 }
@@ -66,8 +66,8 @@ fn dir() {
         .expect("failed to get /feature/bar")
         .expect("/feature/bar did not exist");
     assert_eq!(ent.path(), Path::new("/feature/bar"));
-    assert_eq!(ent.uid(), 42);
-    assert_eq!(ent.gid(), 43);
+    assert_eq!(ent.uid(), 1000);
+    assert_eq!(ent.gid(), 1000);
     assert_eq!(ent.mode(), 0o40755);
     assert!(matches!(ent, DirEntry::Directory(_)));
 }
@@ -128,7 +128,7 @@ fn user() {
         .expect("failed to get user antlir")
         .expect("user antlir did not exist");
     assert_eq!(ent.name(), "antlir");
-    assert_eq!(ent.id(), 42);
+    assert_eq!(ent.id(), 1000);
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn group() {
         .expect("failed to get group antlir")
         .expect("group antlir did not exist");
     assert_eq!(ent.name(), "antlir");
-    assert_eq!(ent.id(), 43);
+    assert_eq!(ent.id(), 1000);
     assert_eq!(ent.members().collect::<Vec<_>>(), &["antlir"]);
 }
 
