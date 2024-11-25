@@ -54,7 +54,7 @@ jobs:
             --disable //antlir/antlir2/test_images/cfg/target_arch/... \
             --disable //antlir/antlir2/test_images/package/... \
             --disable //antlir/antlir2/testing/tests:booted-image-test-that-should-fail \
-            --disable //antlir/antlir2/testing/tests:test-sh-booted-requires-units \
+            --disable //antlir/antlir2/testing/tests:test-sh-boot-requires_units-centos9 \
             --disable //antlir/bzl/shape2/... \
             --disable //antlir/bzl/tests/shapes/... \
             --disable //antlir/rust:gen-modules-bzl-unittest \
