@@ -22,9 +22,9 @@ def tarball_feature_contents(prefix):
         ),
         feature.install_text(
             dst = paths.join(prefix, "foo/owned"),
-            group = 1043,
+            group = 1000,
             mode = "a+r,u+w",
             text = "I'm owned by antlir\n",
-            user = 1042,
+            user = 1000,
         ),
     ]
