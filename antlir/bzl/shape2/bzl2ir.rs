@@ -17,7 +17,6 @@ use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Context;
-use anyhow::Result;
 use clap::Parser;
 use derive_more::Deref;
 use derive_more::Display;
@@ -72,7 +71,7 @@ fn bzl_globals() -> GlobalsBuilder {
 fn eval_and_freeze_module(
     deps: &Dependencies,
     ast: AstModule,
-) -> Result<(FrozenModule, SlotMap<TypeId, Arc<ir::Type>>)> {
+) -> anyhow::Result<(FrozenModule, SlotMap<TypeId, Arc<ir::Type>>)> {
     let module = Module::new();
     let globals = bzl_globals().build();
     let registry = TypeRegistryRefCell::default();
@@ -164,11 +163,11 @@ starlark_simple_value!(StarlarkType);
 impl<'v> StarlarkValue<'v> for StarlarkType {}
 
 trait TryToType {
-    fn try_to_type(&self, reg: &TypeRegistry) -> Result<Arc<ir::Type>>;
+    fn try_to_type(&self, reg: &TypeRegistry) -> anyhow::Result<Arc<ir::Type>>;
 }
 
 impl<'v> TryToType for Value<'v> {
-    fn try_to_type(&self, reg: &TypeRegistry) -> Result<Arc<ir::Type>> {
+    fn try_to_type(&self, reg: &TypeRegistry) -> anyhow::Result<Arc<ir::Type>> {
         if let Some(tid) = self.downcast_ref::<TypeId>() {
             reg.get(*tid).ok_or_else(|| anyhow!("{:?} not found", tid))
         } else if let Some(ty) = self.downcast_ref::<StarlarkType>() {
@@ -188,11 +187,11 @@ impl<'v> TryToType for Value<'v> {
 }
 
 trait TryToField {
-    fn try_to_field(&self, reg: &TypeRegistry) -> Result<ir::Field>;
+    fn try_to_field(&self, reg: &TypeRegistry) -> anyhow::Result<ir::Field>;
 }
 
 impl<'v> TryToField for Value<'v> {
-    fn try_to_field(&self, reg: &TypeRegistry) -> Result<ir::Field> {
+    fn try_to_field(&self, reg: &TypeRegistry) -> anyhow::Result<ir::Field> {
         if let Ok(ty) = self.try_to_type(reg) {
             Ok(ir::Field {
                 ty,
@@ -216,7 +215,7 @@ starlark_simple_value!(StarlarkField);
 #[starlark_value(type = "StarlarkField")]
 impl<'v> StarlarkValue<'v> for StarlarkField {}
 
-fn get_type_registry<'a>(eval: &'a Evaluator) -> Result<&'a TypeRegistryRefCell> {
+fn get_type_registry<'a>(eval: &'a Evaluator) -> anyhow::Result<&'a TypeRegistryRefCell> {
     let extra = eval
         .extra
         .context("extra should be TypeRegistry, but was not present")?;
@@ -243,7 +242,7 @@ fn shape(builder: &mut GlobalsBuilder) {
             .into_iter()
             .filter(|(key, _)| (*key != "__I_AM_TARGET__") && (*key != "__thrift_fields"))
             .map(|(key, val)| val.try_to_field(&reg).map(|f| (key.into(), Arc::new(f))))
-            .collect::<Result<_>>()?;
+            .collect::<anyhow::Result<_>>()?;
         let thrift_fields = __thrift
             .map(|t| {
                 t.entries
@@ -256,7 +255,7 @@ fn shape(builder: &mut GlobalsBuilder) {
                             .clone();
                         Ok((k, (field_name, field)))
                     })
-                    .collect::<Result<_>>()
+                    .collect::<anyhow::Result<_>>()
             })
             .transpose()
             .context(
@@ -290,7 +289,7 @@ fn shape(builder: &mut GlobalsBuilder) {
             .map_err(starlark::Error::into_anyhow)
             .context("while collecting enum variants")?
             .map(|v| String::unpack_param(v).map(|s| s.into()))
-            .collect::<Result<_>>()?;
+            .collect::<anyhow::Result<_>>()?;
         let enm = ir::Enum {
             options,
             docstring: None,
@@ -367,7 +366,7 @@ fn shape(builder: &mut GlobalsBuilder) {
                 v.try_to_type(&reg)
                     .with_context(|| format!("union item at {} is not a type", i))
             })
-            .collect::<Result<_>>()?;
+            .collect::<anyhow::Result<_>>()?;
         let thrift_types = match __thrift {
             Some(t) => {
                 // Closure to convert the `anyhow` error to a `starlark::Error`
@@ -408,12 +407,11 @@ fn shape(builder: &mut GlobalsBuilder) {
 struct Dependencies(BTreeMap<ir::Target, PathBuf>);
 
 impl FileLoader for Dependencies {
-    fn load(&self, load: &str) -> Result<FrozenModule> {
+    fn load(&self, load: &str) -> starlark::Result<FrozenModule> {
         // shape.bzl itself is an implicit dependency and comes with a native
         // implementation
         if load == "//antlir/bzl:shape.bzl" || load == "@antlir//antlir/bzl:shape.bzl" {
-            let ast = AstModule::parse("", "shape = shape_impl".to_string(), &Dialect::Standard)
-                .map_err(starlark::Error::into_anyhow)?;
+            let ast = AstModule::parse("", "shape = shape_impl".to_string(), &Dialect::Standard)?;
             let module = Module::new();
             {
                 let mut evaluator: Evaluator = Evaluator::new(&module);
@@ -422,14 +420,15 @@ impl FileLoader for Dependencies {
                     .eval_module(ast, &globals)
                     .map_err(starlark::Error::into_anyhow)?;
             }
-            return module.freeze();
+            return Ok(module.freeze()?);
         }
         let load: ir::Target = load
             .strip_suffix(".bzl")
             .unwrap_or(load)
             .try_into()
             .with_context(|| format!("while parsing '{}'", load))?;
-        self.0
+        Ok(self
+            .0
             .get(&load)
             .with_context(|| {
                 format!(
@@ -442,11 +441,11 @@ impl FileLoader for Dependencies {
                     std::fs::File::open(p).with_context(|| format!("while loading {:?}", p))?;
                 serde_json::from_reader(&mut f).with_context(|| format!("while parsing {:?}", p))
             })
-            .and_then(ir_to_module)
+            .and_then(ir_to_module)?)
     }
 }
 
-fn ir_to_module(m: ir::Module) -> Result<FrozenModule> {
+fn ir_to_module(m: ir::Module) -> anyhow::Result<FrozenModule> {
     let module = Module::new();
     for name in m.types.into_keys() {
         let ty = StarlarkType(Arc::new(ir::Type::Foreign {
@@ -463,7 +462,7 @@ fn starlark_to_ir(
     types: SlotMap<TypeId, Arc<ir::Type>>,
     target: ir::Target,
     deps: BTreeSet<ir::Target>,
-) -> Result<ir::Module> {
+) -> anyhow::Result<ir::Module> {
     let named_types: BTreeMap<ir::TypeName, _> = f
         .names()
         // grab the Value that is assigned to this name from the starlark module (this is the TypeId)
@@ -494,7 +493,7 @@ fn starlark_to_ir(
             };
             Ok((name, ty))
         })
-        .collect::<Result<_>>()?;
+        .collect::<anyhow::Result<_>>()?;
 
     Ok(ir::Module {
         name: target.basename().to_string(),
@@ -521,7 +520,7 @@ struct Opts {
     out: PathBuf,
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     let dialect = Dialect {
         enable_load_reexport: false,
