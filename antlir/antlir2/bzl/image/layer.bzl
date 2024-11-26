@@ -418,10 +418,13 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                     plans[pi.id] = pi
                     compile_feature_hidden_deps.append(pi.hidden)
                     if pi.sub_artifacts:
-                        plan_sub_targets[pi.id] = [DefaultInfo(sub_targets = {
-                            key: [DefaultInfo(artifact)]
-                            for key, artifact in pi.sub_artifacts.items()
-                        })]
+                        plan_sub_targets[pi.id] = [DefaultInfo(
+                            pi.output,
+                            sub_targets = {
+                                key: [DefaultInfo(artifact)]
+                                for key, artifact in pi.sub_artifacts.items()
+                            },
+                        )]
         previous_phase_plans = plans
 
         phase_sub_targets["plan"] = [DefaultInfo(sub_targets = plan_sub_targets)]
