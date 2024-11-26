@@ -12,8 +12,8 @@ flavor(
     visibility = ["PUBLIC"],
 )
 
-sha256 = "3ed17eb1dfbcc843b75a67b7cb8a17320d7c9614d5352a977f0378678d39566b"
-sha1 = "85460d09656610f9b1843a52d7400fc55483e71a"
+sha256 = "2fc8bca9d8609a594d6258d47b93f17dad2f5ff98bc2129f5794b9a98e66d40a"
+sha1 = "712adb0f0a06bc55a14200b6a58adc11a31de47f"
 
 http_archive(
     name = "build-appliance.tar.zst",
