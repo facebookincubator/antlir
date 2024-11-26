@@ -13,9 +13,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
-use anyhow::bail;
 use anyhow::Context;
-use anyhow::Result;
 use clap::Parser;
 use regex::Regex;
 use sha2::Digest;
@@ -34,6 +32,7 @@ use starlark::syntax::Dialect;
 use starlark::values::none::NoneType;
 use starlark::values::OwnedFrozenValue;
 use starlark::values::Value;
+use starlark::StarlarkResultExt;
 use test::test::ShouldPanic;
 use test::test::TestDesc;
 use test::test::TestDescAndFn;
@@ -201,7 +200,7 @@ impl TestModule {
             .collect()
     }
 
-    fn load(path: PathBuf, loader: &Loader) -> Result<Self> {
+    fn load(path: PathBuf, loader: &Loader) -> starlark::Result<Self> {
         let name = path
             .file_name()
             .context("modules always have filenames")?
@@ -243,10 +242,12 @@ fn globals() -> Globals {
 }
 
 impl FileLoader for Loader {
-    fn load(&self, path: &str) -> Result<FrozenModule> {
+    fn load(&self, path: &str) -> starlark::Result<FrozenModule> {
         let path = path.trim_start_matches('@');
         if path.starts_with(':') {
-            bail!("relative loads not allowed: {path}")
+            return Err(starlark::Error::new_other(anyhow!(
+                "relative loads not allowed: {path}"
+            )));
         }
         let path = match path.starts_with("//") {
             true => format!("{}{}", self.default_cell, path),
@@ -266,7 +267,7 @@ impl FileLoader for Loader {
             eval.eval_module(ast, &globals())
                 .map_err(starlark::Error::into_anyhow)?;
         }
-        module.freeze()
+        Ok(module.freeze()?)
     }
 }
 
@@ -281,7 +282,7 @@ struct Args {
     test_args: Vec<String>,
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let loader = Loader {
@@ -291,7 +292,7 @@ fn main() -> Result<()> {
 
     let mut modules = vec![];
     for src in args.test {
-        let module = TestModule::load(src, &loader)?;
+        let module = TestModule::load(src, &loader).into_anyhow_result()?;
         modules.push(module);
     }
 
