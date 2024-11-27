@@ -39,6 +39,7 @@ use starlark::values::list_or_tuple::UnpackListOrTuple;
 use starlark::values::starlark_value;
 use starlark::values::structs::AllocStruct;
 use starlark::values::AllocValue;
+use starlark::values::FreezeErrorContext;
 use starlark::values::NoSerialize;
 use starlark::values::StarlarkValue;
 use starlark::values::StringValue;
@@ -89,7 +90,9 @@ fn eval_and_freeze_module(
             .map_err(starlark::Error::into_anyhow)?;
     }
     Ok((
-        module.freeze().context("while freezing module")?,
+        module
+            .freeze()
+            .freeze_error_context("while freezing module")?,
         registry.0.into_inner().0,
     ))
 }
@@ -454,7 +457,7 @@ fn ir_to_module(m: ir::Module) -> anyhow::Result<FrozenModule> {
         }));
         module.set(&name, ty.alloc_value(module.heap()));
     }
-    module.freeze()
+    Ok(module.freeze()?)
 }
 
 fn starlark_to_ir(
