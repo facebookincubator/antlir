@@ -45,7 +45,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
 _image_command_alias = rule(
     impl = _impl,
     attrs = {
-        "args": attrs.list(attrs.string(), default = []),
+        "args": attrs.list(attrs.arg(), default = []),
         "exe": attrs.arg(),
         "labels": attrs.list(attrs.string(), default = []),
         "root": attrs.source(allow_directory = True),
