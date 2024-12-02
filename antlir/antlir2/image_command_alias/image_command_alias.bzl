@@ -27,16 +27,35 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     })
 
     def _with_anon_layer(layer: ProviderCollection) -> list[Provider]:
-        run_info = cmd_args(
+        cmd = cmd_args(
             ctx.attrs._command_alias[RunInfo],
             cmd_args(layer[LayerInfo].subvol_symlink, format = "--layer={}"),
             "--",
             ctx.attrs.exe,
             cmd_args(ctx.attrs.args),
         )
+        script = ctx.actions.declare_output("script.sh")
+        script, hidden = ctx.actions.write(
+            script,
+            cmd_args(
+                "#!/usr/bin/env bash",
+                "set -e",
+                '__SRC="${BASH_SOURCE[0]}"',
+                '__SRC="$(realpath "$__SRC")"',
+                '__SCRIPT_DIR=$(dirname "$__SRC")',
+                cmd_args("exec", cmd, '"$@"', delimiter = " \\\n  "),
+                "",
+                delimiter = "\n",
+                relative_to = (script, 1),
+                absolute_prefix = '"$__SCRIPT_DIR/"',
+            ),
+            with_inputs = True,
+            allow_args = True,
+            is_executable = True,
+        )
         return [
-            DefaultInfo(),
-            RunInfo(args = run_info),
+            DefaultInfo(script),
+            RunInfo(args = cmd_args(script, hidden = hidden)),
         ]
 
     return _anon_layer.promise.map(_with_anon_layer)
