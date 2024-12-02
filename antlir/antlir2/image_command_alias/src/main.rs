@@ -22,7 +22,7 @@ use clap::Parser;
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
-    layer: PathBuf,
+    root: PathBuf,
     #[clap(required(true), trailing_var_arg(true), allow_hyphen_values(true))]
     command: Vec<String>,
 }
@@ -36,7 +36,7 @@ fn main() -> Result<()> {
 
     antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
 
-    let mut builder = IsolationContext::builder(&args.layer);
+    let mut builder = IsolationContext::builder(&args.root);
     builder.ephemeral(true);
     #[cfg(facebook)]
     builder.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
@@ -48,7 +48,7 @@ fn main() -> Result<()> {
     // mount that in.
     let cwd_vec = cwd.components().collect::<Vec<_>>();
     if cwd_vec.len() > 1 {
-        let layer_root = fs::canonicalize(&args.layer)?;
+        let layer_root = fs::canonicalize(&args.root)?;
         for i in 1..=(cwd_vec.len() - 1) {
             let cwd_prefix = cwd_vec[1..=i].iter().collect::<PathBuf>();
             if !layer_root.join(&cwd_prefix).exists() {
