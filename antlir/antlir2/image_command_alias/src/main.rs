@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Component;
 use std::path::Path;
@@ -18,11 +19,14 @@ use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use json_arg::JsonFile;
 
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
     root: PathBuf,
+    #[clap(long)]
+    env: Option<JsonFile<BTreeMap<String, Vec<String>>>>,
     #[clap(required(true), trailing_var_arg(true), allow_hyphen_values(true))]
     command: Vec<String>,
 }
@@ -55,6 +59,16 @@ fn main() -> Result<()> {
                 builder.outputs(Path::new(&Component::RootDir).join(cwd_prefix));
                 break;
             }
+        }
+    }
+
+    if let Some(env) = args.env.map(JsonFile::into_inner) {
+        for (k, mut v) in env {
+            ensure!(
+                v.len() == 1,
+                "env var '{k}' expanded to multiple values: {v:#?}"
+            );
+            builder.setenv((k, v.remove(0)));
         }
     }
 

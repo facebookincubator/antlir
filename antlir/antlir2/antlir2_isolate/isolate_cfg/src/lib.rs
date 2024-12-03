@@ -414,6 +414,15 @@ impl<'a> IntoEnv<'a> for (&'a str, OsString) {
     }
 }
 
+impl<'a> IntoEnv<'a> for (String, String) {
+    fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>> {
+        HashMap::from([(
+            Cow::Owned(OsString::from(self.0)),
+            Cow::Owned(OsString::from(self.1)),
+        )])
+    }
+}
+
 impl<'a> IntoEnv<'a> for (String, OsString) {
     fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>> {
         HashMap::from([(Cow::Owned(OsString::from(self.0)), Cow::Owned(self.1))])

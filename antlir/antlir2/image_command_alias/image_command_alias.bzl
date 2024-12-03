@@ -11,9 +11,14 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     root = ensure_single_output(ctx.attrs.root)
+    if ctx.attrs.env:
+        env_json = ctx.actions.write_json("env.json", ctx.attrs.env)
+    else:
+        env_json = None
     cmd = cmd_args(
         ctx.attrs._command_alias[RunInfo],
         cmd_args(root, format = "--root={}"),
+        cmd_args(env_json, format = "--env={}") if env_json else cmd_args(),
         "--",
         ctx.attrs.exe,
         cmd_args(ctx.attrs.args),
@@ -46,6 +51,7 @@ _image_command_alias = rule(
     impl = _impl,
     attrs = {
         "args": attrs.list(attrs.arg(), default = []),
+        "env": attrs.dict(attrs.string(), attrs.arg(), default = {}),
         "exe": attrs.arg(),
         "labels": attrs.list(attrs.string(), default = []),
         "root": attrs.source(allow_directory = True),
