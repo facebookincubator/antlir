@@ -6,7 +6,8 @@
 
 set -ue -o pipefail
 data=$(cat "$1")
-if [[ "$data" != "hello world goodbye world" ]]; then
+if [[ "$data" != "hello world goodbye world !" ]]; then
     echo "Unexpected data in $1" >&2
+    echo "$data"
     exit 1
 fi

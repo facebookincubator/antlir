@@ -27,7 +27,8 @@ out_file=$(echo "${@: -1}")
 set -- "${@:1:$(($#-1))}"
 
 # Write remaining arguments to output file.
-echo $@ > $out_file
+echo -n $@ > $out_file
+echo "$SUFFIX" >> $out_file
 """,
         ),
         feature.rpms_install(rpms = [
@@ -49,7 +50,7 @@ image_command_alias(
 buck_genrule(
     name = "run-command-alias-echo",
     out = "out-file",
-    cmd = "$(exe :command-alias-echo) goodbye world > $OUT",
+    cmd = "$(exe :command-alias-echo) goodbye world ! > $OUT",
 )
 
 # Test running a command in an image and capturing its stdout
@@ -65,6 +66,9 @@ image_command_alias(
         "hello",
         "world",
     ],
+    env = {
+        "SUFFIX": " !",
+    },
     exe = "/bin/command-alias-write",
     layer = ":layer",
 )
