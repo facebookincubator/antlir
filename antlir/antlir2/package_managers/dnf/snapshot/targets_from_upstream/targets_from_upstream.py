@@ -13,6 +13,7 @@
 import argparse
 import pprint
 import shutil
+import sys
 import tempfile
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -153,7 +154,11 @@ def main(args) -> None:
     repos = {}
     rpms = {}
     for base_url in args.baseurls:
-        snap = snapshot_repo(args, base_url)
+        try:
+            snap = snapshot_repo(args, base_url)
+        except Exception:
+            print(f"Failed to snapshot {base_url}", file=sys.stderr)
+            raise
         repo_dir = args.dst / base_url.path.lstrip("/")
         buck_file = repo_dir / "BUCK"
         buck_file.parent.mkdir(parents=True, exist_ok=True)
