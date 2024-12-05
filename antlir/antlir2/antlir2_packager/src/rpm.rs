@@ -26,7 +26,6 @@ use nix::unistd::Group;
 use nix::unistd::Uid;
 use nix::unistd::User;
 use serde::Deserialize;
-use tempfile::NamedTempFile;
 
 use crate::run_cmd;
 use crate::BuildAppliance;
@@ -330,17 +329,17 @@ AutoProv: {autoprov}
             spec.push_str(extra_file);
             spec.push('\n');
         }
-        let mut rpm_spec_file =
-            NamedTempFile::new().context("failed to create tempfile for rpm spec")?;
-        rpm_spec_file
-            .write(spec.as_bytes())
-            .context("while writing rpm spec file")?;
 
         let output_dir = tempfile::tempdir().context("while creating temp dir for rpm output")?;
-
         // create the arch-specific output dir explicitly so that it'll be
         // owned by the build user on the host, not root
         std::fs::create_dir(output_dir.path().join(arch)).context("while creating output dir")?;
+
+        // Note we use a standard dir for /tmp rather than tmpfs because we write full
+        // build artifacts here, and can thus easily run out of ramdisk
+        let tmp = tempfile::tempdir().context("while creating temp dir for rpm build")?;
+        let rpm_spec_file = tmp.path().join("rpmspec");
+        std::fs::write(rpm_spec_file, spec.as_bytes()).context("while writing rpm spec file")?;
 
         let mut isol_context = IsolationContext::builder(self.build_appliance.path());
         isol_context
@@ -353,10 +352,9 @@ AutoProv: {autoprov}
                 std::env::current_dir()?,
             ))
             .working_directory(Path::new("/__antlir2__/working_directory"))
-            .inputs((Path::new("/tmp/rpmspec"), rpm_spec_file.path()))
             .inputs((Path::new("/__antlir2__/root"), layer))
             .outputs((Path::new("/__antlir2__/out"), output_dir.path()))
-            .tmpfs(Path::new("/tmp"))
+            .outputs((Path::new("/tmp"), tmp.path()))
             .tmpfs(Path::new("/dev"))
             .inputs(Path::new("/dev/null"));
         #[cfg(facebook)]
