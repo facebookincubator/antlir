@@ -290,6 +290,11 @@ _rpm, _rpm_anon = _new_package_rule(
         "changelog": attrs.option(attrs.string(), default = None),
         "conflicts": attrs.list(attrs.string(), default = []),
         "description": attrs.option(attrs.string(), default = None),
+        "dirs": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "List of directories that will be explictly 'owned' by the rpm. Dirs must already exist in the package contents.",
+        ),
         "disable_build_id_links": attrs.bool(default = False),
         "disable_ldconfig": attrs.bool(default = False),
         "disable_strip": attrs.bool(default = False),

@@ -73,6 +73,8 @@ pub struct Rpm {
     #[serde(default)]
     extra_files: Vec<String>,
     #[serde(default)]
+    dirs: Vec<String>,
+    #[serde(default)]
     python_bytecompile: bool,
     #[serde(default)]
     autoreq: bool,
@@ -328,6 +330,9 @@ AutoProv: {autoprov}
         for extra_file in &self.extra_files {
             spec.push_str(extra_file);
             spec.push('\n');
+        }
+        for dir in &self.dirs {
+            spec.push_str(&format!("%dir {dir}\n"));
         }
 
         let output_dir = tempfile::tempdir().context("while creating temp dir for rpm output")?;
