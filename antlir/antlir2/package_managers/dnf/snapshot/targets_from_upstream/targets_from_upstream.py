@@ -108,9 +108,7 @@ def snapshot_repo(args, base_url: ParseResult) -> SnapshottedRepo:
         ):
             target_name = f"{pkg.epoch}-{pkg.version}-{pkg.release}.{pkg.arch}-{pkg.pkgId[:5]}".replace(
                 "^", "_"
-            ).replace(
-                ":", "_"
-            )
+            ).replace(":", "_")
             url = urljoin(base_url, pkg.location_href)
             pkg.location_href = str(
                 Path("Packages") / pkg.pkgId / (pkg.nevra() + ".rpm")

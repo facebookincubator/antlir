@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 "Common CLI boilerplate for Antlir binaries."
+
 import argparse
 import os
 import sys

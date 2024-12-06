@@ -20,6 +20,7 @@ itself.
 
 Future: Once `deepfrozen` is landed, this sort of thing should get nicer.
 """
+
 from collections.abc import Mapping
 from enum import Enum
 from types import MappingProxyType
