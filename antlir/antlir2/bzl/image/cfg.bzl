@@ -53,13 +53,16 @@ def attrs_selected_by_cfg():
                 # default_os (TODO(T168220644)) and this is not an option, this
                 # can be removed.
                 "DEFAULT": None,
+                "antlir//antlir/antlir2/os:centos10": internal_external(
+                    fb = "antlir//antlir/antlir2/facebook/flavor/centos10:centos10",
+                    oss = "//flavor/centos10:centos10",
+                ),
                 "antlir//antlir/antlir2/os:centos9": internal_external(
                     fb = "antlir//antlir/antlir2/facebook/flavor/centos9:centos9",
                     oss = "//flavor/centos9:centos9",
                 ),
             } | internal_external(
                 fb = {
-                    "antlir//antlir/antlir2/os:centos10": "antlir//antlir/antlir2/facebook/flavor/centos10:centos10",
                     "antlir//antlir/antlir2/os:centos8": "antlir//antlir/antlir2/facebook/flavor/centos8:centos8",
                     "antlir//antlir/antlir2/os:eln": "antlir//antlir/antlir2/facebook/flavor/eln:eln",
                     "antlir//antlir/antlir2/os:none": "antlir//antlir/antlir2/flavor:none",

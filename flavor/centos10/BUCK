@@ -1,0 +1,55 @@
+load("//antlir/antlir2/bzl/flavor:defs.bzl", "flavor")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/bzl/image:build_appliance.bzl", "build_appliance")
+
+flavor(
+    name = "centos10",
+    default_build_appliance = ":build-appliance.prebuilt",
+    default_dnf_repo_set = "generated//snapshot/rpm/centos10:repos",
+    default_dnf_versionlock = "//antlir/antlir2/package_managers/dnf/build_appliance:empty-dnf-versionlock.json",
+    visibility = ["PUBLIC"],
+)
+
+sha256 = "2fc8bca9d8609a594d6258d47b93f17dad2f5ff98bc2129f5794b9a98e66d40a"
+sha1 = "712adb0f0a06bc55a14200b6a58adc11a31de47f"
+
+http_archive(
+    name = "build-appliance.tar.zst",
+    urls = [
+        "https://antlir.s3.us-east-2.amazonaws.com/build_appliance/" +
+        "centos10_{}.tar.zst".format(sha256),
+    ],
+    sha256 = sha256,
+    sha1 = sha1,
+)
+
+build_appliance(
+    name = "build-appliance.prebuilt",
+    src = ":build-appliance.tar.zst",
+    visibility = [
+        "antlir//antlir/antlir2/flavor:none",
+    ],
+)
+
+image.layer(
+    name = "build-appliance",
+    build_appliance = ":build-appliance.prebuilt",
+    features = [
+        "//antlir/antlir2/build_appliance:features",
+    ],
+)
+
+package.unprivileged_dir(
+    name = "build-appliance.dir",
+    layer = ":build-appliance",
+)
+
+buck_genrule(
+    name = "build-appliance.impl.tar.zst",
+    cmd = """
+        tar -cf $TMP/ba.tar -C $(location :build-appliance.dir) .
+        zstd $TMP/ba.tar -o $OUT
+    """,
+)
