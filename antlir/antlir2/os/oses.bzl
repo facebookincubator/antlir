@@ -76,6 +76,6 @@ else:
         _new_os(
             name = "centos8",
             architectures = [arch_t("x86_64")],
-            flavor = None,
+            flavor = "antlir//antlir/antlir2/flavor:none",
         ),
     )
