@@ -20,6 +20,20 @@ def _os_version_rule_impl(ctx: AnalysisContext) -> list[Provider]:
             family = ctx.attrs.family,
             package_manager = ctx.attrs.package_manager,
         ),
+        PlatformInfo(
+            label = str(ctx.label.raw_target()),
+            configuration = ConfigurationInfo(
+                constraints = {
+                    v[ConstraintValueInfo].setting.label: v[ConstraintValueInfo]
+                    for v in [
+                        ctx.attrs.constraint,
+                        ctx.attrs.family,
+                        ctx.attrs.package_manager,
+                    ]
+                },
+                values = {},
+            ),
+        ),
     ]
 
 _os_version_rule = rule(
@@ -56,4 +70,5 @@ def os_version(
         constraint = ":{}.constraint".format(name),
         config_setting = ":{}.config".format(name),
         package_manager = package_manager,
+        visibility = ["PUBLIC"],
     )
