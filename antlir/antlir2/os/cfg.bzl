@@ -5,15 +5,12 @@
 
 load("//antlir/bzl:build_defs.bzl", "internal_external", "is_facebook")
 load(":defs.bzl", "OsVersionInfo")
+load(":oses.bzl", "OSES")
 
 _OS_REFS = {
-    "os.centos10": "antlir//antlir/antlir2/os:centos10",
-    "os.centos8": "antlir//antlir/antlir2/os:centos8",
-    "os.centos9": "antlir//antlir/antlir2/os:centos9",
-    "os.eln": "antlir//antlir/antlir2/os:eln",
-    "os.none": "antlir//antlir/antlir2/os:none",
-    "os.rhel8": "antlir//antlir/antlir2/os:rhel8",
-    "os.rhel8.8": "antlir//antlir/antlir2/os:rhel8.8",
+    "os." + os.name: os.target
+    for os in OSES
+} | {
     "os_constraint": "antlir//antlir/antlir2/os:os",
     "os_family_constraint": "antlir//antlir/antlir2/os/family:family",
     "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",

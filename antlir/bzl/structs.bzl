@@ -10,7 +10,7 @@ Forwards-and-backwards compatible utilities for dealing with structs.
 def _is_struct(s):
     return type(s) == type(struct()) or hasattr(s, "_asdict") or hasattr(s, "to_json")
 
-def struct_to_dict(s):
+def _to_dict(s):
     if hasattr(s, "_asdict"):
         return dict(s._asdict())
 
@@ -18,13 +18,19 @@ def struct_to_dict(s):
     # results of dir(some_struct) strip those out.
     return {attr: getattr(s, attr) for attr in dir(s) if attr not in ["to_json", "to_proto"]}
 
+# Provided as an alternative to struct(**kwargs) to avoid linter complaints in
+# BUCK files
+def _from_dict(dct):
+    return struct(**dct)
+
 def _as_json(s):
     # To avoid a warning about not using native
     my_native = native
     return my_native.json.encode(s)
 
 structs = struct(
-    to_dict = struct_to_dict,
+    to_dict = _to_dict,
+    from_dict = _from_dict,
     # Important: We can't call this to_json, since some structs already
     # have to_json as a member, so have to call it as_json
     as_json = _as_json,
