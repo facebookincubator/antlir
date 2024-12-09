@@ -16,7 +16,7 @@ package_feature = enum(
 
 _feature_deps = {
     package_feature("dot_meta"): [
-        "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck2/buck_label:buck_label",
     ],
     package_feature("xattr"): [
         "xattr",
