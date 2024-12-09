@@ -13,6 +13,7 @@ os_t = record(
     select_key = str,
     flavor = str,
     target = str,
+    has_platform_toolchain = bool,
 )
 
 def _new_os(name: str, **kwargs):
@@ -29,6 +30,7 @@ def _new_os(name: str, **kwargs):
         ) + name + ":" + name,
     )
     kwargs.setdefault("target", "antlir//antlir/antlir2/os:" + name)
+    kwargs.setdefault("has_platform_toolchain", True)
     return os_t(
         name = name,
         **kwargs
@@ -39,6 +41,7 @@ OSES = [
         name = "none",
         select_key = "antlir//antlir/antlir2/os:none",
         flavor = "antlir//antlir/antlir2/flavor:none",
+        has_platform_toolchain = False,
     ),
     _new_os(
         name = "centos9",

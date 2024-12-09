@@ -1,0 +1,41 @@
+load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
+
+oncall("antlir")
+
+# Provide a constraint that can be used to turn on antlir2 toolchain or not
+constraint_setting(
+    name = "target",
+    visibility = [],
+)
+
+# Mark that a build is configured to target an antlir system platform (in other
+# words, not the fbcode platform)
+constraint_value(
+    name = "build-for-distro",
+    constraint_setting = ":target",
+    visibility = ["//antlir/distro/platform:"],
+)
+
+# Constraint that can be used to basically say "this is not compatible with any platform"
+# At first glance this sounds totally useless, but our true compatibility matrix
+# is fairly complicated:
+# For example, a system-built binary (or library) target is only compatible with
+# the OSes that we support (eg centos 8, 9, and 10), but within a given OS,
+# there might be additional constraints. For example, centos8 does not have any
+# support for aarch64, so a target configured for centos8 is only compatible
+# with x86_64 CPUs. However, there's no way to express *in*compatibility, so
+# instead we tell buck2 "if this is configured for centos8 and aarch64, it's not
+# actually compatible with anything".
+#
+# Typically, rules would instead use 'ovr_config//:none', but that doesn't exist
+# in OSS and it's easier to just redefine it here, along with a little comment
+# for confused users to maybe find.
+constraint_setting(
+    name = "incompatible-setting",
+)
+
+constraint_value(
+    name = "incompatible",
+    constraint_setting = ":incompatible-setting",
+    visibility = ["PUBLIC"],
+)

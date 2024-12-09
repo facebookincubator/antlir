@@ -1,0 +1,5 @@
+load(":defs.bzl", "define_platforms")
+
+oncall("antlir")
+
+define_platforms()
