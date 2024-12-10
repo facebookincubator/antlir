@@ -243,9 +243,4 @@ repo(
 antlir2_configured_alias(
     name = "test-repo",
     actual = ":test-repo-impl",
-    #default_os = "centos9",
-    default_os = select({
-        "//antlir/antlir2/os:centos8": "centos9",
-        "DEFAULT": None,
-    }),
 )
