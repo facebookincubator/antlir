@@ -32,7 +32,7 @@ def _image_platform(
             # Basic configuration info about the platform
             "ovr_config//os/constraints:linux",
             # TODO: figure out how to build sanitized binaries?
-            "ovr_config//build_mode/constraints:no-san",
+            # @oss-disable
             _cpu_label(arch, constraint = True),
         ],
         visibility = ["PUBLIC"],
