@@ -9,7 +9,6 @@ def write_os(path: str):
     return feature.install_text(
         dst = path,
         text = select({
-            "//antlir/antlir2/os:centos8": "centos8",
             "//antlir/antlir2/os:centos9": "centos9",
             "//antlir/antlir2/os:eln": "eln",
         }),
