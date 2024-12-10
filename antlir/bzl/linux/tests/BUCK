@@ -1,7 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
-load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
 oncall("antlir")
@@ -129,14 +128,3 @@ image_python_test(
         "//antlir:fs_utils",
     ],
 )
-
-image_python_test(
-    name = "test-os-release-c8",
-    srcs = ["test_os_release.py"],
-    default_os = "centos8",
-    env = {"CENTOS": "8"},
-    layer = ":test-layer-os-release",
-    deps = [
-        "//antlir:fs_utils",
-    ],
-) if is_facebook else None

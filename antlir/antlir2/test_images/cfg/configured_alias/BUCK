@@ -6,16 +6,10 @@ oncall("antlir")
 export_file(
     name = "f",
     src = select({
-        "//antlir/antlir2/os:centos8": "c8",
+        "//antlir/antlir2/os:centos10": "c10",
         "//antlir/antlir2/os:centos9": "c9",
         "DEFAULT": "default",
     }),
-)
-
-antlir2_configured_alias(
-    name = "f.c8",
-    actual = ":f",
-    default_os = "centos8",
 )
 
 antlir2_configured_alias(
@@ -24,12 +18,18 @@ antlir2_configured_alias(
     default_os = "centos9",
 )
 
+antlir2_configured_alias(
+    name = "f.c10",
+    actual = ":f",
+    default_os = "centos10",
+)
+
 python_unittest(
     name = "test",
     srcs = ["test.py"],
     resources = {
         ":f": "f.default",
-        ":f.c8": "f.centos8",
+        ":f.c10": "f.centos10",
         ":f.c9": "f.centos9",
     },
 )
