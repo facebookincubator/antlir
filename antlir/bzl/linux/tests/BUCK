@@ -69,7 +69,6 @@ image_python_test(
 linux.release.file(
     name = "release-vcs",
     compatible_with = [
-        "//antlir/antlir2/os:centos8",
         "//antlir/antlir2/os:centos9",
         "//antlir/antlir2/os:eln",
     ],
@@ -82,7 +81,6 @@ linux.release.file(
 linux.release.file(
     name = "release-custom-name",
     compatible_with = [
-        "//antlir/antlir2/os:centos8",
         "//antlir/antlir2/os:centos9",
         "//antlir/antlir2/os:eln",
     ],

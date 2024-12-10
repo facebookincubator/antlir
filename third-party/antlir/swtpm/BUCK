@@ -17,7 +17,6 @@ third_party.build(
     name = "swtpm",
     src = third_party.source("swtpm"),
     compatible_with_os = [
-        "centos8",
         "centos9",
     ],
     features = [
@@ -43,18 +42,8 @@ third_party.build(
             "glibc-static",
             "glib2-static",
             "pcre-static",
+            "python3",
         ]),
-        feature.rpms_install(
-            subjects = select({
-                "//antlir/antlir2/os:centos8": [
-                    "gcc-toolset-9-binutils",
-                    "python38",
-                ],
-                "//antlir/antlir2/os:centos9": [
-                    "python3",
-                ],
-            }),
-        ),
     ],
     script = third_party.script(
         build = """

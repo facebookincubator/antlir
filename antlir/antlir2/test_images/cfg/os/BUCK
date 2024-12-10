@@ -12,7 +12,6 @@ oncall("antlir")
 
 OSES = internal_external(
     fb = [
-        "centos8",
         "centos9",
         "eln",
     ],
@@ -120,7 +119,6 @@ image.layer(
                 feature.install_text(
                     dst = "/test_rpm_" + level,
                     text = select({
-                        "//antlir/antlir2/os:centos8": "centos8",
                         "//antlir/antlir2/os:centos9": "centos9",
                         "//antlir/antlir2/os:eln": "eln",
                         "DEFAULT": "default",
@@ -136,12 +134,6 @@ image.layer(
             license = "None",
             release = "1",
             requires = select({
-                # Can't know what the exact version is, so do a >= on the major
-                # and < on major+1 to match things like 8.6 for c8
-                "//antlir/antlir2/os:centos8": [
-                    "centos-stream-release >= 8",
-                    "centos-stream-release < 9",
-                ],
                 "//antlir/antlir2/os:centos9": [
                     "centos-stream-release >= 9",
                     "centos-stream-release < 10",
@@ -153,7 +145,6 @@ image.layer(
             }),
             rpm_name = "test-rpm-" + level,
             version = select({
-                "//antlir/antlir2/os:centos8": "centos8",
                 "//antlir/antlir2/os:centos9": "centos9",
                 "//antlir/antlir2/os:eln": "eln",
                 "DEFAULT": "default",
@@ -169,7 +160,6 @@ image.layer(
             rpm_name = "test-rpm-" + level,
             sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
             version = select({
-                "//antlir/antlir2/os:centos8": "centos8",
                 "//antlir/antlir2/os:centos9": "centos9",
                 "//antlir/antlir2/os:eln": "eln",
                 "DEFAULT": "default",

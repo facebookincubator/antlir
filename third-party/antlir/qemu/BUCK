@@ -13,7 +13,6 @@ third_party.build(
     name = "qemu",
     src = third_party.source("qemu"),
     compatible_with_os = [
-        "centos8",
         "centos9",
     ],
     features = [
@@ -41,16 +40,9 @@ third_party.build(
             "sed",
             "socat",
             "tpm-tools",
+            "python3-sphinx",
+            "python3-sphinx_rtd_theme",
         ]),
-        feature.rpms_install(
-            subjects = select({
-                "//antlir/antlir2/os:centos8": ["sphinx"],
-                "//antlir/antlir2/os:centos9": [
-                    "python3-sphinx",
-                    "python3-sphinx_rtd_theme",
-                ],
-            }),
-        ),
     ],
     script = third_party.script(
         build = "make",

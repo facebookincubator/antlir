@@ -29,7 +29,7 @@ def test_variants(
         ("root", "nobody"),
         (True, False),
         internal_external(
-            fb = ("centos8", "centos9", "centos10"),
+            fb = ("centos9", "centos10"),
             oss = ("centos9",),
         ),
     ):
