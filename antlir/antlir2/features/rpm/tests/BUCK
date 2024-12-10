@@ -300,16 +300,10 @@ test_rpms(
 alias(
     name = "flavor-versionlock",
     actual = internal_external(
-        fb = select({
-            "//antlir/antlir2/os:centos8": "//antlir/antlir2/facebook/flavor/centos8:centos8[default_versionlock]",
-            "//antlir/antlir2/os:centos9": "//antlir/antlir2/facebook/flavor/centos9:centos9[default_versionlock]",
-        }),
-        oss = select({
-            "//antlir/antlir2/os:centos9": "//flavor/centos9:centos9[default_versionlock]",
-        }),
+        fb = "//antlir/antlir2/facebook/flavor/centos9:centos9[default_versionlock]",
+        oss = "//flavor/centos9:centos9[default_versionlock]",
     ),
     compatible_with = [
-        "//antlir/antlir2/os:centos8",
         "//antlir/antlir2/os:centos9",
     ],
 )
@@ -321,7 +315,6 @@ buck_genrule(
         jq '.foo = "2-1"' < $(location :flavor-versionlock) > $OUT
     """,
     compatible_with = [
-        "//antlir/antlir2/os:centos8",
         "//antlir/antlir2/os:centos9",
     ],
 )
@@ -362,7 +355,6 @@ buck_genrule(
         jq '.foo = "99-1"' < $(location :flavor-versionlock) > $OUT
     """,
     compatible_with = [
-        "//antlir/antlir2/os:centos8",
         "//antlir/antlir2/os:centos9",
     ],
 )
