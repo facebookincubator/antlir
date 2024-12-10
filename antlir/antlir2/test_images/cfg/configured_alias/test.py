@@ -12,6 +12,6 @@ class Test(unittest.TestCase):
         super().setUp()
 
     def test_configured_alias(self) -> None:
-        for variant in ["centos8", "centos9", "default"]:
+        for variant in ["centos9", "centos10", "default"]:
             with self.subTest(variant):
                 self.assertEqual(variant + "\n", read_text(__package__, "f." + variant))
