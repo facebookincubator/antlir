@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 load("//antlir/distro/platform:defs.bzl", "alias_for_current_image_platform", "default_image_platform")
 
@@ -20,26 +21,10 @@ prelude.cxx_binary(
     ],
     default_target_platform = default_image_platform("centos9"),
     deps = [
+        "//antlir/distro/deps:jsoncpp",
         "//antlir/distro/deps:libstdc++",
+        "//antlir/distro/deps:rpm",
     ],
-)
-
-prelude.configured_alias(
-    name = "main-for-c10",
-    actual = ":main",
-    platform = select({
-        "ovr_config//cpu:arm64": "//antlir/distro/platform:centos10-aarch64",
-        "ovr_config//cpu:x86_64": "//antlir/distro/platform:centos10-x86_64",
-    }),
-)
-
-prelude.configured_alias(
-    name = "main-for-c9",
-    actual = ":main",
-    platform = select({
-        "ovr_config//cpu:arm64": "//antlir/distro/platform:centos9-aarch64",
-        "ovr_config//cpu:x86_64": "//antlir/distro/platform:centos9-x86_64",
-    }),
 )
 
 alias_for_current_image_platform(
@@ -48,28 +33,46 @@ alias_for_current_image_platform(
 )
 
 image.layer(
+    name = "main-rpm-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/test"),
+        feature.install(
+            src = ":main-for-os",
+            dst = select({
+                "//antlir/antlir2/os:centos10": "/test/main-for-centos10",
+                "//antlir/antlir2/os:centos9": "/test/main-for-centos9",
+            }),
+            never_use_dev_binary_symlink = True,
+        ),
+    ],
+    target_compatible_with = select({
+        "//antlir/antlir2/os:centos10": [],
+        "//antlir/antlir2/os:centos9": [],
+        "DEFAULT": ["antlir//antlir/distro:incompatible"],
+    }),
+)
+
+# Package up the binary into an rpm so that RPM automatically finds the
+# dependencies for system libraries and it can be safely installed into an image
+package.rpm(
+    name = "main-rpm",
+    compatible_with = [
+        "//antlir/antlir2/os:centos10",
+        "//antlir/antlir2/os:centos9",
+    ],
+    layer = ":main-rpm-layer",
+    license = "NONE",
+    rpm_name = "main",
+)
+
+image.layer(
     name = "test-layer",
     features = [
         feature.rpms_install(rpms = [
             "binutils",
             "coreutils",
-            "libstdc++",
         ]),
-        feature.ensure_dirs_exist(
-            dirs = "/test",
-        ),
-        feature.install(
-            src = ":main-for-os",
-            dst = "/test/main",
-        ),
-        feature.install(
-            src = ":main-for-c10",
-            dst = "/test/main-for-centos10",
-        ),
-        feature.install(
-            src = ":main-for-c9",
-            dst = "/test/main-for-centos9",
-        ),
+        feature.rpms_install(rpms = [":main-rpm"]),
     ],
 )
 

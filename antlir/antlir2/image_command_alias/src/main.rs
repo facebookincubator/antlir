@@ -75,8 +75,7 @@ fn main() -> Result<()> {
     builder
         .working_directory(cwd.as_path())
         .tmpfs(Path::new("/tmp"))
-        // TODO(vmagro): make this a devtmpfs after resolving permissions issues
-        .tmpfs(Path::new("/dev"));
+        .devtmpfs(Path::new("/dev"));
 
     let isol = unshare(builder.build())?;
     let mut cmd = isol.command(args.command.remove(0))?;

@@ -5,9 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include <json/json.h>
+#include <rpm/rpmlib.h>
 #include <iostream>
 
 int main(int argc, char** argv) {
-  std::cout << "Hello, world!" << std::endl;
+  Json::Value root;
+  root["clang_version"] = __clang_version__;
+  root["rpmlib_version"] = RPMVERSION;
+  std::cout << root << std::endl;
   return 0;
 }

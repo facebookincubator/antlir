@@ -1,6 +1,8 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
+load(":pkgconfig.bzl", "image_pkgconfig_library")
 
 oncall("antlir")
 
@@ -35,5 +37,49 @@ prelude.prebuilt_cxx_library(
         "-lstdc++",
     ],
     exported_preprocessor_flags = ["-std=c++20"],
+    visibility = ["PUBLIC"],
+)
+
+image.layer(
+    name = "base",
+    features = [
+        feature.rpms_install(rpms = [
+            "glibc-devel",  # undeclared dep of a lot of libraries
+            "rpm",
+            "pkgconf-pkg-config",  # pkg-config cli
+        ]),
+        feature.install(
+            src = "pkgconfig_action.sh",
+            dst = "/usr/bin/pkgconfig-action",
+            mode = "a+rx",
+        ),
+    ],
+    rootless = True,
+    visibility = ["PUBLIC"],
+)
+
+package.unprivileged_dir(
+    name = "base-root-dir",
+    dot_meta = False,
+    layer = ":base",
+    rootless = True,
+    visibility = [":pkgconfig-action"],
+)
+
+image_command_alias(
+    name = "pkgconfig-action",
+    exe = "pkgconfig-action",
+    root = ":base-root-dir",
+    rootless = True,
+    visibility = ["PUBLIC"],
+)
+
+image_pkgconfig_library(
+    name = "rpm",
+    visibility = ["PUBLIC"],
+)
+
+image_pkgconfig_library(
+    name = "jsoncpp",
     visibility = ["PUBLIC"],
 )
