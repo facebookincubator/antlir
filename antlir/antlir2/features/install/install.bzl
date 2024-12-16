@@ -15,7 +15,7 @@ load(
     "ParseTimeFeature",
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/bzl:build_defs.bzl", "internal_external")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:stat.bzl", "stat")
 
 default_permissions = record(

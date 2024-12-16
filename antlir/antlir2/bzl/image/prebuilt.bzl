@@ -11,7 +11,7 @@ load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerContents", "LayerInfo")
-load("//antlir/bzl:build_defs.bzl", "internal_external")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":facts.bzl", "facts")
 
 PrebuiltImageInfo = provider(fields = [

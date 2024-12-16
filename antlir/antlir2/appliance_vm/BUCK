@@ -1,4 +1,5 @@
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "internal_external")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 

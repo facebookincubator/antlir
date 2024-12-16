@@ -15,8 +15,10 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "internal_external", "is_facebook", "python_unittest", "rust_unittest")
+load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
+
+load("//antlir/bzl:internal_external.bzl", "internal_external", "is_facebook")
 
 HIDE_TEST_LABELS = [special_tags.disabled, special_tags.test_is_invisible_to_testpilot]
 

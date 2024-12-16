@@ -1,4 +1,5 @@
-load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "is_facebook", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "rust_binary")
+load("//antlir/bzl:internal_external.bzl", "is_facebook")
 
 oncall("antlir")
 

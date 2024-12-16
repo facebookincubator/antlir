@@ -2,7 +2,8 @@ load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "internal_external")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 

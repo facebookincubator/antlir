@@ -29,7 +29,7 @@ load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep_analyze")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/bzl:build_defs.bzl", "internal_external")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 def extract_from_layer(
         layer: str | Select,

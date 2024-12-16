@@ -1,5 +1,6 @@
 # @oss-disable
-load("//antlir/bzl:build_defs.bzl", "alias", "internal_external", "rust_bindgen_library", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "alias", "rust_bindgen_library", "rust_library")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 
