@@ -6,13 +6,13 @@
  */
 
 #include <json/json.h>
-#include <rpm/rpmlib.h>
 #include <iostream>
+#include "dep.h"
 
 int main(int argc, char** argv) {
   Json::Value root;
   root["clang_version"] = __clang_version__;
-  root["rpmlib_version"] = RPMVERSION;
+  root["rpmlib_version"] = dep_get_rpmlib_version();
   std::cout << root << std::endl;
   return 0;
 }

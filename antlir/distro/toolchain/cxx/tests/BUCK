@@ -3,6 +3,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+load("//antlir/bzl:build_defs.bzl", "cpp_library")
 load("//antlir/distro/platform:defs.bzl", "alias_for_current_image_platform", "default_image_platform")
 
 oncall("antlir")
@@ -21,8 +22,20 @@ prelude.cxx_binary(
     ],
     default_target_platform = default_image_platform("centos9"),
     deps = [
+        ":dep",
         "//antlir/distro/deps:jsoncpp",
         "//antlir/distro/deps:libstdc++",
+    ],
+)
+
+cpp_library(
+    # @autodeps-skip
+    name = "dep",
+    srcs = ["dep.cpp"],
+    headers = ["dep.h"],
+    _cxx_toolchain = "//antlir/distro/toolchain/cxx:toolchain",
+    default_target_platform = default_image_platform("centos9"),
+    deps = [
         "//antlir/distro/deps:rpm",
     ],
 )
