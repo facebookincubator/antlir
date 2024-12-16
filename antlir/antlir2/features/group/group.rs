@@ -17,7 +17,6 @@ use antlir2_users::group::GroupRecord;
 use antlir2_users::uidmaps::UidMap;
 use antlir2_users::GroupId;
 use antlir2_users::Id;
-use antlir2_users::Password;
 use anyhow::Context;
 use serde::Deserialize;
 use serde::Serialize;
@@ -54,11 +53,10 @@ impl antlir2_compile::CompileFeature for Group {
         let gid = get_gid(&self.gid, &self.uidmap, &self.groupname)?;
         let record = GroupRecord {
             name: self.groupname.to_owned().into(),
-            password: Password::Shadow,
             gid,
             users: Vec::new(),
         };
-        groups_db.push(record);
+        groups_db.push(record)?;
         std::fs::write(ctx.dst_path("/etc/group")?, groups_db.to_string())?;
         Ok(())
     }
