@@ -1,7 +1,8 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
-load("//antlir/bzl:build_defs.bzl", "is_facebook", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:internal_external.bzl", "is_facebook")
 
 oncall("antlir")
 

@@ -7,7 +7,8 @@ load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load(":build_defs.bzl", "buck_genrule", "internal_external", third_party_shim = "third_party")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
+load(":build_defs.bzl", "buck_genrule", third_party_shim = "third_party")
 load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third-party-build"

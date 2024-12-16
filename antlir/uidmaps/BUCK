@@ -1,5 +1,6 @@
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/bzl:build_defs.bzl", "alias", "export_file", "internal_external")
+load("//antlir/bzl:build_defs.bzl", "alias", "export_file")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 # @oss-disable
 
 oncall("antlir")

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:build_defs.bzl", "internal_external")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 def _product(*iterables):
     # product('ABCD', 'xy') → Ax Ay Bx By Cx Cy Dx Dy

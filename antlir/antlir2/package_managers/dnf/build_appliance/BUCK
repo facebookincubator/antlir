@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl:json_file.bzl", "json_file")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
-load("//antlir/bzl:build_defs.bzl", "internal_external")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 

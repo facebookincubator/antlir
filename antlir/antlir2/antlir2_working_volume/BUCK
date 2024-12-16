@@ -1,6 +1,7 @@
 # @oss-disable
 load("@prelude//utils:buckconfig.bzl", "read_bool")
-load("//antlir/bzl:build_defs.bzl", "is_facebook", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:internal_external.bzl", "is_facebook")
 
 oncall("antlir")
 

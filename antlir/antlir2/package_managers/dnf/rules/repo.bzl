@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/bzl:build_defs.bzl", "is_facebook")
+load("//antlir/bzl:internal_external.bzl", "is_facebook")
 load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
 RepoInfo = provider(fields = [

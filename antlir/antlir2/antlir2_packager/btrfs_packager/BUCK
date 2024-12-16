@@ -1,4 +1,5 @@
-load("//antlir/bzl:build_defs.bzl", "internal_external", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 

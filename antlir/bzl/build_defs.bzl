@@ -10,6 +10,7 @@ load("@prelude//utils:selects.bzl", "selects")
 # FB-internal contributors will be less likely to accidentally break
 # open-source by starting to use un-shimmed features.
 load(":build_defs_impl.bzl", "shim")
+load(":internal_external.bzl", "is_facebook")
 
 def _third_party_libraries(names, platform = None):
     return [
@@ -56,7 +57,7 @@ def _rust_common(rule, **kwargs):
     if rule != shim.rust_unittest and rule != shim.rust_python_extension and rule != shim.rust_bindgen_library:
         kwargs["unittests"] = False
 
-    if shim.is_facebook:
+    if is_facebook:
         deps = selects.apply(kwargs.pop("deps", []), lambda deps: [_ensure_dep_is_public(dep) for dep in deps])
         kwargs["deps"] = selects.apply(deps, lambda deps: deps + list(kwargs.pop("fb_deps", [])))
         if kwargs.get("unittests", False):
@@ -132,12 +133,6 @@ echo = rule(
     attrs = {"content": attrs.string()},
 )
 
-def internal_external(*, fb, oss):
-    if is_facebook:
-        return fb
-    else:
-        return oss
-
 cpp_binary = shim.cpp_binary
 cpp_library = shim.cpp_library
 cpp_unittest = shim.cpp_unittest
@@ -155,7 +150,6 @@ export_file = shim.export_file
 get_visibility = shim.get_visibility
 http_file = shim.http_file
 http_archive = shim.http_archive
-is_facebook = shim.is_facebook
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 target_utils = shim.target_utils
 alias = shim.alias

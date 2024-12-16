@@ -11,7 +11,8 @@ load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 # @oss-disable
 load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
-load("//antlir/bzl:build_defs.bzl", "get_visibility", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "get_visibility")
+load("//antlir/bzl:internal_external.bzl", "is_facebook")
 load("//antlir/bzl:oss_shim.bzl", fb_transition = "ret_none") # @oss-enable
 
 def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:

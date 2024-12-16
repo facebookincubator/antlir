@@ -2,7 +2,8 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
-load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "internal_external")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 # Normally, the `dot_meta` feature is included only when packaging up a final
 # layer, but we want to make it easier to test with image_diff_test, so these

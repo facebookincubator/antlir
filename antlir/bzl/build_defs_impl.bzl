@@ -276,7 +276,6 @@ shim = struct(
     cpp_binary = _cpp_binary,
     cpp_library = _cpp_library,
     cpp_unittest = _cpp_unittest,
-    is_facebook = False,
     cxx_genrule = _cxx_genrule,
     export_file = _export_file,
     http_file = _http_file,
