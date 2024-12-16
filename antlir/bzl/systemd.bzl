@@ -340,6 +340,7 @@ _PASSTHROUGH = _ALPHA + _NUM + _SPECIAL
 # ranges = itertools.chain(range(33, 48), range(58, 65), range(91, 97), range(123,127))
 # {chr(i): f"\\x{i:x}" for i in ranges}
 _ESCAPE_MAP = {
+    " ": "\\x20",
     "!": "\\x21",
     '"': "\\x22",
     "#": "\\x23",
@@ -439,6 +440,7 @@ def _selftest():
         ("/", True, "-"),
         ("/some//path", True, "some-path"),
         ("https://[face::booc]/path-dash", False, "https:--\\x5bface::booc\\x5d-path\\x2ddash"),
+        ("foo bar", False, "foo\\x20bar"),
     ]
     for unescaped, path, expected in inputs:
         actual = systemd.escape(unescaped, path)
