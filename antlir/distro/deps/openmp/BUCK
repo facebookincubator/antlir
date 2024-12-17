@@ -1,0 +1,11 @@
+oncall("antlir")
+
+prelude = native
+
+# This exists only because it's an implicit dep added on every cxx target. If it
+# becomes needed by any binaries using the antlir toolchain, someone will need
+# to figure out how to present it.
+prelude.prebuilt_cxx_library(
+    name = "headers",
+    visibility = ["PUBLIC"],
+)

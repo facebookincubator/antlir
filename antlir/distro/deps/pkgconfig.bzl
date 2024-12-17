@@ -76,13 +76,12 @@ _pkgconfig = rule(
 def image_pkgconfig_library(
         *,
         name: str,
+        pkgconfig_name: str | None = None,
         visibility: list[str] = ["PUBLIC"],
         deps: list[str] = [],
         exported_preprocessor_flags: list[str] = [],
         compatible_with_os: list[str] = []):
-    # clearly separate out the pkg-config name from the target name in case they
-    # ever need to differ (but hopefully they don't)
-    pkgconfig_name = name
+    pkgconfig_name = pkgconfig_name or name
 
     target_compatible_with = select({
         "DEFAULT": ["antlir//antlir/distro:incompatible"],

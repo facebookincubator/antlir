@@ -1,0 +1,8 @@
+load("//antlir/distro/deps:pkgconfig.bzl", "image_pkgconfig_library")
+
+oncall("antlir")
+
+image_pkgconfig_library(
+    name = "jsoncpp",
+    visibility = ["PUBLIC"],
+)

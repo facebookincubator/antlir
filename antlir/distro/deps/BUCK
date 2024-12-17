@@ -2,11 +2,8 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
-load(":pkgconfig.bzl", "image_pkgconfig_library")
 
 oncall("antlir")
-
-prelude = native
 
 image.layer(
     name = "sysroot-layer",
@@ -16,6 +13,10 @@ image.layer(
             # toolchains/cxx:layer, but installing it here gives us all the deps
             # that clang will expect to find in `--sysroot`
             "clang",
+            # Install some other core dependencies that we will always need
+            "libgcc",
+            "glibc-devel",
+            "libatomic",
         ]),
     ],
     rootless = True,
@@ -27,16 +28,6 @@ package.unprivileged_dir(
     dot_meta = False,
     layer = ":sysroot-layer",
     rootless = True,
-    visibility = ["PUBLIC"],
-)
-
-prelude.prebuilt_cxx_library(
-    name = "libstdc++",
-    exported_linker_flags = [
-        "-std=c++20",
-        "-lstdc++",
-    ],
-    exported_preprocessor_flags = ["-std=c++20"],
     visibility = ["PUBLIC"],
 )
 
@@ -71,15 +62,5 @@ image_command_alias(
     exe = "pkgconfig-action",
     root = ":base-root-dir",
     rootless = True,
-    visibility = ["PUBLIC"],
-)
-
-image_pkgconfig_library(
-    name = "rpm",
-    visibility = ["PUBLIC"],
-)
-
-image_pkgconfig_library(
-    name = "jsoncpp",
     visibility = ["PUBLIC"],
 )

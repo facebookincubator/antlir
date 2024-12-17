@@ -1,0 +1,19 @@
+load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
+
+oncall("antlir")
+
+sysroot_dep(
+    name = "c",
+)
+
+sysroot_dep(
+    name = "m",
+)
+
+sysroot_dep(
+    name = "dl",
+)
+
+sysroot_dep(
+    name = "pthread",
+)

@@ -23,8 +23,8 @@ prelude.cxx_binary(
     default_target_platform = default_image_platform("centos9"),
     deps = [
         ":dep",
-        "//antlir/distro/deps:jsoncpp",
-        "//antlir/distro/deps:libstdc++",
+        "//antlir/distro/deps/jsoncpp:jsoncpp",
+        "//antlir/distro/deps/libgcc:stdc++",
     ],
 )
 
@@ -36,7 +36,7 @@ cpp_library(
     _cxx_toolchain = "//antlir/distro/toolchain/cxx:toolchain",
     default_target_platform = default_image_platform("centos9"),
     deps = [
-        "//antlir/distro/deps:rpm",
+        "//antlir/distro/deps/rpm:librpm",
     ],
 )
 

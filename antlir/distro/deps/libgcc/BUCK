@@ -1,0 +1,29 @@
+load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
+
+oncall("antlir")
+
+prelude = native
+
+prelude.prebuilt_cxx_library(
+    name = "stdc++",
+    exported_linker_flags = [
+        "-std=c++20",
+        "-lstdc++",
+    ],
+    exported_preprocessor_flags = ["-std=c++20"],
+    visibility = ["PUBLIC"],
+)
+
+prelude.prebuilt_cxx_library(
+    name = "stdc++-legacy",
+    exported_preprocessor_flags = ["-I$(location //antlir/distro/deps:sysroot)/usr/include/c++/11/backward"],
+    visibility = ["PUBLIC"],
+)
+
+sysroot_dep(
+    name = "gcc_s",
+)
+
+sysroot_dep(
+    name = "atomic",
+)
