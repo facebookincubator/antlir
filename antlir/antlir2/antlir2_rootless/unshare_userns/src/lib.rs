@@ -59,6 +59,7 @@
 #![no_std]
 
 use core::ffi::CStr;
+use std::os::fd::AsRawFd;
 
 use nix::errno::Errno;
 use nix::sched::unshare;
@@ -92,16 +93,16 @@ pub fn unshare_userns(pid_cstr: &CStr, uid_map: &Map, gid_map: &Map) -> Result<(
     match unsafe { fork() }? {
         ForkResult::Parent { child } => {
             unshare(CloneFlags::CLONE_NEWUSER)?;
-            nix::unistd::close(read)?;
-            nix::unistd::close(write)?;
+            drop(read);
+            drop(write);
             let status = waitpid(child, None)?;
             if status != WaitStatus::Exited(child, 0) {
                 return Err(Errno::EIO);
             }
         }
         ForkResult::Child => {
-            nix::unistd::close(write)?;
-            nix::unistd::read(read, &mut [0u8])?;
+            drop(write);
+            nix::unistd::read(read.as_raw_fd(), &mut [0u8])?;
 
             match unsafe { fork() } {
                 Ok(ForkResult::Parent { child }) => {

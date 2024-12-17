@@ -6,7 +6,6 @@
  */
 
 use std::fmt::Write as _;
-use std::io::Write as _;
 use std::os::linux::fs::MetadataExt;
 use std::path::Path;
 use std::path::PathBuf;
