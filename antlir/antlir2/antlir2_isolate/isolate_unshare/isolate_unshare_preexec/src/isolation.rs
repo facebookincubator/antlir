@@ -30,7 +30,7 @@ use nix::unistd::User;
 /// Do not follow symbolic links when resolving paths.  Symbolic links can still
 /// be created, and readlink(1), readlink(2), realpath(1), and realpath(3) all
 /// still work properly.
-static MS_NOSYMFOLLOW: MsFlags = unsafe { MsFlags::from_bits_unchecked(256) };
+static MS_NOSYMFOLLOW: MsFlags = MsFlags::from_bits_retain(256);
 
 #[deny(unused_variables)]
 pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {

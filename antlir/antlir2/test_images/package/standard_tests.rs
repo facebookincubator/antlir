@@ -148,7 +148,7 @@ fn directory() {
 fn file_absolute_symlink() {
     let package = StubImpl::open();
     let target =
-        readlinkat(package.as_raw_fd(), "absolute-file-symlink").expect("failed to readlink");
+        readlinkat(Some(package.as_raw_fd()), "absolute-file-symlink").expect("failed to readlink");
     assert_eq!(
         target,
         StubImpl::absolute_symlink_root().join("default-dir/executable")
@@ -158,8 +158,11 @@ fn file_absolute_symlink() {
 #[test]
 fn file_relative_symlink() {
     let package = StubImpl::open();
-    let target = readlinkat(package.as_raw_fd(), "default-dir/relative-file-symlink")
-        .expect("failed to readlink");
+    let target = readlinkat(
+        Some(package.as_raw_fd()),
+        "default-dir/relative-file-symlink",
+    )
+    .expect("failed to readlink");
     assert_eq!(target, Path::new("executable"));
 }
 
@@ -167,7 +170,7 @@ fn file_relative_symlink() {
 fn dir_absolute_symlink() {
     let package = StubImpl::open();
     let target =
-        readlinkat(package.as_raw_fd(), "absolute-dir-symlink").expect("failed to readlink");
+        readlinkat(Some(package.as_raw_fd()), "absolute-dir-symlink").expect("failed to readlink");
     assert_eq!(
         target,
         StubImpl::absolute_symlink_root().join("default-dir")
@@ -178,7 +181,7 @@ fn dir_absolute_symlink() {
 fn dir_relative_symlink() {
     let package = StubImpl::open();
     let target =
-        readlinkat(package.as_raw_fd(), "relative-dir-symlink").expect("failed to readlink");
+        readlinkat(Some(package.as_raw_fd()), "relative-dir-symlink").expect("failed to readlink");
     assert_eq!(target, Path::new("default-dir"));
 }
 

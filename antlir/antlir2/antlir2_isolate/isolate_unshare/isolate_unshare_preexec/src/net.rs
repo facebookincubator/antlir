@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::os::fd::AsRawFd;
+
 use anyhow::Context;
 use anyhow::Result;
 use libc::c_char;
@@ -28,11 +30,10 @@ pub(crate) fn bring_loopback_up() -> Result<()> {
     let mut req: ifreq = unsafe { std::mem::zeroed() };
     req.ifr_name[0] = 'l' as c_char;
     req.ifr_name[1] = 'o' as c_char;
-    Errno::result(unsafe { libc::ioctl(socket, libc::SIOCGIFFLAGS, &mut req) })
+    Errno::result(unsafe { libc::ioctl(socket.as_raw_fd(), libc::SIOCGIFFLAGS, &mut req) })
         .context("while getting existing flags")?;
     unsafe { req.ifr_ifru.ifru_flags |= libc::IFF_UP as c_short };
-    Errno::result(unsafe { libc::ioctl(socket, libc::SIOCSIFFLAGS, &mut req) })
+    Errno::result(unsafe { libc::ioctl(socket.as_raw_fd(), libc::SIOCSIFFLAGS, &mut req) })
         .context("while setting up flag")?;
-    Errno::result(unsafe { libc::close(socket) }).context("while closing socket")?;
     Ok(())
 }
