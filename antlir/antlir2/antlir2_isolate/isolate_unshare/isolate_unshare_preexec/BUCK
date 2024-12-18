@@ -15,6 +15,7 @@ rust_binary(
         "anyhow",
         "cap-std",
         "clap",
+        "close-err",
         "libc",
         "nix",
         "rustix",

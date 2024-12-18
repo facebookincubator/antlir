@@ -13,6 +13,7 @@ rust_library(
     ],
     visibility = ["//antlir/antlir2/antlir2_rootless:"],
     deps = [
+        "close-err",
         "nix",
     ],
 )

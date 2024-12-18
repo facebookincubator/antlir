@@ -9,6 +9,7 @@ use std::os::fd::AsRawFd;
 
 use anyhow::Context;
 use anyhow::Result;
+use close_err::Closable;
 use libc::c_char;
 use libc::c_short;
 use libc::ifreq;
@@ -35,5 +36,6 @@ pub(crate) fn bring_loopback_up() -> Result<()> {
     unsafe { req.ifr_ifru.ifru_flags |= libc::IFF_UP as c_short };
     Errno::result(unsafe { libc::ioctl(socket.as_raw_fd(), libc::SIOCSIFFLAGS, &mut req) })
         .context("while setting up flag")?;
+    socket.close().context("while closing socket")?;
     Ok(())
 }
