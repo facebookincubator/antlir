@@ -15,7 +15,6 @@ rust_library(
     ],
     deps = [
         "derive_more",
-        "maplit",
         "nix",
         "nom",
         "serde",
