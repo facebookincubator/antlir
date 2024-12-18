@@ -10,6 +10,7 @@ load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
+load("//antlir/antlir2/bzl/image:mounts.bzl", "all_mounts", "container_mount_args")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
@@ -53,6 +54,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
                 "--dir" if out_is_dir else cmd_args(),
+                cmd_args([
+                    container_mount_args(mount)
+                    for mount in all_mounts(
+                        features = layer[LayerInfo].features,
+                        parent_layer = layer[LayerInfo].parent[LayerInfo] if layer[LayerInfo].parent else None,
+                    )
+                ]),
                 "--",
                 ctx.attrs.bash,
             ),

@@ -5,12 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
 use antlir2_overlayfs::OverlayFs;
+use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
@@ -28,6 +30,9 @@ struct Args {
     #[clap(value_enum, long)]
     /// On-disk format of the layer storage
     working_format: WorkingFormat,
+    /// `--bind-mount-ro src dst` creates an RO bind-mount of src to dst in the subvol
+    #[clap(long, num_args = 2)]
+    bind_mount_ro: Vec<PathBuf>,
     #[clap(flatten)]
     out: Out,
     #[clap(last(true))]
@@ -97,6 +102,16 @@ fn main() -> Result<()> {
         .working_directory(Path::new("/__genrule_in_image__/working_directory"))
         .tmpfs(Path::new("/tmp"))
         .devtmpfs(Path::new("/dev"));
+
+    builder.inputs(
+        args.bind_mount_ro
+            .chunks(2)
+            .map(|pair| match pair {
+                [src, dst] => Ok((dst.clone(), src.clone())),
+                _ => Err(anyhow!("Unrecognized mount arg: {:?}", pair)),
+            })
+            .collect::<anyhow::Result<HashMap<_, _>>>()?,
+    );
 
     if args.out.dir {
         std::fs::create_dir_all(&args.out.out)?;
