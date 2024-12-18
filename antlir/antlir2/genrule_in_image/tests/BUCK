@@ -132,6 +132,42 @@ genrule_in_image(
     layer = ":with-par",
 )
 
+image.layer(
+    name = "mount-src",
+    features = [
+        feature.install_text(
+            dst = "/file-in-mount-1",
+            text = "file 1 in mounted layer",
+        ),
+        feature.install_text(
+            dst = "/file-in-mount-2",
+            text = "file 2 in mounted layer",
+        ),
+    ],
+)
+
+image.layer(
+    name = "layer-with-mount",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/mnt/layer"),
+        feature.layer_mount(
+            mountpoint = "/mnt/layer",
+            source = ":mount-src",
+        ),
+    ],
+    parent_layer = ":layer",
+)
+
+genrule_in_image(
+    name = "with-mount",
+    out = "f",
+    bash = """
+        ls /mnt/layer > $OUT
+        cat /mnt/layer/file-in-mount-1 >> $OUT
+    """,
+    layer = ":layer-with-mount",
+)
+
 python_unittest(
     name = "test",
     srcs = ["test.py"],
@@ -144,5 +180,6 @@ python_unittest(
         "NAMED_DIR": "$(location :named-dir)",
         "NAMED_OUTS": "$(location :named-outs)",
         "SINGLE_FILE": "$(location :single-file)",
+        "WITH_MOUNT": "$(location :with-mount)",
     },
 )

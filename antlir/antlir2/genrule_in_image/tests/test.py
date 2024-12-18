@@ -52,3 +52,10 @@ class Test(unittest.TestCase):
         f = Path(os.getenv("INSTALLED_PAR"))
         self.assertTrue(f.exists())
         self.assertEqual(f.read_text(), "From par\n")
+
+    def test_with_mount(self) -> None:
+        f = Path(os.getenv("WITH_MOUNT"))
+        self.assertTrue(f.exists())
+        self.assertEqual(
+            f.read_text(), "file-in-mount-1\nfile-in-mount-2\nfile 1 in mounted layer"
+        )
