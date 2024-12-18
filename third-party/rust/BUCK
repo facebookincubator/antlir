@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "6b0b4c812dbd0c3c4254193c8ed9876c97590841",
+    rev = "4ee9a728cc9512df86f596d168d44146e45dd63e",
     visibility = [],
 )
 
@@ -1731,7 +1731,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.168",
-                ":miniz_oxide-0.8.0",
+                ":miniz_oxide-0.8.2",
                 ":object-0.36.5",
             ],
         ),
@@ -1739,7 +1739,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.168",
-                ":miniz_oxide-0.8.0",
+                ":miniz_oxide-0.8.2",
                 ":object-0.36.5",
             ],
         ),
@@ -1747,7 +1747,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.168",
-                ":miniz_oxide-0.8.0",
+                ":miniz_oxide-0.8.2",
                 ":object-0.36.5",
             ],
         ),
@@ -1755,7 +1755,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.168",
-                ":miniz_oxide-0.8.0",
+                ":miniz_oxide-0.8.2",
                 ":object-0.36.5",
             ],
         ),
@@ -1763,7 +1763,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.168",
-                ":miniz_oxide-0.8.0",
+                ":miniz_oxide-0.8.2",
                 ":object-0.36.5",
                 ":windows-targets-0.52.6",
             ],
@@ -4241,24 +4241,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.38.crate",
-    sha256 = "d9647a559c112175f17cf724dc72d3645680a883c58481332779192b0d8e7a01",
-    strip_prefix = "clap_complete-4.5.38",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.38/download"],
+    name = "clap_complete-4.5.40.crate",
+    sha256 = "ac2e663e3e3bed2d32d065a8404024dad306e699a04263ec59919529f803aee9",
+    strip_prefix = "clap_complete-4.5.40",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.40/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.38-clap_complete",
+    actual = ":clap_complete-4.5.40-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.38-clap_complete",
-    srcs = [":clap_complete-4.5.38.crate"],
+    name = "clap_complete-4.5.40-clap_complete",
+    srcs = [":clap_complete-4.5.40.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.38.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.40.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
@@ -4449,30 +4449,30 @@ cargo.rust_library(
 
 alias(
     name = "colored",
-    actual = ":colored-2.1.0",
+    actual = ":colored-2.2.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "colored-2.1.0.crate",
-    sha256 = "cbf2150cce219b664a8a70df7a1f933836724b503f8a413af9365b4dcc4d90b8",
-    strip_prefix = "colored-2.1.0",
-    urls = ["https://static.crates.io/crates/colored/2.1.0/download"],
+    name = "colored-2.2.0.crate",
+    sha256 = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c",
+    strip_prefix = "colored-2.2.0",
+    urls = ["https://static.crates.io/crates/colored/2.2.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "colored-2.1.0",
-    srcs = [":colored-2.1.0.crate"],
+    name = "colored-2.2.0",
+    srcs = [":colored-2.2.0.crate"],
     crate = "colored",
-    crate_root = "colored-2.1.0.crate/src/lib.rs",
+    crate_root = "colored-2.2.0.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "windows-gnu": dict(
-            deps = [":windows-sys-0.48.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
         "windows-msvc": dict(
-            deps = [":windows-sys-0.48.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
     },
     visibility = [],
@@ -4539,7 +4539,7 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
-    deps = [":crossbeam-utils-0.8.20"],
+    deps = [":crossbeam-utils-0.8.21"],
 )
 
 alias(
@@ -4569,23 +4569,23 @@ cargo.rust_library(
 
 alias(
     name = "console",
-    actual = ":console-0.15.8",
+    actual = ":console-0.15.10",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "console-0.15.8.crate",
-    sha256 = "0e1f83fc076bd6dd27517eacdf25fef6c4dfe5f1d7448bafaaf3a26f13b5e4eb",
-    strip_prefix = "console-0.15.8",
-    urls = ["https://static.crates.io/crates/console/0.15.8/download"],
+    name = "console-0.15.10.crate",
+    sha256 = "ea3c6ecd8059b57859df5c69830340ed3c41d30e3da0c1cbed90a96ac853041b",
+    strip_prefix = "console-0.15.10",
+    urls = ["https://static.crates.io/crates/console/0.15.10/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "console-0.15.8",
-    srcs = [":console-0.15.8.crate"],
+    name = "console-0.15.10",
+    srcs = [":console-0.15.10.crate"],
     crate = "console",
-    crate_root = "console-0.15.8.crate/src/lib.rs",
+    crate_root = "console-0.15.10.crate/src/lib.rs",
     edition = "2018",
     features = [
         "ansi-parsing",
@@ -4595,22 +4595,22 @@ cargo.rust_library(
     platform = {
         "windows-gnu": dict(
             deps = [
-                ":encode_unicode-0.3.6",
-                ":windows-sys-0.52.0",
+                ":encode_unicode-1.0.0",
+                ":windows-sys-0.59.0",
             ],
         ),
         "windows-msvc": dict(
             deps = [
-                ":encode_unicode-0.3.6",
-                ":windows-sys-0.52.0",
+                ":encode_unicode-1.0.0",
+                ":windows-sys-0.59.0",
             ],
         ),
     },
     visibility = [],
     deps = [
-        ":lazy_static-1.5.0",
         ":libc-0.2.168",
-        ":unicode-width-0.1.12",
+        ":once_cell-1.19.0",
+        ":unicode-width-0.2.0",
     ],
 )
 
@@ -5092,55 +5092,55 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":crossbeam-channel-0.5.13",
-        ":crossbeam-deque-0.8.5",
+        ":crossbeam-channel-0.5.14",
+        ":crossbeam-deque-0.8.6",
         ":crossbeam-epoch-0.9.18",
-        ":crossbeam-queue-0.3.11",
-        ":crossbeam-utils-0.8.20",
+        ":crossbeam-queue-0.3.12",
+        ":crossbeam-utils-0.8.21",
     ],
 )
 
 alias(
     name = "crossbeam-channel",
-    actual = ":crossbeam-channel-0.5.13",
+    actual = ":crossbeam-channel-0.5.14",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "crossbeam-channel-0.5.13.crate",
-    sha256 = "33480d6946193aa8033910124896ca395333cae7e2d1113d1fef6c3272217df2",
-    strip_prefix = "crossbeam-channel-0.5.13",
-    urls = ["https://static.crates.io/crates/crossbeam-channel/0.5.13/download"],
+    name = "crossbeam-channel-0.5.14.crate",
+    sha256 = "06ba6d68e24814cb8de6bb986db8222d3a027d15872cabc0d18817bc3c0e4471",
+    strip_prefix = "crossbeam-channel-0.5.14",
+    urls = ["https://static.crates.io/crates/crossbeam-channel/0.5.14/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "crossbeam-channel-0.5.13",
-    srcs = [":crossbeam-channel-0.5.13.crate"],
+    name = "crossbeam-channel-0.5.14",
+    srcs = [":crossbeam-channel-0.5.14.crate"],
     crate = "crossbeam_channel",
-    crate_root = "crossbeam-channel-0.5.13.crate/src/lib.rs",
+    crate_root = "crossbeam-channel-0.5.14.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
         "std",
     ],
     visibility = [],
-    deps = [":crossbeam-utils-0.8.20"],
+    deps = [":crossbeam-utils-0.8.21"],
 )
 
 http_archive(
-    name = "crossbeam-deque-0.8.5.crate",
-    sha256 = "613f8cc01fe9cf1a3eb3d7f488fd2fa8388403e97039e2f73692932e291a770d",
-    strip_prefix = "crossbeam-deque-0.8.5",
-    urls = ["https://static.crates.io/crates/crossbeam-deque/0.8.5/download"],
+    name = "crossbeam-deque-0.8.6.crate",
+    sha256 = "9dd111b7b7f7d55b72c0a6ae361660ee5853c9af73f70c3c2ef6858b950e2e51",
+    strip_prefix = "crossbeam-deque-0.8.6",
+    urls = ["https://static.crates.io/crates/crossbeam-deque/0.8.6/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "crossbeam-deque-0.8.5",
-    srcs = [":crossbeam-deque-0.8.5.crate"],
+    name = "crossbeam-deque-0.8.6",
+    srcs = [":crossbeam-deque-0.8.6.crate"],
     crate = "crossbeam_deque",
-    crate_root = "crossbeam-deque-0.8.5.crate/src/lib.rs",
+    crate_root = "crossbeam-deque-0.8.6.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -5149,7 +5149,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":crossbeam-epoch-0.9.18",
-        ":crossbeam-utils-0.8.20",
+        ":crossbeam-utils-0.8.21",
     ],
 )
 
@@ -5172,28 +5172,28 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
-    deps = [":crossbeam-utils-0.8.20"],
+    deps = [":crossbeam-utils-0.8.21"],
 )
 
 alias(
     name = "crossbeam-queue",
-    actual = ":crossbeam-queue-0.3.11",
+    actual = ":crossbeam-queue-0.3.12",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "crossbeam-queue-0.3.11.crate",
-    sha256 = "df0346b5d5e76ac2fe4e327c5fd1118d6be7c51dfb18f9b7922923f287471e35",
-    strip_prefix = "crossbeam-queue-0.3.11",
-    urls = ["https://static.crates.io/crates/crossbeam-queue/0.3.11/download"],
+    name = "crossbeam-queue-0.3.12.crate",
+    sha256 = "0f58bbc28f91df819d0aa2a2c00cd19754769c2fad90579b3592b1c9ba7a3115",
+    strip_prefix = "crossbeam-queue-0.3.12",
+    urls = ["https://static.crates.io/crates/crossbeam-queue/0.3.12/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "crossbeam-queue-0.3.11",
-    srcs = [":crossbeam-queue-0.3.11.crate"],
+    name = "crossbeam-queue-0.3.12",
+    srcs = [":crossbeam-queue-0.3.12.crate"],
     crate = "crossbeam_queue",
-    crate_root = "crossbeam-queue-0.3.11.crate/src/lib.rs",
+    crate_root = "crossbeam-queue-0.3.12.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -5201,22 +5201,22 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
-    deps = [":crossbeam-utils-0.8.20"],
+    deps = [":crossbeam-utils-0.8.21"],
 )
 
 http_archive(
-    name = "crossbeam-utils-0.8.20.crate",
-    sha256 = "22ec99545bb0ed0ea7bb9b8e1e9122ea386ff8a48c0922e43f36d45ab09e0e80",
-    strip_prefix = "crossbeam-utils-0.8.20",
-    urls = ["https://static.crates.io/crates/crossbeam-utils/0.8.20/download"],
+    name = "crossbeam-utils-0.8.21.crate",
+    sha256 = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28",
+    strip_prefix = "crossbeam-utils-0.8.21",
+    urls = ["https://static.crates.io/crates/crossbeam-utils/0.8.21/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "crossbeam-utils-0.8.20",
-    srcs = [":crossbeam-utils-0.8.20.crate"],
+    name = "crossbeam-utils-0.8.21",
+    srcs = [":crossbeam-utils-0.8.21.crate"],
     crate = "crossbeam_utils",
-    crate_root = "crossbeam-utils-0.8.20.crate/src/lib.rs",
+    crate_root = "crossbeam-utils-0.8.21.crate/src/lib.rs",
     edition = "2021",
     env = {
         "CARGO_PKG_NAME": "crossbeam-utils",
@@ -5225,15 +5225,15 @@ cargo.rust_library(
         "default",
         "std",
     ],
-    rustc_flags = ["@$(location :crossbeam-utils-0.8.20-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :crossbeam-utils-0.8.21-build-script-run[rustc_flags])"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "crossbeam-utils-0.8.20-build-script-build",
-    srcs = [":crossbeam-utils-0.8.20.crate"],
+    name = "crossbeam-utils-0.8.21-build-script-build",
+    srcs = [":crossbeam-utils-0.8.21.crate"],
     crate = "build_script_build",
-    crate_root = "crossbeam-utils-0.8.20.crate/build.rs",
+    crate_root = "crossbeam-utils-0.8.21.crate/build.rs",
     edition = "2021",
     env = {
         "CARGO_PKG_NAME": "crossbeam-utils",
@@ -5246,14 +5246,14 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "crossbeam-utils-0.8.20-build-script-run",
+    name = "crossbeam-utils-0.8.21-build-script-run",
     package_name = "crossbeam-utils",
-    buildscript_rule = ":crossbeam-utils-0.8.20-build-script-build",
+    buildscript_rule = ":crossbeam-utils-0.8.21-build-script-build",
     features = [
         "default",
         "std",
     ],
-    version = "0.8.20",
+    version = "0.8.21",
 )
 
 http_archive(
@@ -5469,18 +5469,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cxx-1.0.134.crate",
-    sha256 = "a5a32d755fe20281b46118ee4b507233311fb7a48a0cfd42f554b93640521a2f",
-    strip_prefix = "cxx-1.0.134",
-    urls = ["https://static.crates.io/crates/cxx/1.0.134/download"],
+    name = "cxx-1.0.135.crate",
+    sha256 = "4d44ff199ff93242c3afe480ab588d544dd08d72e92885e152ffebc670f076ad",
+    strip_prefix = "cxx-1.0.135",
+    urls = ["https://static.crates.io/crates/cxx/1.0.135/download"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "cxx-1.0.134-build-script-build",
-    srcs = [":cxx-1.0.134.crate"],
+    name = "cxx-1.0.135-build-script-build",
+    srcs = [":cxx-1.0.135.crate"],
     crate = "build_script_build",
-    crate_root = "cxx-1.0.134.crate/build.rs",
+    crate_root = "cxx-1.0.135.crate/build.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -5490,82 +5490,82 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":cc-1.2.4",
-        ":cxxbridge-flags-1.0.134",
+        ":cxxbridge-flags-1.0.135",
     ],
 )
 
 buildscript_run(
-    name = "cxx-1.0.134-build-script-run",
+    name = "cxx-1.0.135-build-script-run",
     package_name = "cxx",
-    buildscript_rule = ":cxx-1.0.134-build-script-build",
+    buildscript_rule = ":cxx-1.0.135-build-script-build",
     features = [
         "alloc",
         "default",
         "std",
     ],
-    version = "1.0.134",
+    version = "1.0.135",
 )
 
 alias(
     name = "cxx",
-    actual = ":cxx-1.0.134-cxx",
+    actual = ":cxx-1.0.135-cxx",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "cxx-1.0.134-cxx",
-    srcs = [":cxx-1.0.134.crate"],
+    name = "cxx-1.0.135-cxx",
+    srcs = [":cxx-1.0.135.crate"],
     crate = "cxx",
-    crate_root = "cxx-1.0.134.crate/src/lib.rs",
+    crate_root = "cxx-1.0.135.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :cxx-1.0.134-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :cxx-1.0.135-build-script-run[out_dir])",
     },
     features = [
         "alloc",
         "default",
         "std",
     ],
-    rustc_flags = ["@$(location :cxx-1.0.134-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :cxx-1.0.135-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
-        ":cxxbridge-macro-1.0.134",
+        ":cxxbridge-macro-1.0.135",
         ":foldhash-0.1.3",
         ":link-cplusplus-1.0.9",
     ],
 )
 
 http_archive(
-    name = "cxxbridge-flags-1.0.134.crate",
-    sha256 = "3a22a87bd9e78d7204d793261470a4c9d585154fddd251828d8aefbb5f74c3bf",
-    strip_prefix = "cxxbridge-flags-1.0.134",
-    urls = ["https://static.crates.io/crates/cxxbridge-flags/1.0.134/download"],
+    name = "cxxbridge-flags-1.0.135.crate",
+    sha256 = "2f6515329bf3d98f4073101c7866ff2bec4e635a13acb82e3f3753fff0bf43cb",
+    strip_prefix = "cxxbridge-flags-1.0.135",
+    urls = ["https://static.crates.io/crates/cxxbridge-flags/1.0.135/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cxxbridge-flags-1.0.134",
-    srcs = [":cxxbridge-flags-1.0.134.crate"],
+    name = "cxxbridge-flags-1.0.135",
+    srcs = [":cxxbridge-flags-1.0.135.crate"],
     crate = "cxxbridge_flags",
-    crate_root = "cxxbridge-flags-1.0.134.crate/src/lib.rs",
+    crate_root = "cxxbridge-flags-1.0.135.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
 )
 
 http_archive(
-    name = "cxxbridge-macro-1.0.134.crate",
-    sha256 = "1dfdb020ff8787c5daf6e0dca743005cc8782868faeadfbabb8824ede5cb1c72",
-    strip_prefix = "cxxbridge-macro-1.0.134",
-    urls = ["https://static.crates.io/crates/cxxbridge-macro/1.0.134/download"],
+    name = "cxxbridge-macro-1.0.135.crate",
+    sha256 = "fb93e6a7ce8ec985c02bbb758237a31598b340acbbc3c19c5a4fa6adaaac92ab",
+    strip_prefix = "cxxbridge-macro-1.0.135",
+    urls = ["https://static.crates.io/crates/cxxbridge-macro/1.0.135/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cxxbridge-macro-1.0.134",
-    srcs = [":cxxbridge-macro-1.0.134.crate"],
+    name = "cxxbridge-macro-1.0.135",
+    srcs = [":cxxbridge-macro-1.0.135.crate"],
     crate = "cxxbridge_macro",
-    crate_root = "cxxbridge-macro-1.0.134.crate/src/lib.rs",
+    crate_root = "cxxbridge-macro-1.0.135.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
@@ -6671,27 +6671,6 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "encode_unicode-0.3.6.crate",
-    sha256 = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f",
-    strip_prefix = "encode_unicode-0.3.6",
-    urls = ["https://static.crates.io/crates/encode_unicode/0.3.6/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "encode_unicode-0.3.6",
-    srcs = [":encode_unicode-0.3.6.crate"],
-    crate = "encode_unicode",
-    crate_root = "encode_unicode-0.3.6.crate/src/lib.rs",
-    edition = "2015",
-    features = [
-        "default",
-        "std",
-    ],
-    visibility = [],
-)
-
-http_archive(
     name = "encode_unicode-1.0.0.crate",
     sha256 = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0",
     strip_prefix = "encode_unicode-1.0.0",
@@ -7441,7 +7420,7 @@ cargo.rust_library(
         ":ordered-float-3.9.2",
         ":panic-message-0.3.0",
         ":serde_json-1.0.133",
-        ":thiserror-2.0.7",
+        ":thiserror-2.0.8",
     ],
 )
 
@@ -7605,7 +7584,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":crc32fast-1.4.2",
-        ":miniz_oxide-0.8.0",
+        ":miniz_oxide-0.8.2",
     ],
 )
 
@@ -9191,25 +9170,25 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "home-0.5.9.crate",
-    sha256 = "e3d1354bf6b7235cb4a0576c2619fd4ed18183f689b12b006a0ee7329eeff9a5",
-    strip_prefix = "home-0.5.9",
-    urls = ["https://static.crates.io/crates/home/0.5.9/download"],
+    name = "home-0.5.11.crate",
+    sha256 = "589533453244b0995c858700322199b2becb13b627df2851f64a2775d024abcf",
+    strip_prefix = "home-0.5.11",
+    urls = ["https://static.crates.io/crates/home/0.5.11/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "home-0.5.9",
-    srcs = [":home-0.5.9.crate"],
+    name = "home-0.5.11",
+    srcs = [":home-0.5.11.crate"],
     crate = "home",
-    crate_root = "home-0.5.9.crate/src/lib.rs",
+    crate_root = "home-0.5.11.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "windows-gnu": dict(
-            deps = [":windows-sys-0.52.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
         "windows-msvc": dict(
-            deps = [":windows-sys-0.52.0"],
+            deps = [":windows-sys-0.59.0"],
         ),
     },
     visibility = [],
@@ -9438,11 +9417,11 @@ cargo.rust_library(
     deps = [
         ":bstr-0.2.17",
         ":bytes-1.9.0",
-        ":crossbeam-channel-0.5.13",
+        ":crossbeam-channel-0.5.14",
         ":form_urlencoded-1.2.1",
         ":futures-0.3.31",
         ":http-0.2.12",
-        ":hyper-0.14.31",
+        ":hyper-0.14.32",
         ":log-0.4.22",
         ":once_cell-1.19.0",
         ":regex-1.10.6",
@@ -9496,23 +9475,23 @@ cargo.rust_library(
 
 alias(
     name = "hyper",
-    actual = ":hyper-0.14.31",
+    actual = ":hyper-0.14.32",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "hyper-0.14.31.crate",
-    sha256 = "8c08302e8fa335b151b788c775ff56e7a03ae64ff85c548ee820fecb70356e85",
-    strip_prefix = "hyper-0.14.31",
-    urls = ["https://static.crates.io/crates/hyper/0.14.31/download"],
+    name = "hyper-0.14.32.crate",
+    sha256 = "41dfc780fdec9373c01bae43289ea34c972e40ee3c9f6b3c8801a35f35586ce7",
+    strip_prefix = "hyper-0.14.32",
+    urls = ["https://static.crates.io/crates/hyper/0.14.32/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "hyper-0.14.31",
-    srcs = [":hyper-0.14.31.crate"],
+    name = "hyper-0.14.32",
+    srcs = [":hyper-0.14.32.crate"],
     crate = "hyper",
-    crate_root = "hyper-0.14.31.crate/src/lib.rs",
+    crate_root = "hyper-0.14.32.crate/src/lib.rs",
     edition = "2018",
     features = [
         "client",
@@ -9583,7 +9562,7 @@ cargo.rust_library(
     deps = [
         ":futures-util-0.3.31",
         ":http-0.2.12",
-        ":hyper-0.14.31",
+        ":hyper-0.14.32",
         ":log-0.4.22",
         ":rustls-0.21.12",
         ":rustls-native-certs-0.6.3",
@@ -9615,7 +9594,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":bytes-1.9.0",
-        ":hyper-0.14.31",
+        ":hyper-0.14.32",
         ":native-tls-0.2.12",
         ":tokio-1.42.0",
         ":tokio-native-tls-0.3.1",
@@ -9927,7 +9906,7 @@ cargo.rust_library(
     edition = "2018",
     visibility = [],
     deps = [
-        ":unicode-bidi-0.3.17",
+        ":unicode-bidi-0.3.18",
         ":unicode-normalization-0.1.24",
     ],
 )
@@ -10012,7 +9991,7 @@ cargo.rust_library(
     },
     visibility = [],
     deps = [
-        ":crossbeam-deque-0.8.5",
+        ":crossbeam-deque-0.8.6",
         ":globset-0.4.15",
         ":log-0.4.22",
         ":memchr-2.7.4",
@@ -10135,7 +10114,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":console-0.15.8",
+        ":console-0.15.10",
         ":futures-core-0.3.31",
         ":number_prefix-0.4.0",
         ":portable-atomic-1.10.0",
@@ -12218,18 +12197,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "miniz_oxide-0.8.0.crate",
-    sha256 = "e2d80299ef12ff69b16a84bb182e3b9df68b5a91574d3d4fa6e41b65deec4df1",
-    strip_prefix = "miniz_oxide-0.8.0",
-    urls = ["https://static.crates.io/crates/miniz_oxide/0.8.0/download"],
+    name = "miniz_oxide-0.8.2.crate",
+    sha256 = "4ffbe83022cedc1d264172192511ae958937694cd57ce297164951b8b3568394",
+    strip_prefix = "miniz_oxide-0.8.2",
+    urls = ["https://static.crates.io/crates/miniz_oxide/0.8.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "miniz_oxide-0.8.0",
-    srcs = [":miniz_oxide-0.8.0.crate"],
+    name = "miniz_oxide-0.8.2",
+    srcs = [":miniz_oxide-0.8.2.crate"],
     crate = "miniz_oxide",
-    crate_root = "miniz_oxide-0.8.0.crate/src/lib.rs",
+    crate_root = "miniz_oxide-0.8.2.crate/src/lib.rs",
     edition = "2021",
     features = ["with-alloc"],
     visibility = [],
@@ -12690,7 +12669,7 @@ cargo.rust_library(
             deps = [
                 ":libc-0.2.168",
                 ":security-framework-2.11.1",
-                ":security-framework-sys-2.12.1",
+                ":security-framework-sys-2.13.0",
                 ":tempfile-3.14.0",
             ],
         ),
@@ -12698,7 +12677,7 @@ cargo.rust_library(
             deps = [
                 ":libc-0.2.168",
                 ":security-framework-2.11.1",
-                ":security-framework-sys-2.12.1",
+                ":security-framework-sys-2.13.0",
                 ":tempfile-3.14.0",
             ],
         ),
@@ -13278,12 +13257,6 @@ cargo.rust_library(
     visibility = [],
 )
 
-alias(
-    name = "num-derive",
-    actual = ":num-derive-0.3.3",
-    visibility = ["PUBLIC"],
-)
-
 http_archive(
     name = "num-derive-0.3.3.crate",
     sha256 = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d",
@@ -13305,6 +13278,12 @@ cargo.rust_library(
         ":quote-1.0.37",
         ":syn-1.0.109-syn1",
     ],
+)
+
+alias(
+    name = "num-derive",
+    actual = ":num-derive-0.4.2",
+    visibility = ["PUBLIC"],
 )
 
 http_archive(
@@ -14589,7 +14568,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":memchr-2.7.4",
-        ":thiserror-2.0.7",
+        ":thiserror-2.0.8",
         ":ucd-trie-0.1.7",
     ],
 )
@@ -16810,8 +16789,8 @@ cargo.rust_library(
     edition = "2021",
     visibility = [],
     deps = [
-        ":crossbeam-deque-0.8.5",
-        ":crossbeam-utils-0.8.20",
+        ":crossbeam-deque-0.8.6",
+        ":crossbeam-utils-0.8.21",
     ],
 )
 
@@ -17297,7 +17276,7 @@ cargo.rust_library(
                 ":encoding_rs-0.8.35",
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
-                ":hyper-0.14.31",
+                ":hyper-0.14.32",
                 ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
@@ -17320,7 +17299,7 @@ cargo.rust_library(
                 ":encoding_rs-0.8.35",
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
-                ":hyper-0.14.31",
+                ":hyper-0.14.32",
                 ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
@@ -17343,7 +17322,7 @@ cargo.rust_library(
                 ":encoding_rs-0.8.35",
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
-                ":hyper-0.14.31",
+                ":hyper-0.14.32",
                 ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
@@ -17367,7 +17346,7 @@ cargo.rust_library(
                 ":encoding_rs-0.8.35",
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
-                ":hyper-0.14.31",
+                ":hyper-0.14.32",
                 ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
@@ -17391,7 +17370,7 @@ cargo.rust_library(
                 ":encoding_rs-0.8.35",
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
-                ":hyper-0.14.31",
+                ":hyper-0.14.32",
                 ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
@@ -17415,7 +17394,7 @@ cargo.rust_library(
                 ":encoding_rs-0.8.35",
                 ":h2-0.3.26",
                 ":http-body-0.4.6",
-                ":hyper-0.14.31",
+                ":hyper-0.14.32",
                 ":ipnet-2.10.1",
                 ":log-0.4.22",
                 ":mime-0.3.17",
@@ -18886,7 +18865,7 @@ cargo.rust_library(
         ":bitflags-2.6.0",
         ":cfg-if-1.0.0",
         ":fd-lock-4.0.2",
-        ":home-0.5.9",
+        ":home-0.5.11",
         ":libc-0.2.168",
         ":log-0.4.22",
         ":memchr-2.7.4",
@@ -19358,23 +19337,23 @@ cargo.rust_library(
         ":core-foundation-0.9.4",
         ":core-foundation-sys-0.8.7",
         ":libc-0.2.168",
-        ":security-framework-sys-2.12.1",
+        ":security-framework-sys-2.13.0",
     ],
 )
 
 http_archive(
-    name = "security-framework-sys-2.12.1.crate",
-    sha256 = "fa39c7303dc58b5543c94d22c1766b0d31f2ee58306363ea622b10bbc075eaa2",
-    strip_prefix = "security-framework-sys-2.12.1",
-    urls = ["https://static.crates.io/crates/security-framework-sys/2.12.1/download"],
+    name = "security-framework-sys-2.13.0.crate",
+    sha256 = "1863fd3768cd83c56a7f60faa4dc0d403f1b6df0a38c3c25f44b7894e45370d5",
+    strip_prefix = "security-framework-sys-2.13.0",
+    urls = ["https://static.crates.io/crates/security-framework-sys/2.13.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "security-framework-sys-2.12.1",
-    srcs = [":security-framework-sys-2.12.1.crate"],
+    name = "security-framework-sys-2.13.0",
+    srcs = [":security-framework-sys-2.13.0.crate"],
     crate = "security_framework_sys",
-    crate_root = "security-framework-sys-2.12.1.crate/src/lib.rs",
+    crate_root = "security-framework-sys-2.13.0.crate/src/lib.rs",
     edition = "2021",
     features = [
         "OSX_10_10",
@@ -20237,7 +20216,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":console-0.15.8",
+        ":console-0.15.10",
         ":similar-2.6.0",
     ],
 )
@@ -22224,41 +22203,41 @@ buildscript_run(
 
 alias(
     name = "thiserror",
-    actual = ":thiserror-2.0.7",
+    actual = ":thiserror-2.0.8",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "thiserror-2.0.7.crate",
-    sha256 = "93605438cbd668185516ab499d589afb7ee1859ea3d5fc8f6b0755e1c7443767",
-    strip_prefix = "thiserror-2.0.7",
-    urls = ["https://static.crates.io/crates/thiserror/2.0.7/download"],
+    name = "thiserror-2.0.8.crate",
+    sha256 = "08f5383f3e0071702bf93ab5ee99b52d26936be9dedd9413067cbdcddcb6141a",
+    strip_prefix = "thiserror-2.0.8",
+    urls = ["https://static.crates.io/crates/thiserror/2.0.8/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "thiserror-2.0.7",
-    srcs = [":thiserror-2.0.7.crate"],
+    name = "thiserror-2.0.8",
+    srcs = [":thiserror-2.0.8.crate"],
     crate = "thiserror",
-    crate_root = "thiserror-2.0.7.crate/src/lib.rs",
+    crate_root = "thiserror-2.0.8.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :thiserror-2.0.7-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :thiserror-2.0.8-build-script-run[out_dir])",
     },
     features = [
         "default",
         "std",
     ],
-    rustc_flags = ["@$(location :thiserror-2.0.7-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :thiserror-2.0.8-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [":thiserror-impl-2.0.7"],
+    deps = [":thiserror-impl-2.0.8"],
 )
 
 cargo.rust_binary(
-    name = "thiserror-2.0.7-build-script-build",
-    srcs = [":thiserror-2.0.7.crate"],
+    name = "thiserror-2.0.8-build-script-build",
+    srcs = [":thiserror-2.0.8.crate"],
     crate = "build_script_build",
-    crate_root = "thiserror-2.0.7.crate/build.rs",
+    crate_root = "thiserror-2.0.8.crate/build.rs",
     edition = "2021",
     features = [
         "default",
@@ -22268,14 +22247,14 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "thiserror-2.0.7-build-script-run",
+    name = "thiserror-2.0.8-build-script-run",
     package_name = "thiserror",
-    buildscript_rule = ":thiserror-2.0.7-build-script-build",
+    buildscript_rule = ":thiserror-2.0.8-build-script-build",
     features = [
         "default",
         "std",
     ],
-    version = "2.0.7",
+    version = "2.0.8",
 )
 
 http_archive(
@@ -22302,18 +22281,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "thiserror-impl-2.0.7.crate",
-    sha256 = "e1d8749b4531af2117677a5fcd12b1348a3fe2b81e36e61ffeac5c4aa3273e36",
-    strip_prefix = "thiserror-impl-2.0.7",
-    urls = ["https://static.crates.io/crates/thiserror-impl/2.0.7/download"],
+    name = "thiserror-impl-2.0.8.crate",
+    sha256 = "f2f357fcec90b3caef6623a099691be676d033b40a058ac95d2a6ade6fa0c943",
+    strip_prefix = "thiserror-impl-2.0.8",
+    urls = ["https://static.crates.io/crates/thiserror-impl/2.0.8/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "thiserror-impl-2.0.7",
-    srcs = [":thiserror-impl-2.0.7.crate"],
+    name = "thiserror-impl-2.0.8",
+    srcs = [":thiserror-impl-2.0.8.crate"],
     crate = "thiserror_impl",
-    crate_root = "thiserror-impl-2.0.7.crate/src/lib.rs",
+    crate_root = "thiserror-impl-2.0.8.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
@@ -23845,7 +23824,7 @@ cargo.rust_library(
         ":serde-1.0.216",
         ":serde_json-1.0.133",
         ":tempfile-3.14.0",
-        ":thiserror-2.0.7",
+        ":thiserror-2.0.8",
         ":uefisettings_backend_thrift-0.1.0",
         ":uefisettings_spellings_db_thrift-0.1.0",
     ],
@@ -23879,7 +23858,7 @@ cargo.rust_binary(
         ":serde-1.0.216",
         ":serde_json-1.0.133",
         ":tempfile-3.14.0",
-        ":thiserror-2.0.7",
+        ":thiserror-2.0.8",
         ":uefisettings-0.1.4",
         ":uefisettings_backend_thrift-0.1.0",
         ":uefisettings_spellings_db_thrift-0.1.0",
@@ -24101,18 +24080,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "unicode-bidi-0.3.17.crate",
-    sha256 = "5ab17db44d7388991a428b2ee655ce0c212e862eff1768a455c58f9aad6e7893",
-    strip_prefix = "unicode-bidi-0.3.17",
-    urls = ["https://static.crates.io/crates/unicode-bidi/0.3.17/download"],
+    name = "unicode-bidi-0.3.18.crate",
+    sha256 = "5c1cb5db39152898a79168971543b1cb5020dff7fe43c8dc468b0885f5e29df5",
+    strip_prefix = "unicode-bidi-0.3.18",
+    urls = ["https://static.crates.io/crates/unicode-bidi/0.3.18/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "unicode-bidi-0.3.17",
-    srcs = [":unicode-bidi-0.3.17.crate"],
+    name = "unicode-bidi-0.3.18",
+    srcs = [":unicode-bidi-0.3.18.crate"],
     crate = "unicode_bidi",
-    crate_root = "unicode-bidi-0.3.17.crate/src/lib.rs",
+    crate_root = "unicode-bidi-0.3.18.crate/src/lib.rs",
     edition = "2018",
     features = [
         "default",
@@ -25014,7 +24993,7 @@ cargo.rust_library(
         ":futures-util-0.3.31",
         ":headers-0.3.9",
         ":http-0.2.12",
-        ":hyper-0.14.31",
+        ":hyper-0.14.32",
         ":log-0.4.22",
         ":mime-0.3.17",
         ":mime_guess-2.0.5",
@@ -25123,26 +25102,26 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":home-0.5.9"],
+            deps = [":home-0.5.11"],
         ),
         "linux-x86_64": dict(
-            deps = [":home-0.5.9"],
+            deps = [":home-0.5.11"],
         ),
         "macos-arm64": dict(
-            deps = [":home-0.5.9"],
+            deps = [":home-0.5.11"],
         ),
         "macos-x86_64": dict(
-            deps = [":home-0.5.9"],
+            deps = [":home-0.5.11"],
         ),
         "windows-gnu": dict(
             deps = [
-                ":home-0.5.9",
+                ":home-0.5.11",
                 ":once_cell-1.19.0",
             ],
         ),
         "windows-msvc": dict(
             deps = [
-                ":home-0.5.9",
+                ":home-0.5.11",
                 ":once_cell-1.19.0",
             ],
         ),
@@ -25413,7 +25392,6 @@ cargo.rust_library(
         "Win32_Storage",
         "Win32_Storage_FileSystem",
         "Win32_System",
-        "Win32_System_Com",
         "Win32_System_Console",
         "Win32_System_IO",
         "Win32_System_Memory",
@@ -25424,7 +25402,6 @@ cargo.rust_library(
         "Win32_UI",
         "Win32_UI_Input",
         "Win32_UI_Input_KeyboardAndMouse",
-        "Win32_UI_Shell",
         "default",
     ],
     visibility = [],
@@ -25480,6 +25457,8 @@ cargo.rust_library(
         "Win32_System_Threading",
         "Win32_System_WindowsProgramming",
         "Win32_UI",
+        "Win32_UI_Input",
+        "Win32_UI_Input_KeyboardAndMouse",
         "Win32_UI_Shell",
         "default",
     ],
