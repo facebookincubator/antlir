@@ -59,8 +59,10 @@
 #![no_std]
 
 use core::ffi::CStr;
+use std::io;
 use std::os::fd::AsRawFd;
 
+use close_err::Closable;
 use nix::errno::Errno;
 use nix::sched::unshare;
 use nix::sched::CloneFlags;
@@ -69,7 +71,6 @@ use nix::sys::wait::WaitStatus;
 use nix::unistd::fork;
 use nix::unistd::pipe;
 use nix::unistd::ForkResult;
-use nix::Result;
 
 #[derive(Copy, Clone)]
 pub struct Map<'a> {
@@ -78,7 +79,7 @@ pub struct Map<'a> {
     pub len: &'a CStr,
 }
 
-pub fn unshare_userns(pid_cstr: &CStr, uid_map: &Map, gid_map: &Map) -> Result<()> {
+pub fn unshare_userns(pid_cstr: &CStr, uid_map: &Map, gid_map: &Map) -> io::Result<()> {
     // TODO(T181212521): do the same check in OSS
     #[cfg(facebook)]
     if memory::is_using_jemalloc()
@@ -93,22 +94,22 @@ pub fn unshare_userns(pid_cstr: &CStr, uid_map: &Map, gid_map: &Map) -> Result<(
     match unsafe { fork() }? {
         ForkResult::Parent { child } => {
             unshare(CloneFlags::CLONE_NEWUSER)?;
-            drop(read);
-            drop(write);
+            read.close()?;
+            write.close()?;
             let status = waitpid(child, None)?;
             if status != WaitStatus::Exited(child, 0) {
-                return Err(Errno::EIO);
+                return Err(io::Error::from(Errno::EIO));
             }
         }
         ForkResult::Child => {
-            drop(write);
+            write.close()?;
             nix::unistd::read(read.as_raw_fd(), &mut [0u8])?;
 
             match unsafe { fork() } {
                 Ok(ForkResult::Parent { child }) => {
                     let status = waitpid(child, None)?;
                     if status != WaitStatus::Exited(child, 0) {
-                        return Err(Errno::EIO);
+                        return Err(io::Error::from(Errno::EIO));
                     }
                     Ok(())
                 }

@@ -26,7 +26,7 @@ pub enum Error {
     #[error("Rootless was somehow already initialized")]
     AlreadyInitialized,
     #[error("failed to setup userns in current process: {0}")]
-    Userns(nix::errno::Errno),
+    Userns(std::io::Error),
     #[error("error reading a subid file: {0}")]
     SubidRead(std::io::Error),
     #[error("error using subid mapping: {0}")]
