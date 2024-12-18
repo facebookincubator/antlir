@@ -20,9 +20,9 @@ use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
 use antlir2_users::passwd::UserRecord;
-use antlir2_users::passwd::UserRecordPassword;
 use antlir2_users::uidmaps::UidMap;
 use antlir2_users::Id;
+use antlir2_users::Password;
 use antlir2_users::UserId;
 use anyhow::Context;
 use serde::Deserialize;
@@ -83,7 +83,7 @@ impl antlir2_compile::CompileFeature for User {
         let uid = get_uid(&self.uid, &self.uidmap, &self.username)?;
         let record = UserRecord {
             name: self.username.clone().into(),
-            password: UserRecordPassword::Shadow,
+            password: Password::Shadow,
             uid,
             gid: ctx.gid(&self.primary_group)?,
             comment: self.comment.clone().unwrap_or("".to_owned()).into(),
@@ -91,8 +91,8 @@ impl antlir2_compile::CompileFeature for User {
             shell: self.shell.to_owned().into(),
         };
         let mut shadow_db = ctx.shadow_db()?;
-        shadow_db.push(record.new_shadow_record())?;
-        user_db.push(record)?;
+        shadow_db.push(record.new_shadow_record());
+        user_db.push(record);
         std::fs::write(ctx.dst_path("/etc/passwd")?, user_db.to_string())?;
         std::fs::write(ctx.dst_path("/etc/shadow")?, shadow_db.to_string())?;
         std::fs::set_permissions(

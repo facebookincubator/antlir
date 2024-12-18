@@ -9,14 +9,10 @@
 //! under-construction image so that ownership is attributed properly.
 
 use std::borrow::Cow;
-use std::collections::btree_map;
-use std::collections::btree_map::BTreeMap;
-use std::collections::BTreeSet;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
-use maplit::btreemap;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
@@ -39,25 +35,23 @@ use nom::IResult;
 use crate::Error;
 use crate::GroupId;
 use crate::Id;
+use crate::Password;
 use crate::Result;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EtcGroup<'a> {
-    // BTreeMap is used to prevent duplicate entries
-    // with the same groupname.
-    records: BTreeMap<String, GroupRecord<'a>>,
+    records: Vec<GroupRecord<'a>>,
 }
 
 impl<'a> Default for EtcGroup<'a> {
     fn default() -> Self {
         Self {
-            records: btreemap! {
-                "root".into() => GroupRecord {
-                    name: "root".into(),
-                    gid: GroupId(0),
-                    users: vec!["root".into()],
-                },
-            },
+            records: vec![GroupRecord {
+                name: "root".into(),
+                password: Password::Shadow,
+                gid: GroupId(0),
+                users: vec!["root".into()],
+            }],
         }
     }
 }
@@ -71,15 +65,7 @@ impl<'a> EtcGroup<'a> {
             separated_list0(newline, context("GroupRecord", GroupRecord::parse))(input)?;
         // eat trailing newlines
         let (input, _) = all_consuming(many0(newline))(input)?;
-        Ok((
-            input,
-            Self {
-                records: records
-                    .into_iter()
-                    .map(|r| (r.name.to_string(), r))
-                    .collect(),
-            },
-        ))
+        Ok((input, Self { records }))
     }
 
     pub fn parse(input: &'a str) -> Result<Self> {
@@ -94,26 +80,15 @@ impl<'a> EtcGroup<'a> {
     }
 
     pub fn records(&self) -> impl Iterator<Item = &GroupRecord<'a>> {
-        self.records.values()
+        self.records.iter()
     }
 
     pub fn into_records(self) -> impl Iterator<Item = GroupRecord<'a>> {
-        self.records.into_values()
+        self.records.into_iter()
     }
 
-    pub fn push(&mut self, record: GroupRecord<'a>) -> Result<()> {
-        match self.records.entry(record.name.to_string()) {
-            btree_map::Entry::Vacant(e) => {
-                e.insert(record);
-                Ok(())
-            }
-            btree_map::Entry::Occupied(e) if e.get() == &record => Ok(()),
-            btree_map::Entry::Occupied(e) => Err(Error::Duplicate(
-                e.get().name.to_string(),
-                format!("{:?}", e.get()),
-                format!("{:?}", record),
-            )),
-        }
+    pub fn push(&mut self, record: GroupRecord<'a>) {
+        self.records.push(record)
     }
 
     pub fn len(&self) -> usize {
@@ -125,15 +100,15 @@ impl<'a> EtcGroup<'a> {
     }
 
     pub fn get_group_by_name(&self, name: &str) -> Option<&GroupRecord<'a>> {
-        self.records.get(name)
+        self.records.iter().find(|r| r.name == name)
     }
 
     pub fn get_group_by_name_mut(&mut self, name: &str) -> Option<&mut GroupRecord<'a>> {
-        self.records.get_mut(name)
+        self.records.iter_mut().find(|r| r.name == name)
     }
 
     pub fn get_group_by_id(&self, id: GroupId) -> Option<&GroupRecord<'a>> {
-        self.records.values().find(|r| r.gid == id)
+        self.records.iter().find(|r| r.gid == id)
     }
 
     pub fn into_owned(self) -> EtcGroup<'static> {
@@ -141,7 +116,7 @@ impl<'a> EtcGroup<'a> {
             records: self
                 .records
                 .into_iter()
-                .map(|(name, record)| (name, record.into_owned()))
+                .map(GroupRecord::into_owned)
                 .collect(),
         }
     }
@@ -156,12 +131,9 @@ impl FromStr for EtcGroup<'static> {
     }
 }
 
-// When printing the file, we want to use Ord implementation of GroupRecord.
-// This way, the file will resemble a file created the regular way (adduser/addgroup).
 impl<'a> Display for EtcGroup<'a> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        let records = self.records.values().collect::<BTreeSet<_>>();
-        for record in records {
+        for record in &self.records {
             writeln!(f, "{}", record)?;
         }
         Ok(())
@@ -170,9 +142,9 @@ impl<'a> Display for EtcGroup<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct GroupRecord<'a> {
-    // Keep as the first field so we sort by it.
-    pub gid: GroupId,
     pub name: Cow<'a, str>,
+    pub password: Password,
+    pub gid: GroupId,
     pub users: Vec<Cow<'a, str>>,
 }
 
@@ -182,11 +154,10 @@ impl<'a> GroupRecord<'a> {
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
         let colon = char(':');
-        let (input, (name, _, _, _, gid, _)) = tuple((
+        let (input, (name, _, password, _, gid, _)) = tuple((
             context("groupname", take_until1(":")),
             &colon,
-            // On modern Unix systems, password field is always "x".
-            char('x'),
+            Password::parse,
             &colon,
             context("gid", nom::character::complete::u32),
             &colon,
@@ -201,6 +172,7 @@ impl<'a> GroupRecord<'a> {
             input,
             Self {
                 name: Cow::Borrowed(name),
+                password,
                 gid: gid.into(),
                 users: users.into_iter().map(Cow::Borrowed).collect(),
             },
@@ -210,6 +182,7 @@ impl<'a> GroupRecord<'a> {
     pub fn into_owned(self) -> GroupRecord<'static> {
         GroupRecord {
             name: Cow::Owned(self.name.into_owned()),
+            password: self.password,
             gid: self.gid,
             users: self
                 .users
@@ -223,7 +196,7 @@ impl<'a> GroupRecord<'a> {
 
 impl<'a> Display for GroupRecord<'a> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}:x:{}:", self.name, self.gid.as_raw())?;
+        write!(f, "{}:{}:{}:", self.name, self.password, self.gid.as_raw())?;
         for (i, u) in self.users.iter().enumerate() {
             write!(f, "{u}")?;
             if i < self.users.len() - 1 {
@@ -254,6 +227,7 @@ systemd-journal:x:190:systemd-journald
         assert_eq!(
             Some(&GroupRecord {
                 name: "bin".into(),
+                password: Password::Shadow,
                 gid: 1.into(),
                 users: vec!["root".into(), "daemon".into()],
             }),
@@ -268,6 +242,7 @@ systemd-journal:x:190:systemd-journald
         assert_eq!(
             Some(&GroupRecord {
                 name: "root".into(),
+                password: Password::Shadow,
                 gid: 0.into(),
                 users: Vec::new()
             }),
