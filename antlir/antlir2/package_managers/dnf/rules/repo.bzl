@@ -32,20 +32,23 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     # First build a repodata directory that just contains repodata (this would
     # be suitable as a baseurl for dnf)
-    plain_repodata = ctx.actions.declare_output("repodata", dir = True)
-    ctx.actions.run(
-        cmd_args(
-            ctx.attrs.makerepo[RunInfo],
-            cmd_args(repo_id, format = "--repo-id={}"),
-            cmd_args(xml_dir, format = "--xml-dir={}"),
-            cmd_args(ctx.attrs.module_md, format = "--module-md={}") if ctx.attrs.module_md else cmd_args(),
-            cmd_args(plain_repodata.as_output(), format = "--out={}"),
-            "--compress={}".format(ctx.attrs.compress),
-            "--expected-rpm-count={}".format(len(ctx.attrs.rpms)),
-            optional_args,
-        ),
-        category = "repodata",
-    )
+    if not ctx.attrs.repodata:
+        plain_repodata = ctx.actions.declare_output("repodata", dir = True)
+        ctx.actions.run(
+            cmd_args(
+                ctx.attrs.makerepo[RunInfo],
+                cmd_args(repo_id, format = "--repo-id={}"),
+                cmd_args(xml_dir, format = "--xml-dir={}"),
+                cmd_args(ctx.attrs.module_md, format = "--module-md={}") if ctx.attrs.module_md else cmd_args(),
+                cmd_args(plain_repodata.as_output(), format = "--out={}"),
+                "--compress={}".format(ctx.attrs.compress),
+                "--expected-rpm-count={}".format(len(ctx.attrs.rpms)),
+                optional_args,
+            ),
+            category = "repodata",
+        )
+    else:
+        plain_repodata = ctx.attrs.repodata
 
     if is_facebook:
         # Pre-build .solv(x) files so that dnf installation is substantially faster
@@ -113,6 +116,11 @@ repo_attrs = {
     "makecache": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/package_managers/dnf/rules/makecache:makecache")),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/package_managers/dnf/rules/makerepo:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),
+    "repodata": attrs.option(
+        attrs.source(allow_directory = True),
+        default = None,
+        doc = "Pre-built repodata, if available",
+    ),
     "rpms": attrs.list(
         attrs.dep(providers = [RpmInfo]),
         doc = "All RPMs that should be included in this repo",
