@@ -23,3 +23,6 @@
 
 [buck2]
     file_watcher = watchman
+
+[build]
+    execution_platforms = antlir//platforms:host
