@@ -9,7 +9,7 @@ load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
-load("//antlir/bzl/build_defs.bzl", "get_visibility")
+load("//antlir/bzl:build_defs.bzl", "get_visibility")
 
 def package_macro(
         buck_rule,
