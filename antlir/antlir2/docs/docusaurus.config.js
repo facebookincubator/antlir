@@ -87,7 +87,7 @@ import {themes} from 'prism-react-renderer';
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/facebook/docusaurus',
+            href: 'https://github.com/facebookincubator/antlir/',
             label: 'GitHub',
             position: 'right',
           },
