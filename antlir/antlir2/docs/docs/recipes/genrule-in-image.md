@@ -24,11 +24,11 @@ script that will be run to produce the rule output. The same macro expansions
 
 The main addition to the `buck_genrule` api is that `genrule_in_image` accepts
 an attribute that controls the environment in which the script is run
-(`exe_layer` or `layer`).
+(`exec_layer` or `layer`).
 
 ## Cross-compilation
 
-In most cases, you should use `exe_layer=` instead of `layer=` to choose what
+In most cases, you should use `exec_layer=` instead of `layer=` to choose what
 image layer your command will run in. This will give you a layer optimized for
 your build host and should generally be more performant, since you'll be running
 binaries built for your actual host architecture.
@@ -68,7 +68,7 @@ export_file(
 genrule_in_image(
     name = "uki",
     out = "uki",
-    exe_layer = ":layer",
+    exec_layer = ":layer",
     bash = """
         systemd-ukify build \
             --linux $(location :vmlinuz) \
@@ -109,7 +109,7 @@ genrule_in_image(
         "uki": "uki",
         "key": "key",
     },
-    exe_layer = ":layer",
+    exec_layer = ":layer",
     bash = """
         systemd-ukify genkey --output $OUT/key
 
