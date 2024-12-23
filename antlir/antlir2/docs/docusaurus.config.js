@@ -85,7 +85,6 @@ import {themes} from 'prism-react-renderer';
             position: 'left',
             label: 'Docs',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
           {
             href: 'https://github.com/facebookincubator/antlir/',
             label: 'GitHub',
@@ -112,10 +111,6 @@ import {themes} from 'prism-react-renderer';
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: '/blog',
-              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/facebookincubator/antlir',
