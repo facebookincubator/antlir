@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbcode//target_determinator/macros:ci.bzl", "ci")
-load("@fbcode//target_determinator/macros:fbcode_ci_helpers.bzl", "fbcode_ci")
+load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
+load("@fbsource//tools/target_determinator/macros:fbcode_ci_helpers.bzl", "fbcode_ci")
 
 def disable_dev_mode(labels: list[str]) -> list[str]:
     """ In addition to `use_opt_instead_of_dev`, explicitly replace some modes
