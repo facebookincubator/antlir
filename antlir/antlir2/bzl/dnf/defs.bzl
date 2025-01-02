@@ -8,7 +8,6 @@ load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo")
 load(
     "//antlir/antlir2/package_managers/dnf/rules:rpm.bzl",
     "RpmInfo",  # @unused Used as type
-    "nevra_to_string",
     "package_href",
 )
 
@@ -90,7 +89,7 @@ def compiler_plan_to_local_repos(
     for repo_info in dnf_available_repos:
         by_repo[repo_info.id] = {"nevras": {}, "repo_info": repo_info}
         for rpm_info in repo_info.all_rpms:
-            by_repo[repo_info.id]["nevras"][nevra_to_string(rpm_info.nevra)] = rpm_info
+            by_repo[repo_info.id]["nevras"][rpm_info.nevra] = rpm_info
 
     def _dyn(ctx, artifacts, outputs, tx = tx, by_repo = by_repo, dir = dir):
         tx = artifacts[tx].read_json()
