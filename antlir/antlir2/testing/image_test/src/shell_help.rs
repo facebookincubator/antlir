@@ -19,17 +19,13 @@ Press ^] three times within 1s to kill the container.
 You have been auto-logged in to a root console. Feel free to mess around here,
 any changes you make will be thrown away when the container exits.
 
-Soon, this will be populated with a copy-pasteable command, but for now...
-
 To run your test interactively:
 
-In another shell on your host:
+/__antlir2_image_test__/image-test exec
 
-'buck2 build --show-full-output $test[inner_test]'
+Any arguments you append will be added to the end will be passed to the inner
+test binary (and can be used for things like test filtering, etc).
 
-In this shell:
-
-Run the binary at that path printed above
 EOF
 "#;
 

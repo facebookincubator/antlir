@@ -81,6 +81,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(
             "#!/bin/bash",
             cmd_args(
+                "exec",
                 test_cmd,
                 '"$@"',
                 delimiter = " \\\n  ",
@@ -120,8 +121,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             sub_targets = {
                 "container": [
                     RunInfo(cmd_args(
-                        ctx.attrs.layer[DefaultInfo].sub_targets["container"][RunInfo],
-                        "--boot" if ctx.attrs.boot else cmd_args(),
+                        ctx.attrs.image_test[RunInfo],
+                        "container",
+                        cmd_args(spec, format = "--spec={}"),
+                        ctx.attrs.test[ExternalRunnerTestInfo].test_type,
+                        ctx.attrs.test[ExternalRunnerTestInfo].command,
                     )),
                     DefaultInfo(),
                 ],
