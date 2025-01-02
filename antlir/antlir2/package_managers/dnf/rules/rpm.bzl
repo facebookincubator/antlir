@@ -5,37 +5,18 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl/dnf:reflink.bzl", "REFLINK_FLAVORS", "rpm2extents")
-load("//antlir/bzl:types.bzl", "types")
 
-nevra = record(
-    name = str,
-    epoch = int,
-    version = str,
-    release = str,
-    arch = str,
-)
-
-def nevra_to_string(nevra: nevra | typing.Any) -> str:
-    return "{}-{}:{}-{}.{}".format(
-        nevra.name,
-        nevra.epoch,
-        nevra.version,
-        nevra.release,
-        nevra.arch,
-    )
-
-def package_href(nevra: nevra | str, id: str) -> str:
+def package_href(nevra: str, id: str) -> str:
     """
     Make the location encode the pkgid. The last path component is the package
     nevra so that dnf logs look nice, but the repo proxy only looks at the
     middle path component that includes the pkgid.
     """
-    if not types.is_string(nevra):
-        nevra = nevra_to_string(nevra)
     return "Packages/{id}/{nevra}.rpm".format(id = id, nevra = nevra)
 
 RpmInfo = provider(fields = [
     "extents",  # .rpm transformed by rpm2extents
+    "name",  # Name component of NEVRA
     "nevra",  # RPM NEVRA
     "pkgid",  # checksum (sha256 or sha1, usually sha256)
     "raw_rpm",  # .rpm file artifact
@@ -67,21 +48,23 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         rpm_file = ctx.actions.declare_output("rpm.rpm")
         ctx.actions.download_file(rpm_file, ctx.attrs.url, sha256 = ctx.attrs.sha256, sha1 = ctx.attrs.sha1)
 
-    pkg_nevra = nevra(
-        name = ctx.attrs.rpm_name,
-        epoch = ctx.attrs.epoch,
-        version = ctx.attrs.version,
-        release = ctx.attrs.release,
-        arch = ctx.attrs.arch,
+    # TODO: move nevra directly into attrs.string()
+    nevra = "{}-{}:{}-{}.{}".format(
+        ctx.attrs.rpm_name,
+        ctx.attrs.epoch,
+        ctx.attrs.version,
+        ctx.attrs.release,
+        ctx.attrs.arch,
     )
     pkgid = ctx.attrs.sha256 or ctx.attrs.sha1
-    href = package_href(pkg_nevra, pkgid)
+    href = package_href(nevra, pkgid)
 
     xml = ctx.attrs.xml or _make_xml(ctx, rpm_file, href)
 
     return common_impl(
         ctx = ctx,
-        nevra = pkg_nevra,
+        name = ctx.attrs.rpm_name,
+        nevra = nevra,
         rpm = rpm_file,
         xml = xml,
         pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
@@ -90,7 +73,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
 def common_impl(
         ctx: AnalysisContext,
-        nevra: nevra,
+        name: str,
+        nevra: str,
         rpm: Artifact,
         xml: Artifact,
         pkgid: str,
@@ -127,6 +111,7 @@ def common_impl(
             "xml": [DefaultInfo(xml)],
         }),
         RpmInfo(
+            name = name,
             nevra = nevra,
             raw_rpm = rpm,
             pkgid = pkgid,

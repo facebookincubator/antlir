@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/bzl:internal_external.bzl", "is_facebook")
-load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
+load(":rpm.bzl", "RpmInfo", "package_href")
 
 RepoInfo = provider(fields = [
     "all_rpms",  # All RpmInfos contained in this repo
@@ -25,7 +25,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     # Construct repodata XML blobs from each individual RPM
     xml_dir = ctx.actions.declare_output("xml", dir = True)
-    ctx.actions.copied_dir(xml_dir, {nevra_to_string(rpm.nevra): rpm.xml for rpm in rpm_infos})
+    ctx.actions.copied_dir(xml_dir, {rpm.nevra: rpm.xml for rpm in rpm_infos})
     optional_args = []
     if ctx.attrs.timestamp != None:
         optional_args += ["--timestamp={}".format(ctx.attrs.timestamp)]
