@@ -88,12 +88,17 @@ def image_cxx_toolchain(
             actual = layer,
             default_os = os.name,
         )
-        _single_image_cxx_toolchain(
-            name = "{}--{}".format(name, os.name),
-            layer = ":{}--{}--layer".format(name, os.name),
-            sysroot = sysroot,
-            visibility = [],
-        )
+        for arch in os.architectures:
+            # despite the fact that this has no arch-specific configuration, the
+            # toolchain name is used by the cxx rules `_*_platform` attrs (eg
+            # `platform_compiler_flags`) and so it should have an architecture
+            # to match on
+            _single_image_cxx_toolchain(
+                name = "{}--{}-{}".format(name, os.name, arch.name),
+                layer = ":{}--{}--layer".format(name, os.name),
+                sysroot = sysroot,
+                visibility = [],
+            )
 
     # The "real" toolchain is actually an alias that depends on the selected OS.
     # This is necessary because all the tools listed above (clang, ld.lld, etc)
@@ -105,7 +110,10 @@ def image_cxx_toolchain(
         name = name,
         actual = select(
             {
-                os.select_key: ":{}--{}".format(name, os.name)
+                os.select_key: select({
+                    arch.select_key: ":{}--{}-{}".format(name, os.name, arch.name)
+                    for arch in os.architectures
+                })
                 for os in oses
             } |
             # This will never actually be configured as DEFAULT for a real

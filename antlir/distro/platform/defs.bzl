@@ -5,15 +5,13 @@
 
 # @oss-disable
 load("@prelude//:rules.bzl", "platform")
-load("//antlir/antlir2/os:oses.bzl", "OSES", "arch_t", "os_t")
+load("//antlir/antlir2/os:oses.bzl", "OSES", "arch_t", "new_arch_t", "os_t")
 
 def _cpu_label(arch: arch_t, *, constraint: bool = False) -> str:
-    arch = arch.value
-    if arch == "aarch64":
-        arch = "arm64"
+    sk = arch.select_key
     if constraint:
-        return "ovr_config//cpu/constraints:" + arch
-    return "ovr_config//cpu:" + arch
+        sk = sk.replace("ovr_config//cpu:", "ovr_config//cpu/constraints:")
+    return sk
 
 def _image_platform(
         *,
@@ -42,7 +40,7 @@ def _image_platform(
     )
 
 def _platform_name(os: os_t, arch: arch_t) -> str:
-    return os.name + "-" + arch.value
+    return os.name + "-" + arch.name
 
 def define_platforms():
     for os in OSES:
@@ -93,7 +91,7 @@ def default_image_platform(os: str):
     # @oss-disable
     default_arch = "aarch64" if native.host_info().arch.is_aarch64 else "x86_64" # @oss-enable
 
-    default_arch = arch_t(default_arch)
+    default_arch = new_arch_t(default_arch)
     found_os = None
     for test_os in OSES:
         if test_os.name == os:

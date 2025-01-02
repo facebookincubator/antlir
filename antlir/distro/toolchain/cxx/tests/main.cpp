@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
   Json::Value root;
   root["clang_version"] = __clang_version__;
   root["rpmlib_version"] = dep_get_rpmlib_version();
+  root["platform_preprocessor_flag"] = PLATFORM_PREPROCESSOR_FLAG;
   std::cout << root << std::endl;
   return 0;
 }

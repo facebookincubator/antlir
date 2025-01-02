@@ -21,6 +21,24 @@ prelude.cxx_binary(
         "//antlir/distro:build-for-distro",
     ],
     default_target_platform = default_image_platform("centos9"),
+    platform_preprocessor_flags = [
+        (
+            "centos9-x86_64$",
+            ['-DPLATFORM_PREPROCESSOR_FLAG="centos9-x86_64"'],
+        ),
+        (
+            "centos10-x86_64$",
+            ['-DPLATFORM_PREPROCESSOR_FLAG="centos10-x86_64"'],
+        ),
+        (
+            "centos9-aarch64$",
+            ['-DPLATFORM_PREPROCESSOR_FLAG="centos9-aarch64"'],
+        ),
+        (
+            "centos10-aarch64$",
+            ['-DPLATFORM_PREPROCESSOR_FLAG="centos10-aarch64"'],
+        ),
+    ],
     deps = [
         ":dep",
         "//antlir/distro/deps/jsoncpp:jsoncpp",

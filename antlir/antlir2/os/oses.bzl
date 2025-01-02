@@ -5,7 +5,16 @@
 
 load("//antlir/bzl:internal_external.bzl", "internal_external", "is_facebook")
 
-arch_t = enum("x86_64", "aarch64")
+arch_t = record(
+    name = str,
+    select_key = str,
+)
+
+def new_arch_t(s: str) -> arch_t:
+    return arch_t(
+        name = s,
+        select_key = {"aarch64": "ovr_config//cpu:arm64", "x86_64": "ovr_config//cpu:x86_64"}[s],
+    )
 
 os_t = record(
     name = str,
@@ -18,8 +27,8 @@ os_t = record(
 
 def _new_os(name: str, **kwargs):
     kwargs.setdefault("architectures", internal_external(
-        fb = [arch_t("x86_64"), arch_t("aarch64")],
-        oss = [arch_t("x86_64")],
+        fb = [new_arch_t("x86_64"), new_arch_t("aarch64")],
+        oss = [new_arch_t("x86_64")],
     ))
     kwargs.setdefault("select_key", "antlir//antlir/antlir2/os:" + name)
     kwargs.setdefault(
@@ -58,15 +67,15 @@ if is_facebook:
         ),
         _new_os(
             name = "centos8",
-            architectures = [arch_t("x86_64")],
+            architectures = [new_arch_t("x86_64")],
         ),
         _new_os(
             name = "rhel8",
-            architectures = [arch_t("x86_64")],
+            architectures = [new_arch_t("x86_64")],
         ),
         _new_os(
             name = "rhel8.8",
-            architectures = [arch_t("x86_64")],
+            architectures = [new_arch_t("x86_64")],
         ),
     ])
 else:
@@ -75,7 +84,7 @@ else:
     OSES.append(
         _new_os(
             name = "centos8",
-            architectures = [arch_t("x86_64")],
+            architectures = [new_arch_t("x86_64")],
             flavor = "antlir//antlir/antlir2/flavor:none",
         ),
     )

@@ -110,3 +110,19 @@ class Test(TestCase):
             any(r.startswith("librpm.so") for r in requires),
             "'main' did not require librpm.so",
         )
+
+    def test_platform_preprocessor_flags(self) -> None:
+        """
+        Check that the preprocessor flags are set based on platform regex
+        matches in cxx rules.
+        """
+        out = json.loads(
+            subprocess.run(
+                [self.binary], check=True, capture_output=True, text=True
+            ).stdout
+        )
+        platform_preprocessor_flag = out["platform_preprocessor_flag"]
+        self.assertEqual(
+            platform_preprocessor_flag,
+            f"{self.os}-{platform.machine()}",
+        )
