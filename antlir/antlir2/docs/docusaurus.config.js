@@ -117,6 +117,24 @@ import {themes} from 'prism-react-renderer';
               },
             ],
           },
+          {
+            title: 'Legal',
+            // Please do not remove the privacy and terms, it's a legal requirement.
+            items: [
+              {
+                label: 'Privacy',
+                href: 'https://opensource.fb.com/legal/privacy/',
+                target: '_blank',
+                rel: 'noreferrer noopener',
+              },
+              {
+                label: 'Terms',
+                href: 'https://opensource.fb.com/legal/terms/',
+                target: '_blank',
+                rel: 'noreferrer noopener',
+              },
+            ],
+          },
         ],
         copyright: `Copyright © ${new Date().getFullYear()} Meta Platforms, Inc. Built with Docusaurus.`,
       },
