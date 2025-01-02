@@ -82,6 +82,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "#!/bin/bash",
             cmd_args(
                 test_cmd,
+                '"$@"',
                 delimiter = " \\\n  ",
             ),
             "\n",
