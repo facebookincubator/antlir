@@ -8,10 +8,12 @@
 use anyhow::Result;
 use clap::Parser;
 
+mod container;
 mod exec;
 mod runtime;
 mod shell_help;
 mod spawn;
+mod spawn_common;
 
 #[derive(Parser, Debug)]
 enum Args {
@@ -20,6 +22,8 @@ enum Args {
     /// Execute the test from inside the container
     Exec(exec::Args),
     ShellHelp(shell_help::Args),
+    /// Run an interactive shell inside the test container
+    Container(container::Args),
 }
 
 fn main() -> Result<()> {
@@ -31,5 +35,6 @@ fn main() -> Result<()> {
         Args::Spawn(a) => a.run(),
         Args::Exec(a) => a.run(),
         Args::ShellHelp(a) => a.run(),
+        Args::Container(a) => a.run(),
     }
 }

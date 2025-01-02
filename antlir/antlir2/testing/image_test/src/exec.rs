@@ -15,7 +15,6 @@ use anyhow::Context;
 use anyhow::Result;
 use bon::Builder;
 use clap::Parser;
-use json_arg::JsonFile;
 use nix::unistd::User;
 use serde::Deserialize;
 use serde::Serialize;
@@ -39,13 +38,16 @@ pub(crate) struct Spec {
 #[derive(Debug, Parser)]
 /// Execute the inner test
 pub(crate) struct Args {
-    #[clap(default_value = "/__antlir2_image_test__/exec_spec.json")]
-    spec: JsonFile<Spec>,
+    /// Args to pass to the inner test binary
+    args: Vec<OsString>,
 }
 
 impl Args {
     pub(crate) fn run(self) -> Result<()> {
-        let spec = self.spec.into_inner();
+        let spec = std::fs::read_to_string("/__antlir2_image_test__/exec_spec.json")
+            .context("while reading '/__antlir2_image_test__/exec_spec.json'")?;
+        let spec: Spec = serde_json::from_str(&spec)
+            .context("while parsing '/__antlir2_image_test__/exec_spec.json'")?;
         std::env::set_current_dir(&spec.working_directory)
             .with_context(|| format!("while changing to '{}'", spec.working_directory.display()))?;
         let mut env = spec.env;
@@ -67,6 +69,7 @@ impl Args {
         let mut cmd = spec.cmd.into_iter();
         let err = Command::new(cmd.next().context("test command was empty")?)
             .args(cmd)
+            .args(self.args)
             .envs(env)
             .uid(user.uid.into())
             .gid(user.gid.into())

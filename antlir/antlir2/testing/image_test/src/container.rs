@@ -27,6 +27,7 @@ impl Args {
         spawn_common::run()
             .spec(self.spec.into_inner())
             .test(self.test)
+            .interactive(true)
             .call()
     }
 }
