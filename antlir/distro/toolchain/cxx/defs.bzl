@@ -122,7 +122,7 @@ def image_cxx_toolchain(
             # the default when looking up this target directly (instead of
             # preconfigured as a dependency of something using an antlir
             # distro platform)
-            {"DEFAULT": ":{}--{}".format(name, oses[0].name)},
+            {"DEFAULT": ":{}--{}-{}".format(name, oses[0].name, oses[0].architectures[0].name)},
         ),
         visibility = visibility,
     )
