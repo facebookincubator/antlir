@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "dccf7da5288863f02b2db8c452e67d2156f74d84",
+    rev = "dd994f49c35aed4011fd8c4e3cda55f5e7e3545d",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "78169ab547190f7b98a1d69f4670b955f1d29f30",
+    rev = "5c8ca2d9013ad754293a2e02c899b6c648dc35b1",
     visibility = [],
 )
 
@@ -1472,23 +1472,23 @@ cargo.rust_library(
 
 alias(
     name = "async-trait",
-    actual = ":async-trait-0.1.83",
+    actual = ":async-trait-0.1.84",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "async-trait-0.1.83.crate",
-    sha256 = "721cae7de5c34fbb2acd27e21e6d2cf7b886dce0c27388d46c4e6c47ea4318dd",
-    strip_prefix = "async-trait-0.1.83",
-    urls = ["https://static.crates.io/crates/async-trait/0.1.83/download"],
+    name = "async-trait-0.1.84.crate",
+    sha256 = "1b1244b10dcd56c92219da4e14caa97e312079e185f04ba3eea25061561dc0a0",
+    strip_prefix = "async-trait-0.1.84",
+    urls = ["https://static.crates.io/crates/async-trait/0.1.84/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "async-trait-0.1.83",
-    srcs = [":async-trait-0.1.83.crate"],
+    name = "async-trait-0.1.84",
+    srcs = [":async-trait-0.1.84.crate"],
     crate = "async_trait",
-    crate_root = "async-trait-0.1.83.crate/src/lib.rs",
+    crate_root = "async-trait-0.1.84.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
@@ -3349,7 +3349,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":async-trait-0.1.83",
+        ":async-trait-0.1.84",
         ":async_once-0.2.6",
         ":cached_proc_macro-0.15.0",
         ":cached_proc_macro_types-0.1.1",
@@ -7458,7 +7458,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":anyhow-1.0.95",
-        ":async-trait-0.1.83",
+        ":async-trait-0.1.84",
         ":base64-0.21.7",
         ":bufsize-1.0.8",
         ":bytes-1.9.0",
@@ -7490,7 +7490,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":anyhow-1.0.95",
-        ":async-trait-0.1.83",
+        ":async-trait-0.1.84",
         ":base64-0.11.0",
         ":bufsize-1.0.8",
         ":bytes-1.9.0",
@@ -23166,7 +23166,7 @@ cargo.rust_library(
         ":serde-1.0.217",
         ":serde_spanned-0.6.8",
         ":toml_datetime-0.6.8",
-        ":winnow-0.6.21",
+        ":winnow-0.6.22",
     ],
 )
 
@@ -25769,18 +25769,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "winnow-0.6.21.crate",
-    sha256 = "e6f5bb5257f2407a5425c6e749bfd9692192a73e70a6060516ac04f889087d68",
-    strip_prefix = "winnow-0.6.21",
-    urls = ["https://static.crates.io/crates/winnow/0.6.21/download"],
+    name = "winnow-0.6.22.crate",
+    sha256 = "39281189af81c07ec09db316b302a3e67bf9bd7cbf6c820b50e35fee9c2fa980",
+    strip_prefix = "winnow-0.6.22",
+    urls = ["https://static.crates.io/crates/winnow/0.6.22/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "winnow-0.6.21",
-    srcs = [":winnow-0.6.21.crate"],
+    name = "winnow-0.6.22",
+    srcs = [":winnow-0.6.22.crate"],
     crate = "winnow",
-    crate_root = "winnow-0.6.21.crate/src/lib.rs",
+    crate_root = "winnow-0.6.22.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -26171,7 +26171,7 @@ cargo.rust_library(
         ":async-io-2.4.0",
         ":async-lock-3.4.0",
         ":async-task-4.7.1",
-        ":async-trait-0.1.83",
+        ":async-trait-0.1.84",
         ":blocking-1.6.1",
         ":enumflags2-0.7.10",
         ":event-listener-5.3.1",
@@ -26839,7 +26839,7 @@ cargo.rust_library(
         ":endi-1.1.0",
         ":serde-1.0.217",
         ":static_assertions-1.1.0",
-        ":winnow-0.6.21",
+        ":winnow-0.6.22",
         ":zvariant_derive-5.1.0",
         ":zvariant_utils-3.0.2",
     ],
@@ -26940,6 +26940,6 @@ cargo.rust_library(
         ":serde-1.0.217",
         ":static_assertions-1.1.0",
         ":syn-2.0.94",
-        ":winnow-0.6.21",
+        ":winnow-0.6.22",
     ],
 )
