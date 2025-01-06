@@ -23,7 +23,6 @@ def user_add(
         username: str | Select,
         primary_group: str | Select,
         home_dir: str | Select,
-        uid: int | Select | None = None,
         uidmap: str = "default",
         shell: str | Select = SHELL_NOLOGIN,
         supplementary_groups: list[str | Select] | Select = [],
@@ -68,7 +67,6 @@ def user_add(
             "primary_group": primary_group,
             "shell": shell,
             "supplementary_groups": supplementary_groups,
-            "uid": uid,
             "username": username,
         },
     )
@@ -76,8 +74,6 @@ def user_add(
 def standard_user(
         username: str,
         groupname: str,
-        uid: int | None = None,
-        gid: int | None = None,
         uidmap: str = "default",
         home_dir: str | None = None,
         shell: str = SHELL_BASH,
@@ -92,7 +88,6 @@ def standard_user(
     return [
         group_add(
             groupname = groupname,
-            gid = gid,
             uidmap = uidmap,
         ),
         user_add(
@@ -100,7 +95,6 @@ def standard_user(
             primary_group = groupname,
             home_dir = home_dir,
             shell = shell,
-            uid = uid,
             uidmap = uidmap,
             supplementary_groups = supplementary_groups,
         ),
@@ -125,7 +119,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 primary_group = ctx.attrs.primary_group,
                 shell = ctx.attrs.shell,
                 supplementary_groups = ctx.attrs.supplementary_groups,
-                uid = ctx.attrs.uid,
                 uidmap = uidmap,
                 username = ctx.attrs.username,
             ),
@@ -144,7 +137,6 @@ user_rule = rule(
         "primary_group": attrs.string(),
         "shell": attrs.string(),
         "supplementary_groups": attrs.list(attrs.string()),
-        "uid": attrs.option(attrs.int()),
         "uidmap": attrs.dep(),
         "username": attrs.string(),
     },
