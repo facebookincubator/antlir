@@ -19,6 +19,7 @@ file-type = 'regular-file'
 user = 'root'
 group = 'root'
 text = '''
+root:*:::::::
 antlir:!!:::::::
 '''
 

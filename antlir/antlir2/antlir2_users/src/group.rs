@@ -9,10 +9,12 @@
 //! under-construction image so that ownership is attributed properly.
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
+use maplit::btreemap;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
@@ -35,12 +37,13 @@ use nom::IResult;
 use crate::Error;
 use crate::GroupId;
 use crate::Id;
-use crate::Password;
 use crate::Result;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EtcGroup<'a> {
     records: Vec<GroupRecord<'a>>,
+    gid_to_record_idx: BTreeMap<GroupId, usize>,
+    groupname_to_record_idx: BTreeMap<String, usize>,
 }
 
 impl<'a> Default for EtcGroup<'a> {
@@ -48,10 +51,12 @@ impl<'a> Default for EtcGroup<'a> {
         Self {
             records: vec![GroupRecord {
                 name: "root".into(),
-                password: Password::Shadow,
+                password: GroupRecordPassword::X,
                 gid: GroupId(0),
                 users: vec!["root".into()],
             }],
+            gid_to_record_idx: btreemap! {GroupId(0) => 0},
+            groupname_to_record_idx: btreemap! {"root".to_string() => 0},
         }
     }
 }
@@ -65,7 +70,22 @@ impl<'a> EtcGroup<'a> {
             separated_list0(newline, context("GroupRecord", GroupRecord::parse))(input)?;
         // eat trailing newlines
         let (input, _) = all_consuming(many0(newline))(input)?;
-        Ok((input, Self { records }))
+        Ok((
+            input,
+            Self {
+                gid_to_record_idx: records
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, r)| (r.gid, idx))
+                    .collect(),
+                groupname_to_record_idx: records
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, r)| (r.name.to_string(), idx))
+                    .collect(),
+                records,
+            },
+        ))
     }
 
     pub fn parse(input: &'a str) -> Result<Self> {
@@ -87,8 +107,26 @@ impl<'a> EtcGroup<'a> {
         self.records.into_iter()
     }
 
-    pub fn push(&mut self, record: GroupRecord<'a>) {
-        self.records.push(record)
+    pub fn push(&mut self, record: GroupRecord<'a>) -> Result<()> {
+        match (
+            self.get_group_by_id(record.gid),
+            self.get_group_by_name(&record.name),
+        ) {
+            (Some(existing), _) | (_, Some(existing)) if *existing == record => Ok(()),
+            (Some(existing), _) | (_, Some(existing)) => Err(Error::Duplicate(
+                existing.name.to_string(),
+                format!("{:?}", existing),
+                format!("{:?}", record),
+            )),
+            (None, None) => {
+                self.gid_to_record_idx
+                    .insert(record.gid, self.records.len());
+                self.groupname_to_record_idx
+                    .insert(record.name.to_string(), self.records.len());
+                self.records.push(record);
+                Ok(())
+            }
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -100,15 +138,21 @@ impl<'a> EtcGroup<'a> {
     }
 
     pub fn get_group_by_name(&self, name: &str) -> Option<&GroupRecord<'a>> {
-        self.records.iter().find(|r| r.name == name)
+        self.groupname_to_record_idx
+            .get(name)
+            .and_then(|&idx| self.records.get(idx))
     }
 
     pub fn get_group_by_name_mut(&mut self, name: &str) -> Option<&mut GroupRecord<'a>> {
-        self.records.iter_mut().find(|r| r.name == name)
+        self.groupname_to_record_idx
+            .get(name)
+            .and_then(|&idx| self.records.get_mut(idx))
     }
 
     pub fn get_group_by_id(&self, id: GroupId) -> Option<&GroupRecord<'a>> {
-        self.records.iter().find(|r| r.gid == id)
+        self.gid_to_record_idx
+            .get(&id)
+            .and_then(|&idx| self.records.get(idx))
     }
 
     pub fn into_owned(self) -> EtcGroup<'static> {
@@ -118,6 +162,8 @@ impl<'a> EtcGroup<'a> {
                 .into_iter()
                 .map(GroupRecord::into_owned)
                 .collect(),
+            gid_to_record_idx: self.gid_to_record_idx,
+            groupname_to_record_idx: self.groupname_to_record_idx,
         }
     }
 }
@@ -140,10 +186,35 @@ impl<'a> Display for EtcGroup<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GroupRecordPassword {
+    /// The group password field is always set
+    /// to "x" on modern Unix systems.
+    X,
+}
+
+impl GroupRecordPassword {
+    fn parse<'a, E>(input: &'a str) -> IResult<&'a str, Self, E>
+    where
+        E: ParseError<&'a str> + ContextError<&'a str>,
+    {
+        let (input, _) = context("password", char('x'))(input)?;
+        Ok((input, Self::X))
+    }
+}
+
+impl Display for GroupRecordPassword {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::X => "x".fmt(f),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GroupRecord<'a> {
     pub name: Cow<'a, str>,
-    pub password: Password,
+    pub password: GroupRecordPassword,
     pub gid: GroupId,
     pub users: Vec<Cow<'a, str>>,
 }
@@ -157,7 +228,7 @@ impl<'a> GroupRecord<'a> {
         let (input, (name, _, password, _, gid, _)) = tuple((
             context("groupname", take_until1(":")),
             &colon,
-            Password::parse,
+            GroupRecordPassword::parse,
             &colon,
             context("gid", nom::character::complete::u32),
             &colon,
@@ -227,7 +298,7 @@ systemd-journal:x:190:systemd-journald
         assert_eq!(
             Some(&GroupRecord {
                 name: "bin".into(),
-                password: Password::Shadow,
+                password: GroupRecordPassword::X,
                 gid: 1.into(),
                 users: vec!["root".into(), "daemon".into()],
             }),
@@ -242,7 +313,7 @@ systemd-journal:x:190:systemd-journald
         assert_eq!(
             Some(&GroupRecord {
                 name: "root".into(),
-                password: Password::Shadow,
+                password: GroupRecordPassword::X,
                 gid: 0.into(),
                 users: Vec::new()
             }),
