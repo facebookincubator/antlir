@@ -67,6 +67,7 @@ def _single_image_cxx_toolchain(
         linker = _layer_tool(name, "clang"),
         linker_flags = ["-fuse-ld=lld"] + _llvm_base_args + _include_sysroot(sysroot, "L"),
         linker_type = "gnu",
+        generate_linker_maps = False, # @oss-enable
         nm = _layer_tool(name, "nm"),
         objcopy_for_shared_library_interface = _layer_tool(name, "objcopy"),
         requires_archives = True,
