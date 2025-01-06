@@ -9,10 +9,12 @@
 //! under-construction image so that ownership is attributed properly.
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
+use maplit::btreemap;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
@@ -32,9 +34,29 @@ use nom::IResult;
 use crate::Error;
 use crate::Result;
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EtcShadow<'a> {
     records: Vec<ShadowRecord<'a>>,
+    username_to_record_idx: BTreeMap<String, usize>,
+}
+
+impl<'a> Default for EtcShadow<'a> {
+    fn default() -> Self {
+        Self {
+            records: vec![ShadowRecord {
+                name: "root".into(),
+                encrypted_password: ShadowRecordPassword::NoLoginButPermitSSH,
+                last_password_change: None,
+                minimum_password_age: None,
+                maximum_password_age: None,
+                password_warning_period: None,
+                password_inactivity_period: None,
+                account_expiration_date: None,
+                reserved: "".into(),
+            }],
+            username_to_record_idx: btreemap! {"root".to_string() => 0},
+        }
+    }
 }
 
 impl<'a> EtcShadow<'a> {
@@ -46,7 +68,17 @@ impl<'a> EtcShadow<'a> {
             separated_list0(newline, context("ShadowRecord", ShadowRecord::parse))(input)?;
         // eat any trailing newlines
         let (input, _) = all_consuming(many0(newline))(input)?;
-        Ok((input, Self { records }))
+        Ok((
+            input,
+            Self {
+                username_to_record_idx: records
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, r)| (r.name.to_string(), idx))
+                    .collect(),
+                records,
+            },
+        ))
     }
 
     pub fn parse(input: &'a str) -> Result<Self> {
@@ -68,8 +100,21 @@ impl<'a> EtcShadow<'a> {
         self.records.into_iter()
     }
 
-    pub fn push(&mut self, record: ShadowRecord<'a>) {
-        self.records.push(record)
+    pub fn push(&mut self, record: ShadowRecord<'a>) -> Result<()> {
+        match self.get_user_shadow_by_name(&record.name) {
+            Some(existing) if *existing == record => Ok(()),
+            Some(existing) => Err(Error::Duplicate(
+                existing.name.to_string(),
+                format!("{:?}", existing),
+                format!("{:?}", record),
+            )),
+            None => {
+                self.username_to_record_idx
+                    .insert(record.name.to_string(), self.records.len());
+                self.records.push(record);
+                Ok(())
+            }
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -80,6 +125,12 @@ impl<'a> EtcShadow<'a> {
         self.records.is_empty()
     }
 
+    pub fn get_user_shadow_by_name(&self, name: &str) -> Option<&ShadowRecord<'a>> {
+        self.username_to_record_idx
+            .get(name)
+            .and_then(|&idx| self.records.get(idx))
+    }
+
     pub fn into_owned(self) -> EtcShadow<'static> {
         EtcShadow {
             records: self
@@ -87,6 +138,7 @@ impl<'a> EtcShadow<'a> {
                 .into_iter()
                 .map(ShadowRecord::into_owned)
                 .collect(),
+            username_to_record_idx: self.username_to_record_idx,
         }
     }
 }
@@ -132,10 +184,48 @@ impl Days {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ShadowRecordPassword {
+    /// Login by password is disabled (!, !!, !*).
+    /// OpenSSH in `UsePAM no` mode will not allow logging in.
+    /// OpenSSH in `UsePAM yes` mode may allow logging in.
+    NoLogin,
+    /// Login by password is disabled (*).
+    /// OpenSSH may allow logging in.
+    NoLoginButPermitSSH,
+    /// Login is enabled, and no password is required.
+    OpenLogin,
+    /// Login is enabled, and a password is required.
+    /// The shadow record contains the hash of the password.
+    EncryptedPassword(String),
+}
+
+impl From<&str> for ShadowRecordPassword {
+    fn from(s: &str) -> Self {
+        match s {
+            "!" | "!*" | "!!" => Self::NoLogin,
+            "*" => Self::NoLoginButPermitSSH,
+            "" => Self::OpenLogin,
+            _ => Self::EncryptedPassword(s.to_string()),
+        }
+    }
+}
+
+impl Display for ShadowRecordPassword {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::NoLogin => "!!".fmt(f),
+            Self::NoLoginButPermitSSH => "*".fmt(f),
+            Self::OpenLogin => "".fmt(f),
+            Self::EncryptedPassword(s) => s.fmt(f),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ShadowRecord<'a> {
     pub name: Cow<'a, str>,
-    pub encrypted_password: Cow<'a, str>,
+    pub encrypted_password: ShadowRecordPassword,
     pub last_password_change: Option<Days>,
     pub minimum_password_age: Option<Days>,
     pub maximum_password_age: Option<Days>,
@@ -198,7 +288,7 @@ impl<'a> ShadowRecord<'a> {
             input,
             Self {
                 name: Cow::Borrowed(name),
-                encrypted_password: Cow::Borrowed(encrypted_password),
+                encrypted_password: encrypted_password.into(),
                 last_password_change,
                 minimum_password_age,
                 maximum_password_age,
@@ -213,7 +303,7 @@ impl<'a> ShadowRecord<'a> {
     pub fn into_owned(self) -> ShadowRecord<'static> {
         ShadowRecord {
             name: Cow::Owned(self.name.into_owned()),
-            encrypted_password: Cow::Owned(self.encrypted_password.into_owned()),
+            encrypted_password: self.encrypted_password,
             last_password_change: self.last_password_change.clone(),
             minimum_password_age: self.minimum_password_age.clone(),
             maximum_password_age: self.maximum_password_age.clone(),
@@ -224,6 +314,58 @@ impl<'a> ShadowRecord<'a> {
         }
     }
 }
+
+impl<'a> PartialEq for ShadowRecord<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        let Self {
+            name: self_name,
+            encrypted_password: self_encrypted_password,
+            last_password_change: self_last_password_change,
+            minimum_password_age: self_minimum_password_age,
+            maximum_password_age: self_maximum_password_age,
+            password_warning_period: self_password_warning_period,
+            password_inactivity_period: self_password_inactivity_period,
+            account_expiration_date: self_account_expiration_date,
+            reserved: self_reserved,
+        } = self;
+        let Self {
+            name: other_name,
+            encrypted_password: other_encrypted_password,
+            last_password_change: other_last_password_change,
+            minimum_password_age: other_minimum_password_age,
+            maximum_password_age: other_maximum_password_age,
+            password_warning_period: other_password_warning_period,
+            password_inactivity_period: other_password_inactivity_period,
+            account_expiration_date: other_account_expiration_date,
+            reserved: other_reserved,
+        } = other;
+
+        // Compare the regular fields.
+        if self_name != other_name
+            || self_encrypted_password != other_encrypted_password
+            || self_reserved != other_reserved
+        {
+            return false;
+        }
+
+        // If a password is set, compare the password rotation rules.
+        if let ShadowRecordPassword::EncryptedPassword(_) = self_encrypted_password {
+            if self_last_password_change != other_last_password_change
+                || self_minimum_password_age != other_minimum_password_age
+                || self_maximum_password_age != other_maximum_password_age
+                || self_password_warning_period != other_password_warning_period
+                || self_password_inactivity_period != other_password_inactivity_period
+                || self_account_expiration_date != other_account_expiration_date
+            {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+impl<'a> Eq for ShadowRecord<'a> {}
 
 struct OptionalDays<'a>(&'a Option<Days>);
 

@@ -9,11 +9,13 @@
 //! under-construction image so that ownership is attributed properly.
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::path::Path;
 use std::str::FromStr;
 
+use maplit::btreemap;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
@@ -30,17 +32,19 @@ use nom::sequence::tuple;
 use nom::Finish;
 use nom::IResult;
 
-use crate::shadow;
+use crate::shadow::ShadowRecord;
+use crate::shadow::ShadowRecordPassword;
 use crate::Error;
 use crate::GroupId;
 use crate::Id;
-use crate::Password;
 use crate::Result;
 use crate::UserId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EtcPasswd<'a> {
     records: Vec<UserRecord<'a>>,
+    uid_to_record_idx: BTreeMap<UserId, usize>,
+    username_to_record_idx: BTreeMap<String, usize>,
 }
 
 impl<'a> Default for EtcPasswd<'a> {
@@ -48,13 +52,15 @@ impl<'a> Default for EtcPasswd<'a> {
         Self {
             records: vec![UserRecord {
                 name: "root".into(),
-                password: Password::Shadow,
+                password: UserRecordPassword::Shadow,
                 uid: UserId(0),
                 gid: GroupId(0),
                 comment: "".into(),
                 homedir: Path::new("/root").into(),
                 shell: Path::new("/bin/bash").into(),
             }],
+            uid_to_record_idx: btreemap! {UserId(0) => 0},
+            username_to_record_idx: btreemap! {"root".to_string() => 0},
         }
     }
 }
@@ -68,7 +74,22 @@ impl<'a> EtcPasswd<'a> {
             separated_list0(newline, context("UserRecord", UserRecord::parse))(input)?;
         // eat any trailing newlines
         let (input, _) = all_consuming(many0(newline))(input)?;
-        Ok((input, Self { records }))
+        Ok((
+            input,
+            Self {
+                uid_to_record_idx: records
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, r)| (r.uid, idx))
+                    .collect(),
+                username_to_record_idx: records
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, r)| (r.name.to_string(), idx))
+                    .collect(),
+                records,
+            },
+        ))
     }
 
     pub fn parse(input: &'a str) -> Result<Self> {
@@ -90,8 +111,26 @@ impl<'a> EtcPasswd<'a> {
         self.records.into_iter()
     }
 
-    pub fn push(&mut self, record: UserRecord<'a>) {
-        self.records.push(record)
+    pub fn push(&mut self, record: UserRecord<'a>) -> Result<()> {
+        match (
+            self.get_user_by_id(record.uid),
+            self.get_user_by_name(&record.name),
+        ) {
+            (Some(existing), _) | (_, Some(existing)) if *existing == record => Ok(()),
+            (Some(existing), _) | (_, Some(existing)) => Err(Error::Duplicate(
+                existing.name.to_string(),
+                format!("{:?}", existing),
+                format!("{:?}", record),
+            )),
+            (None, None) => {
+                self.uid_to_record_idx
+                    .insert(record.uid, self.records.len());
+                self.username_to_record_idx
+                    .insert(record.name.to_string(), self.records.len());
+                self.records.push(record);
+                Ok(())
+            }
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -103,11 +142,15 @@ impl<'a> EtcPasswd<'a> {
     }
 
     pub fn get_user_by_name(&self, name: &str) -> Option<&UserRecord<'a>> {
-        self.records.iter().find(|r| r.name == name)
+        self.username_to_record_idx
+            .get(name)
+            .and_then(|&idx| self.records.get(idx))
     }
 
     pub fn get_user_by_id(&self, id: UserId) -> Option<&UserRecord<'a>> {
-        self.records.iter().find(|r| r.uid == id)
+        self.uid_to_record_idx
+            .get(&id)
+            .and_then(|&idx| self.records.get(idx))
     }
 
     pub fn into_owned(self) -> EtcPasswd<'static> {
@@ -117,6 +160,8 @@ impl<'a> EtcPasswd<'a> {
                 .into_iter()
                 .map(UserRecord::into_owned)
                 .collect(),
+            uid_to_record_idx: self.uid_to_record_idx,
+            username_to_record_idx: self.username_to_record_idx,
         }
     }
 }
@@ -139,10 +184,58 @@ impl<'a> Display for EtcPasswd<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UserRecordPassword {
+    /// Store authentication details in /etc/shadow instead.
+    /// On modern systems, this is strongly recommended.
+    Shadow,
+    /// Lock the account, preventing login. Prefer using Shadow
+    /// and locking the user in /etc/shadow instead.
+    Locked,
+    /// Empty string, login is allowed without a password at all.
+    /// Prefer using Shadow and setting no password there.
+    Empty,
+}
+
+impl UserRecordPassword {
+    fn parse<'a, E>(input: &'a str) -> IResult<&'a str, Self, E>
+    where
+        E: ParseError<&'a str> + ContextError<&'a str>,
+    {
+        let (input, txt) = context(
+            "password",
+            nom::branch::alt((
+                nom::bytes::complete::tag("x"),
+                nom::bytes::complete::tag("!"),
+                nom::bytes::complete::tag(""),
+            )),
+        )(input)?;
+        Ok((
+            input,
+            match txt {
+                "x" => Self::Shadow,
+                "!" => Self::Locked,
+                "" => Self::Empty,
+                _ => unreachable!("parser would have failed"),
+            },
+        ))
+    }
+}
+
+impl Display for UserRecordPassword {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::Shadow => write!(f, "x"),
+            Self::Locked => write!(f, "!"),
+            Self::Empty => write!(f, ""),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserRecord<'a> {
     pub name: Cow<'a, str>,
-    pub password: Password,
+    pub password: UserRecordPassword,
     pub uid: UserId,
     pub gid: GroupId,
     pub comment: Cow<'a, str>,
@@ -160,7 +253,7 @@ impl<'a> UserRecord<'a> {
             tuple((
                 context("username", take_until1(":")),
                 &colon,
-                Password::parse,
+                UserRecordPassword::parse,
                 &colon,
                 context("uid", nom::character::complete::u32),
                 &colon,
@@ -199,14 +292,15 @@ impl<'a> UserRecord<'a> {
     }
 
     /// Create a new, default shadow record for this user.
-    pub fn new_shadow_record(&self) -> shadow::ShadowRecord<'a> {
-        shadow::ShadowRecord {
+    pub fn new_shadow_record(&self) -> ShadowRecord<'a> {
+        ShadowRecord {
             name: self.name.clone(),
-            encrypted_password: Cow::Borrowed(match self.password {
-                Password::Shadow => "!!",
-                Password::Locked => "!!",
-                Password::Empty => "",
-            }),
+            encrypted_password: match self.password {
+                UserRecordPassword::Shadow | UserRecordPassword::Locked => {
+                    ShadowRecordPassword::NoLogin
+                }
+                UserRecordPassword::Empty => ShadowRecordPassword::OpenLogin,
+            },
             last_password_change: None,
             minimum_password_age: None,
             maximum_password_age: None,
@@ -236,7 +330,21 @@ impl<'a> Display for UserRecord<'a> {
 
 #[cfg(test)]
 mod tests {
+    use nom::error::VerboseError;
+    use rstest::rstest;
+
     use super::*;
+
+    #[rstest]
+    #[case::shadow("x", UserRecordPassword::Shadow)]
+    #[case::shadow("!", UserRecordPassword::Locked)]
+    #[case::shadow("", UserRecordPassword::Empty)]
+    fn test_parse_password(#[case] input: &str, #[case] expected: UserRecordPassword) {
+        let (rest, pw) =
+            UserRecordPassword::parse::<VerboseError<&str>>(input).expect("failed to parse");
+        assert_eq!(pw, expected);
+        assert_eq!(rest, "", "all input should have been consumed");
+    }
 
     #[test]
     fn parse_etc_passwd() {
@@ -252,11 +360,11 @@ mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
 operator:x:11:0:operator:/root:/sbin/nologin
 games:x:12:100:games:/usr/games:/sbin/nologin
 ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin
-nobody:x:65534:65534:Kernel Overflow User:/:/sbin/nologin
-systemd-oom:x:999:999:systemd Userspace OOM Killer:/:/usr/sbin/nologin
-dbus:x:81:81:System message bus:/:/sbin/nologin
 tss:x:59:59:Account used for TPM access:/dev/null:/sbin/nologin
+dbus:x:81:81:System message bus:/:/sbin/nologin
 pwdlesslogin::420:420:Passwordless login:/dev/null:/sbin/nologin
+systemd-oom:x:999:999:systemd Userspace OOM Killer:/:/usr/sbin/nologin
+nobody:x:65534:65534:Kernel Overflow User:/:/sbin/nologin
 "#;
         let passwd = EtcPasswd::parse(src).expect("failed to parse");
         // easy way to check that all the contents were parsed
@@ -264,7 +372,7 @@ pwdlesslogin::420:420:Passwordless login:/dev/null:/sbin/nologin
         assert_eq!(
             Some(&UserRecord {
                 name: "root".into(),
-                password: Password::Shadow,
+                password: UserRecordPassword::Shadow,
                 uid: 0.into(),
                 gid: 0.into(),
                 comment: "root".into(),
@@ -276,7 +384,7 @@ pwdlesslogin::420:420:Passwordless login:/dev/null:/sbin/nologin
         assert_eq!(
             Some(&UserRecord {
                 name: "root".into(),
-                password: Password::Shadow,
+                password: UserRecordPassword::Shadow,
                 uid: 0.into(),
                 gid: 0.into(),
                 comment: "root".into(),
@@ -294,7 +402,7 @@ pwdlesslogin::420:420:Passwordless login:/dev/null:/sbin/nologin
         assert_eq!(
             Some(&UserRecord {
                 name: "root".into(),
-                password: Password::Shadow,
+                password: UserRecordPassword::Shadow,
                 uid: 0.into(),
                 gid: 0.into(),
                 comment: "root".into(),
