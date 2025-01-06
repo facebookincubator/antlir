@@ -1,8 +1,10 @@
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "cpp_library", "rust_library")
 
 oncall("antlir")
 
+# @rust-guess-deps-ignore does not understand conditional fb_deps
 rust_library(
+    # @autodeps-skip
     name = "unshare_userns",
     srcs = glob(["src/**/*.rs"]),
     compatible_with = [
@@ -13,7 +15,18 @@ rust_library(
     ],
     visibility = ["//antlir/antlir2/antlir2_rootless:"],
     deps = [
-        "close-err",
-        "nix",
+        ":unshare_userns_c",  # @autodeps2-fixme-manual
     ],
+)
+
+cpp_library(
+    # @autodeps-skip
+    name = "unshare_userns_c",
+    srcs = ["unshare_userns.c"],
+    compiler_flags = [
+        # _GNU_SOURCE is required for unshare(), but it may not be set by our
+        # OSS toolchain
+        "-D_GNU_SOURCE",
+    ],
+    visibility = [":unshare_userns"],
 )
