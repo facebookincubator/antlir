@@ -14,7 +14,6 @@ RepoInfo = provider(fields = [
     "dnf_conf_json",  # JSON serialized dnf.conf KV for this repo
     "gpg_keys",  # Optional artifact against which signatures will be checked
     "id",  # Repo name
-    "offline",  # Complete offline archive of repodata and all RPMs
     "repodata",  # Populated repodata/ directory
 ])
 
@@ -89,7 +88,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             logical_id = ctx.attrs.logical_id,
             repodata = repodata,
             gpg_keys = ctx.attrs.gpg_keys,
-            offline = offline,
             base_url = ctx.attrs.base_url,
             all_rpms = rpm_infos,
             dnf_conf_json = dnf_conf_json,
