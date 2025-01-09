@@ -291,7 +291,11 @@ fn shape(builder: &mut GlobalsBuilder) {
             .iterate(eval.heap())
             .map_err(starlark::Error::into_anyhow)
             .context("while collecting enum variants")?
-            .map(|v| String::unpack_param(v).map(|s| s.into()))
+            .map(|v| {
+                String::unpack_param(v)
+                    .map(|s| s.into())
+                    .map_err(starlark::Error::into_anyhow)
+            })
             .collect::<anyhow::Result<_>>()?;
         let enm = ir::Enum {
             options,
