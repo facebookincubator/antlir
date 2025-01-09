@@ -193,16 +193,16 @@ vm = struct(
         # Pre-built VMs for `vm_host` of tests
         default_vms = struct(
             # initrd_boot is recommended for faster boot performance
-            initrd_boot = "//metalos/vm:default-initrd-boot",
+            initrd_boot = "antlir//metalos/vm:default-initrd-boot",
             # disk boots are recommended for more real boot sequence
-            disk_boot = "//metalos/vm:default-disk-boot",
-            nvme_disk_boot = "//metalos/vm:default-nvme-disk-boot",
+            disk_boot = "antlir//metalos/vm:default-disk-boot",
+            nvme_disk_boot = "antlir//metalos/vm:default-nvme-disk-boot",
         ),
         rootfs = struct(
             # Base layer to start from when customizing VM rootfs layer
-            layer = "//metalos/vm/os:rootfs",
+            layer = "antlir//metalos/vm/os:rootfs",
             # Features to add onto an existing layer to make it work for VM
-            virtualization_features = "//metalos/vm/os:virtualization-features",
+            virtualization_features = "antlir//metalos/vm/os:virtualization-features",
         ),
     ),
 )
