@@ -45,6 +45,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 optional_args,
             ),
             category = "repodata",
+            local_only = True,
+            allow_cache_upload = True,
         )
     else:
         plain_repodata = ctx.attrs.repodata
