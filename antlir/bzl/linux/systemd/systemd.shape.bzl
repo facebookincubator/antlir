@@ -22,6 +22,7 @@ service_t = shape.shape(
     environment = shape.field(shape.dict(str, str), optional = True),
     exec_start = shape.field(shape.list(str), optional = True),
     standard_output = shape.field(str, optional = True),
+    timeout_start = shape.field(str, optional = True),
 )
 
 timer_t = shape.shape(
