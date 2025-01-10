@@ -12,7 +12,9 @@ EnvironmentFile={{ environment_file }}
 {% for cmd in exec_start %}
 ExecStart={{ cmd }}
 {% endfor %}
-TimeoutStartSec=15min
+{% if timeout_start %}
+TimeoutStartSec={{ timeout_start }}
+{% endif %}
 TimeoutStopSec=90s
 {% for key, val in environment.items() %}
 Environment={{ key }}={{ val }}
