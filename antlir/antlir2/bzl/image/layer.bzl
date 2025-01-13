@@ -23,7 +23,7 @@ load(
     "//antlir/antlir2/features/mount:mount.bzl",
     "DefaultMountpointInfo",
 )
-load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 # @oss-disable
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "config", "get_visibility")
@@ -677,8 +677,6 @@ def layer(
         features = [],
         parent_layer: str | Select | None = None,
         default_os: str | None = None,
-        # TODO: remove this flag when all images are using this new mechanism
-        use_default_os_from_package: bool | None = None,
         default_rou: str | None = None,
         rootless: bool | None = None,
         compatible_with_os: list[str] | Select | None = None,
@@ -693,10 +691,7 @@ def layer(
 
     Build a new image layer from the given `features` and `parent_layer`.
     """
-    if use_default_os_from_package == None:
-        use_default_os_from_package = should_all_images_in_package_use_default_os()
-    if use_default_os_from_package:
-        default_os = default_os or get_default_os_for_package()
+    default_os = default_os or get_default_os_for_package()
 
     # TODO(vmagro): codemod existing callsites to use default_os directly
     if kwargs.get("flavor", None) and default_os:

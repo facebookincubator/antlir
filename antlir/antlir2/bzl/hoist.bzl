@@ -9,7 +9,7 @@ load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
-load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     out = ctx.actions.declare_output(
@@ -74,8 +74,7 @@ def hoist(
         default_os: str | None = None,
         rootless: bool | None = None,
         **kwargs):
-    if should_all_images_in_package_use_default_os():
-        default_os = default_os or get_default_os_for_package()
+    default_os = default_os or get_default_os_for_package()
     if rootless == None:
         rootless = get_antlir2_rootless()
     if not rootless:

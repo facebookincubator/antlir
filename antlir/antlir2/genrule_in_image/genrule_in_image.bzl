@@ -11,7 +11,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
 load("//antlir/antlir2/bzl/image:mounts.bzl", "all_mounts", "container_mount_args")
-load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     out = None
@@ -142,8 +142,7 @@ def genrule_in_image(
         default_os: str | None = None,
         rootless: bool | None = None,
         **kwargs):
-    if should_all_images_in_package_use_default_os():
-        default_os = default_os or get_default_os_for_package()
+    default_os = default_os or get_default_os_for_package()
     if rootless == None:
         rootless = get_antlir2_rootless()
     if get_antlir2_use_overlayfs():

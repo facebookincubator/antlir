@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 _DEFAULT_OS_KEY = "antlir2.default_os"
-_ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY = "antlir2.all_images_in_package_use_default_os"
 
 def write_package_value(*args, **kwargs):
     write_package_value = getattr(native, "write_package_value", None)
@@ -24,15 +23,6 @@ def get_default_os_for_package() -> str:
     return read_package_value(_DEFAULT_OS_KEY) or "centos9"
 
 def all_images_in_package_use_default_os(yes: bool = True):
-    write_package_value(
-        _ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY,
-        yes,
-        overwrite = True,
-    )
-
-def should_all_images_in_package_use_default_os() -> bool:
-    pkg = read_package_value(_ALL_IMAGES_IN_PACKAGE_USE_DEFAULT_OS_KEY)
-    if pkg == None:
-        return True
-    else:
-        return pkg
+    # Must still exist until the `redundant_default_os` codemod is complete and
+    # removed all callsites
+    pass
