@@ -88,3 +88,22 @@ else:
             flavor = "antlir//antlir/antlir2/flavor:none",
         ),
     )
+
+# Syntax `tuple[str, ...]` is erroneously declared invalid
+# @lint-ignore BUCKFORMAT
+def _at_least_centos(release: int) -> tuple[str, ...]:
+    match = []
+    for os in OSES:
+        if os.name == "eln":
+            # ELN is basically the newest centos, so it should always match
+            match.append(os.select_key)
+        if os.name.startswith("centos"):
+            this = int(os.name.removeprefix("centos"))
+            if this >= release:
+                match.append(os.select_key)
+
+    return tuple(match)
+
+os_matchers = struct(
+    at_least_centos = _at_least_centos,
+)
