@@ -198,7 +198,6 @@ repo(
     name = "repo",
     compress = "none",
     rpms = all_rpms,
-    timestamp = 0,
     visibility = [
     ],
 )

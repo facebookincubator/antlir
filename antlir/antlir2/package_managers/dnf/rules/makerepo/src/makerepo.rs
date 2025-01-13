@@ -6,9 +6,7 @@
  */
 
 use std::fs::File;
-use std::io::BufReader;
 use std::io::BufWriter;
-use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -18,24 +16,18 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use clap::ValueEnum;
-use digest::Digest;
 use flate2::write::GzEncoder;
 use flate2::GzBuilder;
 use quick_xml::events::BytesEnd;
 use quick_xml::events::BytesStart;
-use quick_xml::events::BytesText;
 use quick_xml::events::Event;
 use quick_xml::Writer as XmlWriter;
 use serde::Deserialize;
-use sha2::digest;
-use sha2::Sha256;
 
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
     repo_id: String,
-    #[clap(long)]
-    timestamp: Option<u64>,
     #[clap(long)]
     xml_dir: PathBuf,
     #[clap(long, value_enum, default_value_t)]
@@ -55,39 +47,6 @@ enum Compress {
     Gzip,
 }
 
-struct DigestWriter<W: Write, D: Digest> {
-    inner: W,
-    hasher: D,
-    len: u64,
-}
-
-impl<W: Write, D: Digest> DigestWriter<W, D> {
-    fn new(inner: W) -> Self {
-        Self {
-            inner,
-            hasher: D::new(),
-            len: 0,
-        }
-    }
-
-    fn finish(self) -> (W, digest::Output<D>, u64) {
-        (self.inner, self.hasher.finalize(), self.len)
-    }
-}
-
-impl<W: Write, D: Digest> Write for DigestWriter<W, D> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let written = self.inner.write(buf)?;
-        self.hasher.update(&buf[..written]);
-        self.len += written as u64;
-        Ok(written)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.inner.flush()
-    }
-}
-
 #[derive(Debug, Deserialize)]
 struct PackageXmlBlobs {
     primary: String,
@@ -95,18 +54,18 @@ struct PackageXmlBlobs {
     other: String,
 }
 
-struct XmlFile<W: Write, D: Digest> {
+struct XmlFile<W: Write> {
     filename: String,
     element: &'static str,
-    inner: XmlFileInner<W, D>,
+    inner: XmlFileInner<W>,
 }
 
-enum XmlFileInner<W: Write, D: Digest> {
-    Gzipped(DigestWriter<GzEncoder<DigestWriter<W, D>>, D>),
-    Uncompressed(DigestWriter<W, D>),
+enum XmlFileInner<W: Write> {
+    Gzipped(GzEncoder<W>),
+    Uncompressed(W),
 }
 
-impl XmlFile<BufWriter<File>, Sha256> {
+impl XmlFile<BufWriter<File>> {
     fn new(
         basename: &str,
         num_packages: usize,
@@ -122,12 +81,12 @@ impl XmlFile<BufWriter<File>, Sha256> {
             File::create(&path).with_context(|| format!("while creating {}", path.display()))?;
         let w = BufWriter::new(f);
         let mut inner = match compress {
-            Compress::None => XmlFileInner::Uncompressed(DigestWriter::new(w)),
-            Compress::Gzip => XmlFileInner::Gzipped(DigestWriter::new(
+            Compress::None => XmlFileInner::Uncompressed(w),
+            Compress::Gzip => XmlFileInner::Gzipped(
                 GzBuilder::new()
                     .mtime(0) // deterministic output
-                    .write(DigestWriter::new(w), flate2::Compression::default()),
-            )),
+                    .write(w, flate2::Compression::default()),
+            ),
         };
         inner.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")?;
         let element = match basename {
@@ -163,7 +122,7 @@ impl XmlFile<BufWriter<File>, Sha256> {
     }
 }
 
-impl<W: Write, D: Digest> XmlFile<W, D> {
+impl<W: Write> XmlFile<W> {
     fn write_package(&mut self, package: &str) -> std::io::Result<()> {
         match &mut self.inner {
             XmlFileInner::Gzipped(w) => w.write_all(package.as_bytes()),
@@ -177,37 +136,19 @@ impl<W: Write, D: Digest> XmlFile<W, D> {
         let inner = xml.into_inner();
         match inner {
             XmlFileInner::Gzipped(w) => {
-                // The outer layer (and the first finish()) is the uncompressed
-                // stream, so contains open-size and open-checksum
-                let (w, open_checksum, open_len) = w.finish();
-                // The next layer is the GzEncoder, which when finish()ed will
-                // give us back the bottom DigestWriter that has the checksum
-                // and size of the compressed data
-                let (_, compressed_checksum, compressed_len) =
-                    w.finish().context("while finishing compression")?.finish();
+                w.finish()?;
                 Ok(RepomdRecord {
                     location: format!("repodata/{}", self.filename),
-                    checksum: hex::encode(compressed_checksum),
-                    size: compressed_len,
-                    open_checksum: Some(hex::encode(open_checksum)),
-                    open_size: Some(open_len),
                 })
             }
-            XmlFileInner::Uncompressed(w) => {
-                let (_, checksum, len) = w.finish();
-                Ok(RepomdRecord {
-                    location: format!("repodata/{}", self.filename),
-                    checksum: hex::encode(checksum),
-                    size: len,
-                    open_checksum: None,
-                    open_size: None,
-                })
-            }
+            XmlFileInner::Uncompressed(_) => Ok(RepomdRecord {
+                location: format!("repodata/{}", self.filename),
+            }),
         }
     }
 }
 
-impl<W: Write, D: Digest> Write for XmlFileInner<W, D> {
+impl<W: Write> Write for XmlFileInner<W> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         match self {
             Self::Gzipped(w) => w.write(buf),
@@ -225,33 +166,13 @@ impl<W: Write, D: Digest> Write for XmlFileInner<W, D> {
 
 struct RepomdRecord {
     location: String,
-    checksum: String,
-    open_checksum: Option<String>,
-    size: u64,
-    open_size: Option<u64>,
 }
 
 impl RepomdRecord {
-    fn write<W: Write>(&self, w: &mut XmlWriter<W>, timestamp: u64) -> quick_xml::Result<()> {
-        w.create_element("checksum")
-            .with_attribute(("type", "sha256"))
-            .write_text_content(BytesText::from_plain_str(&self.checksum))?;
-        if let Some(open_checksum) = &self.open_checksum {
-            w.create_element("open-checksum")
-                .with_attribute(("type", "sha256"))
-                .write_text_content(BytesText::from_plain_str(open_checksum))?;
-        }
+    fn write<W: Write>(&self, w: &mut XmlWriter<W>) -> quick_xml::Result<()> {
         w.create_element("location")
             .with_attribute(("href", self.location.as_str()))
             .write_empty()?;
-        w.create_element("timestamp")
-            .write_text_content(BytesText::from_plain_str(&timestamp.to_string()))?;
-        w.create_element("size")
-            .write_text_content(BytesText::from_plain_str(&self.size.to_string()))?;
-        if let Some(open_size) = self.open_size {
-            w.create_element("open-size")
-                .write_text_content(BytesText::from_plain_str(&open_size.to_string()))?;
-        }
         Ok(())
     }
 }
@@ -304,17 +225,6 @@ fn main() -> Result<()> {
                 .join(modulemd.file_name().expect("must have filename")),
         )
         .context("while copying modulemd")?;
-        let mut reader = BufReader::new(File::open(modulemd).context("while opening modulemd")?);
-        let mut hasher = Sha256::new();
-        let mut buffer = [0; 4096];
-        loop {
-            let count = reader.read(&mut buffer)?;
-            if count == 0 {
-                break;
-            }
-            hasher.update(&buffer[..count]);
-        }
-        let checksum = hex::encode(hasher.finalize());
         Some(RepomdRecord {
             location: format!(
                 "repodata/{}",
@@ -324,24 +234,10 @@ fn main() -> Result<()> {
                     .to_str()
                     .expect("must be utf8")
             ),
-            checksum,
-            size: modulemd
-                .metadata()
-                .context("while statting modulemd")?
-                .len(),
-            open_checksum: None,
-            open_size: None,
         })
     } else {
         None
     };
-
-    let timestamp = args.timestamp.unwrap_or_else(|| {
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("no time travel pls")
-            .as_secs()
-    });
 
     let mut inner = BufWriter::new(
         File::create(args.out.join("repomd.xml")).context("while creating repomd.xml")?,
@@ -353,21 +249,19 @@ fn main() -> Result<()> {
         .with_attribute(("xmlns", "http://linux.duke.edu/metadata/repo"))
         .with_attribute(("xmlns:rpm", "http://linux.duke.edu/metadata/rpm"))
         .write_inner_content(|w| {
-            w.create_element("revision")
-                .write_text_content(BytesText::from_plain_str(timestamp.to_string().as_str()))?;
             w.create_element("data")
                 .with_attribute(("type", "primary"))
-                .write_inner_content(|w| primary.write(w, timestamp))?;
+                .write_inner_content(|w| primary.write(w))?;
             w.create_element("data")
                 .with_attribute(("type", "filelists"))
-                .write_inner_content(|w| filelists.write(w, timestamp))?;
+                .write_inner_content(|w| filelists.write(w))?;
             w.create_element("data")
                 .with_attribute(("type", "other"))
-                .write_inner_content(|w| other.write(w, timestamp))?;
+                .write_inner_content(|w| other.write(w))?;
             if let Some(modulemd) = &modulemd {
                 w.create_element("data")
                     .with_attribute(("type", "modules"))
-                    .write_inner_content(|w| modulemd.write(w, timestamp))?;
+                    .write_inner_content(|w| modulemd.write(w))?;
             }
             Ok(())
         })?;

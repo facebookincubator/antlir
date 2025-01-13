@@ -12,11 +12,9 @@ rust_binary(
         "anyhow",
         "clap",
         "flate2",
-        "hex",
         "quick-xml",
         "serde",
         "serde_json",
-        "sha2",
     ],
 )
 
