@@ -26,8 +26,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     xml_dir = ctx.actions.declare_output("xml", dir = True)
     ctx.actions.copied_dir(xml_dir, {rpm.nevra: rpm.xml for rpm in rpm_infos})
     optional_args = []
-    if ctx.attrs.timestamp != None:
-        optional_args += ["--timestamp={}".format(ctx.attrs.timestamp)]
 
     # First build a repodata directory that just contains repodata (this would
     # be suitable as a baseurl for dnf)
@@ -130,7 +128,6 @@ repo_attrs = {
         doc = "base key in manifold",
         default = None,
     ),
-    "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision"), default = None),
 }
 
 _repo = rule(

@@ -112,7 +112,6 @@ repo(
         ":signed-with-wrong-key",
         ":signed-sha512",
     ],
-    timestamp = 0,
     visibility = [
     ],
 )
