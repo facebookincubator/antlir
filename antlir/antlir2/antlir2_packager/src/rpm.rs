@@ -321,6 +321,11 @@ AutoProv: {autoprov}
                     path_str = format!("\"{path_str}\"");
                 }
                 spec.push_str(&path_str);
+                if relpath.starts_with("/usr/share/man") {
+                    // rpmbuild will automatically compress man pages so we must add a glob here
+                    // https://docs.fedoraproject.org/en-US/packaging-guidelines/#_manpages
+                    spec.push('*');
+                }
                 spec.push('\n');
             }
         } else {
