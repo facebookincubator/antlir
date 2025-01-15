@@ -124,15 +124,6 @@ def _normalize_rust_dep(dep):
         return dep
     return shim.third_party.library(dep, platform = "rust")
 
-def _echo(ctx: AnalysisContext) -> list[Provider]:
-    artifact = ctx.actions.write(ctx.label.name, ctx.attrs.content)
-    return [DefaultInfo(default_output = artifact)]
-
-echo = rule(
-    impl = _echo,
-    attrs = {"content": attrs.string()},
-)
-
 cpp_binary = shim.cpp_binary
 cpp_library = shim.cpp_library
 cpp_unittest = shim.cpp_unittest
@@ -147,6 +138,7 @@ buck_sh_binary = shim.buck_sh_binary
 buck_sh_test = shim.buck_sh_test
 config = shim.config
 export_file = shim.export_file
+write_file = shim.write_file
 get_visibility = shim.get_visibility
 http_file = shim.http_file
 http_archive = shim.http_archive

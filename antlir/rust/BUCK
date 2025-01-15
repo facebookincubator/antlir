@@ -1,5 +1,5 @@
 # @oss-disable
-load("//antlir/bzl:build_defs.bzl", "echo", "export_file", "python_library", "rust_binary", "rust_python_extension")
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_library", "rust_binary", "rust_python_extension", "write_file")
 load(":modules.bzl", "extension_modules", "extension_rust_targets")
 
 oncall("antlir")
@@ -31,18 +31,19 @@ rust_python_extension(
 
 export_file(name = "trigger_rust_module_init.py")
 
-register_modules_src = [
-    "use pyo3::prelude::*;",
-    "pub(crate) fn register_modules(py: Python<'_>, m: &PyModule) -> PyResult<()> {",
-]
-
-register_modules_src.extend(["submodule!({}, \"{}\", py, m)?;".format(crate, module) for crate, module in extension_modules.items()])
-
-register_modules_src.append("Ok(())\n}")
-
-echo(
+write_file(
     name = "register_modules.rs",
-    content = "\n".join(register_modules_src) + "\n",
+    out = "register_modules.rs",
+    content = [
+        "use pyo3::prelude::*;",
+        "pub(crate) fn register_modules(py: Python<'_>, m: &PyModule) -> PyResult<()> {",
+    ] + [
+        'submodule!({}, "{}", py, m)?;'.format(crate, module)
+        for crate, module in extension_modules.items()
+    ] + [
+        "Ok(())",
+        "}",
+    ],
 )
 
 rust_binary(
