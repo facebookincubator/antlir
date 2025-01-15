@@ -238,6 +238,9 @@ def _rust_python_extension(name: str, **kwargs):
     )
     print("TODO: rust_python_extension")
 
+def _write_file(*args, **kwargs):
+    _wrap_internal(native.write_file, args, kwargs)
+
 ### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:target_utils.bzl)
 def _parse_target(target, default_repo = None, default_base_path = None):
     if target.count(":") != 1:
@@ -288,6 +291,7 @@ shim = struct(
     rust_library = _rust_library,
     rust_python_extension = _rust_python_extension,
     rust_unittest = _rust_unittest,
+    write_file = _write_file,
     #
     # Utility functions
     #
