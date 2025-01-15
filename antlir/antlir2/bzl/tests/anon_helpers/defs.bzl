@@ -8,6 +8,7 @@ load("//antlir/antlir2/bzl:anon_helpers.bzl", "anon_helpers")
 def _anon_impl(ctx):
     return [DefaultInfo(ctx.actions.write_json("out.json", ctx.attrs))]
 
+# @unused
 _anon, _anon_rule = anon_helpers.new_rule(
     impl = _anon_impl,
     attrs = {

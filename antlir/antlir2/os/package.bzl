@@ -22,7 +22,8 @@ def set_default_os_for_package(*, default_os: str):
 def get_default_os_for_package() -> str:
     return read_package_value(_DEFAULT_OS_KEY) or "centos9"
 
-def all_images_in_package_use_default_os(yes: bool = True):
+def all_images_in_package_use_default_os(
+        yes: bool = True):  # @unused
     # Must still exist until the `redundant_default_os` codemod is complete and
     # removed all callsites
     pass

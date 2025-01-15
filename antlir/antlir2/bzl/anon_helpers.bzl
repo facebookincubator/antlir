@@ -28,7 +28,6 @@ def _new_rule(*, impl, attrs, artifact_promise_mappings = None):
         for outer, inner in default_outer_attr_names.items()
     }
 
-    # @lint-ignore BUCKRESTRICTEDSYNTAX
     def _anon_target(ctx: AnalysisContext, **kwargs):
         for outer, inner in default_outer_attr_names.items():
             if not hasattr(ctx.attrs, outer):

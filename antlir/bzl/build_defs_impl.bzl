@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @lint-ignore-every BUCKLINT
-
 def _third_party_library(project, rule = None, platform = None):
     """
     In FB land we want to find the correct build for a third-party target
@@ -147,7 +145,6 @@ def _invert_dict(x):
         return x
     return {v: k for k, v in x.items()}
 
-# @lint-ignore BUCKRESTRICTEDSYNTAX
 def _python_library(**kwargs):
     kwargs["srcs"] = _invert_dict(kwargs.pop("srcs", []))
     kwargs["resources"] = _invert_dict(kwargs.pop("resources", []))
@@ -231,11 +228,13 @@ def _rust_bindgen_library(name: str, header: str, **kwargs):
         visibility = kwargs.pop("visibility", []),
     )
 
-def _rust_python_extension(name: str, **kwargs):
+def _rust_python_extension(name: str, **_kwargs):
     native.alias(
         name = name,
         actual = "antlir//antlir:empty",
     )
+
+    # buildifier: disable=print
     print("TODO: rust_python_extension")
 
 def _write_file(*args, **kwargs):

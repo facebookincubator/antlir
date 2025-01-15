@@ -8,9 +8,6 @@ Shim for type hints in buck. A lot of this can be deleted when we move to buck2
 entirely, but for now this is required to keep buck1 code evaluating.
 """
 
-# We use recursion and `native.` so ignore those lints
-# @lint-ignore-every BUCKLINT
-
 load("@prelude//utils:type_defs.bzl", prelude_types = "type_utils")
 load(":structs.bzl", "structs")
 

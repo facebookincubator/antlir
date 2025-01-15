@@ -10,10 +10,10 @@
 # This bzl file is provided to make split internal/oss loads a little easier
 #
 
-def ret_none(*args, **kwargs):
+def ret_none(*_args, **_kwargs):
     return None
 
-def ret_empty_list(*args, **kwargs):
+def ret_empty_list(*_args, **_kwargs):
     return []
 
 empty_dict = {}

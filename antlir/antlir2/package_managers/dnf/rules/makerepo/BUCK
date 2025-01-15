@@ -18,6 +18,7 @@ rust_binary(
     ],
 )
 
+# buildifier: disable=no-effect
 buck_sh_binary(
     name = "makerepo",
     main = "fbcode//antlir/antlir2/package_managers/dnf/rules/makerepo/facebook/msdk:makerepo",

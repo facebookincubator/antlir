@@ -20,9 +20,7 @@ def normalize_target(target):
         # The repository name always starts with "@", which we do not want here.
         # default_repo will be empty for the main repository, which matches the
         # results from $(query_targets ...).
-        # @lint-ignore BUCKLINT
         default_repo = repository_name()[1:],
-        # @lint-ignore BUCKLINT
         default_base_path = native.package_name(),
     )
     return target_utils.to_label(
