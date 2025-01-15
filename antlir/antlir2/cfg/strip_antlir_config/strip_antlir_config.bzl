@@ -5,7 +5,9 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 
-def _transition_impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
+def _transition_impl(
+        platform: PlatformInfo,
+        refs: struct) -> PlatformInfo:  # @unused
     constraints = platform.configuration.constraints
 
     constraints = {

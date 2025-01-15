@@ -277,6 +277,7 @@ _cpio_zst = _new_compressed_package_rule(
     compressor = "zstd",
 )
 
+# @unused
 _rpm, _rpm_anon = _new_package_rule(
     rule_attrs = {
         "arch": attrs.enum(
@@ -334,6 +335,7 @@ _rpm, _rpm_anon = _new_package_rule(
     uses_build_appliance = True,
 )
 
+# @unused
 _vfat, _vfat_anon = _new_package_rule(
     rule_attrs = {
         "fat_size": attrs.option(attrs.int(), default = None),
@@ -377,6 +379,7 @@ tar_zst_rule = _new_compressed_package_rule(
     compressor = "zstd",
 )
 
+# @unused
 _ext3, _ext3_anon = _new_package_rule(
     format = "ext3",
     rule_attrs = {
@@ -396,12 +399,14 @@ _ext3, _ext3_anon = _new_package_rule(
     uses_build_appliance = True,
 )
 
+# @unused
 _unprivileged_dir, _unprivileged_dir_anon = _new_package_rule(
     format = "unprivileged_dir",
     is_dir = True,
     sudo = True,
 )
 
+# @unused
 _erofs, _erofs_anon = _new_package_rule(
     format = "erofs",
     sudo = True,

@@ -202,6 +202,7 @@ image.layer(
 # implemented, we can't write a proper test for it so just have to test manually
 # by passing `-c antlir2.rpm_sig_broken_images=1` and verifying that the build
 # fails.
+# buildifier: disable=no-effect
 [
     image.layer(
         name = "install-signed-with-wrong-key",

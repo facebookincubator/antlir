@@ -18,7 +18,6 @@ def buildscript_run(
         # We could patch reindeer to generate this correctly since it seems to
         # know where crate roots actually exist under the repo, but I'm just
         # going to assume that it's directly in the root of the repo.
-        # @lint-ignore BUCKLINT
         native.genrule(
             name = filegroup_name,
             out = ".",
