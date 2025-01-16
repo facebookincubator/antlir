@@ -36,7 +36,8 @@ def install(
         split_debuginfo: bool = True,
         always_use_gnu_debuglink: bool = False,
         setcap: str | None = None,
-        default_permissions: default_permissions = default_permissions()):
+        default_permissions: default_permissions = default_permissions(),
+        ignore_symlink_tree: bool = False):
     """
     Install a file or directory into the image.
 
@@ -95,6 +96,7 @@ def install(
             "default_file_mode": default_permissions.file,
             "dst": dst,
             "group": group,
+            "ignore_symlink_tree": ignore_symlink_tree,
             "mode": mode,
             "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
             "setcap": setcap,
@@ -181,7 +183,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             required_run_infos.append(src[RunInfo])
 
         src_subtargets = ctx.attrs.src[DefaultInfo].sub_targets
-        if "rpath-tree" in src_subtargets:
+        if "rpath-tree" in src_subtargets and not ctx.attrs.ignore_symlink_tree:
             rpath_tree_info = src_subtargets["rpath-tree"][DefaultInfo]
             rpath_tree_out = ensure_single_output(rpath_tree_info)
             required_artifacts.append(rpath_tree_out)
@@ -289,6 +291,7 @@ install_rule = rule(
             attrs.int(),
             default = "root",
         ),
+        "ignore_symlink_tree": attrs.bool(default = False),
         "mode": attrs.option(attrs.int(), default = None),
         "never_use_dev_binary_symlink": attrs.bool(
             default = False,
