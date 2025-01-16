@@ -10,7 +10,6 @@ rust_binary(
         "anyhow",
         "clap",
         "colored",
-        "fbinit",
         "serde_json",
         "thiserror",
         "tracing",

@@ -13,7 +13,6 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Parser;
 use colored::Colorize;
-use fbinit::FacebookInit;
 use thiserror::Error;
 use tracing::error;
 use tracing_subscriber::prelude::*;
@@ -102,8 +101,7 @@ impl Error {
     }
 }
 
-#[fbinit::main]
-fn main(fb: FacebookInit) -> Result<()> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
@@ -118,7 +116,7 @@ fn main(fb: FacebookInit) -> Result<()> {
         .init();
 
     let result = match args.subcommand {
-        Subcommand::Compile(x) => x.run(rootless, fb),
+        Subcommand::Compile(x) => x.run(rootless),
         Subcommand::Depgraph(x) => x.run(),
     };
     if let Err(e) = result {

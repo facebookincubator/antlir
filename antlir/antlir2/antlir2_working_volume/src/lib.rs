@@ -23,8 +23,6 @@ use nix::sys::stat::Mode;
 use tracing::trace;
 use uuid::Uuid;
 
-#[cfg(facebook)]
-mod facebook;
 mod gc;
 
 #[derive(Debug, thiserror::Error)]
