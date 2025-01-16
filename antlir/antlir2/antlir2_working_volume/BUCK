@@ -1,34 +1,6 @@
-# @oss-disable
-load("@prelude//utils:buckconfig.bzl", "read_bool")
 load("//antlir/bzl:build_defs.bzl", "rust_library")
-load("//antlir/bzl:internal_external.bzl", "is_facebook")
 
 oncall("antlir")
-
-# Modefiles are extremely infectious and end up breaking the exec platform when
-# building things for MacOS, despite the execution platform still being Linux.
-# As a workaround until the dependencies are fixed (who knows when that'll
-# happen), make some deps optional
-mac_mode = read_bool(
-    "fbcode",
-    "mode_mac_enabled",
-    default = False,
-    required = False,
-)
-
-win_mode = read_bool(
-    "fbcode",
-    "mode_win_enabled",
-    default = False,
-    required = False,
-)
-
-linux = not mac_mode and not win_mode
-
-can_use_scuba = linux and is_facebook and (
-    # @oss-disable
-    True # @oss-enable
-)
 
 rust_library(
     name = "antlir2_working_volume",
@@ -38,16 +10,6 @@ rust_library(
         "ovr_config//os:linux",
         "ovr_config//os:macos",
     ],
-    fb_deps = [
-        "//common/rust/shed/fbinit:fbinit",
-    ] + ([
-        "//common/rust/fbwhoami:fbwhoami",
-        "//common/rust/scuba:scuba",
-        "//common/rust/shed/scuba_sample:scuba_sample",
-    ] if can_use_scuba else []),
-    rustc_flags = [
-        "--cfg=scuba",
-    ] if can_use_scuba else [],
     deps = [
         "nix",
         "thiserror",
