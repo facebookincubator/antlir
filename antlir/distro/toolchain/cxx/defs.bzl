@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
@@ -28,6 +29,8 @@ def _include_sysroot(sysroot: str, flag: str) -> list[str]:
 def _single_image_cxx_toolchain(
         *,
         name: str,
+        platform_name,
+        platform_deps_aliases,
         layer: str,
         sysroot: str = "antlir//antlir/distro/deps:sysroot",
         visibility: list[str] = []):
@@ -49,6 +52,8 @@ def _single_image_cxx_toolchain(
 
     native.cxx_toolchain(
         name = name,
+        platform_name = platform_name,
+        platform_deps_aliases = platform_deps_aliases,
         archiver = _layer_tool(name, "llvm-ar"),
         archiver_type = "gnu",
         archiver_flags = _llvm_base_args,
@@ -83,23 +88,6 @@ def image_cxx_toolchain(
         sysroot: str = "antlir//antlir/distro/deps:sysroot",
         visibility: list[str] = []):
     oses = [os for os in OSES if os.has_platform_toolchain]
-    for os in oses:
-        antlir2_configured_alias(
-            name = "{}--{}--layer".format(name, os.name),
-            actual = layer,
-            default_os = os.name,
-        )
-        for arch in os.architectures:
-            # despite the fact that this has no arch-specific configuration, the
-            # toolchain name is used by the cxx rules `_*_platform` attrs (eg
-            # `platform_compiler_flags`) and so it should have an architecture
-            # to match on
-            _single_image_cxx_toolchain(
-                name = "{}--{}-{}".format(name, os.name, arch.name),
-                layer = ":{}--{}--layer".format(name, os.name),
-                sysroot = sysroot,
-                visibility = [],
-            )
 
     # The "real" toolchain is actually an alias that depends on the selected OS.
     # This is necessary because all the tools listed above (clang, ld.lld, etc)
@@ -107,14 +95,11 @@ def image_cxx_toolchain(
     # them to match the target platform! As a workaround, we select the entire
     # toolchain with "pre-configured" exec_deps that match the target os version
     # (but maybe not the target os architecture!)
-    return prelude.toolchain_alias(
+    prelude.toolchain_alias(
         name = name,
         actual = select(
             {
-                os.select_key: select({
-                    arch.select_key: ":{}--{}-{}".format(name, os.name, arch.name)
-                    for arch in os.architectures
-                })
+                os.select_key: ":{}--{}".format(name, os.name)
                 for os in oses
             } |
             # This will never actually be configured as DEFAULT for a real
@@ -123,7 +108,28 @@ def image_cxx_toolchain(
             # the default when looking up this target directly (instead of
             # preconfigured as a dependency of something using an antlir
             # distro platform)
-            {"DEFAULT": ":{}--{}-{}".format(name, oses[0].name, oses[0].architectures[0].name)},
+            {"DEFAULT": ":{}--{}".format(name, oses[0].name)},
         ),
         visibility = visibility,
     )
+
+    for os in oses:
+        antlir2_configured_alias(
+            name = "{}--{}--layer".format(name, os.name),
+            actual = layer,
+            default_os = os.name,
+        )
+        _single_image_cxx_toolchain(
+            name = "{}--{}".format(name, os.name),
+            platform_name = selects.apply(select({
+                "ovr_config//cpu:arm64": "aarch64",
+                "ovr_config//cpu:x86_64": "x86_64",
+            }), lambda arch: os.name + "-" + arch),
+            platform_deps_aliases = select({
+                "ovr_config//cpu:arm64": ["linux-aarch64"],
+                "ovr_config//cpu:x86_64": ["linux-x86_64"],
+            }),
+            layer = ":{}--{}--layer".format(name, os.name),
+            sysroot = sysroot,
+            visibility = [],
+        )
