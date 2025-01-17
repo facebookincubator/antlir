@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "d5d4c851e3981d1e9cd86f5d3a5b8cbfdb42e811",
+    rev = "bbbd038c9c5f2b1311e4d4d54c60fd022dc3ac19",
     visibility = [],
 )
 
@@ -19298,25 +19298,26 @@ cargo.rust_library(
 
 alias(
     name = "sd-notify",
-    actual = ":sd-notify-0.4.3",
+    actual = ":sd-notify-0.4.4",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "sd-notify-0.4.3.crate",
-    sha256 = "1be20c5f7f393ee700f8b2f28ea35812e4e212f40774b550cd2a93ea91684451",
-    strip_prefix = "sd-notify-0.4.3",
-    urls = ["https://static.crates.io/crates/sd-notify/0.4.3/download"],
+    name = "sd-notify-0.4.4.crate",
+    sha256 = "561e6b346a5e59e0b8a07894004897d7160567e3352d2ebd6c3741d4e086b6f5",
+    strip_prefix = "sd-notify-0.4.4",
+    urls = ["https://static.crates.io/crates/sd-notify/0.4.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "sd-notify-0.4.3",
-    srcs = [":sd-notify-0.4.3.crate"],
+    name = "sd-notify-0.4.4",
+    srcs = [":sd-notify-0.4.4.crate"],
     crate = "sd_notify",
-    crate_root = "sd-notify-0.4.3.crate/src/lib.rs",
+    crate_root = "sd-notify-0.4.4.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
+    deps = [":libc-0.2.169"],
 )
 
 http_archive(
@@ -24615,26 +24616,26 @@ cargo.rust_library(
 
 alias(
     name = "valuable",
-    actual = ":valuable-0.1.0",
+    actual = ":valuable-0.1.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "valuable-0.1.0.crate",
-    sha256 = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d",
-    strip_prefix = "valuable-0.1.0",
-    urls = ["https://static.crates.io/crates/valuable/0.1.0/download"],
+    name = "valuable-0.1.1.crate",
+    sha256 = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65",
+    strip_prefix = "valuable-0.1.1",
+    urls = ["https://static.crates.io/crates/valuable/0.1.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "valuable-0.1.0",
-    srcs = [":valuable-0.1.0.crate"],
+    name = "valuable-0.1.1",
+    srcs = [":valuable-0.1.1.crate"],
     crate = "valuable",
-    crate_root = "valuable-0.1.0.crate/src/lib.rs",
-    edition = "2018",
+    crate_root = "valuable-0.1.1.crate/src/lib.rs",
+    edition = "2021",
     env = {
-        "OUT_DIR": "$(location :valuable-0.1.0-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :valuable-0.1.1-build-script-run[out_dir])",
     },
     features = [
         "alloc",
@@ -24643,17 +24644,17 @@ cargo.rust_library(
         "std",
         "valuable-derive",
     ],
-    rustc_flags = ["@$(location :valuable-0.1.0-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :valuable-0.1.1-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [":valuable-derive-0.1.0"],
+    deps = [":valuable-derive-0.1.1"],
 )
 
 cargo.rust_binary(
-    name = "valuable-0.1.0-build-script-build",
-    srcs = [":valuable-0.1.0.crate"],
+    name = "valuable-0.1.1-build-script-build",
+    srcs = [":valuable-0.1.1.crate"],
     crate = "build_script_build",
-    crate_root = "valuable-0.1.0.crate/build.rs",
-    edition = "2018",
+    crate_root = "valuable-0.1.1.crate/build.rs",
+    edition = "2021",
     features = [
         "alloc",
         "default",
@@ -24665,9 +24666,9 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "valuable-0.1.0-build-script-run",
+    name = "valuable-0.1.1-build-script-run",
     package_name = "valuable",
-    buildscript_rule = ":valuable-0.1.0-build-script-build",
+    buildscript_rule = ":valuable-0.1.1-build-script-build",
     features = [
         "alloc",
         "default",
@@ -24675,29 +24676,29 @@ buildscript_run(
         "std",
         "valuable-derive",
     ],
-    version = "0.1.0",
+    version = "0.1.1",
 )
 
 http_archive(
-    name = "valuable-derive-0.1.0.crate",
-    sha256 = "9d44690c645190cfce32f91a1582281654b2338c6073fa250b0949fd25c55b32",
-    strip_prefix = "valuable-derive-0.1.0",
-    urls = ["https://static.crates.io/crates/valuable-derive/0.1.0/download"],
+    name = "valuable-derive-0.1.1.crate",
+    sha256 = "4e3a32a9bcc0f6c6ccfd5b27bcf298c58e753bcc9eeff268157a303393183a6d",
+    strip_prefix = "valuable-derive-0.1.1",
+    urls = ["https://static.crates.io/crates/valuable-derive/0.1.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "valuable-derive-0.1.0",
-    srcs = [":valuable-derive-0.1.0.crate"],
+    name = "valuable-derive-0.1.1",
+    srcs = [":valuable-derive-0.1.1.crate"],
     crate = "valuable_derive",
-    crate_root = "valuable-derive-0.1.0.crate/src/lib.rs",
-    edition = "2018",
+    crate_root = "valuable-derive-0.1.1.crate/src/lib.rs",
+    edition = "2021",
     proc_macro = True,
     visibility = [],
     deps = [
         ":proc-macro2-1.0.93",
         ":quote-1.0.38",
-        ":syn-1.0.109-syn1",
+        ":syn-2.0.96",
     ],
 )
 
