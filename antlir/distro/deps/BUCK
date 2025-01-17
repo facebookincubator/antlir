@@ -1,7 +1,10 @@
+# @oss-disable
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load(":unavailable.bzl", "unavailable")
 
 oncall("antlir")
 
@@ -63,4 +66,23 @@ image_command_alias(
     root = ":base-root-dir",
     rootless = True,
     visibility = ["PUBLIC"],
+)
+
+rust_binary(
+    name = "projects",
+    srcs = ["projects.rs"],
+    # @oss-disable
+    test_srcs = ["projects.bzl"],
+    deps = [
+        "anyhow",
+        "serde",
+        "serde_json",
+        "serde_starlark",
+        "//antlir/signedsource:signedsource",
+    ],
+)
+
+# Generic fallthrough library when antlir doesn't know about a dependency
+unavailable(
+    name = "unknown",
 )

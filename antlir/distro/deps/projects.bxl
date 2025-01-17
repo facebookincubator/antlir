@@ -1,0 +1,21 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+def _query_impl(ctx: bxl.Context):
+    libs = ctx.uquery().kind("alias|cxx_.*", "antlir//antlir/distro/deps/...")
+    deps = []
+    for target in libs:
+        if target.label.package == "antlir/distro/deps":
+            # only consider deps inside a sub-project
+            continue
+        project = target.label.package.removeprefix("antlir/distro/deps/")
+        name = target.label.name
+        deps.append(struct(project = project, name = name))
+    ctx.output.print_json(deps)
+
+query = bxl_main(
+    impl = _query_impl,
+    cli_args = {},
+)
