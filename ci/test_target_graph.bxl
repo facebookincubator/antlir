@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 def _impl(ctx):
-    targets = ctx.cquery().eval("//...")
+    targets = ctx.cquery().eval("set(//...) - kind(_unavailable, //...)")
 
     ctx.output.print("All BUCK files evaluate")
 
