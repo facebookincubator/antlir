@@ -109,14 +109,23 @@ def _rust_implicit_test(kwargs, test_kwargs):
         test_kwargs.pop("linker_flags", None)
         test_kwargs["srcs"] = test_kwargs.get("srcs", []) + kwargs.get("srcs", [])
         test_kwargs["deps"] = test_kwargs.get("deps", []) + kwargs.get("deps", [])
+        test_kwargs["fb_deps"] = test_kwargs.get("fb_deps", []) + kwargs.get("fb_deps", [])
         _rust_common(shim.rust_unittest, **test_kwargs)
 
-def _split_rust_kwargs(kwargs):
-    test_kwargs = dict(kwargs)
-    test_kwargs = {k: v for k, v in test_kwargs.items() if not k.startswith("test_")}
-    test_kwargs.update({k[len("test_"):]: v for k, v in kwargs.items() if k.startswith("test_")})
-    kwargs = {k: v for k, v in kwargs.items() if not k.startswith("test_")}
+def _is_rust_test_key(key):
+    return key.startswith("test_") or key.startswith("fb_test_")
 
+def _rust_test_key_to_regular_key(key):
+    if key.startswith("test_"):
+        return key[5:]
+    if key.startswith("fb_test_"):
+        return "fb_" + key[8:]
+    return key
+
+def _split_rust_kwargs(kwargs):
+    test_kwargs = {k: v for k, v in kwargs.items() if not _is_rust_test_key(k)}
+    test_kwargs.update({_rust_test_key_to_regular_key(k): v for k, v in kwargs.items() if _is_rust_test_key(k)})
+    kwargs = {k: v for k, v in kwargs.items() if not _is_rust_test_key(k)}
     return kwargs, test_kwargs
 
 def _normalize_rust_dep(dep):
