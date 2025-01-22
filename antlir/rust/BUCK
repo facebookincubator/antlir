@@ -36,7 +36,7 @@ write_file(
     out = "register_modules.rs",
     content = [
         "use pyo3::prelude::*;",
-        "pub(crate) fn register_modules(py: Python<'_>, m: &PyModule) -> PyResult<()> {",
+        "pub(crate) fn register_modules(py: Python<'_>, m: &Bound<PyModule>) -> PyResult<()> {",
     ] + [
         'submodule!({}, "{}", py, m)?;'.format(crate, module)
         for crate, module in extension_modules.items()

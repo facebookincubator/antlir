@@ -54,9 +54,9 @@ impl IntoPy<PyObject> for AntlirPath {
         // Python->Rust->Python, but it's a necessary indirection evil
         // until/unless we replace antlir.fs_utils.Path with a Rust
         // implementation
-        let fs_utils =
-            PyModule::import(py, "antlir.fs_utils").expect("antlir.fs_utils must be available");
-        let bytes = PyBytes::new(py, self.0.as_os_str().as_bytes());
+        let fs_utils = PyModule::import_bound(py, "antlir.fs_utils")
+            .expect("antlir.fs_utils must be available");
+        let bytes = PyBytes::new_bound(py, self.0.as_os_str().as_bytes());
         // finally, create a fs_utils.Path from the bytes object
         fs_utils
             .getattr("Path")
@@ -67,8 +67,8 @@ impl IntoPy<PyObject> for AntlirPath {
     }
 }
 
-impl<'source> FromPyObject<'source> for AntlirPath {
-    fn extract(p: &'source PyAny) -> PyResult<Self> {
+impl<'py> FromPyObject<'py> for AntlirPath {
+    fn extract_bound(p: &Bound<'py, PyAny>) -> PyResult<Self> {
         // first attempt to get a raw bytes string, which most paths should
         // already be
         if let Ok(bytes) = p.downcast::<PyBytes>() {
@@ -88,13 +88,13 @@ impl<'source> FromPyObject<'source> for AntlirPath {
 }
 
 #[pymodule]
-pub fn fs_utils_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+pub fn fs_utils_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     /// Largely just useful for tests from Python, this will take the given
     /// input and attempt to round-trip it through [Path] and back into an
     /// `antlir.fs_utils.Path`
     #[pyfn(m)]
     #[pyo3(name = "Path")]
-    fn path(p: &PyAny) -> PyResult<AntlirPath> {
+    fn path(p: &Bound<PyAny>) -> PyResult<AntlirPath> {
         p.extract()
     }
 

@@ -18,7 +18,11 @@ fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResul
     match path_in_repo {
         Some(p) => Ok(p),
         None => {
-            let argv0: String = py.import("sys")?.getattr("argv")?.get_item(0)?.extract()?;
+            let argv0: String = py
+                .import_bound("sys")?
+                .getattr("argv")?
+                .get_item(0)?
+                .extract()?;
             let argv0 = PathBuf::from(argv0);
             Ok(argv0.canonicalize()?)
         }
@@ -26,14 +30,15 @@ fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResul
 }
 
 #[pymodule]
-pub fn artifacts_dir(py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    m.add("SigilNotFound", py.get_type::<SigilNotFound>())?;
+pub fn artifacts_dir(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add("SigilNotFound", py.get_type_bound::<SigilNotFound>())?;
 
     /// find_repo_root($self, path_in_repo = None)
     /// --
     ///
     /// Find the path of the VCS repository root.
     #[pyfn(m)]
+    #[pyo3(signature = (path_in_repo=None))]
     fn find_repo_root(py: Python<'_>, path_in_repo: Option<AntlirPath>) -> PyResult<AntlirPath> {
         let path_in_repo = ensure_path_in_repo(py, path_in_repo.map(|p| p.into()))?;
         match find_root::find_repo_root(path_in_repo) {
