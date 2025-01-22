@@ -39,7 +39,7 @@ impl {{name}} {
     {{/each}}
 }
 
-{{#if thrift_fields}}
+{{#unless (is-null thrift_fields)}}
 impl ::fbthrift::ttype::GetTType for {{name}} {
     const TTYPE: ::fbthrift::ttype::TType = ::fbthrift::ttype::TType::Struct;
 }
@@ -115,7 +115,7 @@ where
         })
     }
 }
-{{/if}}
+{{/unless}}
 
 {{#if (can-default fields)}}
 impl Default for {{name}} {

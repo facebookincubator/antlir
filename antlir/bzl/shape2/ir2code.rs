@@ -161,6 +161,7 @@ where
     handlebars.register_helper("json", Box::new(json_helper));
     handlebars.register_helper("upper", Box::new(upper_helper));
     handlebars.register_helper("ident", Box::new(ident_helper));
+    handlebars.register_helper("is-null", Box::new(is_null_helper));
 
     let handlebars = <Module as RegisterTemplates<T>>::register_templates(handlebars, templates)
         .context("When setting up handlebars for Module")?;
@@ -180,6 +181,7 @@ where
 handlebars_helper!(upper_helper: |x: String| x.to_uppercase());
 handlebars_helper!(ident_helper: |x: String| x.replace('-', "_"));
 handlebars_helper!(can_default: |x: BTreeMap<FieldName, Arc<Field>>| x.values().all(|v| !v.required || v.default_value.is_some()));
+handlebars_helper!(is_null_helper: |x: Value| x.is_null());
 
 trait ModuleExt<T>
 where
