@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/cfg/strip_antlir_config:strip_antlir_config.bzl", "strip_antlir_config")
+load("//antlir/antlir2/cfg/strip_configuration:strip_configuration.bzl", "strip_configuration_alias")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
 
 oncall("antlir")
@@ -8,17 +8,18 @@ oncall("antlir")
 prelude = native
 
 prelude.write_file(
-    name = "os-name",
-    out = "os-name",
+    name = "cpu-arch",
+    out = "cpu-arch",
     content = select({
-        "//antlir/antlir2/os:centos9": ["centos9"],
         "DEFAULT": ["no-configuration"],
+        "ovr_config//cpu:arm64": ["aarch64"],
+        "ovr_config//cpu:x86_64": ["x86_64"],
     }),
 )
 
-strip_antlir_config(
-    name = "os-name.unconfigured",
-    actual = ":os-name",
+strip_configuration_alias(
+    name = "cpu-arch.unconfigured",
+    actual = ":cpu-arch",
 )
 
 image.layer(
@@ -26,12 +27,12 @@ image.layer(
     features = [
         feature.rpms_install(rpms = ["basesystem"]),
         feature.install(
-            src = ":os-name",
-            dst = "/os-name",
+            src = ":cpu-arch",
+            dst = "/cpu-arch",
         ),
         feature.install(
-            src = ":os-name.unconfigured",
-            dst = "/os-name.unconfigured",
+            src = ":cpu-arch.unconfigured",
+            dst = "/cpu-arch.unconfigured",
         ),
     ],
 )

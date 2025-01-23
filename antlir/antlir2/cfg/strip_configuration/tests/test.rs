@@ -6,17 +6,17 @@
  */
 
 #[test]
-fn test_strip_antlir_config() {
+fn test_strip_configuration() {
     assert_eq!(
-        "centos9",
-        std::fs::read_to_string("/os-name")
-            .expect("failed to read /os-name")
+        std::env::consts::ARCH,
+        std::fs::read_to_string("/cpu-arch")
+            .expect("failed to read /cpu-arch")
             .trim()
     );
     assert_eq!(
         "no-configuration",
-        std::fs::read_to_string("/os-name.unconfigured")
-            .expect("failed to read /os-name.unconfigured")
+        std::fs::read_to_string("/cpu-arch.unconfigured")
+            .expect("failed to read /cpu-arch.unconfigured")
             .trim()
     )
 }
