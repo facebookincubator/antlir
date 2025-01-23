@@ -64,7 +64,12 @@ def _single_image_cxx_toolchain(
         compiler_type = "clang",
         cxx_compiler = _layer_tool(name, "clang++"),
         cxx_compiler_flags = _llvm_base_args + _include_sysroot(sysroot, "I"),
-        cxx_preprocessor_flags = ["-I$(location {})".format(sysroot)],
+        cxx_preprocessor_flags = [
+            "-I$(location {})".format(sysroot),
+            # TODO: this may not always be correct, but I cannot get it to work in
+            # any permutation of the stdc++ target, so I'm putting the std here
+            "-std=c++20",
+        ],
         exec_compatible_with = [
             "ovr_config//os:linux",
         ],

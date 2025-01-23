@@ -7,10 +7,12 @@ prelude = native
 prelude.prebuilt_cxx_library(
     name = "stdc++",
     exported_linker_flags = [
-        "-std=c++20",
         "-lstdc++",
     ],
-    exported_preprocessor_flags = ["-std=c++20"],
+    # TODO: it would be great to use exported_lang_preprocessor_flags to set
+    # -std=c++20, but the c++ ones seem to always be applied, even when
+    # compiling .c sources, so instead it's attached to the toolchain
+    # preprocessor flags
     visibility = ["PUBLIC"],
 )
 

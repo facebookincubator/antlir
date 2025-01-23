@@ -126,3 +126,14 @@ class Test(TestCase):
             platform_preprocessor_flag,
             f"{self.os}-{platform.machine()}",
         )
+
+    def test_cpp20(self) -> None:
+        """
+        Check that std::format works, which proves that we are using std=c++20
+        """
+        out = json.loads(
+            subprocess.run(
+                [self.binary], check=True, capture_output=True, text=True
+            ).stdout
+        )
+        self.assertEqual(out["std"], 202002)

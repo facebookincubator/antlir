@@ -31,7 +31,7 @@ cpp_binary(
 cpp_library(
     # @autodeps-skip
     name = "dep",
-    srcs = ["dep.cpp"],
+    srcs = ["dep.c"],
     headers = ["dep.h"],
     default_target_platform = default_image_platform("centos9"),
     deps = [

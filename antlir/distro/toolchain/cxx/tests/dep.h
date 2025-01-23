@@ -7,4 +7,12 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 const char* dep_get_rpmlib_version();
+
+#ifdef __cplusplus
+}
+#endif
