@@ -1,11 +1,11 @@
-load("//antlir/distro/deps:pkgconfig.bzl", "image_pkgconfig_library")
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
 
-image_pkgconfig_library(
+rpm_library(
     # Existing third-party copies of rpm are named 'librpm', so to be consistent
-    # we use 'pkgconfig(rpm)' but name it 'librpm'
+    # we use 'rpm-devel' but name it 'librpm'
     name = "librpm",
-    pkgconfig_name = "rpm",
+    rpm = "rpm-devel",
     visibility = ["PUBLIC"],
 )

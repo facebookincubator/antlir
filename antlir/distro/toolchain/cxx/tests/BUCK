@@ -76,6 +76,11 @@ image.layer(
                 "//antlir/antlir2/os:centos10": "/test/main-for-centos10",
                 "//antlir/antlir2/os:centos9": "/test/main-for-centos9",
             }),
+            # Remove the libs symlink tree if it exists so that:
+            # 1) there are no build-id conflicts
+            # 2) rpm correctly identifies dependencies and does not think that
+            #    this rpm provides the libs that it links against
+            ignore_symlink_tree = True,
             never_use_dev_binary_symlink = True,
         ),
     ],

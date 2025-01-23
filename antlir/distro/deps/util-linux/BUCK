@@ -1,0 +1,9 @@
+load("//antlir/bzl:build_defs.bzl", "alias")
+
+oncall("antlir")
+
+alias(
+    name = "uuid",
+    actual = "//antlir/distro/deps/libuuid:libuuid",
+    visibility = ["PUBLIC"],
+)
