@@ -23,16 +23,13 @@ def _layer_tool(tcname: str, tool: str, visibility: list[str] = []) -> str:
         )
     return ":" + name
 
-def _include_sysroot(sysroot: str, flag: str) -> list[str]:
-    return ["-{}$(location {}){}".format(flag, sysroot, {"I": "/usr/include", "L": "/usr/lib64"}[flag])]
-
 def _single_image_cxx_toolchain(
         *,
         name: str,
         platform_name,
         platform_deps_aliases,
         layer: str,
-        sysroot: str = "antlir//antlir/distro/deps:sysroot",
+        sysroot: str,
         visibility: list[str] = []):
     package.unprivileged_dir(
         name = name + "--root",
@@ -59,13 +56,11 @@ def _single_image_cxx_toolchain(
         archiver_flags = _llvm_base_args,
         assembler = _layer_tool(name, "clang"),
         c_compiler = _layer_tool(name, "clang"),
-        c_compiler_flags = _llvm_base_args + _include_sysroot(sysroot, "I"),
-        c_preprocessor_flags = ["-I$(location {})".format(sysroot)],
+        c_compiler_flags = _llvm_base_args,
         compiler_type = "clang",
         cxx_compiler = _layer_tool(name, "clang++"),
-        cxx_compiler_flags = _llvm_base_args + _include_sysroot(sysroot, "I"),
+        cxx_compiler_flags = _llvm_base_args,
         cxx_preprocessor_flags = [
-            "-I$(location {})".format(sysroot),
             # TODO: this may not always be correct, but I cannot get it to work in
             # any permutation of the stdc++ target, so I'm putting the std here
             "-std=c++20",
@@ -75,7 +70,7 @@ def _single_image_cxx_toolchain(
         ],
         link_ordering = "topological",
         linker = _layer_tool(name, "clang"),
-        linker_flags = ["-fuse-ld=lld"] + _llvm_base_args + _include_sysroot(sysroot, "L"),
+        linker_flags = ["-fuse-ld=lld"] + _llvm_base_args,
         linker_type = "gnu",
         generate_linker_maps = False, # @oss-enable
         nm = _layer_tool(name, "nm"),

@@ -15,11 +15,15 @@ image.layer(
             # The "main" clang is actually invoked from the layer in
             # toolchains/cxx:layer, but installing it here gives us all the deps
             # that clang will expect to find in `--sysroot`
+            #
+            # Why two layers instead of just reusing the toolchain container?
+            # The toolchain container is an exec_dep
+            # This sysroot target is configured for the target platform
+            #
+            # We could run all builds in a container for the target platform,
+            # but emulation is very very slow, so this is the best of both
+            # worlds
             "clang",
-            # Install some other core dependencies that we will always need
-            "libgcc",
-            "glibc-devel",
-            "libatomic",
         ]),
     ],
     rootless = True,

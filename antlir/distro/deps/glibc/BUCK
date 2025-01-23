@@ -4,16 +4,24 @@ oncall("antlir")
 
 sysroot_dep(
     name = "c",
+    # TODO: this seems fragile, ideally I would actually read the ld script that
+    # is the /usr/lib64/libc.so file
+    lib = "libc.so.6",
 )
 
 sysroot_dep(
     name = "m",
+    # TODO: this seems fragile, ideally I would actually read the ld script that
+    # is the /usr/lib64/libm.so file
+    lib = "libm.so.6",
 )
 
 sysroot_dep(
     name = "dl",
+    archive = True,
 )
 
 sysroot_dep(
     name = "pthread",
+    archive = True,
 )

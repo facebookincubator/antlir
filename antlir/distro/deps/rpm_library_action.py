@@ -61,10 +61,13 @@ def main():
         if Path(args.lib).exists():
             libpath = Path(args.lib)
         else:
-            libname = args.lib + ".so"
+            libname = args.lib
             if not libname.startswith("lib"):
                 libname = "lib" + libname
             libpath = Path("/usr/lib64") / libname
+            if not libpath.exists():
+                libpath = libpath.with_suffix(".so")
+
         shutil.copy2(libpath, args.out_shared_lib)
 
 

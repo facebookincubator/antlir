@@ -1,14 +1,13 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
 
 oncall("antlir")
 
 prelude = native
 
-prelude.prebuilt_cxx_library(
+sysroot_dep(
     name = "stdc++",
-    exported_linker_flags = [
-        "-lstdc++",
-    ],
+    lib = "libstdc++.so.6",
     # TODO: it would be great to use exported_lang_preprocessor_flags to set
     # -std=c++20, but the c++ ones seem to always be applied, even when
     # compiling .c sources, so instead it's attached to the toolchain
@@ -24,8 +23,11 @@ prelude.prebuilt_cxx_library(
 
 sysroot_dep(
     name = "gcc_s",
+    lib = "libgcc_s.so.1",
 )
 
-sysroot_dep(
+rpm_library(
     name = "atomic",
+    lib = "libatomic.so.1",
+    rpm = "libatomic",
 )

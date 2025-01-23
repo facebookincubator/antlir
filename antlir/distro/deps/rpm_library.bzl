@@ -59,7 +59,7 @@ def rpm_library(
     )
 
     lib = lib or name
-    soname = name + ".so"
+    soname = lib or (name + ".so")
 
     genrule_in_image(
         name = "{}--outputs".format(name),

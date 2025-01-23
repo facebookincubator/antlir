@@ -24,7 +24,10 @@ cpp_binary(
         ":dep",
         ":platform-preprocessor-flags",
         "//antlir/distro/deps/jsoncpp:jsoncpp",
+        # TODO(D66893436): these will become default deps but for now need to be
+        # listed explicitly
         "//antlir/distro/deps/libgcc:stdc++",
+        "//antlir/distro/deps/glibc:m",
     ],
 )
 

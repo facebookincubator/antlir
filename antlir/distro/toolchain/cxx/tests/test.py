@@ -137,3 +137,14 @@ class Test(TestCase):
             ).stdout
         )
         self.assertEqual(out["std"], 202002)
+
+    def test_libm(self) -> None:
+        """
+        Check that libm function 'cos' could be called
+        """
+        out = json.loads(
+            subprocess.run(
+                [self.binary], check=True, capture_output=True, text=True
+            ).stdout
+        )
+        self.assertEqual(out["cos(0)"], 1)

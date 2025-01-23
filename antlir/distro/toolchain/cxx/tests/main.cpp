@@ -6,6 +6,7 @@
  */
 
 #include <json/json.h>
+#include <math.h>
 #include <iostream>
 #include <span>
 #include "dep.h"
@@ -16,6 +17,8 @@ int main(int argc, char** argv) {
   root["rpmlib_version"] = dep_get_rpmlib_version();
   root["platform_preprocessor_flag"] = PLATFORM_PREPROCESSOR_FLAG;
   root["std"] = __cplusplus;
+  // use a function from libm to prove that sysroot_dep works
+  root["cos(0)"] = cos(0);
 
   std::cout << root << std::endl;
 
