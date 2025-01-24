@@ -27,7 +27,7 @@ def _strip_configuration_transition_impl(
         configuration = ConfigurationInfo(constraints = {}, values = {}),
     )
 
-strip_configuration_transition = transition(
+_strip_configuration_transition = transition(
     impl = _strip_configuration_transition_impl,
     refs = {},
 )
@@ -46,7 +46,7 @@ def _strip_configuration_impl(ctx: AnalysisContext) -> list[Provider]:
 strip_configuration_alias = rule(
     impl = _strip_configuration_impl,
     attrs = {
-        "actual": attrs.transition_dep(cfg = strip_configuration_transition),
+        "actual": attrs.transition_dep(cfg = _strip_configuration_transition),
         "labels": attrs.list(attrs.string(), default = []),
     },
 )
