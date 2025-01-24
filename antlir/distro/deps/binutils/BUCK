@@ -1,0 +1,10 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "iberty",
+    lib = "/usr/lib64/libiberty.a",
+    rpm = "binutils-devel",
+    visibility = ["PUBLIC"],
+)

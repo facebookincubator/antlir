@@ -1,0 +1,14 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+load("//antlir/distro/deps:unavailable.bzl", "unavailable")
+
+oncall("antlir")
+
+unavailable(
+    name = "headers",
+)
+
+rpm_library(
+    name = "profiler",
+    rpm = "gperftools-devel",
+    visibility = ["PUBLIC"],
+)

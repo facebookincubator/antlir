@@ -1,0 +1,15 @@
+load("//antlir/bzl:build_defs.bzl", "alias")
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "jemalloc",
+    visibility = ["PUBLIC"],
+)
+
+alias(
+    name = "headers",
+    actual = ":jemalloc",
+    visibility = ["PUBLIC"],
+)

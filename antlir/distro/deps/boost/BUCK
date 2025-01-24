@@ -1,0 +1,69 @@
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load(":defs.bzl", "boost_system_library")
+
+oncall("antlir")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.rpms_install(rpms = ["boost-devel"]),
+    ],
+)
+
+hoist(
+    name = "headers",
+    dir = True,
+    layer = ":layer",
+    path = "/usr/include/boost",
+)
+
+boost_system_library(
+    name = "boost",
+    header_only = True,
+)
+
+boost_system_library(
+    name = "boost_system",
+)
+
+boost_system_library(
+    name = "boost_thread",
+    # TODO(T213442795): hardcoding this version is gross but antlir doesn't
+    # understand ld scripts
+    path = "/usr/lib64/libboost_thread.so.1.75.0",
+    exported_deps = [":boost_system"],
+)
+
+[
+    boost_system_library(
+        name = "boost_" + name,
+    )
+    for name in [
+        "chrono",
+        "context",
+        "filesystem",
+        "regex",
+        "serialization",
+    ]
+]
+
+[
+    boost_system_library(
+        name = "boost_" + name,
+        header_only = True,
+    )
+    for name in [
+        "algorithm",
+        "container",
+        "date_time",
+        "lexical_cast",
+        "multi_index",
+        "preprocessor",
+        "random",
+        "range",
+        "spirit",
+        "variant",
+    ]
+]

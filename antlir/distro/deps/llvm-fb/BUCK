@@ -1,0 +1,36 @@
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
+load(":defs.bzl", "clang_rt_library", "libs")
+
+oncall("antlir")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.rpms_install(rpms = ["compiler-rt"]),
+    ],
+)
+
+genrule_in_image(
+    name = "libs",
+    outs = {lib: "lib{}.a".format(lib) for lib in libs},
+    bash = selects.apply(
+        select({
+            "ovr_config//cpu:arm64": "aarch64-redhat-linux-gnu",
+            "ovr_config//cpu:x86_64": "x86_64-redhat-linux-gnu",
+        }),
+        lambda triple: """
+            cp -R /usr/lib/clang/*/lib/{}/* $OUT/
+        """.format(triple),
+    ),
+    layer = ":layer",
+)
+
+[
+    clang_rt_library(
+        name = lib,
+    )
+    for lib in libs
+]

@@ -1,3 +1,4 @@
+load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
 
@@ -15,9 +16,24 @@ sysroot_dep(
     visibility = ["PUBLIC"],
 )
 
+# TODO: no idea if these header-unit targets are correct, cross that bridge when
+# we get there
+alias(
+    name = "stdc++-header-unit",
+    actual = ":stdc++",
+    visibility = ["PUBLIC"],
+)
+
 prelude.prebuilt_cxx_library(
     name = "stdc++-legacy",
     exported_preprocessor_flags = ["-I$(location //antlir/distro/deps:sysroot)/usr/include/c++/11/backward"],
+    visibility = ["PUBLIC"],
+)
+
+# This is not needed as a separate library on the versions of clang that we
+# support, but keep it around for the buck2 graph
+prelude.prebuilt_cxx_library(
+    name = "stdc++fs",
     visibility = ["PUBLIC"],
 )
 
@@ -30,4 +46,10 @@ rpm_library(
     name = "atomic",
     lib = "libatomic.so.1",
     rpm = "libatomic",
+)
+
+alias(
+    name = "atomic-header-unit",
+    actual = ":atomic",
+    visibility = ["PUBLIC"],
 )

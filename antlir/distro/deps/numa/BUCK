@@ -1,0 +1,7 @@
+load("//antlir/distro/deps:unavailable.bzl", "unavailable")
+
+oncall("antlir")
+
+unavailable(
+    name = "numa",
+)

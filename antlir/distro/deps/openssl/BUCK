@@ -1,0 +1,15 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "crypto",
+    rpm = "openssl-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
+    name = "ssl",
+    rpm = "openssl-devel",
+    visibility = ["PUBLIC"],
+)

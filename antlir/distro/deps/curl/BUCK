@@ -1,0 +1,9 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "curl",
+    rpm = "libcurl-devel",
+    visibility = ["PUBLIC"],
+)

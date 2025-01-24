@@ -4,15 +4,19 @@ oncall("antlir")
 
 sysroot_dep(
     name = "c",
-    # TODO: this seems fragile, ideally I would actually read the ld script that
-    # is the /usr/lib64/libc.so file
+    # TODO(T213442795): hardcoding this version is gross but antlir doesn't
+    # understand ld scripts
     lib = "libc.so.6",
 )
 
 sysroot_dep(
+    name = "crypt",
+)
+
+sysroot_dep(
     name = "m",
-    # TODO: this seems fragile, ideally I would actually read the ld script that
-    # is the /usr/lib64/libm.so file
+    # TODO(T213442795): hardcoding this version is gross but antlir doesn't
+    # understand ld scripts
     lib = "libm.so.6",
 )
 
@@ -23,5 +27,10 @@ sysroot_dep(
 
 sysroot_dep(
     name = "pthread",
+    archive = True,
+)
+
+sysroot_dep(
+    name = "rt",
     archive = True,
 )

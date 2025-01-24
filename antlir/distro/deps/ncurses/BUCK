@@ -1,0 +1,15 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "ncursesw",
+    rpm = "ncurses-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
+    name = "panelw",
+    rpm = "ncurses-devel",
+    visibility = ["PUBLIC"],
+)
