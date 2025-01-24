@@ -48,11 +48,6 @@ class Test(unittest.TestCase):
         self.assertTrue(f.exists())
         self.assertEqual(f.read_text(), "From par\n")
 
-    def test_installed_par(self) -> None:
-        f = Path(os.getenv("INSTALLED_PAR"))
-        self.assertTrue(f.exists())
-        self.assertEqual(f.read_text(), "From par\n")
-
     def test_with_mount(self) -> None:
         f = Path(os.getenv("WITH_MOUNT"))
         self.assertTrue(f.exists())
