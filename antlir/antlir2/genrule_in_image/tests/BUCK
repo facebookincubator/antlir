@@ -113,26 +113,6 @@ genrule_in_image(
 )
 
 image.layer(
-    name = "with-par",
-    features = [
-        feature.install(
-            src = ":par",
-            dst = "/par",
-        ),
-    ],
-    parent_layer = ":with-xarexec",
-)
-
-genrule_in_image(
-    name = "run-installed-par",
-    out = "f",
-    bash = """
-        /par $OUT
-    """,
-    layer = ":with-par",
-)
-
-image.layer(
     name = "mount-src",
     features = [
         feature.install_text(
@@ -176,7 +156,6 @@ python_unittest(
         "DEFAULT_OUT": "$(location :default-out)",
         "DOT_DIR": "$(location :dot-dir)",
         "EXE_PAR": "$(location :run-exe-par)",
-        "INSTALLED_PAR": "$(location :run-installed-par)",
         "NAMED_DIR": "$(location :named-dir)",
         "NAMED_OUTS": "$(location :named-outs)",
         "SINGLE_FILE": "$(location :single-file)",
