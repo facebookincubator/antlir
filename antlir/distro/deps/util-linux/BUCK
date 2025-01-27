@@ -2,8 +2,11 @@ load("//antlir/bzl:build_defs.bzl", "alias")
 
 oncall("antlir")
 
+# This is weird, but libuuid is often referred to as a part of util-linux, but
+# it's the same as the standalone libuuid directory, so just alias to there
 alias(
     name = "uuid",
     actual = "//antlir/distro/deps/libuuid:libuuid",
+    labels = ["antlir-distro-dep"],
     visibility = ["PUBLIC"],
 )

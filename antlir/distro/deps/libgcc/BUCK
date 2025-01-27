@@ -1,10 +1,9 @@
 load("//antlir/bzl:build_defs.bzl", "alias")
+load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
 
 oncall("antlir")
-
-prelude = native
 
 sysroot_dep(
     name = "stdc++",
@@ -21,10 +20,11 @@ sysroot_dep(
 alias(
     name = "stdc++-header-unit",
     actual = ":stdc++",
+    labels = ["antlir-distro-dep"],
     visibility = ["PUBLIC"],
 )
 
-prelude.prebuilt_cxx_library(
+prebuilt_cxx_library(
     name = "stdc++-legacy",
     exported_preprocessor_flags = ["-I$(location //antlir/distro/deps:sysroot)/usr/include/c++/11/backward"],
     visibility = ["PUBLIC"],
@@ -32,7 +32,7 @@ prelude.prebuilt_cxx_library(
 
 # This is not needed as a separate library on the versions of clang that we
 # support, but keep it around for the buck2 graph
-prelude.prebuilt_cxx_library(
+prebuilt_cxx_library(
     name = "stdc++fs",
     visibility = ["PUBLIC"],
 )
@@ -51,5 +51,6 @@ rpm_library(
 alias(
     name = "atomic-header-unit",
     actual = ":atomic",
+    labels = ["antlir-distro-dep"],
     visibility = ["PUBLIC"],
 )

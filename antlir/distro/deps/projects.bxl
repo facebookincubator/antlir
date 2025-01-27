@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 def _query_impl(ctx: bxl.Context):
-    libs = ctx.uquery().kind("alias|cxx_.*", "antlir//antlir/distro/deps/...")
+    libs = ctx.uquery().attrfilter("labels", "antlir-distro-dep", "antlir//antlir/distro/deps/...")
     deps = []
     for target in libs:
         if target.label.package == "antlir/distro/deps":

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
 def boost_system_library(
         *,
@@ -20,7 +21,7 @@ def boost_system_library(
             path = path or "/usr/lib64/lib{}.so".format(name),
             rootless = True,
         )
-    native.prebuilt_cxx_library(
+    prebuilt_cxx_library(
         name = name,
         exported_headers = {
             "": ":headers",

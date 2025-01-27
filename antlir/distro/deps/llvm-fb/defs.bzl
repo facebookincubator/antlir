@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
+
 libs = [
     "clang_rt.asan",
     "clang_rt.asan_cxx",
@@ -18,7 +20,7 @@ libs = [
 ]
 
 def clang_rt_library(*, name: str):
-    native.prebuilt_cxx_library(
+    prebuilt_cxx_library(
         name = name,
         # TODO: does this need headers too?
         shared_lib = ":libs[{}]".format(name),

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
 def sysroot_dep(
         *,
@@ -25,10 +26,11 @@ def sysroot_dep(
         visibility = [],
     )
 
-    native.prebuilt_cxx_library(
+    prebuilt_cxx_library(
         name = name,
         shared_lib = ":" + lib,
         preferred_linkage = "shared",
         visibility = visibility,
+        labels = ["antlir-distro-dep"],
         **kwargs
     )

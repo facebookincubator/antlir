@@ -11,5 +11,6 @@ rpm_library(
 alias(
     name = "headers",
     actual = ":jemalloc",
+    labels = ["antlir-distro-dep"],
     visibility = ["PUBLIC"],
 )

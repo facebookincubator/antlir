@@ -6,6 +6,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
+load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
 def rpm_library(
         *,
@@ -89,7 +90,7 @@ def rpm_library(
         target_compatible_with = target_compatible_with,
     )
 
-    native.prebuilt_cxx_library(
+    prebuilt_cxx_library(
         name = name,
         visibility = visibility,
         header_dirs = [":{}--outputs[headers]".format(name)],
@@ -97,6 +98,8 @@ def rpm_library(
         header_only = header_only,
         preferred_linkage = "shared",
         target_compatible_with = target_compatible_with,
-        labels = ["antlir-distro-rpm-library"],
+        labels = [
+            "antlir-distro-rpm-library",
+        ],
         **kwargs
     )
