@@ -1,0 +1,37 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
+
+oncall("antlir")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.rpms_install(subjects = [
+            "/usr/lib/rpm/find-requires",
+        ]),
+        feature.install(
+            src = "find-requires",
+            dst = "/usr/bin/find-requires",
+            mode = "a+rx",
+        ),
+    ],
+    rootless = True,
+    visibility = [],
+)
+
+package.unprivileged_dir(
+    name = "root",
+    layer = ":layer",
+    rootless = True,
+    visibility = [],
+)
+
+image_command_alias(
+    name = "find-requires",
+    exe = "/usr/bin/find-requires",
+    root = ":root",
+    rootless = True,
+    visibility = ["PUBLIC"],
+)

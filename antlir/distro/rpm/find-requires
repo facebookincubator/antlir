@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -ex
+
+out="$1"
+shift
+
+exec /usr/lib/rpm/rpmdeps --define="_use_internal_dependency_generator 1" --requires "$@" > "$out"

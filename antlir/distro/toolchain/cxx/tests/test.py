@@ -96,20 +96,28 @@ class Test(TestCase):
         binary and letting rpmbuild do it is great to avoid user mistakes
         forgetting to define dependencies.
         """
-        requires = set(
-            subprocess.run(
-                ["rpm", "-q", "--requires", "main"],
-                check=True,
-                capture_output=True,
-                text=True,
+        if os.environ["INSTALL_MODE"] == "rpm":
+            requires = set(
+                subprocess.run(
+                    ["rpm", "-q", "--requires", "main"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                .stdout.strip()
+                .splitlines()
             )
-            .stdout.strip()
-            .splitlines()
-        )
-        self.assertTrue(
-            any(r.startswith("librpm.so") for r in requires),
-            "'main' did not require librpm.so",
-        )
+            self.assertTrue(
+                any(r.startswith("librpm.so") for r in requires),
+                "'main' did not require librpm.so",
+            )
+        elif os.environ["INSTALL_MODE"] in {"install", "global-query"}:
+            # Don't really need to do anything here, if the other tests pass
+            # then that means that the rpm dependencies were correctly
+            # determined
+            pass
+        else:
+            self.fail("unknown INSTALL_MODE=" + os.environ["INSTALL_MODE"])
 
     def test_platform_preprocessor_flags(self) -> None:
         """
