@@ -39,6 +39,12 @@ def _third_party_library(project, rule = None, platform = None):
             rule = rule,
         )
 
+    if platform == "cxx":
+        return cell + "//antlir/distro/deps/{project}:{rule}".format(
+            project = project,
+            rule = rule,
+        )
+
     fail("unsupported in OSS")
 
 def _third_party_source(project, rule = "tarball"):

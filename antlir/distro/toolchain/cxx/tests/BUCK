@@ -3,7 +3,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
-load("//antlir/bzl:build_defs.bzl", "cpp_binary", "cpp_library")
+load("//antlir/bzl:build_defs.bzl", "cpp_binary", "cpp_library", "third_party")
 load("//antlir/distro/platform:defs.bzl", "alias_for_current_image_platform", "default_image_platform")
 
 oncall("antlir")
@@ -21,13 +21,13 @@ cpp_binary(
     ],
     default_target_platform = default_image_platform("centos9"),
     deps = [
+        third_party.library(
+            "jsoncpp",
+            "jsoncpp",
+            platform = "cxx",
+        ),
         ":dep",
         ":platform-preprocessor-flags",
-        "//antlir/distro/deps/jsoncpp:jsoncpp",
-        # TODO(D66893436): these will become default deps but for now need to be
-        # listed explicitly
-        "//antlir/distro/deps/libgcc:stdc++",
-        "//antlir/distro/deps/glibc:m",
     ],
 )
 
@@ -38,7 +38,11 @@ cpp_library(
     headers = ["dep.h"],
     default_target_platform = default_image_platform("centos9"),
     deps = [
-        "//antlir/distro/deps/rpm:librpm",
+        third_party.library(
+            "rpm",
+            "librpm",
+            platform = "cxx",
+        ),
     ],
 )
 
