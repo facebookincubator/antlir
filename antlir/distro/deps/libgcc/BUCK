@@ -7,6 +7,11 @@ oncall("antlir")
 
 sysroot_dep(
     name = "stdc++",
+    # Forcibly pass this linker flag as well otherwise some symbols cannot be
+    # found, not sure why. It still comes from the sysroot image though, so
+    # everything is still repo/image-hermetic.
+    exported_linker_flags = ["-lstdc++"],
+    # Copy the library into the symlink tree in dev builds
     lib = "libstdc++.so.6",
     # TODO: it would be great to use exported_lang_preprocessor_flags to set
     # -std=c++20, but the c++ ones seem to always be applied, even when
