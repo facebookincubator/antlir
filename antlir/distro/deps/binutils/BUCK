@@ -4,7 +4,7 @@ oncall("antlir")
 
 rpm_library(
     name = "iberty",
-    lib = "/usr/lib64/libiberty.a",
+    archive = True,
     rpm = "binutils-devel",
     visibility = ["PUBLIC"],
 )

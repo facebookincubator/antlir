@@ -20,6 +20,7 @@ def main():
     parser.add_argument("--lib", required=True)
     parser.add_argument("--header-glob", type=json.loads)
     parser.add_argument("--out-shared-lib", type=Path)
+    parser.add_argument("--out-archive", type=Path)
     parser.add_argument("--out-headers", required=True, type=Path)
     args = parser.parse_args()
 
@@ -69,6 +70,18 @@ def main():
                 libpath = libpath.with_suffix(".so")
 
         shutil.copy2(libpath, args.out_shared_lib)
+
+    if args.out_archive:
+        if Path(args.lib).exists():
+            libpath = Path(args.lib)
+        else:
+            libname = args.lib
+            if not libname.startswith("lib"):
+                libname = "lib" + libname
+            libpath = Path("/usr/lib64") / libname
+            if not libpath.exists():
+                libpath = libpath.with_suffix(".a")
+        shutil.copy2(libpath, args.out_archive)
 
 
 if __name__ == "__main__":

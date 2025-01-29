@@ -13,6 +13,7 @@ def rpm_library(
         name: str,
         rpm: str | None = None,
         lib: str | None = None,
+        archive: bool = False,
         header_glob = None,
         header_only: bool = False,
         visibility: list[str] = ["PUBLIC"],
@@ -61,6 +62,7 @@ def rpm_library(
 
     lib = lib or name
     soname = name + ".so"
+    archive_name = name + ".a"
 
     genrule_in_image(
         name = "{}--outputs".format(name),
@@ -70,6 +72,7 @@ def rpm_library(
             rpm-library-action \
                 --out-headers $OUT/headers \
                 {maybe_shared_lib} \
+                {maybe_archive} \
                 --rpm-name={rpm_name} \
                 --lib={lib} \
                 --header-glob='{header_globs}'
@@ -78,13 +81,16 @@ def rpm_library(
             lib = lib,
             rpm_name = rpm,
             soname = soname,
-            maybe_shared_lib = "--out-shared-lib=$OUT/{}".format(soname) if not header_only else "",
+            maybe_archive = "--out-archive=$OUT/{}".format(archive_name) if archive else "",
+            maybe_shared_lib = "--out-shared-lib=$OUT/{}".format(soname) if not (header_only or archive) else "",
         ),
         outs = {
             "headers": "headers",
         } | ({
             soname: soname,
-        } if not header_only else {}),
+        } if not (header_only or archive) else {}) | ({
+            archive_name: archive_name,
+        } if archive else {}),
         rootless = True,
         layer = ":{}--layer".format(name),
         target_compatible_with = target_compatible_with,
@@ -94,9 +100,11 @@ def rpm_library(
         name = name,
         visibility = visibility,
         header_dirs = [":{}--outputs[headers]".format(name)],
-        shared_lib = ":{}--outputs[{}]".format(name, soname) if not header_only else None,
+        shared_lib = ":{}--outputs[{}]".format(name, soname) if not (header_only or archive) else None,
+        static_lib = ":{}--outputs[{}]".format(name, archive_name) if archive else None,
         header_only = header_only,
-        preferred_linkage = "shared",
+        extract_soname = kwargs.pop("extract_soname", not archive),
+        preferred_linkage = "shared" if not archive else "static",
         target_compatible_with = target_compatible_with,
         labels = [
             "antlir-distro-rpm-library",

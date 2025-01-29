@@ -28,8 +28,10 @@ def sysroot_dep(
 
     prebuilt_cxx_library(
         name = name,
-        shared_lib = ":" + lib,
-        preferred_linkage = "shared",
+        shared_lib = (":" + lib) if not archive else None,
+        static_lib = (":" + lib) if archive else None,
+        preferred_linkage = "shared" if not archive else "static",
+        extract_soname = not archive,
         visibility = visibility,
         labels = ["antlir-distro-dep"],
         **kwargs
