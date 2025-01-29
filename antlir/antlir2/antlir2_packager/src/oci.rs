@@ -12,7 +12,6 @@ use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -30,7 +29,6 @@ use oci_spec::image::MediaType;
 use oci_spec::image::OciLayoutBuilder;
 use oci_spec::image::PlatformBuilder;
 use oci_spec::image::RootFsBuilder;
-use oci_spec::image::Sha256Digest;
 use oci_spec::image::ANNOTATION_REF_NAME;
 use serde::Deserialize;
 use serde::Serialize;
@@ -105,8 +103,8 @@ fn write<O: OciObject>(blobs_dir: &Dir, obj: &O) -> Result<Descriptor> {
     f.write_all(bytes.as_ref()).context("while writing blob")?;
     DescriptorBuilder::default()
         .media_type(O::MEDIA_TYPE)
-        .digest(Sha256Digest::from_str(&sha256)?)
-        .size(bytes.as_ref().len() as u64)
+        .digest(format!("sha256:{sha256}"))
+        .size(bytes.as_ref().len() as i64)
         .build()
         .context("while building descriptor")
 }
