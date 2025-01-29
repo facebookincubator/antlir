@@ -4,6 +4,9 @@ oncall("antlir")
 
 rpm_library(
     name = "ncursesw",
+    # TODO(T213442795): hardcoding this version is gross but antlir doesn't
+    # understand ld scripts
+    lib = "ncursesw.so.6",
     rpm = "ncurses-devel",
     visibility = ["PUBLIC"],
 )

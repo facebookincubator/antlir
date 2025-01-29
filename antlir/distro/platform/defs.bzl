@@ -6,6 +6,7 @@
 # @oss-disable
 load("@prelude//:rules.bzl", "platform")
 load("//antlir/antlir2/os:oses.bzl", "OSES", "arch_t", "new_arch_t", "os_t")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 
 def _cpu_label(arch: arch_t, *, constraint: bool = False) -> str:
     sk = arch.select_key
@@ -87,7 +88,8 @@ def alias_for_current_image_platform(*, name: str, actual: str):
         platform = select(platform),
     )
 
-def default_image_platform(os: str):
+def default_image_platform(os: str | None = None):
+    os = os or get_default_os_for_package()
     # @oss-disable
     default_arch = "aarch64" if native.host_info().arch.is_aarch64 else "x86_64" # @oss-enable
 

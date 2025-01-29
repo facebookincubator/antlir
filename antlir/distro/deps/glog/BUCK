@@ -4,6 +4,9 @@ oncall("antlir")
 
 rpm_library(
     name = "glog",
+    test_include_headers = [
+        "glog/logging.h",
+    ],
     visibility = ["PUBLIC"],
     exported_deps = [
         "//antlir/distro/deps/gflags:gflags",

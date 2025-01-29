@@ -12,4 +12,5 @@ rpm_library(
     name = "pcrecpp",
     rpm = "pcre-devel",
     visibility = ["PUBLIC"],
+    exported_deps = [":pcre"],
 )

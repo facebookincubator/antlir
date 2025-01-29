@@ -11,4 +11,7 @@ rpm_library(
     name = "profiler",
     rpm = "gperftools-devel",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        "//antlir/distro/deps/libunwind:unwind",
+    ],
 )

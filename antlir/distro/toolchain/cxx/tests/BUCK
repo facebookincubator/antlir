@@ -20,7 +20,7 @@ cpp_binary(
     compatible_with = [
         "//antlir/distro:build-for-distro",
     ],
-    default_target_platform = default_image_platform("centos9"),
+    default_target_platform = default_image_platform(),
     deps = [
         third_party.library(
             "jsoncpp",
@@ -37,7 +37,7 @@ cpp_library(
     name = "dep",
     srcs = ["dep.c"],
     headers = ["dep.h"],
-    default_target_platform = default_image_platform("centos9"),
+    default_target_platform = default_image_platform(),
     deps = [
         third_party.library(
             "rpm",

@@ -1,4 +1,4 @@
-# @generated SignedSource<<73bf36b41772c2f946665830cb8de42a>>
+# @generated SignedSource<<068e07a809d9f013ae626dae5da1fbbc>>
 PROJECTS = [
     ("binutils", "iberty"),
     ("boost", "boost"),
@@ -34,6 +34,7 @@ PROJECTS = [
     ("glibc", "rt"),
     ("glog", "glog"),
     ("google-perftools", "profiler"),
+    ("gtest", "gtest"),
     ("jemalloc", "headers"),
     ("jemalloc", "jemalloc"),
     ("jsoncpp", "jsoncpp"),
@@ -51,6 +52,7 @@ PROJECTS = [
     ("libmcrypt", "libmcrypt"),
     ("libsodium", "sodium"),
     ("libtirpc", "tirpc"),
+    ("libunwind", "unwind"),
     ("libuuid", "libuuid"),
     ("libzip", "libzip"),
     ("llvm-fb", "clang_rt.asan"),

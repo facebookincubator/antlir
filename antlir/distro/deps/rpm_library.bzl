@@ -3,9 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "cpp_binary", "write_file")
+load("//antlir/distro/platform:defs.bzl", "default_image_platform")
 load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
 def rpm_library(
@@ -18,6 +22,7 @@ def rpm_library(
         header_only: bool = False,
         visibility: list[str] = ["PUBLIC"],
         compatible_with_os: list[str] = [],
+        test_include_headers: list[str] | Select = [],
         **kwargs):
     """
     Define a cxx_library target that can be used in Buck builds to depend on a
@@ -110,4 +115,35 @@ def rpm_library(
             "antlir-distro-rpm-library",
         ],
         **kwargs
+    )
+
+    write_file(
+        name = "{}--test-deps-main.cpp".format(name),
+        out = "main.cpp",
+        content = selects.apply(
+            test_include_headers or [],
+            lambda headers: ['#include "{}"'.format(h) for h in headers],
+        ) + [
+            "int main(int argc, char **argv) {",
+            "return 0;",
+            "}",
+        ],
+    )
+
+    cpp_binary(
+        name = "{}--test-deps-binary".format(name),
+        srcs = {":{}--test-deps-main.cpp".format(name): "test.cpp"},
+        default_target_platform = default_image_platform(),
+        deps = [
+            ":" + name,
+        ],
+    )
+
+    image_sh_test(
+        name = "{}--test-deps".format(name),
+        test = ":{}--test-deps-binary".format(name),
+        layer = "antlir//antlir/distro/deps:base",
+        default_target_platform = default_image_platform(),
+        rootless = True,
+        labels = ["antlir-distro-dep-test"],
     )
