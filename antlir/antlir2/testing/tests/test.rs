@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 use nix::unistd::getuid;
@@ -54,4 +55,15 @@ fn tmpfs_tmp() {
 #[test]
 fn tmpfs_run() {
     test_tmpfs("/run");
+}
+
+#[test]
+fn id_mapping() {
+    let meta = std::fs::metadata("/").expect("failed to stat /");
+    assert_eq!(0, meta.uid());
+    assert_eq!(0, meta.gid());
+
+    let meta = std::fs::metadata("/antlir.txt").expect("failed to stat /antlir.txt");
+    assert_eq!(1000, meta.uid());
+    assert_eq!(1000, meta.gid());
 }
