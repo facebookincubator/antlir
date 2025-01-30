@@ -24,6 +24,23 @@ image.layer(
             "slow-unit.service",
             target = "default.target",
         ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/bin/bash",
+            uidmap = "antlir",
+            username = "antlir",
+        ),
+        feature.group_add(
+            groupname = "antlir",
+            uidmap = "antlir",
+        ),
+        feature.install_text(
+            dst = "/antlir.txt",
+            group = "antlir",
+            text = "I am antlir\n",
+            user = "antlir",
+        ),
     ],
 )
 
