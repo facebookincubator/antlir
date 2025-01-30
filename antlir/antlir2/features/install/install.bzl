@@ -160,6 +160,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     mode = ctx.attrs.mode
     if ctx.attrs.text != None:
         src = ctx.actions.write("install_text", ctx.attrs.text)
+
+    # If the user is installing a directory, we require they include a trailing
+    # '/' in `dst` because there is otherwise no way to tell
+    dst_is_dir = ctx.attrs.dst.endswith("/")
+
     if type(src) == "dependency":
         is_executable = RunInfo in src
         expect(LayerInfo not in src, "Layers ({}) cannot be used as install `src`, consider using feature.mount instead".format(src.label))
@@ -169,9 +174,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 # in buck2, since we put a dep on the binary directly onto the layer
                 # itself, which forces a rebuild when appropriate.
                 mode = ctx.attrs.default_binary_mode or 0o555
-            elif ctx.attrs.dst.endswith("/"):
-                # If the user is installing a directory, we require they include
-                # a trailing '/' in `dst`
+            elif dst_is_dir:
                 mode = ctx.attrs.default_directory_mode or 0o755
             else:
                 mode = ctx.attrs.default_file_mode or 0o444
@@ -217,8 +220,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             standalone = binaries_require_repo.is_standalone(src)
 
         # Non-standalone (aka dev-mode) binaries don't get stripped, they just
-        # get symlinked
-        if ctx.attrs.split_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink):
+        # get symlinked. The split action does not (currently) support directory
+        # sources, so just skip it
+        if not dst_is_dir and ctx.attrs.split_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink):
             split_anon_target = split_binary_anon(
                 ctx = ctx,
                 src = src,
