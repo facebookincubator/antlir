@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
-# @oss-disable
-# @oss-disable
+# @oss-disable: 
+# @oss-disable: 
+# @oss-disable: 
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
@@ -198,7 +198,7 @@ def _implicit_image_test(
         hostname: str | None = None,
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
-        # @oss-disable
+        # @oss-disable: 
         systemd: str | None = None,
         mount_platform: bool | None = None,
         rootless: bool | None = None,
@@ -211,7 +211,7 @@ def _implicit_image_test(
         name = name + "_image_test_inner",
         labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test") + [
             # never schedule any CI on this inner target
-            # @oss-disable
+            # @oss-disable: 
         ],
         **kwargs
     )
@@ -221,8 +221,8 @@ def _implicit_image_test(
         lambda labels: labels + _add_outer_labels,
     )
 
-    # @oss-disable
-        # @oss-disable
+    # @oss-disable: 
+        # @oss-disable: 
 
     if rootless == None:
         rootless = get_antlir2_rootless()
@@ -235,7 +235,7 @@ def _implicit_image_test(
                 "antlir//antlir/antlir2/testing/image_test:features",
             ],
             default_os = default_os,
-            # @oss-disable
+            # @oss-disable: 
             rootless = rootless,
             implicit_layer_reason = "image_test_boot",
             systemd = "inherit-parent",
@@ -264,7 +264,7 @@ def _implicit_image_test(
         boot_wants_units = boot_wants_units,
         hostname = hostname,
         default_os = default_os,
-        # @oss-disable
+        # @oss-disable: 
         systemd = systemd or "inherit-parent",
         mount_platform = mount_platform,
         rootless = rootless,
@@ -305,7 +305,7 @@ def image_python_test(
             ],
             visibility = [":" + name],
             default_os = default_os,
-            # @oss-disable
+            # @oss-disable: 
             implicit_layer_reason = "image_test_xarexec",
             systemd = "inherit-parent",
         )
@@ -325,7 +325,7 @@ def image_python_test(
         name = name,
         layer = test_layer,
         default_os = default_os,
-        # @oss-disable
+        # @oss-disable: 
         systemd = systemd,
         _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-py",
         **kwargs

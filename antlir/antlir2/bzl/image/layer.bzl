@@ -15,16 +15,16 @@ load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "Fla
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
 
 load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-enable
-# @oss-disable
+# @oss-disable: 
 
 load("//antlir/bzl:oss_shim.bzl", fb_defaults = "empty_dict") # @oss-enable
-# @oss-disable
+# @oss-disable: 
 load(
     "//antlir/antlir2/features/mount:mount.bzl",
     "DefaultMountpointInfo",
 )
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
-# @oss-disable
+# @oss-disable: 
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "config", "get_visibility")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
@@ -493,7 +493,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     parent_layer_info = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None
     mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
-    # @oss-disable
+    # @oss-disable: 
 
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
@@ -776,7 +776,7 @@ def layer(
         name = name,
         parent_layer = parent_layer,
         default_os = default_os,
-        # @oss-disable
+        # @oss-disable: 
         rootless = rootless,
         visibility = get_visibility(visibility),
         target_compatible_with = target_compatible_with,

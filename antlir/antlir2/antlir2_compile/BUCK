@@ -6,7 +6,7 @@ rust_library(
     name = "antlir2_compile",
     srcs = glob([
         "src/**/*.rs",
-        # @oss-disable
+        # @oss-disable: 
     ]),
     deps = [
         "anyhow",
