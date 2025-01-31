@@ -31,10 +31,15 @@ fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    match args {
+    if let Err(e) = match args {
         Args::Spawn(a) => a.run(),
         Args::Exec(a) => a.run(),
         Args::ShellHelp(a) => a.run(),
         Args::Container(a) => a.run(),
+    } {
+        eprintln!("{e:#}");
+        Err(e)
+    } else {
+        Ok(())
     }
 }

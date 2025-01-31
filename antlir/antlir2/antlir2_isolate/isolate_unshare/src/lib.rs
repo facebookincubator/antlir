@@ -33,14 +33,14 @@ pub struct IsolatedContext<'a>(IsolationContext<'a>);
 
 impl<'a> IsolatedContext<'a> {
     pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Result<Command> {
-        // TODO: remove these settings entirely when we get rid of
-        // systemd-nspawn / move the things that require this (like image_test)
-        // to *only* use systemd-nspawn
-        if self.0.invocation_type != InvocationType::Pid2Pipe {
-            return Err(Error::UnsupportedSetting("invocation_type"));
-        }
         if self.0.register {
             return Err(Error::UnsupportedSetting("register"));
+        }
+        // TODO: support this when we can bind the controlling terminal to
+        // /dev/console, otherwise don't lie about providing an interactive
+        // console
+        if self.0.invocation_type == InvocationType::BootInteractive {
+            return Err(Error::UnsupportedSetting("invocation_type=BootInteractive"));
         }
 
         let mut cmd = Command::new(

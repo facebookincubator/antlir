@@ -129,11 +129,6 @@ pub(crate) fn run(
 
     match spec.boot {
         Some(boot) => {
-            ensure!(
-                !spec.rootless,
-                "TODO(T187078382): booted tests still must use systemd-nspawn and are incompatible with rootless"
-            );
-
             let container_stdout = container_stdout_file()?;
             let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
 
@@ -226,12 +221,14 @@ pub(crate) fn run(
                 exec_spec_file.path(),
             ));
 
-            // Register the test container with systemd-machined so manual debugging
-            // is a easier.
-            ctx.register(true);
+            let mut isol = if spec.rootless {
+                let mut isol = unshare(ctx.build())?.command("/sbin/init")?;
+                isol.arg("systemd.unit=antlir2_image_test.service");
+                isol
+            } else {
+                nspawn(ctx.build())?.command("systemd.unit=antlir2_image_test.service")?
+            };
 
-            let mut isol =
-                nspawn(ctx.build())?.command("systemd.unit=antlir2_image_test.service")?;
             isol.arg("systemd.journald.forward_to_console=1")
                 .arg("systemd.log_time=1")
                 .arg("systemd.setenv=ANTLIR2_IMAGE_TEST=1");
