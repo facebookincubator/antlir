@@ -98,7 +98,7 @@ python_binary(
 image.layer(
     name = "with-xarexec",
     features = [
-        # @oss-disable
+        # @oss-disable: 
     ],
     parent_layer = ":layer",
 )

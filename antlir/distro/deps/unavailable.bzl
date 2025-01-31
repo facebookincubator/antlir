@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
+# @oss-disable: 
 
 def _unavailable_impl(ctx):
     fail("""
@@ -30,7 +30,7 @@ def unavailable(name: str):
         name = name,
         labels = [
             # By definition, this thing won't build, so don't ever let CI try
-            # @oss-disable
+            # @oss-disable: 
         ],
         visibility = ["PUBLIC"],
     )
