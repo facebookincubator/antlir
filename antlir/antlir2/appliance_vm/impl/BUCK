@@ -9,9 +9,9 @@ oncall("antlir")
 
 git_fetch(
     name = "kernel.git",
-    # @oss-disable
+    # @oss-disable: 
     repo = "https://github.com/torvalds/linux.git", # @oss-enable
-    # @oss-disable
+    # @oss-disable: 
     rev = "a38297e3fb012ddfa7ce0321a7e5a8daeb1872b6", # @oss-enable
 )
 
