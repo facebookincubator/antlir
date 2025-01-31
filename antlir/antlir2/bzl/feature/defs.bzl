@@ -6,10 +6,10 @@
 load("//antlir/antlir2/features/clone:clone.bzl", "clone")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
 load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary", "extract_from_layer")
-# @oss-disable
-# @oss-disable
-# @oss-disable
-# @oss-disable
+# @oss-disable: 
+# @oss-disable: 
+# @oss-disable: 
+# @oss-disable: 
 load("//antlir/antlir2/features/genrule:genrule.bzl", "genrule")
 load("//antlir/antlir2/features/group:group.bzl", "group_add")
 load("//antlir/antlir2/features/hardlink:hardlink.bzl", "hardlink")
@@ -51,8 +51,8 @@ feature = struct(
     usermod = usermod,
     group_add = group_add,
     standard_user = standard_user,
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
+    # @oss-disable: 
+    # @oss-disable: 
+    # @oss-disable: 
+    # @oss-disable: 
 )

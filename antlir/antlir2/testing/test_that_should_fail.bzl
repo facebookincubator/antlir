@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
-# @oss-disable
+# @oss-disable: 
+# @oss-disable: 
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
@@ -76,8 +76,8 @@ def test_that_should_fail(
     )
     labels = list(labels) if labels else []
 
-    # @oss-disable
-        # @oss-disable
+    # @oss-disable: 
+        # @oss-disable: 
 
     _test_that_should_fail(
         name = name,
