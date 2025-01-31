@@ -33,10 +33,6 @@ def test_variants(
             oss = ("centos9",),
         ),
     ):
-        if rootless and boot:
-            # TODO(T187078382): booted tests still must use
-            # systemd-nspawn and are incompatible with rootless
-            continue
         name_parts = (
             "test",
             lang,

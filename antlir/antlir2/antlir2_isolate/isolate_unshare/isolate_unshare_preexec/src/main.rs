@@ -56,14 +56,14 @@ fn do_main(args: Main) -> Result<()> {
     // performed by the first forked process (pid 1) in that namespace
     unshare(CloneFlags::CLONE_NEWPID).context("while unsharing into new pid namespace")?;
     let mut pid1 = Command::new(std::env::current_exe().context("while getting current exe")?);
-    pid1.arg("pid1")
-        .arg(
-            serde_json::to_string(args.isolation.as_inner())
-                .context("while serializing isolation info")?,
-        )
-        .arg(args.program)
-        .arg("--")
-        .args(args.program_args);
+    pid1.arg("pid1").arg(
+        serde_json::to_string(args.isolation.as_inner())
+            .context("while serializing isolation info")?,
+    );
+    if args.isolation.as_inner().invocation_type.booted() {
+        pid1.arg("--exec-init");
+    }
+    pid1.arg(args.program).arg("--").args(args.program_args);
     let mut pid1 = pid1.spawn().context("while spawning pid1")?;
     let status = pid1.wait().context("while waiting for pid1")?;
     if status.success() {

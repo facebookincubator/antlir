@@ -48,15 +48,18 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
         tmpfs_overlay,
         hostname,
         readonly,
-        // isolate_unshare crate already ensures that these are not configured
-        invocation_type: _,
-        register: _,
         enable_network,
+        invocation_type,
+        // isolate_unshare crate already ensures that this is not set
+        register: _,
     } = isol;
 
     let mut clone_flags = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUTS;
     if !enable_network {
         clone_flags |= CloneFlags::CLONE_NEWNET;
+    }
+    if invocation_type.booted() {
+        clone_flags |= CloneFlags::CLONE_NEWCGROUP;
     }
 
     unshare(clone_flags).context("while unsharing into new namespaces")?;
@@ -179,11 +182,16 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
             .open_dir(tmpfs.strip_abs())
             .with_context(|| format!("while opening tmpfs '{}'", tmpfs.display()))?;
         if dev {
-            tmpfs
-                .symlink_contents("/proc/self/fd", "fd")
-                .context("while creating /dev/fd symlink")?;
+            // when booted, systemd will create /dev/fd
+            if !invocation_type.booted() {
+                tmpfs
+                    .symlink_contents("/proc/self/fd", "fd")
+                    .context("while creating /dev/fd symlink")?;
+            }
 
-            for devname in ["fuse", "null", "random", "urandom"] {
+            for devname in [
+                "fuse", "null", "zero", "full", "random", "urandom", "tty", "ptmx",
+            ] {
                 let dev = tmpfs
                     .create(devname)
                     .with_context(|| format!("while creating device file '{devname}'"))?;

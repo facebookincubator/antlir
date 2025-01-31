@@ -6,9 +6,11 @@
  */
 
 use std::ffi::OsString;
+use std::os::unix::process::CommandExt;
 
 use anyhow::ensure;
 use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use clap::Parser;
 use isolate_cfg::IsolationContext;
@@ -26,6 +28,10 @@ use crate::isolation;
 #[derive(Parser, Debug)]
 pub(crate) struct Pid1Args {
     isolation: Json<IsolationContext<'static>>,
+    #[clap(long)]
+    /// Treat PROGRAM and PROGRAM_ARGS as an init application that should be
+    /// 'exec'ed after setting up the antlir container isolation
+    exec_init: bool,
     program: OsString,
     #[clap(last = true)]
     program_args: Vec<OsString>,
@@ -63,6 +69,11 @@ async fn pid1_async(args: Pid1Args) -> Result<()> {
         pid2.env(key, val);
     }
     pid2.args(args.program_args);
+
+    if args.exec_init {
+        return Err(Error::from(pid2.as_std_mut().exec()).context("failed to 'exec' init process"));
+    }
+
     let mut pid2 = pid2.spawn().context("while spawning pid2")?;
     // I call this pid2, but it might not actually be 2, so grab it now
     let pid2_id = Pid::from_raw(pid2.id().context("while getting pid2 pid")? as i32);
