@@ -184,7 +184,7 @@ test_that_should_fail(
     name = "booted-image-test-that-should-fail",
     boot = True,
     layer = ":base",
-    stderr_re = "^this is some stderr of a test that is expected to fail\n$",
+    stderr_re = "^this is some stderr of a test that is expected to fail\nfull container console output can be found at: '/",
     stdout_re = "^this is some stdout of a test that is expected to fail\n$",
     test = "failing_test.sh",
     test_rule = image_sh_test,
