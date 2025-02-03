@@ -15,6 +15,7 @@ use std::os::fd::FromRawFd;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_isolate::nspawn;
@@ -236,8 +237,8 @@ pub(crate) fn run(
             let mut child = isol
                 // the stdout/err of the systemd inside the container is a pipe
                 // so that we can print it IFF the test fails
-                .stdout(container_stdout.try_clone()?)
-                .stderr(container_stdout.try_clone()?)
+                .stdout(container_stdout.as_file()?)
+                .stderr(container_stdout.as_file()?)
                 .spawn()
                 .context("while spawning systemd-nspawn")?;
             let res = child.wait().context("while waiting for systemd-nspawn")?;
@@ -246,6 +247,15 @@ pub(crate) fn run(
             std::io::copy(&mut test_stderr, &mut std::io::stderr())?;
 
             if !res.success() {
+                // if the container stdout is not already being dumped to
+                // stdout/err, then print out the path where it can be found
+                if let ContainerConsoleOutput::File { path, .. } = &container_stdout {
+                    eprintln!(
+                        "full container console output can be found at: '{}'",
+                        path.display()
+                    );
+                    eprintln!("{}", path.display());
+                }
                 std::process::exit(res.code().unwrap_or(255))
             } else {
                 Ok(())
@@ -268,10 +278,24 @@ pub(crate) fn run(
     }
 }
 
+enum ContainerConsoleOutput {
+    File { path: PathBuf, file: File },
+    Stderr,
+}
+
+impl ContainerConsoleOutput {
+    fn as_file(&self) -> Result<File> {
+        match self {
+            Self::File { file, .. } => file.try_clone().context("while cloning file fd"),
+            Self::Stderr => Ok(unsafe { File::from_raw_fd(std::io::stderr().as_raw_fd()) }),
+        }
+    }
+}
+
 /// Create a file to record container stdout into. When invoked under tpx, this
 /// will be uploaded as an artifact. The artifact metadata is set up before
 /// running the test so that it still gets uploaded even in case of a timeout
-fn container_stdout_file() -> Result<File> {
+fn container_stdout_file() -> Result<ContainerConsoleOutput> {
     // if tpx has provided this artifacts dir, put the logs there so they get
     // uploaded along with the test results
     if let Some(artifacts_dir) = std::env::var_os("TEST_RESULT_ARTIFACTS_DIR") {
@@ -284,9 +308,11 @@ fn container_stdout_file() -> Result<File> {
                 r#"{"type": {"generic_text_log": {}}, "description": "systemd logs"}"#,
             )?;
         }
-        File::create(&dst).with_context(|| format!("while creating {}", dst.display()))
+        File::create(&dst)
+            .with_context(|| format!("while creating {}", dst.display()))
+            .map(|file| ContainerConsoleOutput::File { path: dst, file })
     } else {
         // otherwise, have it go right to stderr
-        Ok(unsafe { File::from_raw_fd(std::io::stderr().as_raw_fd()) })
+        Ok(ContainerConsoleOutput::Stderr)
     }
 }

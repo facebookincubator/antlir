@@ -40,11 +40,17 @@ fn main() -> Result<()> {
     );
     if let Some(re) = args.stdout_re {
         let stdout = std::str::from_utf8(&res.stdout).context("stdout not utf8")?;
-        ensure!(re.is_match(stdout), "stdout did not match {re}:\n{stdout}");
+        ensure!(
+            re.is_match(stdout),
+            "stdout did not match {re}:\n'{stdout}'"
+        );
     }
     if let Some(re) = args.stderr_re {
-        let stderr = std::str::from_utf8(&res.stderr).context("stdout not utf8")?;
-        ensure!(re.is_match(stderr), "stderr did not match {re}:\n{stderr}");
+        let stderr = std::str::from_utf8(&res.stderr).context("stderr not utf8")?;
+        ensure!(
+            re.is_match(stderr),
+            "stderr did not match {re}:\n'{stderr}'"
+        );
     }
     Ok(())
 }
