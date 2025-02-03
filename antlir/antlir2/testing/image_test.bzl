@@ -123,6 +123,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                     RunInfo(cmd_args(
                         ctx.attrs.image_test[RunInfo],
                         "container",
+                        cmd_args(ctx.label.project_root, format = "--chdir-project-root={}"),
                         cmd_args(spec, format = "--spec={}"),
                         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
                         ctx.attrs.test[ExternalRunnerTestInfo].command,
