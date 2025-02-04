@@ -56,14 +56,6 @@ class LockedOutput:
         self._lock.release()
 
 
-_DL_STATUS_TO_EVENT = {
-    dnf.callback.STATUS_OK: "ok",
-    dnf.callback.STATUS_ALREADY_EXISTS: "already_exists",
-    dnf.callback.STATUS_FAILED: "err",
-    dnf.callback.STATUS_MIRROR: "err",
-}
-
-
 def package_struct(pkg):
     return {
         "name": pkg.name,
