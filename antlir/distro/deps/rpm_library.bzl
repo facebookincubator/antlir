@@ -132,7 +132,7 @@ def rpm_library(
 
     cpp_binary(
         name = "{}--test-deps-binary".format(name),
-        srcs = {":{}--test-deps-main.cpp".format(name): "test.cpp"},
+        srcs = [":{}--test-deps-main.cpp".format(name)],
         default_target_platform = default_image_platform(),
         deps = [
             ":" + name,
