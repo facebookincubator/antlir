@@ -4,9 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 def _impl(ctx):
-    targets = ctx.cquery().eval("set(//...) - kind(_unavailable, //...)")
+    # TODO: the distro setup should work in OSS, but they require more target
+    # platform configuration that is annoying to replicate in this test, so just
+    # don't and leave it for the actual test running part of CI
+    targets = ctx.uquery().eval("set(//...) - set(//antlir/distro/...)")
+    targets = ctx.configured_targets(targets)
 
-    ctx.output.print("All BUCK files evaluate")
+    ctx.output.print("All BUCK files evaluate ({} targets)".format(len(targets)))
 
     ctx.analysis(targets)
 
