@@ -35,7 +35,7 @@ _strip_configuration_transition = transition(
 def _strip_configuration_impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.label.package not in [
         "antlir/antlir2/cfg/strip_configuration/tests",
-        # @oss-disable: 
+        # @oss-disable
     ]:
         fail("""
             target is in {} which is not an allowed package.

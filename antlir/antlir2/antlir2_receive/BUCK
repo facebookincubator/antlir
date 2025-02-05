@@ -9,8 +9,8 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        # @oss-disable: 
-        # @oss-disable: 
+        # @oss-disable
+        # @oss-disable
         "tar",
         "tempfile",
         "thiserror",

@@ -43,7 +43,7 @@ image.layer(
 
 package.rpm(
     name = "add.rpm",
-    # @oss-disable: 
+    # @oss-disable
     disable_ldconfig = True,
     layer = ":layer",
     license = "none",
@@ -64,6 +64,6 @@ image.layer(
 image_python_test(
     name = "test",
     srcs = ["test.py"],
-    # @oss-disable: 
+    # @oss-disable
     layer = ":test-layer",
 )
