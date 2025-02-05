@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable: 
+# @oss-disable
 load("@prelude//:rules.bzl", "platform")
 load("//antlir/antlir2/os:oses.bzl", "OSES", "arch_t", "new_arch_t", "os_t")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
@@ -27,11 +27,11 @@ def _image_platform(
             "antlir//antlir/distro:build-for-distro",
             # TODO: using the linker wrapper that understands these flags would
             # unblock this
-            # @oss-disable: 
+            # @oss-disable
             # Basic configuration info about the platform
             "ovr_config//os/constraints:linux",
             # TODO: figure out how to build sanitized binaries?
-            # @oss-disable: 
+            # @oss-disable
             _cpu_label(arch, constraint = True),
         ],
         visibility = ["PUBLIC"],
@@ -90,7 +90,7 @@ def alias_for_current_image_platform(*, name: str, actual: str):
 
 def default_image_platform(os: str | None = None):
     os = os or get_default_os_for_package()
-    # @oss-disable: 
+    # @oss-disable
     default_arch = "aarch64" if native.host_info().arch.is_aarch64 else "x86_64" # @oss-enable
 
     default_arch = new_arch_t(default_arch)
