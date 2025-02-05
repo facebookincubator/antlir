@@ -22,21 +22,12 @@ def _image_platform(
     platform(
         name = name,
         constraint_values = [
-            # Set this constraint so that the default toolchains selected by
-            # buck are the ones defined for antlir distro targets
-            "antlir//antlir/distro:build-for-distro",
-            # TODO: using the linker wrapper that understands these flags would
-            # unblock this
-            # @oss-disable
-            # Basic configuration info about the platform
-            "ovr_config//os/constraints:linux",
-            # TODO: figure out how to build sanitized binaries?
-            # @oss-disable
             _cpu_label(arch, constraint = True),
         ],
         visibility = ["PUBLIC"],
         deps = [
             os.target,
+            "antlir//antlir/distro/platform:base",
         ],
     )
 
