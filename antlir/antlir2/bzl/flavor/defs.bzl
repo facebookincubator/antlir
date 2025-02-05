@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorDnfInfo", "FlavorInfo")
-# @oss-disable: 
+# @oss-disable
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoSetInfo")
 
 _flavor_attrs = {
@@ -43,7 +43,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "default_build_appliance": ctx.attrs.default_build_appliance.providers,
             "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
         }),
-    # @oss-disable: 
+    # @oss-disable
     ] # @oss-enable
 
 _flavor = rule(
