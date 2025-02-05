@@ -48,7 +48,7 @@ feature.new(
             src = "//antlir:empty",
             dst = "/__genrule_in_image__/out/single_file",
         ),
-        # @oss-disable: 
+        # @oss-disable
     ],
     visibility = ["PUBLIC"],
 )
