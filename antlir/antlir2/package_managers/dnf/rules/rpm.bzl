@@ -91,16 +91,16 @@ def common_impl(
     # too late at that point, and it's a huge efficiency win to only build them
     # once per reflink flavor that we put it directly onto the provider
     extents = {
-        name: ctx.actions.declare_output("{}_extents.rpm".format(name))
-        for name in reflink_flavors
+        flavor: ctx.actions.declare_output("{}_extents.rpm".format(flavor))
+        for flavor in reflink_flavors
     }
-    for name, appliance in reflink_flavors.items():
+    for flavor, appliance in reflink_flavors.items():
         rpm2extents(
             ctx = ctx,
             appliance = appliance,
             rpm = rpm,
-            extents = extents[name],
-            identifier = name,
+            extents = extents[flavor],
+            identifier = flavor,
         )
     return [
         DefaultInfo(default_outputs = [rpm], sub_targets = {
