@@ -108,8 +108,14 @@ pub enum BinaryInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+pub struct SharedLibrary {
+    pub soname: String,
+    pub target: BuckOutSource,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 pub struct SharedLibraries {
-    pub so_targets: Vec<BuckOutSource>,
+    pub so_targets: Vec<SharedLibrary>,
     pub dir_name: String,
 }
 
@@ -487,9 +493,8 @@ impl antlir2_compile::CompileFeature for Install {
                     std::fs::create_dir_all(&shared_lib_dir)?;
                     for shared_lib in &shared_libraries.so_targets {
                         copy_with_metadata(
-                            shared_lib,
-                            &shared_lib_dir
-                                .join(shared_lib.file_name().expect("must have filename")),
+                            &shared_lib.target,
+                            &shared_lib_dir.join(&shared_lib.soname),
                             Some(uid.as_raw()),
                             Some(gid.as_raw()),
                         )?;
