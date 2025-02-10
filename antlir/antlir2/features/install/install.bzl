@@ -144,8 +144,13 @@ binary_record = record(
     installed = field([installed_binary, None], default = None),
 )
 
+shared_library_record = record(
+    soname = field(str),
+    target = field(Artifact),
+)
+
 shared_libraries_record = record(
-    so_targets = field(list[Artifact]),
+    so_targets = field(list[shared_library_record]),
     dir_name = field(str),
 )
 
@@ -192,17 +197,19 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             required_artifacts.append(rpath_tree_out)
 
             so_targets = []
-            for so_subtarget in src_subtargets["shared-libraries"][DefaultInfo].sub_targets.values():
+            for soname, so_subtarget in src_subtargets["shared-libraries"][DefaultInfo].sub_targets.items():
                 so_info = so_subtarget[DefaultInfo]
                 so_out = ensure_single_output(so_info)
-                so_targets.append(so_out)
+                so_targets.append(shared_library_record(
+                    soname = soname,
+                    target = so_out,
+                ))
+                required_artifacts.append(so_out)
 
             shared_libraries = shared_libraries_record(
                 so_targets = so_targets,
                 dir_name = rpath_tree_out.basename,
             )
-
-            required_artifacts.extend(so_targets)
 
         # Determining if a binary is standalone or not is surprisingly hard:
         #
