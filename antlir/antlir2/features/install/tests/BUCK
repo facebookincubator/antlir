@@ -233,6 +233,12 @@ image_python_test(
     supports_static_listing = False,
 )
 
+# This binary was manually built and copied to true.precompiled.(x86_64|aarch64)
+# for the tests below
+export_file(
+    name = "true.c",
+)
+
 export_file(
     name = "true.precompiled",
     src = arch_select(
