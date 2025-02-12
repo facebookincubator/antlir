@@ -65,17 +65,23 @@ if is_facebook:
         _new_os(
             name = "eln",
         ),
+        # centos8 builds are flaky but it's effectively dead in prod so we don't
+        # care and don't need a system toolchain for it (or its rhel8(.8)
+        # cousins)
         _new_os(
             name = "centos8",
             architectures = [new_arch_t("x86_64")],
+            has_platform_toolchain = False,
         ),
         _new_os(
             name = "rhel8",
             architectures = [new_arch_t("x86_64")],
+            has_platform_toolchain = False,
         ),
         _new_os(
             name = "rhel8.8",
             architectures = [new_arch_t("x86_64")],
+            has_platform_toolchain = False,
         ),
     ])
 else:
@@ -86,6 +92,7 @@ else:
             name = "centos8",
             architectures = [new_arch_t("x86_64")],
             flavor = "antlir//antlir/antlir2/flavor:none",
+            has_platform_toolchain = False,
         ),
     )
 
