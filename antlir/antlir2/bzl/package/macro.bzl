@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @oss-disable
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
@@ -36,8 +37,11 @@ def package_macro(
             rootless = True
 
         labels = kwargs.pop("labels", [])
+        additional_labels = []
+        # @oss-disable
         if not rootless:
-            labels = selects.apply(labels, lambda labels: list(labels) + ["uses_sudo"])
+            additional_labels += ["uses_sudo"]
+        labels = selects.apply(labels, lambda labels: list(labels) + additional_labels)
         buck_rule(
             default_os = default_os,
             rootless = rootless,

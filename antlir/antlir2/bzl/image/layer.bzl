@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @oss-disable
 load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
@@ -742,8 +743,14 @@ def layer(
         kwargs["working_format"] = "overlayfs"
         rootless = True
 
+    additional_labels = []
+    # @oss-disable
     if not rootless:
-        kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
+        additional_labels += ["uses_sudo"]
+    kwargs["labels"] = selects.apply(
+        kwargs.pop("labels", []),
+        lambda labels: labels + additional_labels,
+    )
 
     # Annoyingly, we can only accept target_compatible_with because we need to
     # indicate a *HARD* requirement for `os:linux`, which is impossible with
