@@ -22,6 +22,14 @@ load("//antlir/bzl:internal_external.bzl", "internal_external", "is_facebook")
 
 HIDE_TEST_LABELS = [special_tags.disabled, special_tags.test_is_invisible_to_testpilot]
 
+def env_from_wrapped_test(wrapped_test):
+    env = dict(wrapped_test[ExternalRunnerTestInfo].env)
+
+    # Fix LLVM coverage for wrapped tests
+    if "LLVM_COV" in env:
+        env["LLVM_COVERAGE_ADDITIONAL_OBJECT_PATHS"] = cmd_args(wrapped_test[DefaultInfo].default_outputs, delimiter = ";")
+    return env
+
 def _default_list(maybe_value: list[str] | None, default: list[str]) -> list[str]:
     if maybe_value == None:
         return default
@@ -92,7 +100,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         allow_args = True,
     )
 
-    env = dict(ctx.attrs.test[ExternalRunnerTestInfo].env)
+    env = env_from_wrapped_test(ctx.attrs.test)
     if ctx.attrs._static_list_wrapper:
         original = env.pop("STATIC_LIST_TESTS_BINARY", None)
         if original:
