@@ -8,7 +8,7 @@
 # @oss-disable
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
-load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
+load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS", "env_from_wrapped_test")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 # @oss-disable
@@ -105,7 +105,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             type = ctx.attrs.test[ExternalRunnerTestInfo].test_type,
             labels = ctx.attrs.test_labels + inner_labels,
             contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
-            env = ctx.attrs.test[ExternalRunnerTestInfo].env,
+            env = env_from_wrapped_test(ctx.attrs.test),
             run_from_project_root = True,
         ),
     ]
