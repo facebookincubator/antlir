@@ -61,6 +61,7 @@ def feature_impl(
         src: str | None = None,
         extra_srcs: list[str] = [],
         deps: list[str] | Select = [],
+        resources: dict[str, str | Select] | Select | None = None,
         unstable_features: list[str] = [],
         allow_unused_crate_dependencies: bool = False,
         lib_visibility: list[str] | None = None,
@@ -128,6 +129,7 @@ def feature_impl(
             "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
             "//antlir/antlir2/antlir2_features:antlir2_features",
         ],
+        resources = resources,
     )
 
     feature_plugin(

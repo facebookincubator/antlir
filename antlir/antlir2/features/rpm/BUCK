@@ -1,3 +1,4 @@
+load("@prelude//:export_exe.bzl", "export_exe")
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
@@ -5,7 +6,6 @@ oncall("antlir")
 
 feature_impl(
     name = "rpm",
-    extra_srcs = ["driver.py"],
     deps = [
         "anyhow",
         "memfd",
@@ -35,4 +35,10 @@ rust_binary(
         "//antlir/buck2/buck_label:buck_label",
         "//antlir/util/cli/json_arg:json_arg",
     ],
+)
+
+export_exe(
+    name = "driver",
+    src = "driver.py",
+    visibility = ["PUBLIC"],
 )
