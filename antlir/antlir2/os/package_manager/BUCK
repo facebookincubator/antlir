@@ -18,3 +18,9 @@ constraint_value(
     constraint_setting = ":package_manager",
     visibility = ["//antlir/antlir2/os:"],
 )
+
+constraint_value(
+    name = "dnf5",
+    constraint_setting = ":package_manager",
+    visibility = ["//antlir/antlir2/os:"],
+)

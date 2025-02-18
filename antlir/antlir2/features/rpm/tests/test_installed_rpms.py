@@ -4,13 +4,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import argparse
 import json
 import subprocess
 import sys
 
-expected = json.loads(sys.argv[1])
+parser = argparse.ArgumentParser()
+parser.add_argument("--expected", type=json.loads, required=True)
+parser.add_argument("--dnf-version", required=True)
 
-for spec in expected["installed"]:
+args = parser.parse_args()
+
+expected = args.expected
+
+for spec in expected["installed"] + expected["userinstalled"]:
     if (
         subprocess.run(
             ["rpm", "-q", spec], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -28,12 +35,16 @@ for spec in expected["installed"]:
             print(rpm)
         sys.exit(1)
 
+dnf = "dnf"
+if args.dnf_version == "dnf5":
+    dnf = "dnf5"
+
 for spec in expected["userinstalled"]:
     installed_spec = subprocess.run(
         ["rpm", "-q", spec], capture_output=True, text=True, check=True
     ).stdout.strip()
     userinstalled_spec = subprocess.run(
-        ["dnf", "repoquery", "--userinstalled", spec],
+        [dnf, "repoquery", "--userinstalled", spec],
         capture_output=True,
         text=True,
         check=True,
@@ -47,7 +58,7 @@ for spec in expected["installed_not_userinstalled"]:
         ["rpm", "-q", spec], capture_output=True, text=True, check=True
     ).stdout.strip()
     proc = subprocess.run(
-        ["dnf", "repoquery", "--userinstalled", spec],
+        [dnf, "repoquery", "--userinstalled", spec],
         capture_output=True,
         text=True,
         check=False,
@@ -77,7 +88,7 @@ for spec in expected["not_installed"]:
 
 for spec in expected["installed_module"]:
     proc = subprocess.run(
-        ["dnf", "--disablerepo=*", "module", "info", spec],
+        [dnf, "--disablerepo=*", "module", "info", spec],
         capture_output=True,
         text=True,
     )
