@@ -35,7 +35,7 @@ os_version(
 os_version(
     name = "eln",
     family = "//antlir/antlir2/os/family:fedora",
-    package_manager = "//antlir/antlir2/os/package_manager:dnf",
+    package_manager = "//antlir/antlir2/os/package_manager:dnf5",
 )
 
 os_version(

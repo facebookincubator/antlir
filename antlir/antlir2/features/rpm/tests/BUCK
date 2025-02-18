@@ -35,6 +35,7 @@ feature.new(
 
 simple = test_rpms(
     name = "simple",
+    also_eln_dnf5 = True,
     expected = expected_t(
         installed = [
             "foo-2-1",
@@ -44,6 +45,11 @@ simple = test_rpms(
         ],
         installed_not_userinstalled = ["foobar"],
         not_installed = ["foo-recommends-me"],
+        userinstalled = [
+            "foo",
+            "foobarbaz",
+            "foo-epoch",
+        ],
     ),
     features = [
         feature.rpms_install(
@@ -69,6 +75,7 @@ python_binary(
 
 test_rpms(
     name = "remove",
+    also_eln_dnf5 = True,
     expected = expected_t(not_installed = [
         "foo",
         # 'foobar' is not explicitly installed, so removing 'foo' will remove it
@@ -86,6 +93,7 @@ test_rpms(
 
 test_rpms(
     name = "autoremove",
+    also_eln_dnf5 = True,
     expected = expected_t(
         installed = ["foo"],
         not_installed = [
@@ -105,6 +113,7 @@ test_rpms(
 
 test_rpms(
     name = "reinstall-dep-as-userinstalled-prevents-autoremove",
+    also_eln_dnf5 = True,
     expected = expected_t(
         installed = [
             "foo",
@@ -136,6 +145,7 @@ test_rpms(
 
 test_rpms(
     name = "upgrade-by-installing-nevra",
+    also_eln_dnf5 = True,
     expected = expected_t(
         installed = ["foo-3"],
         not_installed = ["foo-2"],
@@ -148,6 +158,7 @@ test_rpms(
 
 test_rpms(
     name = "upgrade",
+    also_eln_dnf5 = True,
     dnf_versionlock = "//antlir:empty.json",
     expected = expected_t(
         installed = ["foo-3"],
@@ -161,6 +172,7 @@ test_rpms(
 
 test_rpms(
     name = "upgrade-respects-versionlock",
+    also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(
         installed = ["foo-2"],
@@ -174,6 +186,7 @@ test_rpms(
 
 test_rpms(
     name = "upgrade-not-already-installed",
+    also_eln_dnf5 = True,
     expected = expected_t(
         installed = [
             "foo-3-1",
@@ -187,6 +200,7 @@ test_rpms(
 
 test_rpms(
     name = "upgrade-not-already-installed-file",
+    also_eln_dnf5 = True,
     expected = expected_t(
         installed = [
             "foo-2-1",
@@ -200,6 +214,7 @@ test_rpms(
 
 test_rpms(
     name = "downgrade",
+    also_eln_dnf5 = True,
     expected = expected_t(
         installed = ["foo-1"],
         not_installed = ["foo-2"],
@@ -212,6 +227,7 @@ test_rpms(
 
 test_rpms(
     name = "reinstalled-package-userinstalled",
+    also_eln_dnf5 = True,
     expected = expected_t(
         userinstalled = ["foobar"],
     ),
@@ -231,6 +247,7 @@ test_rpms(
 
 test_rpms(
     name = "userinstalled-package-upgraded-as-dep",
+    also_eln_dnf5 = True,
     expected = expected_t(
         userinstalled = ["foo"],
     ),
@@ -248,6 +265,7 @@ test_rpms(
 
 test_rpms(
     name = "userinstalled-package-reinstalled-as-dep",
+    also_eln_dnf5 = True,
     expected = expected_t(
         userinstalled = ["foo"],
     ),
@@ -265,6 +283,7 @@ test_rpms(
 
 test_rpms(
     name = "local-rpm-file",
+    also_eln_dnf5 = True,
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
         feature.rpms_install(rpms = [
@@ -276,6 +295,7 @@ test_rpms(
 
 test_rpms(
     name = "subjects-src",
+    also_eln_dnf5 = True,
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
         feature.rpms_install(subjects_src = "subjects-src"),
@@ -285,6 +305,7 @@ test_rpms(
 
 test_rpms(
     name = "remove-file-from-rpm",
+    also_eln_dnf5 = True,
     expected = expected_t(installed = ["foo"]),
     features = [
         feature.rpms_install(
@@ -305,7 +326,9 @@ alias(
         oss = "//flavor/centos9:centos9[default_versionlock]",
     ),
     compatible_with = [
+        "//antlir/antlir2/os:centos10",
         "//antlir/antlir2/os:centos9",
+        "//antlir/antlir2/os:eln",
     ],
 )
 
@@ -316,12 +339,15 @@ buck_genrule(
         jq '.foo = "2-1"' < $(location :flavor-versionlock) > $OUT
     """,
     compatible_with = [
+        "//antlir/antlir2/os:centos10",
         "//antlir/antlir2/os:centos9",
+        "//antlir/antlir2/os:eln",
     ],
 )
 
 test_rpms(
     name = "versionlock",
+    also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
@@ -334,6 +360,7 @@ test_rpms(
 
 test_rpms(
     name = "versionlocked-dependency",
+    also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
@@ -356,12 +383,15 @@ buck_genrule(
         jq '.foo = "99-1"' < $(location :flavor-versionlock) > $OUT
     """,
     compatible_with = [
+        "//antlir/antlir2/os:centos10",
         "//antlir/antlir2/os:centos9",
+        "//antlir/antlir2/os:eln",
     ],
 )
 
 test_rpms(
     name = "versionlock-missing-version",
+    also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock-missing-version.json",
     expected = expected_t(installed = ["foo-3-1"]),
     features = [
@@ -374,6 +404,7 @@ test_rpms(
 
 test_rpms(
     name = "versionlock-missing-version-of-dependency",
+    also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock-missing-version.json",
     expected = expected_t(installed = ["foo-3-1"]),
     features = [
@@ -386,6 +417,7 @@ test_rpms(
 
 test_rpms(
     name = "nevra-overrides-versionlock",
+    also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-3-1"]),
     features = [
@@ -398,6 +430,7 @@ test_rpms(
 
 test_rpms(
     name = "versionlock-extend",
+    also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock.json",
     dnf_versionlock_extend = {
         "foo": "1-1",
@@ -413,6 +446,7 @@ test_rpms(
 
 protected_installed = test_rpms(
     name = "install-protected",
+    also_eln_dnf5 = False,
     expected = expected_t(installed = ["dnf"]),
     features = [
         feature.rpms_install(rpms = [
@@ -424,6 +458,7 @@ protected_installed = test_rpms(
 
 test_rpms(
     name = "remove-protected",
+    also_eln_dnf5 = False,
     expected = expected_t(not_installed = ["dnf"]),
     features = [
         feature.rpms_remove_if_exists(rpms = [
@@ -441,6 +476,7 @@ image_sh_test(
 
 test_rpms(
     name = "allowlisted-failing-postscripts",
+    also_eln_dnf5 = True,
     expected = expected_t(installed = [
         "antlir2-failing-postscripts",
     ]),
@@ -454,6 +490,7 @@ test_rpms(
 
 test_rpms(
     name = "postscript-tmpdir",
+    also_eln_dnf5 = True,
     expected = expected_t(installed = [
         "antlir2-postscript-tmpdir",
     ]),
@@ -473,6 +510,7 @@ image_python_test(
 
 test_binaries_with_file_capabilities_layer = test_rpms(
     name = "test-binaries-with-file-capabilities-layer",
+    also_eln_dnf5 = True,
     expected = expected_t(installed = [
         "antlir2-with-capability",
     ]),
@@ -491,6 +529,7 @@ image_python_test(
 
 test_rpms(
     name = "explicitly-install-excluded-rpm",
+    also_eln_dnf5 = True,
     dnf_excluded_rpms = ["antlir2-excluded"],  # this would normally come from the flavor
     expected = expected_t(installed = [
         "antlir2-excluded",
