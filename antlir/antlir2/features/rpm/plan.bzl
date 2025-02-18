@@ -24,6 +24,7 @@ def _plan_fn(
         identifier: str,
         feature: feature_record | typing.Any,
         dnf_available_repos: list[Dependency],
+        driver_cmd: RunInfo,
         **kwargs) -> list[PlanInfo]:
     items = ctx.actions.declare_output(identifier, "rpm/items.json")
     items = ctx.actions.write_json(items, feature.analysis.data.items, with_inputs = True)
@@ -32,6 +33,7 @@ def _plan_fn(
         identifier = identifier,
         items = items,
         dnf_available_repos = dnf_available_repos,
+        driver_cmd = driver_cmd,
         **kwargs
     )
     return [plan_info(res)]
@@ -63,6 +65,7 @@ def plan(
         dnf_versionlock_extend: dict[str, str],
         dnf_excluded_rpms: list[str],
         target_arch: str,
+        driver_cmd: RunInfo,
         plan: Dependency) -> struct:
     tx = ctx.actions.declare_output(identifier, "rpm/transaction.json")
 
@@ -89,6 +92,7 @@ def plan(
             cmd_args(dnf_excluded_rpms, format = "--exclude-rpm={}"),
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(items, format = "--items={}"),
+            cmd_args(driver_cmd, format = "--driver-cmd={}"),
             cmd_args(tx.as_output(), format = "--out={}"),
         ),
         category = "rpm_plan",
@@ -127,7 +131,7 @@ def plan(
         tx_file = tx,
     )
 
-def rpm_planner(*, plan: Dependency) -> Planner:
+def rpm_planner(*, plan: Dependency, driver_cmd: RunInfo) -> Planner:
     return Planner(
         fn = _plan_fn,
         parent_layer_contents = True,
@@ -137,6 +141,7 @@ def rpm_planner(*, plan: Dependency) -> Planner:
         flavor = True,
         target_arch = True,
         kwargs = {
+            "driver_cmd": driver_cmd,
             "plan": plan,
         },
     )

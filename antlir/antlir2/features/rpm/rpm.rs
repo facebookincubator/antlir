@@ -9,13 +9,10 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::fs::Permissions;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::Seek;
-use std::io::Write;
 use std::ops::Deref;
-use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -38,7 +35,6 @@ use serde::ser::Serializer;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Deserializer;
-use tempfile::NamedTempFile;
 use tempfile::TempDir;
 use tracing::trace;
 
@@ -125,6 +121,7 @@ pub struct RpmItem {
 #[serde(deny_unknown_fields)]
 pub struct Rpm {
     pub items: Vec<RpmItem>,
+    pub driver_cmd: Vec<PathBuf>,
     #[serde(skip_deserializing)]
     pub internal_only_options: InternalOnlyOptions,
 }
@@ -174,6 +171,7 @@ impl antlir2_compile::CompileFeature for Rpm {
             .plan("rpm")
             .context("rpm feature was not planned")?
             .context("while loading rpm plan")?;
+        let driver = Path::new(self.driver_cmd.first().context("driver_cmd is empty")?);
         run_dnf_driver(
             DriverContext::Compile {
                 ctx,
@@ -188,6 +186,7 @@ impl antlir2_compile::CompileFeature for Rpm {
                     .collect(),
                 excluded_rpms: plan.excluded_rpms,
             },
+            driver,
             &self.items,
             DriverMode::Run,
             Some(plan.tx.into_inner()),
@@ -201,8 +200,10 @@ impl antlir2_compile::CompileFeature for Rpm {
 impl Rpm {
     #[tracing::instrument(skip_all)]
     pub fn plan(&self, ctx: DriverContext) -> anyhow::Result<ResolvedTransaction, Error> {
+        let driver = Path::new(self.driver_cmd.first().context("driver_cmd is empty")?);
         let mut events = run_dnf_driver(
             ctx,
+            driver,
             #[allow(unreachable_code)]
             &self.items,
             DriverMode::Resolve,
@@ -501,6 +502,7 @@ pub struct ResolvedTransaction {
 
 fn run_dnf_driver(
     ctx: DriverContext,
+    driver: &Path,
     items: &[RpmItem],
     mode: DriverMode,
     resolved_transaction: Option<ResolvedTransaction>,
@@ -573,12 +575,6 @@ fn run_dnf_driver(
         .context("while serializing dnf-driver input")?;
     mfd.as_file().rewind()?;
 
-    let mut driver = NamedTempFile::new()?;
-    driver
-        .as_file()
-        .set_permissions(Permissions::from_mode(0o555))?;
-    driver.write_all(include_bytes!("./driver.py"))?;
-
     let mut isol = IsolationContext::builder(ctx.build_appliance());
     isol.ephemeral(false)
         .readonly()
@@ -598,7 +594,7 @@ fn run_dnf_driver(
         // even though the build appliance is mounted readonly, python is still
         // somehow writing .pyc cache files, just ban it
         .setenv(("PYTHONDONTWRITEBYTECODE", "1"))
-        .inputs((Path::new("/tmp/dnf-driver"), driver.path()))
+        .inputs((Path::new("/tmp/dnf-driver"), driver))
         .build();
     if ctx.is_planning() {
         isol.inputs((Path::new("/__antlir2__/root"), root.deref()))

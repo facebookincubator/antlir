@@ -47,6 +47,8 @@ struct Args {
     #[clap(long)]
     items: JsonFile<Vec<RpmItem>>,
     #[clap(long)]
+    driver_cmd: Vec<PathBuf>,
+    #[clap(long)]
     out: PathBuf,
 }
 
@@ -96,7 +98,8 @@ fn main() -> Result<()> {
 
     let rpm = rpm::Rpm {
         items: args.items.into_inner(),
-        ..Default::default()
+        driver_cmd: args.driver_cmd,
+        internal_only_options: Default::default(),
     };
     let tx = rpm
         .plan(DriverContext::plan(

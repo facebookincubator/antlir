@@ -77,6 +77,9 @@ def _install_common(
             "action": action,
             "subjects": subjects,
         },
+        deps = {
+            "driver": "antlir//antlir/antlir2/features/rpm:driver",
+        },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
         },
@@ -148,6 +151,9 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
             "action": "remove_if_exists",
             "subjects": rpms,
         },
+        deps = {
+            "driver": "antlir//antlir/antlir2/features/rpm:driver",
+        },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
         },
@@ -173,6 +179,9 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
             "action": "remove",
             "subjects": rpms,
         },
+        deps = {
+            "driver": "antlir//antlir/antlir2/features/rpm:driver",
+        },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
         },
@@ -194,6 +203,9 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
                 selects.join(name = name, stream = stream),
                 lambda sels: ":".join([sels.name, sels.stream]),
             )],
+        },
+        deps = {
+            "driver": "antlir//antlir/antlir2/features/rpm:driver",
         },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
@@ -222,6 +234,7 @@ rpm_item_record = record(
 
 rpms_record = record(
     items = list[rpm_item_record],
+    driver_cmd = RunInfo,
 )
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -253,12 +266,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                     )
                     for rpm in rpms
                 ],
+                driver_cmd = ctx.attrs.driver[RunInfo],
             ),
             required_artifacts = artifacts,
             build_phase = BuildPhase("package_manager"),
             plugin = ctx.attrs.plugin[FeaturePluginInfo],
             reduce_fn = _reduce_rpm_features,
-            planner = rpm_planner(plan = ctx.attrs.plan),
+            planner = rpm_planner(plan = ctx.attrs.plan, driver_cmd = ctx.attrs.driver[RunInfo]),
         ),
     ]
 
@@ -266,6 +280,12 @@ rpms_rule = rule(
     impl = _impl,
     attrs = {
         "action": attrs.enum(["install", "remove", "remove_if_exists", "upgrade", "module_enable"]),
+        # this is annoying because it's really an exec_dep that we want to run,
+        # but it needs to resolve differently depending on the target platform.
+        # This is probably a use case for a toolchain_dep, but shoehorning that
+        # into antlir2 is extremely tricky, so we can just live with slower
+        # aarch64 builds until dnf5 is the only thing we support
+        "driver": attrs.dep(providers = [RunInfo]),
         "plan": attrs.exec_dep(providers = [RunInfo]),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "subjects": attrs.list(attrs.string()),
