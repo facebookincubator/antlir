@@ -79,6 +79,23 @@ feature.new(
                 "erofs-utils",
             ]),
         }),
+        internal_external(
+            fb = [
+                feature.install(
+                    src = "fbsource//third-party/btrfs-progs:btrfs",
+                    dst = "/usr/local/bin/btrfs",
+                ),
+                feature.install(
+                    src = "fbsource//third-party/btrfs-progs:btrfstune",
+                    dst = "/usr/local/bin/btrfstune",
+                ),
+                feature.install(
+                    src = "fbsource//third-party/btrfs-progs:mkfs.btrfs",
+                    dst = "/usr/local/bin/mkfs.btrfs",
+                ),
+            ],
+            oss = feature.rpms_install(rpms = ["btrfs-progs"]),
+        ),
     ],
     visibility = ["//antlir/antlir2/build_appliance/..."],
 )
