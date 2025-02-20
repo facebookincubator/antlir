@@ -3,6 +3,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:btrfs.bzl", "BtrfsSubvol")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
 
 oncall("antlir")
 
@@ -127,20 +128,14 @@ vm_disk(
     ],
 )
 
-vm_disk(
-    name = "seed-disk",
-    base_image = ":btrfs-seed",
-    bootable = False,
-    visibility = [
-        "//antlir/antlir2/test_images/package/btrfs/...",
-    ],
-)
-
-vm_disk(
-    name = "free-space-disk",
-    base_image = ":btrfs-free-space",
-    bootable = False,
-    visibility = [
-        "//antlir/antlir2/test_images/package/btrfs/...",
-    ],
+python_unittest(
+    name = "test",
+    srcs = ["test.py"],
+    compatible_with = ["ovr_config//cpu:x86_64"],
+    env = {
+        "FREE_MB": str(FREE_MB),
+        "FREE_SPACE": "$(location :btrfs-free-space)",
+        "SEED": "$(location :btrfs-seed)",
+        "SIMPLE": "$(location :btrfs)",
+    },
 )
