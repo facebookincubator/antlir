@@ -1,5 +1,8 @@
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "rust_binary")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
+load(":defs.bzl", "appliance_vm")
 
 oncall("antlir")
 
@@ -29,5 +32,76 @@ alias(
         fb = "//antlir/antlir2/appliance_vm/facebook:msdk[crosvm]",
         oss = ":crosvm-host",
     ),
+    visibility = ["PUBLIC"],
+)
+
+image.layer(
+    name = "default-rootfs",
+    features = [
+        ":rootfs-features",
+    ],
+    rootless = True,
+    visibility = [],
+)
+
+feature.new(
+    name = "rootfs-features",
+    features = [
+        feature.rpms_install(rpms = [
+            "busybox",
+            "/usr/bin/mount",
+            "/usr/bin/sh",
+        ]),
+        feature.ensure_dirs_exist(dirs = "/__antlir2_appliance_vm__"),
+        feature.install(
+            src = "init",
+            dst = "/__antlir2_appliance_vm__/init",
+            mode = "a+rx",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/__antlir2_appliance_vm__",
+            subdirs_to_create = "cwd",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/__antlir2_appliance_vm__",
+            subdirs_to_create = "control",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/__antlir2_appliance_vm__",
+            subdirs_to_create = "rootfs",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/mnt",
+            subdirs_to_create = "gvfs",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/usr",
+            subdirs_to_create = "local/fbcode",
+        ),
+    ],
+    visibility = ["PUBLIC"],
+)
+
+rust_binary(
+    name = "runner",
+    srcs = ["runner.rs"],
+    compatible_with = ["ovr_config//os:linux"],
+    visibility = [],
+    deps = [
+        "anyhow",
+        "clap",
+        "tempfile",
+        "tracing",
+        "tracing-subscriber",
+        "wait-timeout",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+    ],
+)
+
+appliance_vm(
+    name = "appliance_vm",
+    compatible_with = ["ovr_config//os:linux"],
+    default_kernel = ":kernel",
+    default_rootfs = ":default-rootfs",
     visibility = ["PUBLIC"],
 )

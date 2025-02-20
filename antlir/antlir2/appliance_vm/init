@@ -1,0 +1,25 @@
+#!/bin/sh
+set -ex
+
+export PATH="/usr/sbin:$PATH"
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /tmp
+
+mount -t virtiofs control /__antlir2_appliance_vm__/control
+
+mount -t virtiofs cwd /__antlir2_appliance_vm__/cwd
+mount -t virtiofs gvfs /mnt/gvfs
+mount -t virtiofs fbcode_runtime /usr/local/fbcode
+
+cd /__antlir2_appliance_vm__/cwd
+
+set +e
+
+/__antlir2_appliance_vm__/control/script >/__antlir2_appliance_vm__/control/stdout 2>/__antlir2_appliance_vm__/control/stderr
+
+ret=$?
+echo "$ret" > /__antlir2_appliance_vm__/control/exitcode
+
+/usr/sbin/busybox reboot -f

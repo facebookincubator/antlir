@@ -1,0 +1,42 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
+load(":genrule_in_appliance_vm.bzl", "genrule_in_appliance_vm")
+
+oncall("antlir")
+
+genrule_in_appliance_vm(
+    name = "uname",
+    bash = """
+        uname -r > $OUT
+    """,
+    vm = "//antlir/antlir2/appliance_vm:appliance_vm",
+)
+
+image.layer(
+    name = "alt-rootfs-layer",
+    features = [
+        feature.install_text(
+            dst = "/foo",
+            text = "bar",
+        ),
+        "//antlir/antlir2/appliance_vm:rootfs-features",
+    ],
+)
+
+genrule_in_appliance_vm(
+    name = "alt-rootfs",
+    bash = """
+        cat /foo > $OUT
+    """,
+    rootfs = ":alt-rootfs-layer",
+)
+
+python_unittest(
+    name = "test-outputs",
+    srcs = ["test_outputs.py"],
+    env = {
+        "ALT_ROOTFS": "$(location :alt-rootfs)",
+        "UNAME": "$(location :uname)",
+    },
+)
