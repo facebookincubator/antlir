@@ -287,7 +287,7 @@ image_cpp_test = partial(
     _implicit_image_test,
     cpp_unittest,
     _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-cpp",
-    _add_outer_labels = ["tpx:optout-test-result-output-spec"] + internal_external(
+    _add_outer_labels = ["tpx:optout-test-result-output-spec", "tpx:supports_coverage"] + internal_external(
         fb = [],
         # don't have working gtest in oss (yet)
         oss = ["disabled"],
