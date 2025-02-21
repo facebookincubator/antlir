@@ -415,6 +415,24 @@ def driver(spec) -> None:
     assert mode == "run"
     assert "resolved_transaction" in spec
 
+    # Even though the transaction has been pre-resolved, we need to make sure
+    # the versionlock still applies, to prevent dnf from going haywire and
+    # resolving the transaction differently the second time.
+    # Here, all packages we expect to install are considered "explicitly
+    # installed package names" since they are already fully-specificed NEVRAs
+    installed_names = {
+        p["package"]["name"] for p in spec["resolved_transaction"]["install"]
+    }
+    antlir2_dnf_base.versionlock_sack(
+        sack=base.sack,
+        versionlock=spec["versionlock"] or {},
+        explicitly_installed_package_names=installed_names,
+        # A user explicitly installing an rpm overrides the exclusion policy.
+        # In other words, excluded_rpms only applies to RPMs installed as
+        # dependencies, where it's not obvious that they were intended.
+        excluded_rpms=set(spec.get("excluded_rpms", [])) - installed_names,
+    )
+
     module_base = ModuleBase(base)
     for module_spec in spec["resolved_transaction"]["module_enable"]:
         module_base.enable([module_spec])
