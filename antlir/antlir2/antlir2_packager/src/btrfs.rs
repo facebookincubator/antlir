@@ -5,86 +5,150 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::fs::File;
+use std::collections::BTreeMap;
+use std::ffi::OsString;
+use std::fs::OpenOptions;
+use std::os::unix::process::CommandExt as _;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use anyhow::anyhow;
+use antlir2_isolate::unshare;
+use antlir2_isolate::IsolationContext;
+use antlir2_path::PathExt;
 use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
-use tempfile::NamedTempFile;
+
+use crate::run_cmd;
+use crate::BuildAppliance;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Btrfs {
-    btrfs_packager_path: Vec<PathBuf>,
-    spec: serde_json::Value,
+    build_appliance: BuildAppliance,
+    compression_level: i32,
+    free_mb: Option<u64>,
+    label: Option<String>,
+    seed_device: bool,
+    default_subvol: Option<PathBuf>,
+    subvols: BTreeMap<PathBuf, Subvol>,
+    resize_to_max_cmd: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Subvol {
+    layer: PathBuf,
+    writable: bool,
 }
 
 impl Btrfs {
-    pub fn build(&self, out: &Path) -> Result<()> {
-        let btrfs_packager_path = self
-            .btrfs_packager_path
-            .first()
-            .context("Expected exactly one arg to btrfs_packager_path")?;
+    pub fn build(
+        &self,
+        out: &Path,
+        root_guard: Option<antlir2_rootless::EscalationGuard>,
+    ) -> Result<()> {
+        // use antlir2_isolate to setup a rootdir view of all the subvolumes we
+        // want so that mkfs.btrfs can see the desired structure
+        let mut common_isol = IsolationContext::builder(self.build_appliance.path());
+        common_isol
+            .ephemeral(false)
+            .readonly()
+            .inputs((
+                PathBuf::from("/__antlir2__/working_directory"),
+                std::env::current_dir()?,
+            ))
+            .working_directory(Path::new("/__antlir2__/working_directory"))
+            .tmpfs(Path::new("/__antlir2__/out"))
+            .outputs(("/__antlir2__/out/image.btrfs", out));
+        #[cfg(facebook)]
+        common_isol.platform(["/usr/local/fbcode"]);
 
-        // The output path must exist before we can make an absolute path for it.
-        let output_file = File::create(out).context("failed to create output file")?;
-        output_file
-            .sync_all()
-            .context("Failed to sync output file to disk")?;
-        drop(output_file);
+        let mut isol = common_isol.clone();
+        isol.tmpfs(Path::new("/__antlir2__/root"));
 
-        // Write just our sub-spec for btrfs to a file for the packager
-        let btrfs_spec_file =
-            NamedTempFile::new().context("failed to create tempfile for spec json")?;
-
-        serde_json::to_writer(btrfs_spec_file.as_file(), &self.spec)
-            .context("failed to write json to tempfile")?;
-
-        btrfs_spec_file
-            .as_file()
-            .sync_all()
-            .context("failed to sync json tempfile content")?;
-
-        let btrfs_spec_file_abs = btrfs_spec_file
-            .path()
-            .canonicalize()
-            .context("Failed to build abs path for spec tempfile")?;
-
-        let mut btrfs_package_cmd = Command::new("sudo");
-        btrfs_package_cmd
-            .arg("unshare")
-            .arg("--mount")
-            .arg("--pid")
-            .arg("--fork")
-            .arg(btrfs_packager_path)
-            .arg("--spec")
-            .arg(btrfs_spec_file_abs)
-            .arg("--out")
-            .arg(out);
-
-        let output = btrfs_package_cmd
-            .output()
-            .context("failed to spawn isolated btrfs-packager")?;
-
-        println!(
-            "btrfs-packager stdout:\n{}\nbtrfs-packager stderr\n{}",
-            std::str::from_utf8(&output.stdout)
-                .context("failed to render btrfs-packager stdout")?,
-            std::str::from_utf8(&output.stderr)
-                .context("failed to render btrfs-packager stderr")?,
-        );
-
-        match output.status.success() {
-            true => Ok(()),
-            false => Err(anyhow!(
-                "failed to run command {:?}: {:?}",
-                btrfs_package_cmd,
-                output
-            )),
+        for (path, subvol) in &self.subvols {
+            isol.inputs((
+                Path::new("/__antlir2__/root").join_abs(path),
+                subvol.layer.clone(),
+            ));
         }
+
+        let isol_context = isol.build();
+
+        let mut mkfs = unshare(isol_context.clone())?.command("mkfs.btrfs")?;
+
+        mkfs.arg("--compress")
+            .arg(format!("zstd:{}", self.compression_level));
+        if let Some(label) = &self.label {
+            mkfs.arg("--label").arg(label);
+        }
+        mkfs.arg("--rootdir").arg("/__antlir2__/root");
+        mkfs.arg("--shrink");
+        for (path, subvol) in &self.subvols {
+            let mut subvol_arg = match (subvol.writable, self.default_subvol.as_ref() == Some(path))
+            {
+                (true, false) => OsString::from("rw:"),
+                (true, true) => OsString::from("default:"),
+                (false, false) => OsString::from("ro:"),
+                (false, true) => OsString::from("default-ro:"),
+            };
+            subvol_arg.push(path.as_os_str());
+            mkfs.arg("--subvol").arg(subvol_arg);
+        }
+
+        run_cmd(mkfs.arg("/__antlir2__/out/image.btrfs")).context("while running mkfs.btrfs")?;
+
+        if let Some(free_mb) = self.free_mb {
+            let f = OpenOptions::new()
+                .write(true)
+                .open(out)
+                .context("while opening output file")?;
+            f.set_len(f.metadata()?.len() + (free_mb * 1024 * 1024))
+                .context("while growing image file")?;
+
+            let mut resize_cmd = self
+                .resize_to_max_cmd
+                .as_ref()
+                .context("resize_to_max_cmd must be set if free_mb is present")?
+                .iter();
+
+            let mut cmd = Command::new(
+                resize_cmd
+                    .next()
+                    .context("resize_to_max_cmd cannot be empty")?,
+            );
+            cmd.args(resize_cmd);
+            if let Some(uid) = root_guard
+                .as_ref()
+                .and_then(|r| r.unprivileged_uid())
+                .map(|i| i.as_raw())
+            {
+                cmd.uid(uid);
+            }
+            if let Some(gid) = root_guard
+                .as_ref()
+                .and_then(|r| r.unprivileged_gid())
+                .map(|i| i.as_raw())
+            {
+                cmd.gid(gid);
+            }
+            run_cmd(&mut cmd).context("while running resize command")?;
+        }
+
+        if self.seed_device {
+            let mut isol = common_isol.clone();
+            run_cmd(
+                unshare(isol.build())?
+                    .command("btrfstune")?
+                    .arg("-S")
+                    .arg("1")
+                    .arg("/__antlir2__/out/image.btrfs"),
+            )
+            .context("while running btrfs tune")?;
+        }
+
+        Ok(())
     }
 }

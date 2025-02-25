@@ -1,4 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
@@ -48,6 +49,7 @@ rust_binary(
         "xattr",
         "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
         "//antlir/util/cli/json_arg:json_arg",
@@ -79,23 +81,40 @@ feature.new(
                 "erofs-utils",
             ]),
         }),
-        internal_external(
-            fb = [
-                feature.install(
-                    src = "fbsource//third-party/btrfs-progs:btrfs",
-                    dst = "/usr/local/bin/btrfs",
-                ),
-                feature.install(
-                    src = "fbsource//third-party/btrfs-progs:btrfstune",
-                    dst = "/usr/local/bin/btrfstune",
-                ),
-                feature.install(
-                    src = "fbsource//third-party/btrfs-progs:mkfs.btrfs",
-                    dst = "/usr/local/bin/mkfs.btrfs",
-                ),
-            ],
-            oss = feature.rpms_install(rpms = ["btrfs-progs"]),
-        ),
+        ":btrfs-progs",
     ],
     visibility = ["//antlir/antlir2/build_appliance/..."],
+)
+
+feature.new(
+    name = "btrfs-progs",
+    features = internal_external(
+        fb = [
+            feature.install(
+                src = "fbsource//third-party/btrfs-progs:btrfs",
+                dst = "/usr/local/bin/btrfs",
+            ),
+            feature.install(
+                src = "fbsource//third-party/btrfs-progs:btrfstune",
+                dst = "/usr/local/bin/btrfstune",
+            ),
+            feature.install(
+                src = "fbsource//third-party/btrfs-progs:mkfs.btrfs",
+                dst = "/usr/local/bin/mkfs.btrfs",
+            ),
+        ],
+        oss = [feature.rpms_install(rpms = ["btrfs-progs"])],
+    ),
+    visibility = [],
+)
+
+image.layer(
+    name = "btrfs-loopback-resizer",
+    features = [
+        "//antlir/antlir2/appliance_vm:rootfs-features",
+        ":btrfs-progs",
+        feature.ensure_dirs_exist(dirs = "/mnt/resize"),
+    ],
+    rootless = True,
+    visibility = ["PUBLIC"],
 )

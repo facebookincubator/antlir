@@ -4,38 +4,55 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/appliance_vm:defs.bzl", "ApplianceVmInfo")
+load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "cfg_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
 load(":macro.bzl", "package_macro")
-load(":sendstream.bzl", "sendstream_v2_anon")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     package = ctx.actions.declare_output("image.btrfs")
+    first_layer = ctx.attrs.subvols.values()[0]["layer"]
+    build_appliance = ctx.attrs.build_appliance or first_layer[LayerInfo].build_appliance
+
+    if ctx.attrs.free_mb:
+        resize_script = ctx.actions.write(
+            "resize.sh",
+            cmd_args(
+                "#!/bin/sh",
+                "set -e",
+                cmd_args(package, format = "mount {} /mnt/resize"),
+                "btrfs filesystem resize max /mnt/resize",
+                "umount /mnt/resize",
+                delimiter = "\n",
+            ),
+            is_executable = True,
+        )
+        resize_cmd = cmd_args(
+            ctx.attrs.appliance_vm[ApplianceVmInfo].make_cmd_args(
+                rootfs = ctx.attrs.btrfs_loopback_resizer,
+            ),
+            resize_script,
+        )
+    else:
+        resize_cmd = None
 
     spec = ctx.actions.write_json(
         "spec.json",
         {"btrfs": {
-            "btrfs_packager_path": ctx.attrs.btrfs_packager[RunInfo],
-            "spec": {
-                "compression_level": ctx.attrs.compression_level,
-                "default_subvol": ctx.attrs.default_subvol,
-                "free_mb": ctx.attrs.free_mb,
-                "label": ctx.attrs.label,
-                "seed_device": ctx.attrs.seed_device,
-                "subvols": {
-                    path: {
-                        "sendstream": ctx.actions.anon_target(sendstream_v2_anon, {
-                            "antlir2_packager": ctx.attrs.antlir2_packager,
-                            "compression_level": ctx.attrs.compression_level,
-                            "layer": subvol["layer"],
-                            "name": str(subvol["layer"].label.raw_target()),
-                            "_rootless": ctx.attrs._rootless,
-                        }).artifact("sendstream"),
-                        "writable": subvol.get("writable"),
-                    }
-                    for path, subvol in ctx.attrs.subvols.items()
-                },
+            "build_appliance": build_appliance[BuildApplianceInfo].dir,
+            "compression_level": ctx.attrs.compression_level,
+            "default_subvol": ctx.attrs.default_subvol,
+            "free_mb": ctx.attrs.free_mb,
+            "label": ctx.attrs.label,
+            "resize_to_max_cmd": resize_cmd,
+            "seed_device": ctx.attrs.seed_device,
+            "subvols": {
+                path: {
+                    "layer": subvol["layer"][LayerInfo].subvol_symlink,
+                    "writable": subvol.get("writable") or False,
+                }
+                for path, subvol in ctx.attrs.subvols.items()
             },
         }},
         with_inputs = True,
@@ -43,14 +60,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     ctx.actions.run(
         cmd_args(
+            "sudo" if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs.antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
             cmd_args(package.as_output(), format = "--out={}"),
+            "--rootless" if ctx.attrs._rootless else cmd_args(),
         ),
-        local_only = True,  # needs root
+        local_only = True,  # needs local subvolumes
         category = "antlir2_package",
         identifier = "btrfs",
     )
+
     return [
         DefaultInfo(package),
         GptPartitionSource(src = package),
@@ -60,7 +80,9 @@ _btrfs = rule(
     impl = _impl,
     attrs = {
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
-        "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = "antlir//antlir/antlir2/antlir2_packager/btrfs_packager:btrfs-packager")),
+        "appliance_vm": attrs.default_only(attrs.exec_dep(providers = [ApplianceVmInfo], default = "antlir//antlir/antlir2/appliance_vm:appliance_vm")),
+        "btrfs_loopback_resizer": attrs.default_only(attrs.exec_dep(providers = [LayerInfo], default = "antlir//antlir/antlir2/antlir2_packager:btrfs-loopback-resizer")),
+        "build_appliance": attrs.option(attrs.exec_dep(providers = [BuildApplianceInfo]), default = None),
         "compression_level": attrs.int(default = 3),
         # used by transition
         "default_os": attrs.option(attrs.string(), default = None),
@@ -90,7 +112,7 @@ _btrfs = rule(
     cfg = package_cfg,
 )
 
-btrfs = package_macro(_btrfs, always_needs_root = True)
+btrfs = package_macro(_btrfs)
 
 def BtrfsSubvol(
         layer: str | Select,
