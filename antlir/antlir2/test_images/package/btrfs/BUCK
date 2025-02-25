@@ -44,6 +44,7 @@ image.layer(
             text = "foo",
             user = "antlir",
         ),
+        feature.ensure_dirs_exist(dirs = "/baz/qux"),
     ],
 )
 
