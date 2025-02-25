@@ -20,6 +20,7 @@ feature.new(
         # Let's spam on all potential console names as we are only adding a
         # drop-in.
         for tty in [
+            "hvc0",
             "ttyS0",
             "ttyAMA0",
         ]
