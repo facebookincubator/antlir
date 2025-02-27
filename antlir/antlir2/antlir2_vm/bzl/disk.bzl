@@ -43,6 +43,8 @@ _vm_disk = rule(
             default = "virtio-blk",
             doc = "Interface for attaching to VM",
         ),
+        # buck target labels
+        "labels": attrs.list(attrs.string(), default = []),
         "logical_block_size": attrs.int(default = 512),
         "physical_block_size": attrs.int(default = 512),
         "serial": attrs.option(

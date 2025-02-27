@@ -121,6 +121,8 @@ _vm_host = rule(
             attrs.dep(providers = [DiskInfo]),
             doc = "list of disks to attach to VM",
         ),
+        # buck target labels
+        "labels": attrs.list(attrs.string(), default = []),
         "max_combined_channels": attrs.int(default = 1),
         "mem_mib": attrs.int(default = 4096, doc = "memory size in MiB"),
         "num_nics": attrs.int(default = 1),
