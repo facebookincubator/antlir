@@ -749,7 +749,7 @@ def layer(
         additional_labels += ["uses_sudo"]
     kwargs["labels"] = selects.apply(
         kwargs.pop("labels", []),
-        lambda labels: labels + additional_labels,
+        lambda labels: additional_labels + labels,
     )
 
     # Annoyingly, we can only accept target_compatible_with because we need to

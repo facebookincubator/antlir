@@ -41,7 +41,7 @@ def package_macro(
         # @oss-disable
         if not rootless:
             additional_labels += ["uses_sudo"]
-        labels = selects.apply(labels, lambda labels: list(labels) + additional_labels)
+        labels = selects.apply(labels, lambda labels: additional_labels + list(labels))
         buck_rule(
             default_os = default_os,
             rootless = rootless,
