@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
+# @oss-disable
 load("@prelude//:paths.bzl", "paths")
 
 def _dir_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -52,8 +52,6 @@ _dir_snapshot_test = rule(
 
 def dir_snapshot_test(**kwargs):
     labels = kwargs.get("labels", [])
-    if fully_qualified_test_name_rollout.use_fully_qualified_name():
-        labels = labels + [NAMING_ROLLOUT_LABEL]
 
     return _dir_snapshot_test(
         name = kwargs.get("name"),
