@@ -30,6 +30,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install \
             cpio jq libcap-dev systemd-container
+      
+      - name: Chown home
+        run: |
+          sudo chown root:root $HOME
+          sudo chmod 777 $HOME
 
       - name: Disable watchman
         run: |
@@ -38,11 +43,11 @@ jobs:
 
       - name: Test target graph
         run: |
-          ./buck2 bxl //ci:test_target_graph.bxl:test_target_graph
+          sudo -E env "PATH=$PATH" ./buck2 bxl //ci:test_target_graph.bxl:test_target_graph
 
       - name: Find tests
         run: |
-          ./buck2 bxl //ci:find_tests.bxl:find_tests -- \
+          sudo -E env "PATH=$PATH" ./buck2 bxl //ci:find_tests.bxl:find_tests -- \
             --disable //antlir/antlir2/antlir2_btrfs/... \
             --disable //antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir-image-test \
             --disable //antlir/antlir2/antlir2_change_stream/... \
@@ -65,8 +70,8 @@ jobs:
 
       - name: Build tests
         run: |
-          ./buck2 build --keep-going @${{ runner.temp }}/tests.txt
+          sudo -E env "PATH=$PATH" ./buck2 build --keep-going @${{ runner.temp }}/tests.txt
 
       - name: Run tests
         run: |
-          ./buck2 test --keep-going @${{ runner.temp }}/tests.txt
+          sudo -E env "PATH=$PATH" ./buck2 test --keep-going @${{ runner.temp }}/tests.txt
