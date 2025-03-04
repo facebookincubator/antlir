@@ -19,7 +19,7 @@ from antlir.fs_utils import Path
 try:
     from pydantic.v1 import BaseModel  # pragma: no cover  # noqa: F403
     from pydantic.v1.main import ModelMetaclass  # pragma: no cover  # type: ignore
-except ImportError:
+except ImportError:  # pragma: no cover
     from pydantic import BaseModel  # type: ignore  # noqa: F403
     from pydantic.main import ModelMetaclass  # type: ignore  # noqa: F403
 
