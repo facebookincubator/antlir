@@ -273,7 +273,7 @@ AutoProv: {autoprov}
             != 0
         {
             spec.push_str("%install\n");
-            writeln!(spec, "cp -rp \"/__antlir2__/root\"/* %{{buildroot}}/",)?;
+            writeln!(spec, "cp -rp \"/__antlir2__/root\"/* %{{buildroot}}/")?;
             spec.push_str("%files\n");
             for entry in walkdir::WalkDir::new(layer) {
                 let entry = entry.context("while walking layer")?;
@@ -378,6 +378,8 @@ AutoProv: {autoprov}
                 .arg("-bb")
                 .arg("--target")
                 .arg(format!("{arch}-{os}"))
+                .arg("--define")
+                .arg(format!("_arch {arch}"))
                 .arg("--define")
                 .arg("_rpmdir /__antlir2__/out")
                 .arg("--define")
