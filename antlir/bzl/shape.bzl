@@ -456,6 +456,7 @@ def _python_data(
         compatible_with = ["ovr_config//os:linux"],
     )
 
+    python_library_kwargs.setdefault("typing", False)
     python_library(
         name = name,
         compatible_with = ["ovr_config//os:linux"],
