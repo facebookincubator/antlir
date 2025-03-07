@@ -692,7 +692,6 @@ def layer(
 
     Build a new image layer from the given `features` and `parent_layer`.
     """
-    default_os = default_os or get_default_os_for_package()
 
     # TODO(vmagro): codemod existing callsites to use default_os directly
     if kwargs.get("flavor", None) and default_os:
@@ -702,8 +701,8 @@ def layer(
     # but this should be a narrow use case mainly limited to antlir-owned macros.
     if implicit_layer_reason:
         kwargs["labels"] = kwargs.pop("labels", []) + ["antlir2-implicit-layer=" + implicit_layer_reason]
-        kwargs.pop("default_os", None)
-        default_os = None
+        if default_os or default_rou:
+            fail("implicit layers must not set default_os or default_rou")
         kwargs["flavor"] = selects.apply(
             expect_non_none(parent_layer, msg = "parent_layer required for implicit layers"),
             lambda parent_layer: parent_layer + "[flavor]",
@@ -712,7 +711,10 @@ def layer(
     force_flavor = kwargs.pop("force_flavor", None)
     if force_flavor:
         kwargs["flavor"] = force_flavor
-        kwargs.pop("default_os", None)
+        if default_os or default_rou:
+            fail("force_flavor layers must not set default_os or default_rou")
+
+    default_os = default_os or get_default_os_for_package()
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
