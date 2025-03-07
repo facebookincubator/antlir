@@ -243,9 +243,10 @@ def _implicit_image_test(
             features = [
                 "antlir//antlir/antlir2/testing/image_test:features",
             ],
-            default_os = default_os,
-            # @oss-disable
             rootless = rootless,
+            # setting implicit_layer reason means that any flags that normally
+            # control configuration don't actually do anything (default_os,
+            # systemd, default_rou, etc)
             implicit_layer_reason = "image_test_boot",
             systemd = "inherit-parent",
         )
@@ -313,8 +314,9 @@ def image_python_test(
                 feature.rpms_install(rpms = ["fb-xarexec"]),
             ],
             visibility = [":" + name],
-            default_os = default_os,
-            # @oss-disable
+            # setting implicit_layer reason means that any flags that normally
+            # control configuration don't actually do anything (default_os,
+            # systemd, default_rou, etc)
             implicit_layer_reason = "image_test_xarexec",
             systemd = "inherit-parent",
         )
