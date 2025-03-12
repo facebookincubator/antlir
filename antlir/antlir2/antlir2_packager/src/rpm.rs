@@ -234,7 +234,9 @@ AutoProv: {autoprov}
 
         if os == "darwin" {
             // T67659468 explains need for this
-            spec.push_str("%define _smp_build_ncpus 1\n")
+            spec.push_str("%define _smp_build_ncpus 1\n");
+            // Do not compress man pages.
+            spec.push_str("%define __brp_compress %{nil}\n");
         }
         if !self.python_bytecompile {
             spec.push_str("%define __brp_python_bytecompile %{nil}\n");
