@@ -96,6 +96,25 @@ def _unmask_units(
 
     return remove_actions
 
+# Format the link target name for setting up dependencies
+def _deps_link_target(
+        # The name of the systemd unit to enable or disable.  This should be in the
+        # full form of the service, ie:  unit.service, unit.mount, unit.socket, etc..
+        unit: str):
+    num_template_seps = unit.count("@")
+    if num_template_seps == 0:
+        link_target = unit
+    elif num_template_seps == 1:
+        # From systemd.unit(5) man page:
+        # systemctl enable getty@tty2.service creates a
+        # getty.target.wants/getty@tty2.service link to getty@.service.
+        name_prefix, suffix = paths.split_extension(unit)
+        unit_name, sep, _instance_name = name_prefix.rpartition("@")
+        link_target = unit_name + sep + suffix
+    else:
+        fail("unit contains too many @ characters: " + unit)
+    return link_target
+
 # Generate an image feature that enables a unit in the specified systemd target.
 def _enable_impl(
         # The name of the systemd unit to enable.  This should be in the
@@ -116,19 +135,7 @@ def _enable_impl(
     if dep_type not in ("wants", "requires"):
         fail("dep_type must be one of {wants, requires}")
 
-    num_template_seps = unit.count("@")
-    if num_template_seps == 0:
-        link_target = unit
-    elif num_template_seps == 1:
-        # From systemd.unit(5) man page:
-        # systemctl enable getty@tty2.service creates a
-        # getty.target.wants/getty@tty2.service link to getty@.service.
-        name_prefix, suffix = paths.split_extension(unit)
-        unit_name, sep, _instance_name = name_prefix.rpartition("@")
-        link_target = unit_name + sep + suffix
-    else:
-        fail("unit contains too many @ characters: " + unit)
-
+    link_target = _deps_link_target(unit)
     return [
         feature.ensure_subdirs_exist(
             into_dir = installed_root,
@@ -156,6 +163,64 @@ def _enable_user_unit(
         dep_type = "wants",
         installed_root = USER_PROVIDER_ROOT):
     return _enable_impl(unit, target, dep_type, installed_root, "Enable User Unit")
+
+# Generate an image feature that removes `targets`' dependency on `unit`
+def _remove_dependency_impl(
+        # The name of the systemd unit.  This should be in the full form of the
+        # service, ie:  unit.service, unit.mount, unit.socket, etc..
+        unit,
+        # The systemd targets to remove dependency from
+        targets,
+        # Dependency type to remove.
+        dep_type,
+        # The dir the systemd unit was installed in.  In most cases this doesn't need
+        # to be changed.
+        installed_root,
+        # Informational string that describes what is being enabled. Prepended
+        # to an error message on path verification failure.
+        description):
+    _fail_if_path(unit, description)
+    _assert_unit_suffix(unit)
+    if dep_type not in ("wants", "requires"):
+        fail("dep_type must be one of {wants, requires}")
+
+    link_target = _deps_link_target(unit)
+    return [
+        feature.remove(
+            must_exist = False,
+            path = paths.join(installed_root, target + "." + dep_type, link_target),
+        )
+        for target in targets
+    ]
+
+# Image feature to remove `targets`' dependence on a system `unit`
+def _remove_dependency(
+        unit: str,
+        targets: list[str] = ["default.target"],
+        dep_type: str = "wants",
+        installed_root: str = PROVIDER_ROOT):
+    return _remove_dependency_impl(
+        unit,
+        targets,
+        dep_type,
+        installed_root,
+        "Remove dependency for system unit {}".format(unit),
+    )
+
+# Image feature to remove `targets`' dependence on a user `unit`
+def _remove_dependency_user_unit(
+        *,
+        unit: str,
+        targets: list[str] = ["default.target"],
+        dep_type: str = "wants",
+        installed_root: str = USER_PROVIDER_ROOT):
+    return _remove_dependency_impl(
+        unit,
+        targets,
+        dep_type,
+        installed_root,
+        "Remove dependency for user unit: {}".format(unit),
+    )
 
 def _install_impl(
         # The source for the unit to be installed. This can be one of:
@@ -421,6 +486,8 @@ systemd = struct(
     install_user_unit = _install_user_unit,
     mask_tmpfiles = _mask_tmpfiles,
     mask_units = _mask_units,
+    remove_dependency = _remove_dependency,
+    remove_dependency_user_unit = _remove_dependency_user_unit,
     remove_dropin = _remove_dropin,
     set_default_target = _set_default_target,
     skip_unit = _skip_unit,
