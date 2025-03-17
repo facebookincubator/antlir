@@ -5,7 +5,6 @@
 
 _refs = {
     "rooted": "antlir//antlir/antlir2/antlir2_rootless:rooted",
-    "rootless": "antlir//antlir/antlir2/antlir2_rootless:rootless",
 }
 
 _attrs = {
@@ -13,24 +12,24 @@ _attrs = {
 }
 
 def _transition(*, refs, attrs, constraints, overwrite: bool = False):
-    rootless = refs.rootless[ConstraintValueInfo]
+    rootless = refs.rooted[ConstraintValueInfo]
 
     # If there is already a configuration, keep it
     if rootless.setting.label in constraints and not overwrite:
         return constraints
-    elif attrs.rootless:
-        # Otherwise set it to rootless if rootless=True otherwise default to
-        # rooted
-        constraints[rootless.setting.label] = rootless
-    else:
+    elif attrs.rootless == False:
+        # Otherwise set the config as 'rooted' if rootless == False
         constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
+
+    # omit this constraint from the configuration if it is the default
+    # 'rootless' so that most of the time we don't have this constraint in the
+    # configuration set
 
     return constraints
 
 _is_rootless_select = select({
-    "DEFAULT": False,
+    "DEFAULT": True,
     "antlir//antlir/antlir2/antlir2_rootless:rooted": False,
-    "antlir//antlir/antlir2/antlir2_rootless:rootless": True,
 })
 
 def _transition_impl(platform, refs, attrs):

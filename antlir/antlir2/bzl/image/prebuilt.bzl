@@ -151,11 +151,7 @@ _prebuilt = rule(
         "_btrfs": attrs.option(attrs.exec_dep(), default = None),
         "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
         "_overlayfs": attrs.bool(default = False),
-        "_rootless": attrs.default_only(attrs.bool(default = select({
-            "DEFAULT": False,
-            "antlir//antlir/antlir2/antlir2_rootless:rooted": False,
-            "antlir//antlir/antlir2/antlir2_rootless:rootless": True,
-        }))),
+        "_rootless": rootless_cfg.is_rootless_attr,
     } | rootless_cfg.attrs,
     cfg = rootless_cfg.rule_cfg,
 )
