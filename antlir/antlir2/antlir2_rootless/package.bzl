@@ -24,7 +24,11 @@ def get_antlir2_rootless() -> bool | None:
     if buck_cfg != None:
         return bool(int(buck_cfg))
     else:
-        return _read_package_value(_KEY) or None
+        val = _read_package_value(_KEY)
+        if val != None:
+            return val
+        else:
+            return None
 
 def antlir2_rootless_config_set() -> bool:
     return _read_package_value(_KEY) != None or native.read_config("antlir2", "rootless", None) != None
