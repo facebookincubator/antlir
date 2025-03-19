@@ -223,7 +223,7 @@ pub(crate) fn run(
             ));
 
             let mut isol = if spec.rootless {
-                let mut isol = unshare(ctx.build())?.command("/sbin/init")?;
+                let mut isol = unshare(ctx.build())?.command("/usr/lib/systemd/systemd")?;
                 isol.arg("systemd.unit=antlir2_image_test.service");
                 isol
             } else {
