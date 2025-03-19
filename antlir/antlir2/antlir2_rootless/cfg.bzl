@@ -17,6 +17,11 @@ def _transition(*, refs, attrs, constraints, overwrite: bool = False):
     # If there is already a configuration, keep it
     if rootless.setting.label in constraints and not overwrite:
         return constraints
+    elif rootless.setting.label in constraints and overwrite:
+        # If the existing configuration does not match what was just requested
+        # with overwrite=True - fix it
+        if constraints[rootless.setting.label] == refs.rooted[ConstraintValueInfo]:
+            constraints.pop(rootless.setting.label, None)
     elif attrs.rootless == False:
         # Otherwise set the config as 'rooted' if rootless == False
         constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
