@@ -6,6 +6,7 @@
  */
 
 use std::ffi::OsString;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::process::CommandExt;
 
 use anyhow::ensure;
@@ -53,7 +54,7 @@ async fn pid1_async(args: Pid1Args) -> Result<()> {
 
     isolation::setup_isolation(args.isolation.as_inner())?;
 
-    let mut pid2 = Command::new(args.program);
+    let mut pid2 = Command::new(&args.program);
     pid2.env_clear();
     // reasonable default PATH (same as systemd-nspawn uses)
     pid2.env(
@@ -71,7 +72,10 @@ async fn pid1_async(args: Pid1Args) -> Result<()> {
     pid2.args(args.program_args);
 
     if args.exec_init {
-        return Err(Error::from(pid2.as_std_mut().exec()).context("failed to 'exec' init process"));
+        return Err(Error::from(pid2.as_std_mut().exec()).context(format!(
+            "failed to 'exec' init process ({})",
+            String::from_utf8_lossy(args.program.as_bytes()),
+        )));
     }
 
     let mut pid2 = pid2.spawn().context("while spawning pid2")?;
