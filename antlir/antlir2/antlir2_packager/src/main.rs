@@ -101,7 +101,7 @@ fn main() -> Result<()> {
     let layer = args.layer.as_deref();
 
     match args.spec.into_inner() {
-        Spec::Btrfs(p) => p.build(&args.out, root_guard),
+        Spec::Btrfs(p) => p.build(&args.out),
         Spec::Cpio(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::DockerArchive(p) => p.build(&args.out),
         Spec::Erofs(p) => p.build(&args.out, layer.context("layer required for this format")?),

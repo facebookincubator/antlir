@@ -15,28 +15,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     first_layer = ctx.attrs.subvols.values()[0]["layer"]
     build_appliance = ctx.attrs.build_appliance or first_layer[LayerInfo].build_appliance
 
-    if ctx.attrs.free_mb:
-        resize_script = ctx.actions.write(
-            "resize.sh",
-            cmd_args(
-                "#!/bin/sh",
-                "set -e",
-                cmd_args(package, format = "mount {} /mnt/resize"),
-                "btrfs filesystem resize max /mnt/resize",
-                "umount /mnt/resize",
-                delimiter = "\n",
-            ),
-            is_executable = True,
-        )
-        resize_cmd = cmd_args(
-            ctx.attrs.appliance_vm[ApplianceVmInfo].make_cmd_args(
-                rootfs = ctx.attrs.btrfs_loopback_resizer,
-            ),
-            resize_script,
-        )
-    else:
-        resize_cmd = None
-
     spec = ctx.actions.write_json(
         "spec.json",
         {"btrfs": {
@@ -45,7 +23,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "default_subvol": ctx.attrs.default_subvol,
             "free_mb": ctx.attrs.free_mb,
             "label": ctx.attrs.label,
-            "resize_to_max_cmd": resize_cmd,
             "seed_device": ctx.attrs.seed_device,
             "subvols": {
                 path: {
@@ -81,7 +58,6 @@ _btrfs = rule(
     attrs = {
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
         "appliance_vm": attrs.default_only(attrs.exec_dep(providers = [ApplianceVmInfo], default = "antlir//antlir/antlir2/appliance_vm:appliance_vm")),
-        "btrfs_loopback_resizer": attrs.default_only(attrs.exec_dep(providers = [LayerInfo], default = "antlir//antlir/antlir2/antlir2_packager:btrfs-loopback-resizer")),
         "build_appliance": attrs.option(attrs.exec_dep(providers = [BuildApplianceInfo]), default = None),
         "compression_level": attrs.int(default = 3),
         # used by transition

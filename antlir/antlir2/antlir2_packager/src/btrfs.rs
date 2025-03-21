@@ -7,11 +7,8 @@
 
 use std::collections::BTreeMap;
 use std::ffi::OsString;
-use std::fs::OpenOptions;
-use std::os::unix::process::CommandExt as _;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
 
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
@@ -33,7 +30,6 @@ pub struct Btrfs {
     seed_device: bool,
     default_subvol: Option<PathBuf>,
     subvols: BTreeMap<PathBuf, Subvol>,
-    resize_to_max_cmd: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -44,11 +40,7 @@ pub struct Subvol {
 }
 
 impl Btrfs {
-    pub fn build(
-        &self,
-        out: &Path,
-        root_guard: Option<antlir2_rootless::EscalationGuard>,
-    ) -> Result<()> {
+    pub fn build(&self, out: &Path) -> Result<()> {
         // use antlir2_isolate to setup a rootdir view of all the subvolumes we
         // want so that mkfs.btrfs can see the desired structure
         let mut common_isol = IsolationContext::builder(self.build_appliance.path());
@@ -86,6 +78,10 @@ impl Btrfs {
         }
         mkfs.arg("--rootdir").arg("/__antlir2__/root");
         mkfs.arg("--shrink");
+        if let Some(free_mb) = self.free_mb {
+            mkfs.arg("--shrink-slack-size")
+                .arg((free_mb * 1024 * 1024).to_string());
+        }
         for (path, subvol) in &self.subvols {
             let mut subvol_arg = match (subvol.writable, self.default_subvol.as_ref() == Some(path))
             {
@@ -99,43 +95,6 @@ impl Btrfs {
         }
 
         run_cmd(mkfs.arg("/__antlir2__/out/image.btrfs")).context("while running mkfs.btrfs")?;
-
-        if let Some(free_mb) = self.free_mb {
-            let f = OpenOptions::new()
-                .write(true)
-                .open(out)
-                .context("while opening output file")?;
-            f.set_len(f.metadata()?.len() + (free_mb * 1024 * 1024))
-                .context("while growing image file")?;
-
-            let mut resize_cmd = self
-                .resize_to_max_cmd
-                .as_ref()
-                .context("resize_to_max_cmd must be set if free_mb is present")?
-                .iter();
-
-            let mut cmd = Command::new(
-                resize_cmd
-                    .next()
-                    .context("resize_to_max_cmd cannot be empty")?,
-            );
-            cmd.args(resize_cmd);
-            if let Some(uid) = root_guard
-                .as_ref()
-                .and_then(|r| r.unprivileged_uid())
-                .map(|i| i.as_raw())
-            {
-                cmd.uid(uid);
-            }
-            if let Some(gid) = root_guard
-                .as_ref()
-                .and_then(|r| r.unprivileged_gid())
-                .map(|i| i.as_raw())
-            {
-                cmd.gid(gid);
-            }
-            run_cmd(&mut cmd).context("while running resize command")?;
-        }
 
         if self.seed_device {
             let mut isol = common_isol.clone();
