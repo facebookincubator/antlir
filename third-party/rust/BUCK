@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "7e93f243bd13717ccc30f1e2d86c424ccf857128",
+    rev = "c974015365acb63c60c33147e42ed71dfbe5bc5d",
     visibility = [],
 )
 
@@ -233,10 +233,8 @@ cargo.rust_library(
         "OUT_DIR": "$(location :ahash-0.8.11-build-script-run[out_dir])",
     },
     features = [
-        "default",
         "getrandom",
         "runtime-rng",
-        "std",
     ],
     platform = {
         "linux-arm64": dict(
@@ -274,10 +272,8 @@ cargo.rust_binary(
     crate_root = "ahash-0.8.11.crate/build.rs",
     edition = "2018",
     features = [
-        "default",
         "getrandom",
         "runtime-rng",
-        "std",
     ],
     visibility = [],
     deps = [":version_check-0.9.5"],
@@ -288,10 +284,8 @@ buildscript_run(
     package_name = "ahash",
     buildscript_rule = ":ahash-0.8.11-build-script-build",
     features = [
-        "default",
         "getrandom",
         "runtime-rng",
-        "std",
     ],
     version = "0.8.11",
 )
@@ -446,10 +440,7 @@ cargo.rust_library(
     crate = "allocator_api2",
     crate_root = "allocator-api2-0.2.21.crate/src/lib.rs",
     edition = "2018",
-    features = [
-        "alloc",
-        "nightly",
-    ],
+    features = ["alloc"],
     visibility = [],
 )
 
@@ -1048,7 +1039,7 @@ cargo.rust_library(
         ":memchr-2.7.4",
         ":pin-project-lite-0.2.16",
         ":tokio-1.44.1",
-        ":zstd-safe-7.2.3",
+        ":zstd-safe-7.2.4",
     ],
 )
 
@@ -2346,14 +2337,12 @@ cargo.rust_library(
         "alloc",
         "atomic",
         "default",
-        "serde",
         "std",
     ],
     visibility = [],
     deps = [
         ":funty-2.0.0",
         ":radium-0.7.0",
-        ":serde-1.0.219",
         ":tap-1.0.1",
         ":wyz-0.5.1",
     ],
@@ -2534,23 +2523,23 @@ cargo.rust_library(
 
 alias(
     name = "bon",
-    actual = ":bon-3.5.0",
+    actual = ":bon-3.5.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "bon-3.5.0.crate",
-    sha256 = "625e90403736670c971aad50573b7db42e131970d60a14f215b61fdf24e0aa84",
-    strip_prefix = "bon-3.5.0",
-    urls = ["https://static.crates.io/crates/bon/3.5.0/download"],
+    name = "bon-3.5.1.crate",
+    sha256 = "65268237be94042665b92034f979c42d431d2fd998b49809543afe3e66abad1c",
+    strip_prefix = "bon-3.5.1",
+    urls = ["https://static.crates.io/crates/bon/3.5.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "bon-3.5.0",
-    srcs = [":bon-3.5.0.crate"],
+    name = "bon-3.5.1",
+    srcs = [":bon-3.5.1.crate"],
     crate = "bon",
-    crate_root = "bon-3.5.0.crate/src/lib.rs",
+    crate_root = "bon-3.5.1.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -2559,24 +2548,24 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":bon-macros-3.5.0",
+        ":bon-macros-3.5.1",
         ":rustversion-1.0.20",
     ],
 )
 
 http_archive(
-    name = "bon-macros-3.5.0.crate",
-    sha256 = "fa915c54d505ca9b9b7ac056df7797508c3b817e51609d0ed19949dd0925b872",
-    strip_prefix = "bon-macros-3.5.0",
-    urls = ["https://static.crates.io/crates/bon-macros/3.5.0/download"],
+    name = "bon-macros-3.5.1.crate",
+    sha256 = "803c95b2ecf650eb10b5f87dda6b9f6a1b758cee53245e2b7b825c9b3803a443",
+    strip_prefix = "bon-macros-3.5.1",
+    urls = ["https://static.crates.io/crates/bon-macros/3.5.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "bon-macros-3.5.0",
-    srcs = [":bon-macros-3.5.0.crate"],
+    name = "bon-macros-3.5.1",
+    srcs = [":bon-macros-3.5.1.crate"],
     crate = "bon_macros",
-    crate_root = "bon-macros-3.5.0.crate/src/lib.rs",
+    crate_root = "bon-macros-3.5.1.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     proc_macro = True,
@@ -3124,22 +3113,22 @@ cargo.rust_library(
         "nightly_stdsimd",
     ],
     visibility = [],
-    deps = [":bytemuck_derive-1.9.1"],
+    deps = [":bytemuck_derive-1.9.2"],
 )
 
 http_archive(
-    name = "bytemuck_derive-1.9.1.crate",
-    sha256 = "9d35fadd3de6c82a550b136427123552b401efdab9859130f1cf485fbdea40af",
-    strip_prefix = "bytemuck_derive-1.9.1",
-    urls = ["https://static.crates.io/crates/bytemuck_derive/1.9.1/download"],
+    name = "bytemuck_derive-1.9.2.crate",
+    sha256 = "2ff22c2722516255d1823ce3cc4bc0b154dbc9364be5c905d6baa6eccbbc8774",
+    strip_prefix = "bytemuck_derive-1.9.2",
+    urls = ["https://static.crates.io/crates/bytemuck_derive/1.9.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "bytemuck_derive-1.9.1",
-    srcs = [":bytemuck_derive-1.9.1.crate"],
+    name = "bytemuck_derive-1.9.2",
+    srcs = [":bytemuck_derive-1.9.2.crate"],
     crate = "bytemuck_derive",
-    crate_root = "bytemuck_derive-1.9.1.crate/src/lib.rs",
+    crate_root = "bytemuck_derive-1.9.2.crate/src/lib.rs",
     edition = "2018",
     proc_macro = True,
     visibility = [],
@@ -3570,18 +3559,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.2.16.crate",
-    sha256 = "be714c154be609ec7f5dad223a33bf1482fff90472de28f7362806e6d4832b8c",
-    strip_prefix = "cc-1.2.16",
-    urls = ["https://static.crates.io/crates/cc/1.2.16/download"],
+    name = "cc-1.2.17.crate",
+    sha256 = "1fcb57c740ae1daf453ae85f16e37396f672b039e00d9d866e07ddb24e328e3a",
+    strip_prefix = "cc-1.2.17",
+    urls = ["https://static.crates.io/crates/cc/1.2.17/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.2.16",
-    srcs = [":cc-1.2.16.crate"],
+    name = "cc-1.2.17",
+    srcs = [":cc-1.2.17.crate"],
     crate = "cc",
-    crate_root = "cc-1.2.16.crate/src/lib.rs",
+    crate_root = "cc-1.2.17.crate/src/lib.rs",
     edition = "2018",
     features = ["parallel"],
     platform = {
@@ -4198,24 +4187,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.46.crate",
-    sha256 = "f5c5508ea23c5366f77e53f5a0070e5a84e51687ec3ef9e0464c86dc8d13ce98",
-    strip_prefix = "clap_complete-4.5.46",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.46/download"],
+    name = "clap_complete-4.5.47.crate",
+    sha256 = "c06f5378ea264ad4f82bbc826628b5aad714a75abf6ece087e923010eb937fb6",
+    strip_prefix = "clap_complete-4.5.47",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.47/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.46-clap_complete",
+    actual = ":clap_complete-4.5.47-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.46-clap_complete",
-    srcs = [":clap_complete-4.5.46.crate"],
+    name = "clap_complete-4.5.47-clap_complete",
+    srcs = [":clap_complete-4.5.47.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.46.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.47.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
@@ -4397,7 +4386,7 @@ cargo.rust_library(
     crate_root = "cmake-0.1.54.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":cc-1.2.16"],
+    deps = [":cc-1.2.17"],
 )
 
 cargo.rust_library(
@@ -5495,7 +5484,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.2.16",
+        ":cc-1.2.17",
         ":cxxbridge-flags-1.0.149",
     ],
 )
@@ -6094,6 +6083,7 @@ cargo.rust_library(
     crate_root = "derive_builder-0.20.2.crate/src/lib.rs",
     edition = "2018",
     features = [
+        "alloc",
         "default",
         "std",
     ],
@@ -6166,7 +6156,10 @@ cargo.rust_library(
     crate = "derive_builder_core",
     crate_root = "derive_builder_core-0.20.2.crate/src/lib.rs",
     edition = "2018",
-    features = ["lib_has_std"],
+    features = [
+        "alloc",
+        "lib_has_std",
+    ],
     visibility = [],
     deps = [
         ":darling-0.20.10",
@@ -6213,7 +6206,10 @@ cargo.rust_library(
     crate = "derive_builder_macro",
     crate_root = "derive_builder_macro-0.20.2.crate/src/lib.rs",
     edition = "2018",
-    features = ["lib_has_std"],
+    features = [
+        "alloc",
+        "lib_has_std",
+    ],
     proc_macro = True,
     visibility = [],
     deps = [
@@ -6852,7 +6848,7 @@ cargo.rust_library(
         ":anstream-0.6.18",
         ":anstyle-1.0.10",
         ":env_filter-0.1.3",
-        ":jiff-0.2.4",
+        ":jiff-0.2.5",
         ":log-0.4.26",
     ],
 )
@@ -8447,6 +8443,7 @@ cargo.rust_library(
     edition = "2018",
     features = [
         "custom",
+        "rdrand",
         "std",
     ],
     platform = {
@@ -8731,43 +8728,36 @@ cargo.rust_library(
 
 alias(
     name = "goblin",
-    actual = ":goblin-0.5.4",
+    actual = ":goblin-0.8.2",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "goblin-0.5.4.crate",
-    sha256 = "a7666983ed0dd8d21a6f6576ee00053ca0926fb281a5522577a4dbd0f1b54143",
-    strip_prefix = "goblin-0.5.4",
-    urls = ["https://static.crates.io/crates/goblin/0.5.4/download"],
+    name = "goblin-0.8.2.crate",
+    sha256 = "1b363a30c165f666402fe6a3024d3bec7ebc898f96a4a23bd1c99f8dbf3f4f47",
+    strip_prefix = "goblin-0.8.2",
+    urls = ["https://static.crates.io/crates/goblin/0.8.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "goblin-0.5.4",
-    srcs = [":goblin-0.5.4.crate"],
+    name = "goblin-0.8.2",
+    srcs = [":goblin-0.8.2.crate"],
     crate = "goblin",
-    crate_root = "goblin-0.5.4.crate/src/lib.rs",
+    crate_root = "goblin-0.8.2.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
-        "archive",
-        "default",
         "elf32",
         "elf64",
         "endian_fd",
         "log",
-        "mach32",
-        "mach64",
-        "pe32",
-        "pe64",
-        "std",
     ],
     visibility = [],
     deps = [
         ":log-0.4.26",
         ":plain-0.2.3",
-        ":scroll-0.11.0",
+        ":scroll-0.12.0",
     ],
 )
 
@@ -8923,13 +8913,11 @@ cargo.rust_library(
         "inline-more",
         "nightly",
         "raw",
-        "serde",
     ],
     visibility = [],
     deps = [
         ":ahash-0.8.11",
         ":allocator-api2-0.2.21",
-        ":serde-1.0.219",
     ],
 )
 
@@ -10428,11 +10416,6 @@ cargo.rust_library(
     crate = "itertools",
     crate_root = "itertools-0.14.0.crate/src/lib.rs",
     edition = "2018",
-    features = [
-        "default",
-        "use_alloc",
-        "use_std",
-    ],
     visibility = [],
     deps = [":either-1.15.0"],
 )
@@ -10455,18 +10438,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "jiff-0.2.4.crate",
-    sha256 = "d699bc6dfc879fb1bf9bdff0d4c56f0884fc6f0d0eb0fba397a6d00cd9a6b85e",
-    strip_prefix = "jiff-0.2.4",
-    urls = ["https://static.crates.io/crates/jiff/0.2.4/download"],
+    name = "jiff-0.2.5.crate",
+    sha256 = "c102670231191d07d37a35af3eb77f1f0dbf7a71be51a962dcd57ea607be7260",
+    strip_prefix = "jiff-0.2.5",
+    urls = ["https://static.crates.io/crates/jiff/0.2.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "jiff-0.2.4",
-    srcs = [":jiff-0.2.4.crate"],
+    name = "jiff-0.2.5",
+    srcs = [":jiff-0.2.5.crate"],
     crate = "jiff",
-    crate_root = "jiff-0.2.4.crate/src/lib.rs",
+    crate_root = "jiff-0.2.5.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -10696,7 +10679,12 @@ cargo.rust_library(
     crate = "lazy_static",
     crate_root = "lazy_static-1.5.0.crate/src/lib.rs",
     edition = "2015",
+    features = [
+        "spin",
+        "spin_no_std",
+    ],
     visibility = [],
+    deps = [":spin-0.9.8"],
 )
 
 http_archive(
@@ -11245,7 +11233,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.2.16",
+        ":cc-1.2.17",
         ":pkg-config-0.3.32",
         ":vcpkg-0.2.15",
     ],
@@ -12569,7 +12557,7 @@ cargo.rust_library(
         ":num-traits-0.2.19",
         ":rand-0.8.5",
         ":regex-1.11.1",
-        ":rust_decimal-1.37.0",
+        ":rust_decimal-1.37.1",
         ":saturating-0.1.0",
         ":serde-1.0.219",
         ":serde_json-1.0.140",
@@ -12599,7 +12587,7 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":bindgen-0.59.2",
-        ":cc-1.2.16",
+        ":cc-1.2.17",
         ":cmake-0.1.54",
         ":subprocess-0.2.9",
     ],
@@ -12666,7 +12654,7 @@ cargo.rust_library(
                 ":libc-0.2.171",
                 ":security-framework-2.11.1",
                 ":security-framework-sys-2.14.0",
-                ":tempfile-3.19.0",
+                ":tempfile-3.19.1",
             ],
         ),
         "macos-x86_64": dict(
@@ -12674,7 +12662,7 @@ cargo.rust_library(
                 ":libc-0.2.171",
                 ":security-framework-2.11.1",
                 ":security-framework-sys-2.14.0",
-                ":tempfile-3.19.0",
+                ":tempfile-3.19.1",
             ],
         ),
         "windows-gnu": dict(
@@ -13856,7 +13844,7 @@ cargo.rust_binary(
     edition = "2021",
     visibility = [],
     deps = [
-        ":cc-1.2.16",
+        ":cc-1.2.17",
         ":pkg-config-0.3.32",
         ":vcpkg-0.2.15",
     ],
@@ -15217,7 +15205,7 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
-    deps = [":zerocopy-0.8.23"],
+    deps = [":zerocopy-0.8.24"],
 )
 
 http_archive(
@@ -15792,7 +15780,6 @@ cargo.rust_library(
     crate_root = "prost-0.12.6.crate/src/lib.rs",
     edition = "2021",
     features = [
-        "default",
         "derive",
         "prost-derive",
         "std",
@@ -16531,7 +16518,7 @@ cargo.rust_library(
     deps = [
         ":rand_chacha-0.9.0",
         ":rand_core-0.9.3",
-        ":zerocopy-0.8.23",
+        ":zerocopy-0.8.24",
     ],
 )
 
@@ -16555,10 +16542,7 @@ cargo.rust_library(
     crate = "rand_chacha",
     crate_root = "rand_chacha-0.3.1.crate/src/lib.rs",
     edition = "2018",
-    features = [
-        "default",
-        "std",
-    ],
+    features = ["std"],
     visibility = [],
     deps = [
         ":ppv-lite86-0.2.21",
@@ -17461,7 +17445,7 @@ cargo.rust_binary(
         "once_cell",
     ],
     visibility = [],
-    deps = [":cc-1.2.16"],
+    deps = [":cc-1.2.17"],
 )
 
 buildscript_run(
@@ -17528,7 +17512,7 @@ cargo.rust_binary(
         "dev_urandom_fallback",
     ],
     visibility = [],
-    deps = [":cc-1.2.16"],
+    deps = [":cc-1.2.17"],
 )
 
 buildscript_run(
@@ -17822,33 +17806,33 @@ cargo.rust_library(
 
 alias(
     name = "rust_decimal",
-    actual = ":rust_decimal-1.37.0",
+    actual = ":rust_decimal-1.37.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "rust_decimal-1.37.0.crate",
-    sha256 = "5c24af6e7ac43c88a8a458d1139d0246fdce2f6cd2f1ac6cb51eb88b29c978af",
-    strip_prefix = "rust_decimal-1.37.0",
-    urls = ["https://static.crates.io/crates/rust_decimal/1.37.0/download"],
+    name = "rust_decimal-1.37.1.crate",
+    sha256 = "faa7de2ba56ac291bd90c6b9bece784a52ae1411f9506544b3eae36dd2356d50",
+    strip_prefix = "rust_decimal-1.37.1",
+    urls = ["https://static.crates.io/crates/rust_decimal/1.37.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rust_decimal-1.37.0",
-    srcs = [":rust_decimal-1.37.0.crate"],
+    name = "rust_decimal-1.37.1",
+    srcs = [":rust_decimal-1.37.1.crate"],
     crate = "rust_decimal",
-    crate_root = "rust_decimal-1.37.0.crate/src/lib.rs",
+    crate_root = "rust_decimal-1.37.1.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :rust_decimal-1.37.0-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :rust_decimal-1.37.1-build-script-run[out_dir])",
     },
     features = [
         "default",
         "serde",
         "std",
     ],
-    rustc_flags = ["@$(location :rust_decimal-1.37.0-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :rust_decimal-1.37.1-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":arrayvec-0.7.6",
@@ -17863,10 +17847,10 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "rust_decimal-1.37.0-build-script-build",
-    srcs = [":rust_decimal-1.37.0.crate"],
+    name = "rust_decimal-1.37.1-build-script-build",
+    srcs = [":rust_decimal-1.37.1.crate"],
     crate = "build_script_build",
-    crate_root = "rust_decimal-1.37.0.crate/build.rs",
+    crate_root = "rust_decimal-1.37.1.crate/build.rs",
     edition = "2021",
     features = [
         "default",
@@ -17877,15 +17861,15 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "rust_decimal-1.37.0-build-script-run",
+    name = "rust_decimal-1.37.1-build-script-run",
     package_name = "rust_decimal",
-    buildscript_rule = ":rust_decimal-1.37.0-build-script-build",
+    buildscript_rule = ":rust_decimal-1.37.1-build-script-build",
     features = [
         "default",
         "serde",
         "std",
     ],
-    version = "1.37.0",
+    version = "1.37.1",
 )
 
 alias(
@@ -19072,26 +19056,22 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "scroll-0.11.0.crate",
-    sha256 = "04c565b551bafbef4157586fa379538366e4385d42082f255bfd96e4fe8519da",
-    strip_prefix = "scroll-0.11.0",
-    urls = ["https://static.crates.io/crates/scroll/0.11.0/download"],
+    name = "scroll-0.12.0.crate",
+    sha256 = "6ab8598aa408498679922eff7fa985c25d58a90771bd6be794434c5277eab1a6",
+    strip_prefix = "scroll-0.12.0",
+    urls = ["https://static.crates.io/crates/scroll/0.12.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "scroll-0.11.0",
-    srcs = [":scroll-0.11.0.crate"],
+    name = "scroll-0.12.0",
+    srcs = [":scroll-0.12.0.crate"],
     crate = "scroll",
-    crate_root = "scroll-0.11.0.crate/src/lib.rs",
+    crate_root = "scroll-0.12.0.crate/src/lib.rs",
     edition = "2021",
-    features = [
-        "derive",
-        "scroll_derive",
-        "std",
-    ],
+    features = ["derive"],
     visibility = [],
-    deps = [":scroll_derive-0.11.1"],
+    deps = [":scroll_derive-0.12.0"],
 )
 
 http_archive(
@@ -19118,18 +19098,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "scroll_derive-0.11.1.crate",
-    sha256 = "1db149f81d46d2deba7cd3c50772474707729550221e69588478ebf9ada425ae",
-    strip_prefix = "scroll_derive-0.11.1",
-    urls = ["https://static.crates.io/crates/scroll_derive/0.11.1/download"],
+    name = "scroll_derive-0.12.0.crate",
+    sha256 = "7f81c2fde025af7e69b1d1420531c8a8811ca898919db177141a85313b1cb932",
+    strip_prefix = "scroll_derive-0.12.0",
+    urls = ["https://static.crates.io/crates/scroll_derive/0.12.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "scroll_derive-0.11.1",
-    srcs = [":scroll_derive-0.11.1.crate"],
+    name = "scroll_derive-0.12.0",
+    srcs = [":scroll_derive-0.12.0.crate"],
     crate = "scroll_derive",
-    crate_root = "scroll_derive-0.11.1.crate/src/lib.rs",
+    crate_root = "scroll_derive-0.12.0.crate/src/lib.rs",
     edition = "2018",
     proc_macro = True,
     visibility = [],
@@ -20094,6 +20074,8 @@ cargo.rust_library(
     crate_root = "similar-2.7.0.crate/src/lib.rs",
     edition = "2018",
     features = [
+        "bstr",
+        "bytes",
         "default",
         "inline",
         "text",
@@ -20628,6 +20610,7 @@ cargo.rust_library(
     edition = "2015",
     features = [
         "mutex",
+        "once",
         "spin_mutex",
     ],
     visibility = [],
@@ -21730,23 +21713,23 @@ cargo.rust_library(
 
 alias(
     name = "tempfile",
-    actual = ":tempfile-3.19.0",
+    actual = ":tempfile-3.19.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tempfile-3.19.0.crate",
-    sha256 = "488960f40a3fd53d72c2a29a58722561dee8afdd175bd88e3db4677d7b2ba600",
-    strip_prefix = "tempfile-3.19.0",
-    urls = ["https://static.crates.io/crates/tempfile/3.19.0/download"],
+    name = "tempfile-3.19.1.crate",
+    sha256 = "7437ac7763b9b123ccf33c338a5cc1bac6f69b45a136c19bdd8a65e3916435bf",
+    strip_prefix = "tempfile-3.19.1",
+    urls = ["https://static.crates.io/crates/tempfile/3.19.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tempfile-3.19.0",
-    srcs = [":tempfile-3.19.0.crate"],
+    name = "tempfile-3.19.1",
+    srcs = [":tempfile-3.19.1.crate"],
     crate = "tempfile",
-    crate_root = "tempfile-3.19.0.crate/src/lib.rs",
+    crate_root = "tempfile-3.19.1.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -23735,13 +23718,13 @@ cargo.rust_library(
     platform = {
         "windows-gnu": dict(
             deps = [
-                ":tempfile-3.19.0",
+                ":tempfile-3.19.1",
                 ":winapi-0.3.9",
             ],
         ),
         "windows-msvc": dict(
             deps = [
-                ":tempfile-3.19.0",
+                ":tempfile-3.19.1",
                 ":winapi-0.3.9",
             ],
         ),
@@ -23785,7 +23768,7 @@ cargo.rust_library(
         ":rand-0.9.0",
         ":serde-1.0.219",
         ":serde_json-1.0.140",
-        ":tempfile-3.19.0",
+        ":tempfile-3.19.1",
         ":thiserror-2.0.12",
         ":uefisettings_backend_thrift-0.1.0",
         ":uefisettings_spellings_db_thrift-0.1.0",
@@ -23819,7 +23802,7 @@ cargo.rust_binary(
         ":rand-0.9.0",
         ":serde-1.0.219",
         ":serde_json-1.0.140",
-        ":tempfile-3.19.0",
+        ":tempfile-3.19.1",
         ":thiserror-2.0.12",
         ":uefisettings-0.1.4",
         ":uefisettings_backend_thrift-0.1.0",
@@ -26127,21 +26110,21 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "zerocopy-0.8.23.crate",
-    sha256 = "fd97444d05a4328b90e75e503a34bad781f14e28a823ad3557f0750df1ebcbc6",
-    strip_prefix = "zerocopy-0.8.23",
-    urls = ["https://static.crates.io/crates/zerocopy/0.8.23/download"],
+    name = "zerocopy-0.8.24.crate",
+    sha256 = "2586fea28e186957ef732a5f8b3be2da217d65c5969d4b1e17f973ebbe876879",
+    strip_prefix = "zerocopy-0.8.24",
+    urls = ["https://static.crates.io/crates/zerocopy/0.8.24/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "zerocopy-0.8.23",
-    srcs = [":zerocopy-0.8.23.crate"],
+    name = "zerocopy-0.8.24",
+    srcs = [":zerocopy-0.8.24.crate"],
     crate = "zerocopy",
-    crate_root = "zerocopy-0.8.23.crate/src/lib.rs",
+    crate_root = "zerocopy-0.8.24.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "CARGO_PKG_VERSION": "0.8.23",
+        "CARGO_PKG_VERSION": "0.8.24",
     },
     features = ["simd"],
     visibility = [],
@@ -26321,28 +26304,28 @@ cargo.rust_library(
         "zstdmt",
     ],
     visibility = [],
-    deps = [":zstd-safe-7.2.3"],
+    deps = [":zstd-safe-7.2.4"],
 )
 
 alias(
     name = "zstd-safe",
-    actual = ":zstd-safe-7.2.3",
+    actual = ":zstd-safe-7.2.4",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "zstd-safe-7.2.3.crate",
-    sha256 = "f3051792fbdc2e1e143244dc28c60f73d8470e93f3f9cbd0ead44da5ed802722",
-    strip_prefix = "zstd-safe-7.2.3",
-    urls = ["https://static.crates.io/crates/zstd-safe/7.2.3/download"],
+    name = "zstd-safe-7.2.4.crate",
+    sha256 = "8f49c4d5f0abb602a93fb8736af2a4f4dd9512e36f7f570d66e65ff867ed3b9d",
+    strip_prefix = "zstd-safe-7.2.4",
+    urls = ["https://static.crates.io/crates/zstd-safe/7.2.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "zstd-safe-7.2.3",
-    srcs = [":zstd-safe-7.2.3.crate"],
+    name = "zstd-safe-7.2.4",
+    srcs = [":zstd-safe-7.2.4.crate"],
     crate = "zstd_safe",
-    crate_root = "zstd-safe-7.2.3.crate/src/lib.rs",
+    crate_root = "zstd-safe-7.2.4.crate/src/lib.rs",
     edition = "2018",
     features = [
         "arrays",
@@ -26352,16 +26335,16 @@ cargo.rust_library(
         "zdict_builder",
         "zstdmt",
     ],
-    rustc_flags = ["@$(location :zstd-safe-7.2.3-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :zstd-safe-7.2.4-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [":zstd-sys-2.0.14+zstd.1.5.7"],
+    deps = [":zstd-sys-2.0.15+zstd.1.5.7"],
 )
 
 cargo.rust_binary(
-    name = "zstd-safe-7.2.3-build-script-build",
-    srcs = [":zstd-safe-7.2.3.crate"],
+    name = "zstd-safe-7.2.4-build-script-build",
+    srcs = [":zstd-safe-7.2.4.crate"],
     crate = "build_script_build",
-    crate_root = "zstd-safe-7.2.3.crate/build.rs",
+    crate_root = "zstd-safe-7.2.4.crate/build.rs",
     edition = "2018",
     features = [
         "arrays",
@@ -26375,9 +26358,9 @@ cargo.rust_binary(
 )
 
 buildscript_run(
-    name = "zstd-safe-7.2.3-build-script-run",
+    name = "zstd-safe-7.2.4-build-script-run",
     package_name = "zstd-safe",
-    buildscript_rule = ":zstd-safe-7.2.3-build-script-build",
+    buildscript_rule = ":zstd-safe-7.2.4-build-script-build",
     features = [
         "arrays",
         "default",
@@ -26386,13 +26369,13 @@ buildscript_run(
         "zdict_builder",
         "zstdmt",
     ],
-    version = "7.2.3",
+    version = "7.2.4",
 )
 
 http_archive(
-    name = "zstd-sys-2.0.14+zstd.1.5.7.crate",
-    sha256 = "8fb060d4926e4ac3a3ad15d864e99ceb5f343c6b34f5bd6d81ae6ed417311be5",
-    strip_prefix = "zstd-sys-2.0.14+zstd.1.5.7",
+    name = "zstd-sys-2.0.15+zstd.1.5.7.crate",
+    sha256 = "eb81183ddd97d0c74cedf1d50d85c8d08c1b8b68ee863bdee9e706eedba1a237",
+    strip_prefix = "zstd-sys-2.0.15+zstd.1.5.7",
     sub_targets = [
         "zdict.h",
         "zstd.h",
@@ -26480,15 +26463,15 @@ http_archive(
         "zstd/lib/zstd.h",
         "zstd/lib/zstd_errors.h",
     ],
-    urls = ["https://static.crates.io/crates/zstd-sys/2.0.14+zstd.1.5.7/download"],
+    urls = ["https://static.crates.io/crates/zstd-sys/2.0.15+zstd.1.5.7/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "zstd-sys-2.0.14+zstd.1.5.7",
-    srcs = [":zstd-sys-2.0.14+zstd.1.5.7.crate"],
+    name = "zstd-sys-2.0.15+zstd.1.5.7",
+    srcs = [":zstd-sys-2.0.15+zstd.1.5.7.crate"],
     crate = "zstd_sys",
-    crate_root = "zstd-sys-2.0.14+zstd.1.5.7.crate/src/lib.rs",
+    crate_root = "zstd-sys-2.0.15+zstd.1.5.7.crate/src/lib.rs",
     edition = "2018",
     features = [
         "legacy",
@@ -26498,99 +26481,99 @@ cargo.rust_library(
     ],
     rustc_flags = ["-ldylib=zstd"],
     visibility = [],
-    deps = [":zstd-sys-2.0.14+zstd.1.5.7-zstd"],
+    deps = [":zstd-sys-2.0.15+zstd.1.5.7-zstd"],
 )
 
 third_party_rust_cxx_library(
-    name = "zstd-sys-2.0.14+zstd.1.5.7-zstd",
+    name = "zstd-sys-2.0.15+zstd.1.5.7-zstd",
     srcs = [
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/debug.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/entropy_common.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/error_private.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/fse_decompress.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/pool.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/threading.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/zstd_common.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/fse_compress.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/hist.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/huf_compress.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_literals.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_sequences.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_superblock.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_double_fast.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_fast.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_lazy.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_ldm.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_opt.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_preSplit.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstdmt_compress.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/huf_decompress.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/huf_decompress_amd64.S]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/zstd_ddict.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress_block.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/dictBuilder/cover.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/dictBuilder/divsufsort.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/dictBuilder/fastcover.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/dictBuilder/zdict.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v01.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v02.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v03.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v04.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v05.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v06.c]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v07.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/debug.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/entropy_common.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/error_private.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/fse_decompress.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/pool.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/threading.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/zstd_common.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/fse_compress.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/hist.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/huf_compress.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_literals.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_sequences.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_superblock.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_double_fast.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_fast.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_lazy.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_ldm.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_opt.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_preSplit.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstdmt_compress.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/huf_decompress.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/huf_decompress_amd64.S]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/zstd_ddict.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress_block.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/dictBuilder/cover.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/dictBuilder/divsufsort.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/dictBuilder/fastcover.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/dictBuilder/zdict.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v01.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v02.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v03.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v04.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v05.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v06.c]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v07.c]",
     ],
     headers = [
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zdict.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/bitstream.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/compiler.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/cpu.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/debug.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/error_private.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/fse.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/huf.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/mem.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/pool.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/portability_macros.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/threading.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/zstd_deps.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/zstd_internal.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/common/zstd_trace.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/clevels.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/hist.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_internal.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_literals.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_sequences.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_superblock.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_cwksp.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_double_fast.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_fast.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_lazy.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_ldm.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_ldm_geartab.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_opt.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstd_preSplit.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/compress/zstdmt_compress.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/zstd_ddict.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress_block.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress_internal.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/deprecated/zbuff.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/dictBuilder/cover.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/dictBuilder/divsufsort.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_legacy.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v01.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v02.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v03.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v04.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v05.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v06.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v07.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/zdict.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/zstd.h]",
-        ":zstd-sys-2.0.14+zstd.1.5.7.crate[zstd/lib/zstd_errors.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zdict.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/bitstream.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/compiler.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/cpu.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/debug.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/error_private.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/fse.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/huf.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/mem.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/pool.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/portability_macros.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/threading.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/zstd_deps.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/zstd_internal.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/common/zstd_trace.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/clevels.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/hist.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_internal.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_literals.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_sequences.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_compress_superblock.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_cwksp.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_double_fast.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_fast.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_lazy.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_ldm.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_ldm_geartab.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_opt.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstd_preSplit.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/compress/zstdmt_compress.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/zstd_ddict.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress_block.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/decompress/zstd_decompress_internal.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/deprecated/zbuff.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/dictBuilder/cover.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/dictBuilder/divsufsort.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_legacy.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v01.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v02.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v03.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v04.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v05.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v06.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/legacy/zstd_v07.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/zdict.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/zstd.h]",
+        ":zstd-sys-2.0.15+zstd.1.5.7.crate[zstd/lib/zstd_errors.h]",
     ],
     compiler_flags = [
         "-O3",
