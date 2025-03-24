@@ -165,18 +165,6 @@ def _container_sub_target(
         )),
     ]
 
-def _implicit_image_test(layer: LayerContents, implicit_image_test: ExternalRunnerTestInfo) -> ExternalRunnerTestInfo:
-    implicit_image_test = ExternalRunnerTestInfo(
-        type = implicit_image_test.test_type,
-        command = implicit_image_test.command,
-        env = (implicit_image_test.env or {}) | {
-            "ANTLIR2_LAYER": (layer.overlayfs.json_file_with_inputs if layer.overlayfs else None) or layer.subvol_symlink,
-        },
-        labels = [],
-        run_from_project_root = True,
-    )
-    return implicit_image_test
-
 def _impl(ctx: AnalysisContext) -> Promise:
     feature_anon_kwargs = {key.removeprefix("_feature_"): getattr(ctx.attrs, key) for key in dir(ctx.attrs) if key.startswith("_feature_")}
     feature_anon_kwargs["name"] = str(ctx.label.raw_target())
@@ -553,11 +541,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         ),
     ]
 
-    if ctx.attrs._implicit_image_test:
-        providers.append(
-            _implicit_image_test(layer, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
-        )
-
     if ctx.attrs.default_mountpoint:
         providers.append(DefaultMountpointInfo(default_mountpoint = ctx.attrs.default_mountpoint))
 
@@ -630,10 +613,6 @@ _layer_attrs = {
             Equivalent to 'dnf_additional_repos' but selected only by internal
             configurations (like systemd-cd).
         """,
-    ),
-    "_implicit_image_test": attrs.option(
-        attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
-        default = None,
     ),
     "_materialize_to_subvol": attrs.option(attrs.exec_dep(), default = None),
     "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
@@ -789,7 +768,6 @@ def layer(
         rootless = rootless,
         visibility = get_visibility(visibility),
         target_compatible_with = target_compatible_with,
-        _implicit_image_test = "antlir//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
         _materialize_to_subvol = "antlir//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol",
         _binaries_require_repo = binaries_require_repo.select_value,
