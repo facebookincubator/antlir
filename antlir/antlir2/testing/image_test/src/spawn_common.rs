@@ -178,15 +178,14 @@ pub(crate) fn run(
             }
 
             if interactive {
-                writeln!(
-                    test_unit_dropin,
-                    "[Service]\n\
-                    ExecStart=\n\
-                    ExecStart=/bin/sh -l\n\
-                    StandardInput=tty-force\n\
-                    StandardOutput=tty\n\
-                    StandardError=tty"
-                )?;
+                let shell_dropin = buck_resources::get(
+                    "antlir/antlir2/testing/image_test/antlir2_image_test_shell.conf",
+                )
+                .context("while getting shell dropin resource")?;
+                ctx.inputs((
+                    PathBuf::from("/run/systemd/system/antlir2_image_test.service.d/99-shell.conf"),
+                    shell_dropin,
+                ));
             }
 
             // wire the test output to the parent process's std{out,err}
@@ -195,7 +194,7 @@ pub(crate) fn run(
                 (Path::new("/antlir2/test_stderr"), test_stderr.path()),
             ]));
             ctx.inputs((
-                Path::new("/run/systemd/system/antlir2_image_test.service.d/runtime.conf"),
+                Path::new("/run/systemd/system/antlir2_image_test.service.d/00-runtime.conf"),
                 test_unit_dropin.path(),
             ));
 
