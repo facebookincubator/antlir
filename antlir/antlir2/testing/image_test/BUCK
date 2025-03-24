@@ -18,10 +18,14 @@ rust_binary(
     name = "image-test",
     srcs = glob(["src/**/*.rs"]),
     crate_root = "src/main.rs",
+    resources = {
+        "antlir2_image_test_shell.conf": "antlir2_image_test_shell.conf",
+    },
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
         "bon",
+        "buck-resources",
         "clap",
         "nix",
         "serde",
@@ -47,10 +51,6 @@ feature.new(
             force = True,
         ),
         # Debugging features to enhance ergonomics
-        systemd.install_dropin(
-            "autologin.conf",
-            unit = "console-getty.service",
-        ),
         # Install something that provides a shell, which is necessary for
         # interactive debugging
         feature.rpms_install(subjects = ["/bin/sh"]),
