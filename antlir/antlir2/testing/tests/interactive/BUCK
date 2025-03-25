@@ -1,0 +1,45 @@
+# @oss-disable
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "rust_unittest")
+
+oncall("antlir")
+
+image.layer(
+    name = "base",
+    features = [
+        feature.rpms_install(rpms = [
+            "systemd",
+        ]),
+    ],
+)
+
+image_sh_test(
+    name = "echo-rooted",
+    boot = True,
+    layer = ":base",
+    rootless = False,
+    test = "echo.sh",
+)
+
+image_sh_test(
+    name = "echo-rootless",
+    boot = True,
+    layer = ":base",
+    rootless = True,
+    test = "echo.sh",
+)
+
+rust_unittest(
+    name = "test",
+    srcs = ["test.rs"],
+    # @oss-disable
+    run_env = {
+        "ECHO_ROOTED": "$(exe :echo-rooted[container])",
+        "ECHO_ROOTLESS": "$(exe :echo-rootless[container])",
+    },
+    deps = [
+        "rexpect",
+    ],
+)
