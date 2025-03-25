@@ -116,11 +116,23 @@ fn main() -> anyhow::Result<()> {
     } else {
         cmd_builder.working_directory(Path::new("/"));
     }
-    if args.boot {
-        cmd_builder.register(true);
-    }
 
-    let mut cmd = args.cmd.into_iter();
+    let mut cmd = args.cmd;
+    if args.boot {
+        if !args.rootless {
+            cmd_builder.register(true);
+        }
+        let container_subtarget_service =
+            buck_resources::get("antlir/antlir2/container_subtarget/container-subtarget.service")
+                .context("while looking up container-subtarget.service resource")?;
+        cmd_builder.inputs((
+            PathBuf::from("/run/systemd/system/container-subtarget.service"),
+            container_subtarget_service,
+        ));
+        cmd.push("systemd.unit=container-subtarget.service".into());
+    }
+    let mut cmd = cmd.into_iter();
+
     let program = cmd.next().unwrap_or(OsString::from("/bin/bash"));
 
     let mut command = match args.rootless {

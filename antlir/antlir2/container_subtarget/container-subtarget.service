@@ -1,0 +1,30 @@
+# This service unit provides a shell that is automatically started and logged in
+# when a user runs the [container] subtarget of an antlir2 layer
+[Unit]
+# Pull in whatever default.target was (typically graphical.target)
+DefaultDependencies=no
+Requires=default.target
+# Exit the container as soon as this interactive shell exits, propagating the
+# exit code of the shell back up to the host
+SuccessAction=exit-force
+FailureAction=exit-force
+# Prevent the "standard" console service from running at the same time and
+# stealing half the input
+Conflicts=console-getty.service
+
+[Service]
+# Start after all other jobs have finished (or after 5s)
+Type=idle
+ExecStartPre=echo
+ExecStartPre=echo "This is an antlir2 [container] shell, any changes you make here are ephemeral"
+ExecStart=/bin/sh -l
+# Bind it to the console tty of the container
+StandardInput=tty-force
+StandardOutput=tty
+StandardError=tty
+# Reset the TTY from any settings that may have been here before, and also reset
+# it after this unit exits to hopefully avoid messing up the user's terminal
+TTYReset=yes
+TTYVHangup=yes
+# When this is going to be killed, send SIGHUP so the shell can handle it nicely
+SendSIGHUP=yes
