@@ -57,5 +57,6 @@ def test_variants(
             },
             rootless = rootless,
             default_os = os,
+            visibility = ["PUBLIC"],
             **kwargs
         )
