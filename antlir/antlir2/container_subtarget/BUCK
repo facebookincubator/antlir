@@ -5,9 +5,13 @@ oncall("antlir")
 rust_binary(
     name = "run",
     srcs = glob(["src/**/*.rs"]),
+    resources = {
+        "container-subtarget.service": "container-subtarget.service",
+    },
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "buck-resources",
         "clap",
         "tracing",
         "tracing-subscriber",

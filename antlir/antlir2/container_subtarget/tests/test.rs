@@ -11,8 +11,8 @@ use rexpect::session::PtySession;
 fn test_base(exe: &str) -> PtySession {
     let mut p = rexpect::spawn(exe, Some(5_000)).expect("failed to spawn");
     // it would be better to set an explicit bash prompt, but that's hard to do
-    // without an rcfile, so we just rely on it being the default 'bash-$version#'
-    p.exp_regex("bash(.*?)#").expect("didn't get bash prompt");
+    // without an rcfile, so we just rely on it having a '# '
+    p.exp_regex("[^\n](.*?)# ").expect("didn't get bash prompt");
     p.send_line("echo 'testing that the shell works'")
         .expect("failed to write shell command line");
     p.exp_string("testing that the shell works")
@@ -56,4 +56,18 @@ fn test_rootless_exit_code() {
     test_exit_code(&exe, 42);
 }
 
-// TODO: test --boot variants once that always gives a shell
+#[test]
+fn test_rooted_boot_exit_code() {
+    let exe = std::env::var("ROOTED").expect("missing env var");
+    let mut p = rexpect::spawn(&format!("{exe} --boot"), Some(5_000)).expect("failed to spawn");
+    p.exp_string("This is an antlir2 [container] shell, any changes you make here are ephemeral")
+        .expect("didn't get intro message");
+    p.send_line("exit 42")
+        .expect("failed to write shell command line");
+    p.exp_eof().expect("didn't get EOF");
+    let status = p.process.wait().expect("failed to wait for process");
+    match status {
+        WaitStatus::Exited(_, real_code) => assert_eq!(42, real_code),
+        status => panic!("unexpected exit status: {status:?}"),
+    }
+}
