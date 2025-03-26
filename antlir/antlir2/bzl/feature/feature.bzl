@@ -322,7 +322,8 @@ def feature(
         - labels referring to other `feature` targets
     """
     attrs = feature_attrs(features)
-    kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
+    if "default_target_platform" not in kwargs:
+        kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
     kwargs.update(attrs)
 
