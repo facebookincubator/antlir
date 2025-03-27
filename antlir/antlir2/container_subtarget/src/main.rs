@@ -46,6 +46,9 @@ struct Args {
     chdir: Option<PathBuf>,
     #[clap(long)]
     enable_network: bool,
+    #[clap(long)]
+    /// Don't register the container with systemd-machined (this does not mean that it will always be registered)
+    no_register: bool,
     #[clap(last = true)]
     cmd: Vec<OsString>,
 }
@@ -120,7 +123,7 @@ fn main() -> anyhow::Result<()> {
     let mut cmd = args.cmd;
     if args.boot {
         if !args.rootless {
-            cmd_builder.register(true);
+            cmd_builder.register(!args.no_register);
         }
         let container_subtarget_service =
             buck_resources::get("antlir/antlir2/container_subtarget/container-subtarget.service")
