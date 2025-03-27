@@ -30,7 +30,6 @@ gpg-pubkey
 grep
 gzip
 keyutils-libs
-kmod-libs
 krb5-libs
 libacl
 libarchive
@@ -61,6 +60,7 @@ libsmartcols
 libssh
 libssh-config
 libtasn1
+libtool-ltdl
 libunistring
 libutempter
 libuuid
