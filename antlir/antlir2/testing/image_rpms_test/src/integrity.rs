@@ -176,8 +176,18 @@ impl Integrity {
                 tracing::trace!(path = failure.path, "ignoring ignored file");
                 continue;
             }
-            let ignored_owners_intersection: BTreeSet<_> =
-                owners.intersection(&ignored_rpms).collect();
+            let ignored_owners_intersection: BTreeSet<_> = owners
+                .iter()
+                .filter(|o| {
+                    ignored_rpms.iter().any(|i| {
+                        if i.ends_with('*') {
+                            o.starts_with(&i[..i.len() - 1])
+                        } else {
+                            i == *o
+                        }
+                    })
+                })
+                .collect();
             if !ignored_owners_intersection.is_empty() {
                 tracing::trace!(
                     path = failure.path,
