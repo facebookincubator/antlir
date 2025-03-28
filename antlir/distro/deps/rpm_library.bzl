@@ -146,4 +146,5 @@ def rpm_library(
         default_target_platform = default_image_platform(),
         rootless = True,
         labels = ["antlir-distro-dep-test"],
+        target_compatible_with = target_compatible_with,
     )
