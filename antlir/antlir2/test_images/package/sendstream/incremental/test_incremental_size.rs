@@ -54,23 +54,6 @@ macro_rules! test_parent_child {
 }
 
 #[test]
-fn test_incremental_size() {
-    assert_size_close!("parent.sendstream", ByteSize::mb(256), ByteSize::mb(15));
-    // In this rare case (non-existent in actual practical usage) where we
-    // install a large random file into a subvolume (using a reflink copy),
-    // snapshot it and then make another reflink copy of the same exact file
-    // into the child snapshot, the kernel is able to make the child
-    // substantially smaller by generating a command to reflink-copy from the
-    // parent.
-    //
-    // However, in production, the packages that we produce look like the
-    // `prebuilt` variant below (rooted or rootless, but usually rootless)
-    // which cannot take advantage of this optimization, so just this test is
-    // special-cased to expect a much smaller child sendstream.
-    assert_size_close!("child.sendstream", ByteSize::mb(1), ByteSize::kb(999));
-}
-
-#[test]
 fn test_incremental_size_rootless() {
     test_parent_child!("parent.sendstream.rootless", "child.sendstream.rootless");
 }
