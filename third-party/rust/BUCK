@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "d744539abcee18753725a1c38845d0f02c11d92a",
+    rev = "ca71381b3b1448c7e87ec4daa72ae91ddc54f628",
     visibility = [],
 )
 
@@ -154,37 +154,37 @@ cargo.rust_library(
         "linux-arm64": dict(
             deps = [
                 ":getrandom-0.2.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "linux-x86_64": dict(
             deps = [
                 ":getrandom-0.2.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "macos-arm64": dict(
             deps = [
                 ":getrandom-0.2.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "macos-x86_64": dict(
             deps = [
                 ":getrandom-0.2.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "windows-gnu": dict(
             deps = [
                 ":getrandom-0.2.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "windows-msvc": dict(
             deps = [
                 ":getrandom-0.2.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
     },
@@ -238,22 +238,22 @@ cargo.rust_library(
     ],
     platform = {
         "linux-arm64": dict(
-            deps = [":once_cell-1.21.2"],
+            deps = [":once_cell-1.21.3"],
         ),
         "linux-x86_64": dict(
-            deps = [":once_cell-1.21.2"],
+            deps = [":once_cell-1.21.3"],
         ),
         "macos-arm64": dict(
-            deps = [":once_cell-1.21.2"],
+            deps = [":once_cell-1.21.3"],
         ),
         "macos-x86_64": dict(
-            deps = [":once_cell-1.21.2"],
+            deps = [":once_cell-1.21.3"],
         ),
         "windows-gnu": dict(
-            deps = [":once_cell-1.21.2"],
+            deps = [":once_cell-1.21.3"],
         ),
         "windows-msvc": dict(
-            deps = [":once_cell-1.21.2"],
+            deps = [":once_cell-1.21.3"],
         ),
     },
     rustc_flags = ["@$(location :ahash-0.8.11-build-script-run[rustc_flags])"],
@@ -659,13 +659,13 @@ cargo.rust_library(
     platform = {
         "windows-gnu": dict(
             deps = [
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":windows-sys-0.59.0",
             ],
         ),
         "windows-msvc": dict(
             deps = [
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":windows-sys-0.59.0",
             ],
         ),
@@ -2571,7 +2571,7 @@ cargo.rust_library(
     proc_macro = True,
     visibility = [],
     deps = [
-        ":darling-0.20.10",
+        ":darling-0.20.11",
         ":ident_case-1.0.1",
         ":prettyplease-0.2.31",
         ":proc-macro2-1.0.94",
@@ -2659,7 +2659,7 @@ cargo.rust_library(
     proc_macro = True,
     visibility = [],
     deps = [
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":proc-macro-crate-3.3.0",
         ":proc-macro2-1.0.94",
         ":quote-1.0.40",
@@ -2806,7 +2806,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":dunce-1.0.5",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":serde-1.0.219",
         ":serde_json-1.0.140",
         ":thiserror-1.0.69",
@@ -3303,7 +3303,7 @@ cargo.rust_library(
         ":hashbrown-0.12.3",
         ":instant-0.1.13",
         ":lazy_static-1.5.0",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":thiserror-1.0.69",
         ":tokio-1.44.1",
     ],
@@ -4097,7 +4097,7 @@ cargo.rust_library(
         ":clap_derive-3.2.25",
         ":clap_lex-0.2.4",
         ":indexmap-1.9.3",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":regex-1.11.1",
         ":strsim-0.10.0",
         ":termcolor-1.4.1",
@@ -4621,7 +4621,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":libc-0.2.171",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":unicode-width-0.2.0",
     ],
 )
@@ -5481,18 +5481,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cxx-1.0.151.crate",
-    sha256 = "fdb3e596b379180315d2f934231e233a2fc745041f88231807774093d8de45f2",
-    strip_prefix = "cxx-1.0.151",
-    urls = ["https://static.crates.io/crates/cxx/1.0.151/download"],
+    name = "cxx-1.0.152.crate",
+    sha256 = "31aca84b8d0b0e5493898b42872bd5c2ab8e71703e31a097c2d063d41a5286d1",
+    strip_prefix = "cxx-1.0.152",
+    urls = ["https://static.crates.io/crates/cxx/1.0.152/download"],
     visibility = [],
 )
 
 cargo.rust_binary(
-    name = "cxx-1.0.151-build-script-build",
-    srcs = [":cxx-1.0.151.crate"],
+    name = "cxx-1.0.152-build-script-build",
+    srcs = [":cxx-1.0.152.crate"],
     crate = "build_script_build",
-    crate_root = "cxx-1.0.151.crate/build.rs",
+    crate_root = "cxx-1.0.152.crate/build.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -5502,82 +5502,82 @@ cargo.rust_binary(
     visibility = [],
     deps = [
         ":cc-1.2.17",
-        ":cxxbridge-flags-1.0.151",
+        ":cxxbridge-flags-1.0.152",
     ],
 )
 
 buildscript_run(
-    name = "cxx-1.0.151-build-script-run",
+    name = "cxx-1.0.152-build-script-run",
     package_name = "cxx",
-    buildscript_rule = ":cxx-1.0.151-build-script-build",
+    buildscript_rule = ":cxx-1.0.152-build-script-build",
     features = [
         "alloc",
         "default",
         "std",
     ],
-    version = "1.0.151",
+    version = "1.0.152",
 )
 
 alias(
     name = "cxx",
-    actual = ":cxx-1.0.151-cxx",
+    actual = ":cxx-1.0.152-cxx",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "cxx-1.0.151-cxx",
-    srcs = [":cxx-1.0.151.crate"],
+    name = "cxx-1.0.152-cxx",
+    srcs = [":cxx-1.0.152.crate"],
     crate = "cxx",
-    crate_root = "cxx-1.0.151.crate/src/lib.rs",
+    crate_root = "cxx-1.0.152.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :cxx-1.0.151-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :cxx-1.0.152-build-script-run[out_dir])",
     },
     features = [
         "alloc",
         "default",
         "std",
     ],
-    rustc_flags = ["@$(location :cxx-1.0.151-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :cxx-1.0.152-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
-        ":cxxbridge-macro-1.0.151",
+        ":cxxbridge-macro-1.0.152",
         ":foldhash-0.1.5",
         ":link-cplusplus-1.0.10",
     ],
 )
 
 http_archive(
-    name = "cxxbridge-flags-1.0.151.crate",
-    sha256 = "020a9a3d6b792aab7f30f6e323893ad7f45052e572cde5d014c47fe67c89495f",
-    strip_prefix = "cxxbridge-flags-1.0.151",
-    urls = ["https://static.crates.io/crates/cxxbridge-flags/1.0.151/download"],
+    name = "cxxbridge-flags-1.0.152.crate",
+    sha256 = "ca3611d4b776dea482c33289b4cc8d75354f917badc3f6090dd29a55258dc63d",
+    strip_prefix = "cxxbridge-flags-1.0.152",
+    urls = ["https://static.crates.io/crates/cxxbridge-flags/1.0.152/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cxxbridge-flags-1.0.151",
-    srcs = [":cxxbridge-flags-1.0.151.crate"],
+    name = "cxxbridge-flags-1.0.152",
+    srcs = [":cxxbridge-flags-1.0.152.crate"],
     crate = "cxxbridge_flags",
-    crate_root = "cxxbridge-flags-1.0.151.crate/src/lib.rs",
+    crate_root = "cxxbridge-flags-1.0.152.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
 )
 
 http_archive(
-    name = "cxxbridge-macro-1.0.151.crate",
-    sha256 = "ee54cd01f94db0328c4c73036d38bd8c3bb88927e953d05ffefe743edbf4eb68",
-    strip_prefix = "cxxbridge-macro-1.0.151",
-    urls = ["https://static.crates.io/crates/cxxbridge-macro/1.0.151/download"],
+    name = "cxxbridge-macro-1.0.152.crate",
+    sha256 = "49f552a55feb5f232ae1261419fd26f000117dc32291db4077b5030cd4ec51fe",
+    strip_prefix = "cxxbridge-macro-1.0.152",
+    urls = ["https://static.crates.io/crates/cxxbridge-macro/1.0.152/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cxxbridge-macro-1.0.151",
-    srcs = [":cxxbridge-macro-1.0.151.crate"],
+    name = "cxxbridge-macro-1.0.152",
+    srcs = [":cxxbridge-macro-1.0.152.crate"],
     crate = "cxxbridge_macro",
-    crate_root = "cxxbridge-macro-1.0.151.crate/src/lib.rs",
+    crate_root = "cxxbridge-macro-1.0.152.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
@@ -5671,18 +5671,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "darling-0.20.10.crate",
-    sha256 = "6f63b86c8a8826a49b8c21f08a2d07338eec8d900540f8630dc76284be802989",
-    strip_prefix = "darling-0.20.10",
-    urls = ["https://static.crates.io/crates/darling/0.20.10/download"],
+    name = "darling-0.20.11.crate",
+    sha256 = "fc7f46116c46ff9ab3eb1597a45688b6715c6e628b5c133e288e709a29bcb4ee",
+    strip_prefix = "darling-0.20.11",
+    urls = ["https://static.crates.io/crates/darling/0.20.11/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "darling-0.20.10",
-    srcs = [":darling-0.20.10.crate"],
+    name = "darling-0.20.11",
+    srcs = [":darling-0.20.11.crate"],
     crate = "darling",
-    crate_root = "darling-0.20.10.crate/src/lib.rs",
+    crate_root = "darling-0.20.11.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -5690,8 +5690,8 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":darling_core-0.20.10",
-        ":darling_macro-0.20.10",
+        ":darling_core-0.20.11",
+        ":darling_macro-0.20.11",
     ],
 )
 
@@ -5783,18 +5783,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "darling_core-0.20.10.crate",
-    sha256 = "95133861a8032aaea082871032f5815eb9e98cef03fa916ab4500513994df9e5",
-    strip_prefix = "darling_core-0.20.10",
-    urls = ["https://static.crates.io/crates/darling_core/0.20.10/download"],
+    name = "darling_core-0.20.11.crate",
+    sha256 = "0d00b9596d185e565c2207a0b01f8bd1a135483d02d9b7b0a54b11da8d53412e",
+    strip_prefix = "darling_core-0.20.11",
+    urls = ["https://static.crates.io/crates/darling_core/0.20.11/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "darling_core-0.20.10",
-    srcs = [":darling_core-0.20.10.crate"],
+    name = "darling_core-0.20.11",
+    srcs = [":darling_core-0.20.11.crate"],
     crate = "darling_core",
-    crate_root = "darling_core-0.20.10.crate/src/lib.rs",
+    crate_root = "darling_core-0.20.11.crate/src/lib.rs",
     edition = "2021",
     features = [
         "strsim",
@@ -5881,23 +5881,23 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "darling_macro-0.20.10.crate",
-    sha256 = "d336a2a514f6ccccaa3e09b02d41d35330c07ddf03a62165fcec10bb561c7806",
-    strip_prefix = "darling_macro-0.20.10",
-    urls = ["https://static.crates.io/crates/darling_macro/0.20.10/download"],
+    name = "darling_macro-0.20.11.crate",
+    sha256 = "fc34b93ccb385b40dc71c6fceac4b2ad23662c7eeb248cf10d529b7e055b6ead",
+    strip_prefix = "darling_macro-0.20.11",
+    urls = ["https://static.crates.io/crates/darling_macro/0.20.11/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "darling_macro-0.20.10",
-    srcs = [":darling_macro-0.20.10.crate"],
+    name = "darling_macro-0.20.11",
+    srcs = [":darling_macro-0.20.11.crate"],
     crate = "darling_macro",
-    crate_root = "darling_macro-0.20.10.crate/src/lib.rs",
+    crate_root = "darling_macro-0.20.11.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
     deps = [
-        ":darling_core-0.20.10",
+        ":darling_core-0.20.11",
         ":quote-1.0.40",
         ":syn-2.0.100",
     ],
@@ -5932,7 +5932,7 @@ cargo.rust_library(
         ":cfg-if-1.0.0",
         ":hashbrown-0.14.5",
         ":lock_api-0.4.12",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":parking_lot_core-0.9.10",
         ":rayon-1.10.0",
         ":serde-1.0.219",
@@ -6179,7 +6179,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":darling-0.20.10",
+        ":darling-0.20.11",
         ":proc-macro2-1.0.94",
         ":quote-1.0.40",
         ":syn-2.0.100",
@@ -9369,7 +9369,7 @@ cargo.rust_library(
         ":http-0.2.12",
         ":hyper-0.14.32",
         ":log-0.4.27",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":regex-1.11.1",
         ":serde-1.0.219",
         ":serde_json-1.0.140",
@@ -12503,7 +12503,7 @@ cargo.rust_library(
         ":mio-0.8.11",
         ":mysql_common-0.29.2",
         ":native-tls-0.2.14",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":pem-1.1.1",
         ":percent-encoding-2.3.1",
         ":pin-project-1.1.10",
@@ -13754,23 +13754,23 @@ cargo.rust_library(
 
 alias(
     name = "once_cell",
-    actual = ":once_cell-1.21.2",
+    actual = ":once_cell-1.21.3",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "once_cell-1.21.2.crate",
-    sha256 = "c2806eaa3524762875e21c3dcd057bc4b7bfa01ce4da8d46be1cd43649e1cc6b",
-    strip_prefix = "once_cell-1.21.2",
-    urls = ["https://static.crates.io/crates/once_cell/1.21.2/download"],
+    name = "once_cell-1.21.3.crate",
+    sha256 = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d",
+    strip_prefix = "once_cell-1.21.3",
+    urls = ["https://static.crates.io/crates/once_cell/1.21.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "once_cell-1.21.2",
-    srcs = [":once_cell-1.21.2.crate"],
+    name = "once_cell-1.21.3",
+    srcs = [":once_cell-1.21.3.crate"],
     crate = "once_cell",
-    crate_root = "once_cell-1.21.2.crate/src/lib.rs",
+    crate_root = "once_cell-1.21.3.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -13842,7 +13842,7 @@ cargo.rust_library(
         ":cfg-if-1.0.0",
         ":foreign-types-0.3.2",
         ":libc-0.2.171",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":openssl-macros-0.1.1",
     ],
 )
@@ -14692,7 +14692,7 @@ cargo.rust_library(
     features = ["default"],
     visibility = [],
     deps = [
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":pest-2.8.0",
     ],
 )
@@ -16117,7 +16117,7 @@ cargo.rust_library(
         ":indoc-2.0.6",
         ":libc-0.2.171",
         ":memoffset-0.9.1",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":pyo3-ffi-0.22.6",
         ":pyo3-macros-0.22.6",
         ":unindent-0.2.4",
@@ -16179,7 +16179,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":futures-0.3.31",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":pin-project-lite-0.2.16",
         ":pyo3-0.22.6",
         ":pyo3-async-runtimes-macros-0.22.0",
@@ -16222,7 +16222,7 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":target-lexicon-0.12.16",
     ],
 )
@@ -17290,7 +17290,7 @@ cargo.rust_library(
                 ":ipnet-2.11.0",
                 ":log-0.4.27",
                 ":mime-0.3.17",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.1",
@@ -17313,7 +17313,7 @@ cargo.rust_library(
                 ":ipnet-2.11.0",
                 ":log-0.4.27",
                 ":mime-0.3.17",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.1",
@@ -17336,7 +17336,7 @@ cargo.rust_library(
                 ":ipnet-2.11.0",
                 ":log-0.4.27",
                 ":mime-0.3.17",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.16",
                 ":system-configuration-0.5.1",
@@ -17360,7 +17360,7 @@ cargo.rust_library(
                 ":ipnet-2.11.0",
                 ":log-0.4.27",
                 ":mime-0.3.17",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.16",
                 ":system-configuration-0.5.1",
@@ -17384,7 +17384,7 @@ cargo.rust_library(
                 ":ipnet-2.11.0",
                 ":log-0.4.27",
                 ":mime-0.3.17",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.1",
@@ -17408,7 +17408,7 @@ cargo.rust_library(
                 ":ipnet-2.11.0",
                 ":log-0.4.27",
                 ":mime-0.3.17",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":percent-encoding-2.3.1",
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.1",
@@ -17527,14 +17527,14 @@ cargo.rust_library(
         "linux-arm64": dict(
             deps = [
                 ":libc-0.2.171",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":spin-0.5.2",
             ],
         ),
         "linux-x86_64": dict(
             deps = [
                 ":libc-0.2.171",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
                 ":spin-0.5.2",
             ],
         ),
@@ -18254,7 +18254,7 @@ cargo.rust_library(
             deps = [
                 ":libc-0.2.171",
                 ":linux-raw-sys-0.4.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "linux-x86_64": dict(
@@ -18264,7 +18264,7 @@ cargo.rust_library(
             deps = [
                 ":libc-0.2.171",
                 ":linux-raw-sys-0.4.15",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "macos-arm64": dict(
@@ -20820,7 +20820,7 @@ cargo.rust_library(
         ":memoffset-0.6.5",
         ":num-bigint-0.4.6",
         ":num-traits-0.2.19",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":paste-1.0.15",
         ":ref-cast-1.0.24",
         ":regex-1.11.1",
@@ -20909,7 +20909,7 @@ cargo.rust_library(
         ":memchr-2.7.4",
         ":num-bigint-0.4.6",
         ":num-traits-0.2.19",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":starlark_map-0.13.0",
         ":thiserror-1.0.69",
     ],
@@ -21903,7 +21903,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":fastrand-2.3.0",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
     ],
 )
 
@@ -22419,7 +22419,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":cfg-if-1.0.0",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
     ],
 )
 
@@ -23271,7 +23271,7 @@ cargo.rust_library(
         "valuable",
     ],
     visibility = [],
-    deps = [":once_cell-1.21.2"],
+    deps = [":once_cell-1.21.3"],
 )
 
 alias(
@@ -23338,7 +23338,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":log-0.4.27",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":tracing-core-0.1.33",
     ],
 )
@@ -23414,7 +23414,7 @@ cargo.rust_library(
         ":chrono-0.4.40",
         ":matchers-0.1.0",
         ":nu-ansi-term-0.46.0",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
         ":regex-1.11.1",
         ":sharded-slab-0.1.7",
         ":smallvec-1.14.0",
@@ -23982,7 +23982,7 @@ cargo.rust_library(
     deps = [
         ":anyhow-1.0.97",
         ":fbthrift-0.0.3",
-        ":once_cell-1.21.2",
+        ":once_cell-1.21.3",
     ],
 )
 
@@ -25207,13 +25207,13 @@ cargo.rust_library(
         "windows-gnu": dict(
             deps = [
                 ":home-0.5.11",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
         "windows-msvc": dict(
             deps = [
                 ":home-0.5.11",
-                ":once_cell-1.21.2",
+                ":once_cell-1.21.3",
             ],
         ),
     },
