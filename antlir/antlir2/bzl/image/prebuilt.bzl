@@ -170,12 +170,16 @@ def prebuilt(*args, **kwargs):
     if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
 
-    kwargs["_btrfs"] = internal_external(
-        fb = "fbsource//third-party/btrfs-progs:btrfs",
-        oss = None,
-    )
-
     _prebuilt_macro(
+        _btrfs = internal_external(
+            fb = "fbsource//third-party/btrfs-progs:btrfs",
+            oss = None,
+        ),
+        exec_compatible_with = [
+            # This rule action already has `local_only=True` actions, so make
+            # sure we pick an exec platform that can run locally.
+            "prelude//platforms:may_run_local",
+        ],
         *args,
         **kwargs
     )
