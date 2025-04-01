@@ -21,6 +21,7 @@ use tracing::trace;
 struct CafPackage {
     name: String,
     uuid: String,
+    arch: String,
 }
 
 pub(super) fn recv_caf(src: &Path, dst: &Path) -> Result<()> {
@@ -41,6 +42,11 @@ pub(super) fn recv_caf(src: &Path, dst: &Path) -> Result<()> {
         .env("FB_PAR_UNPACK_BASEDIR", par_tmpdir.path())
         .env("FB_PAR_UNPACK_ALLOW_EXTRA_OWNER_UIDS_UNSAFE", "65534")
         .current_dir(subvol.path());
+    if src.arch == "aarch64" {
+        cmd.arg("--use-aarch64");
+    } else {
+        cmd.arg("--no-use-aarch64");
+    }
     trace!("running {cmd:?}");
     let status = cmd
         .spawn()
