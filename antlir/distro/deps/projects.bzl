@@ -1,4 +1,4 @@
-# @generated SignedSource<<068e07a809d9f013ae626dae5da1fbbc>>
+# @generated SignedSource<<645ffd15d11d4835836882841e0f52ff>>
 PROJECTS = [
     ("binutils", "iberty"),
     ("boost", "boost"),
@@ -74,6 +74,7 @@ PROJECTS = [
     ("openssl", "ssl"),
     ("pcre", "pcre"),
     ("pcre", "pcrecpp"),
+    ("protobuf", "protobuf"),
     ("re2", "re2"),
     ("readline", "readline"),
     ("rpm", "librpm"),
