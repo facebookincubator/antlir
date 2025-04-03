@@ -26,6 +26,8 @@ struct Args {
     #[clap(long)]
     root: PathBuf,
     #[clap(long)]
+    pass_env: Vec<String>,
+    #[clap(long)]
     env: Option<JsonFile<BTreeMap<String, Vec<String>>>>,
     #[clap(required(true), trailing_var_arg(true), allow_hyphen_values(true))]
     command: Vec<String>,
@@ -69,6 +71,11 @@ fn main() -> Result<()> {
                 "env var '{k}' expanded to multiple values: {v:#?}"
             );
             builder.setenv((k, v.remove(0)));
+        }
+    }
+    for e in args.pass_env {
+        if let Some(v) = std::env::var_os(&e) {
+            builder.setenv((e, v));
         }
     }
 
