@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "15c3d0ab0767e3f9a7d2cdbd6a7a277ca4c6fd37",
+    rev = "d4db69d51e57f9c8ef377ead36ef026affdf6907",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "776a92033d5e5c27307a5e6d85d6e9dea9fbb5f1",
+    rev = "6e130fcf9ceaea6ea0cd454cf7b8265dd5d25b3c",
     visibility = [],
 )
 
@@ -1731,7 +1731,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.171",
-                ":miniz_oxide-0.8.5",
+                ":miniz_oxide-0.8.7",
                 ":object-0.36.7",
             ],
         ),
@@ -1739,7 +1739,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.171",
-                ":miniz_oxide-0.8.5",
+                ":miniz_oxide-0.8.7",
                 ":object-0.36.7",
             ],
         ),
@@ -1747,7 +1747,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.171",
-                ":miniz_oxide-0.8.5",
+                ":miniz_oxide-0.8.7",
                 ":object-0.36.7",
             ],
         ),
@@ -1755,7 +1755,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.171",
-                ":miniz_oxide-0.8.5",
+                ":miniz_oxide-0.8.7",
                 ":object-0.36.7",
             ],
         ),
@@ -1763,7 +1763,7 @@ cargo.rust_library(
             deps = [
                 ":addr2line-0.24.2",
                 ":libc-0.2.171",
-                ":miniz_oxide-0.8.5",
+                ":miniz_oxide-0.8.7",
                 ":object-0.36.7",
                 ":windows-targets-0.52.6",
             ],
@@ -7541,7 +7541,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":crc32fast-1.4.2",
-        ":miniz_oxide-0.8.5",
+        ":miniz_oxide-0.8.7",
     ],
 )
 
@@ -12162,18 +12162,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "miniz_oxide-0.8.5.crate",
-    sha256 = "8e3e04debbb59698c15bacbb6d93584a8c0ca9cc3213cb423d31f760d8843ce5",
-    strip_prefix = "miniz_oxide-0.8.5",
-    urls = ["https://static.crates.io/crates/miniz_oxide/0.8.5/download"],
+    name = "miniz_oxide-0.8.7.crate",
+    sha256 = "ff70ce3e48ae43fa075863cef62e8b43b71a4f2382229920e0df362592919430",
+    strip_prefix = "miniz_oxide-0.8.7",
+    urls = ["https://static.crates.io/crates/miniz_oxide/0.8.7/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "miniz_oxide-0.8.5",
-    srcs = [":miniz_oxide-0.8.5.crate"],
+    name = "miniz_oxide-0.8.7",
+    srcs = [":miniz_oxide-0.8.7.crate"],
     crate = "miniz_oxide",
-    crate_root = "miniz_oxide-0.8.5.crate/src/lib.rs",
+    crate_root = "miniz_oxide-0.8.7.crate/src/lib.rs",
     edition = "2021",
     features = ["with-alloc"],
     visibility = [],
