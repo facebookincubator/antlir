@@ -135,7 +135,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         # select() can return None for some branches
         if not feat:
             continue
-        if type(feat) == "dependency":
+        if isinstance(feat, Dependency):
             feature_deps.append(feat)
             continue
 
