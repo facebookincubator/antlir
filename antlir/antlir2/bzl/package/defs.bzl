@@ -58,7 +58,7 @@ def _generic_impl_with_layer(
         spec_opts["build_appliance"] = build_appliance[BuildApplianceInfo].dir
     for key in rule_attr_keys:
         val = getattr(ctx.attrs, key)
-        if type(val) == "dependency":
+        if isinstance(val, Dependency):
             if RunInfo in val:
                 val = val[RunInfo]
             else:

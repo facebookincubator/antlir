@@ -244,7 +244,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     artifacts = []
     for rpm in ctx.attrs.unnamed_deps_or_srcs:
-        if type(rpm) == "dependency":
+        if isinstance(rpm, Dependency):
             rpm = ensure_single_output(rpm)
         rpms.append(rpm_source_record(src = rpm))
         artifacts.append(rpm)

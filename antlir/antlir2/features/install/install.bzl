@@ -170,7 +170,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     # '/' in `dst` because there is otherwise no way to tell
     dst_is_dir = ctx.attrs.dst.endswith("/")
 
-    if type(src) == "dependency":
+    if isinstance(src, Dependency):
         is_executable = RunInfo in src
         expect(LayerInfo not in src, "Layers ({}) cannot be used as install `src`, consider using feature.mount instead".format(src.label))
         if mode == None:
