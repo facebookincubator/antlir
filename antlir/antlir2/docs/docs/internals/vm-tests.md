@@ -81,8 +81,17 @@ for the test set in the ssh shell.
 $ buck2 run //metalos/vm/tests/antlir:rust-test[shell]
 ```
 
+The `[shell]` sub target will redirect console output to a temporary file, whose
+location is printed out when starting the VM. The file is cleaned up after VM
+terminates. If you'd like to persist the console output, you can pass in
+`--console-output-file <path>`.
+
+```
+$ buck2 run //metalos/vm/tests/antlir:rust-test[shell] -- --console-output-file /tmp/console.txt
+```
+
 If you want a console instead of ssh shell, use the `[console]` sub target. This
-also prints console output to screen.
+also prints console output to screen instead of redirecting to a file.
 
 ```
 $ buck2 run //metalos/vm/tests/antlir:rust-test[console]
@@ -110,7 +119,7 @@ shell, you can run the desired `buck test` command first and then
 `buck2 log what-ran` or `buck2 log what-failed` should show you the exact
 command executed. This could be helpful when you want to run the test inside the
 VM shell. You can find more details in the
-[example section](#putting-it-together-an-investigation-example)
+[example section](#putting-it-together-an-investigation-example).
 
 Note: If your test target uses `env`, they won't be present for the interactive
 debugging sub targets. This is due to limitation in how envs are populated
