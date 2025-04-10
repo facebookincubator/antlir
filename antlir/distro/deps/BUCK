@@ -24,6 +24,7 @@ image.layer(
             # worlds
             "clang",
         ]),
+        "//antlir/distro:cleanup",
     ],
     rootless = True,
     visibility = [],

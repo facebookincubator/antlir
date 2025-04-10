@@ -12,6 +12,7 @@ image.layer(
             "lld",
             "llvm",
         ]),
+        "//antlir/distro:cleanup",
     ],
 )
 
