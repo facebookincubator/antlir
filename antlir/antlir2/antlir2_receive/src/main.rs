@@ -8,12 +8,10 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::process::Command;
 
 use antlir2_btrfs::Subvolume;
 use antlir2_cas_dir::CasDir;
 use antlir2_working_volume::WorkingVolume;
-use anyhow::anyhow;
 use anyhow::Context;
 use clap::Parser;
 use clap::ValueEnum;
@@ -22,7 +20,8 @@ use tracing::warn;
 use tracing_subscriber::prelude::*;
 
 #[cfg(facebook)]
-mod caf;
+mod facebook;
+mod sendstream;
 
 #[derive(Parser, Debug)]
 /// Receive a pre-built image package into the local working volume.
@@ -121,50 +120,7 @@ impl Receive {
 
         match self.format {
             Format::Sendstream => {
-                // make sure that working_dir is btrfs before we try to invoke
-                // 'btrfs' so that we can fail with a nicely categorized error
-                antlir2_btrfs::ensure_path_is_on_btrfs(&self.setup.working_dir)?;
-
-                let recv_tmp = tempfile::tempdir_in(&self.setup.working_dir)?;
-                let mut cmd = Command::new(self.btrfs);
-                cmd.arg("--quiet")
-                    .arg("receive")
-                    .arg(recv_tmp.path())
-                    .arg("-f")
-                    .arg(&self.source);
-                if self.rootless {
-                    cmd.arg("--force-decompress");
-                }
-                trace!("receiving sendstream: {cmd:?}");
-                let res = cmd.spawn()?.wait()?;
-                if !res.success() {
-                    return Err(anyhow!("btrfs-receive failed").into());
-                }
-                let entries: Vec<_> = std::fs::read_dir(&recv_tmp)
-                    .context("while reading tmp dir")?
-                    .map(|r| {
-                        r.map(|entry| entry.path())
-                            .context("while iterating tmp dir")
-                    })
-                    .collect::<anyhow::Result<_>>()?;
-                if entries.len() != 1 {
-                    return Err(
-                        anyhow!("did not get exactly one subvolume received: {entries:?}").into(),
-                    );
-                }
-
-                trace!("opening received subvol: {}", entries[0].display());
-                let mut subvol = Subvolume::open(&entries[0]).context("while opening subvol")?;
-                subvol
-                    .set_readonly(false)
-                    .context("while making subvol rw")?;
-
-                trace!(
-                    "moving received subvol to right location {} -> {}",
-                    subvol.path().display(),
-                    dst.display()
-                );
-                std::fs::rename(subvol.path(), &dst).context("while renaming subvol")?;
+                sendstream::recv_sendstream(&self, &dst)?;
             }
             Format::CasDir => {
                 let subvol = Subvolume::create(&dst).context("while creating subvol")?;
@@ -185,7 +141,7 @@ impl Receive {
             }
             #[cfg(facebook)]
             Format::Caf => {
-                caf::recv_caf(&self.source, &dst).context("while receiving caf")?;
+                facebook::caf::recv_caf(&self.source, &dst).context("while receiving caf")?;
             }
         };
         let mut subvol = Subvolume::open(&dst).context("while opening subvol")?;
