@@ -31,6 +31,8 @@ pub struct Ext3 {
 }
 
 const MAPPED_OUTPUT: &str = "/__antlir2__/out/ext3";
+const BLOCK_SIZE: u64 = 4096;
+const INODE_SIZE: u64 = 256;
 
 impl PackageFormat for Ext3 {
     fn build(&self, out: &Path, layer: &Path) -> Result<()> {
@@ -65,9 +67,17 @@ impl PackageFormat for Ext3 {
                     .into_iter()
                     .map(|entry| {
                         entry.context("while walking directory").and_then(|e| {
-                            e.metadata().map(|m| m.len()).with_context(|| {
+                            let size = e.metadata().map(|m| m.len()).with_context(|| {
                                 format!("while getting size of {}", e.path().display())
-                            })
+                            })?;
+                            if size < 60 {
+                                // small files can be stored entirely in the inode
+                                Ok(INODE_SIZE)
+                            } else {
+                                // otherwise a file makes up some number of
+                                // blocks, plus an inode
+                                Ok((size.div_ceil(BLOCK_SIZE) * BLOCK_SIZE) + INODE_SIZE)
+                            }
                         })
                     })
                     .collect::<Result<Vec<_>>>()?
