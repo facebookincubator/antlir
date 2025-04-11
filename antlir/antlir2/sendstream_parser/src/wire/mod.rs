@@ -43,7 +43,7 @@ fn parse_header<'a>(input: &'a [u8]) -> IResult<&'a [u8], u32> {
 /// Returns number of commands parsed.
 ///
 /// See https://btrfs.readthedocs.io/en/latest/dev/dev-send-stream.html for reference.
-pub async fn parse<'a, R, F>(mut reader: R, mut f: F) -> crate::Result<u128>
+pub async fn parse<R, F>(mut reader: R, mut f: F) -> crate::Result<u128>
 where
     R: AsyncRead + Unpin + Send,
     F: FnMut(&crate::Command<'_>) -> ParserControl + Send,
