@@ -111,10 +111,10 @@ macro_rules! parse_subtypes {
     ($hdr: expr, $cmd_data:expr, $($t:ident),+) => {
         match $hdr.ty {
             $(CommandType::$t => {
-                let (remaining, cmd) = crate::$t::parse($cmd_data).expect(concat!("failed to parse ", stringify!($t)));
-                (remaining, cmd.into())
+                let (remaining, cmd) = crate::$t::parse($cmd_data)?;
+                Ok((remaining, cmd.into()))
             }),+
-            CommandType::End => ($cmd_data, crate::Command::End),
+            CommandType::End => Ok(($cmd_data, crate::Command::End)),
             _ => {
                 unreachable!("all btrfs sendstream command types are covered, what is this? {:?}", $hdr)
             }
@@ -150,7 +150,7 @@ impl<'a> crate::Command<'a> {
             UpdateExtent,
             Utimes,
             Write
-        );
+        )?;
 
         assert!(cmd_remaining.is_empty(), "command length is wrong",);
         Ok((input, cmd))
