@@ -264,6 +264,9 @@ macro_rules! gen_attrs_code {
             PartialOrd,
             Ord,
         )]
+        // There might be unused enum variants since this is just copied
+        // directly from send.h and not everything is expected to be used
+        #[allow(dead_code)]
         pub(crate) enum $enm {
             $($v,)+
         }
@@ -279,6 +282,10 @@ macro_rules! gen_attrs_code {
         pub(crate) mod attr_types {
             /// Empty type used as type parameter for parse_tlv
             $(
+                // There might be unused enum variants since this is just copied
+                // directly from send.h and not everything is expected to be
+                // used
+                #[allow(dead_code)]
                 pub(crate) struct $v();
                 impl super::AttrTypeParam for $v {
                     fn attr() -> super::Attr {
