@@ -44,17 +44,23 @@ constraint_value(
 feature.new(
     name = "cleanup",
     features = [
-        # Remove some paths that have non-determinstic contents even if the RPMs
-        # don't change
-        # https://fb.workplace.com/groups/antlirusers/posts/2157436158021498
-        feature.remove(path = "/usr/lib/sysimage/rpm"),
-        feature.remove(path = "/var/lib/dnf"),
-        feature.remove(path = "/var/cache"),
-        feature.remove(path = "/etc/pki/ca-trust/extracted"),
-        # Remove cruft that we don't need
-        feature.remove(path = "/usr/share/man"),
-        feature.remove(path = "/usr/share/locale"),
-        feature.remove(path = "/usr/share/zoneinfo"),
+        feature.remove(
+            must_exist = False,
+            path = path,
+        )
+        for path in [
+            # Remove some paths that have non-determinstic contents even if the
+            # RPMs don't change
+            # https://fb.workplace.com/groups/antlirusers/posts/2157436158021498
+            "/usr/lib/sysimage/rpm",
+            "/var/lib/dnf",
+            "/var/cache",
+            "/etc/pki/ca-trust/extracted",
+            # Remove cruft that we don't need / is just a waste of disk space
+            "/usr/share/man",
+            "/usr/share/locale",
+            "/usr/share/zoneinfo",
+        ]
     ],
     visibility = ["//antlir/distro/..."],
 )
