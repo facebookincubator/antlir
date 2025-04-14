@@ -453,8 +453,7 @@ impl antlir2_compile::CompileFeature for Install {
             };
 
             if let Some(dst_file) = dst_file {
-                fchown(&dst_file, Some(uid.into()), Some(gid.into()))
-                    .map_err(std::io::Error::from)?;
+                fchown(&dst_file, Some(uid.into()), Some(gid.into()))?;
                 dst_file.set_permissions(Permissions::from_mode(self.mode.as_raw()))?;
 
                 // Sync the file times with the source. This is not strictly necessary

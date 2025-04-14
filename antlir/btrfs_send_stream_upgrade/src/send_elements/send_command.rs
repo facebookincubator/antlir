@@ -703,11 +703,10 @@ impl SendCommand {
             )?;
             metadata_attribute
                 .compress_space_check(&sub_context)
-                .map_err(|error| {
+                .inspect_err(|_error| {
                     // This could be a recoverable error, so return
                     // the subcontext
                     context.return_child(&mut sub_context);
-                    error
                 })?;
             metadata_attribute.persist(&mut sub_context)?;
             let metadata_attribute = SendAttribute::new_from_u64(
@@ -717,11 +716,10 @@ impl SendCommand {
             )?;
             metadata_attribute
                 .compress_space_check(&sub_context)
-                .map_err(|error| {
+                .inspect_err(|_error| {
                     // This could be a recoverable error, so return
                     // the subcontext
                     context.return_child(&mut sub_context);
-                    error
                 })?;
             metadata_attribute.persist(&mut sub_context)?;
             let metadata_attribute = SendAttribute::new_from_u64(
@@ -731,11 +729,10 @@ impl SendCommand {
             )?;
             metadata_attribute
                 .compress_space_check(&sub_context)
-                .map_err(|error| {
+                .inspect_err(|_error| {
                     // This could be a recoverable error, so return
                     // the subcontext
                     context.return_child(&mut sub_context);
-                    error
                 })?;
             metadata_attribute.persist(&mut sub_context)?;
             let metadata_attribute = SendAttribute::new_from_u32(
@@ -745,11 +742,10 @@ impl SendCommand {
             )?;
             metadata_attribute
                 .compress_space_check(&sub_context)
-                .map_err(|error| {
+                .inspect_err(|_error| {
                     // This could be a recoverable error, so return
                     // the subcontext
                     context.return_child(&mut sub_context);
-                    error
                 })?;
             metadata_attribute.persist(&mut sub_context)?;
             extra_bytes_written = sub_context.get_write_offset() - start_offset;
@@ -1177,9 +1173,9 @@ impl SendCommand {
     /// For the clone-on-receive prototype to work, the following must be true:
     /// * The write command to be cloned must not be encoded
     /// * The size of the data payload of the write command should be aligned to
-    /// the page size
+    ///   the page size
     /// * The data payload of the write command should start at a page offset
-    /// from the start of the send stream file
+    ///   from the start of the send stream file
     ///
     /// The pad command helps achieve this last requirement.
     ///

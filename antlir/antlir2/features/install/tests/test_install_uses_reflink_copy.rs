@@ -52,7 +52,7 @@ impl Default for Req {
     fn default() -> Self {
         Self {
             fm_start: 0,
-            fm_length: u64::max_value(),
+            fm_length: u64::MAX,
             fm_flags: 0,
             fm_mapped_extents: 0,
             fm_extent_count: PAGESIZE as u32,

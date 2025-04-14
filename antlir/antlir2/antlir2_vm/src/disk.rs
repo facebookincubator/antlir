@@ -83,7 +83,7 @@ impl QCow2Disk {
                 let mut cmd = Command::new("qemu-img");
                 cmd.arg("resize")
                     .arg(self.disk_file_name().as_os_str())
-                    .arg(&format!("+{}M", size));
+                    .arg(format!("+{}M", size));
                 run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskUpsizeError)?;
             }
         }

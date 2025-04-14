@@ -136,14 +136,14 @@ fn thrift_compat() {
     assert_eq!(
         union_old::Int(42),
         fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(
-            &union_new::Int(42)
+            union_new::Int(42)
         ))
         .expect("could not deserialize union_new as union_old"),
     );
     assert_eq!(
         union_new::Int(42),
         fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(
-            &union_old::Int(42)
+            union_old::Int(42)
         ))
         .expect("could not deserialize union_old as union_new"),
     );

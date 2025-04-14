@@ -246,6 +246,7 @@ fn no_unexpected_files() {
         }
         all_files.insert(path);
     }
+    #[allow(unused_mut)]
     let mut expected_files: BTreeSet<_> = [
         "absolute-dir-symlink",
         "absolute-file-symlink",
