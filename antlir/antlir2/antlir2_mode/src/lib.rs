@@ -89,7 +89,7 @@ impl Mode {
         Permissions(((self.0) & 0b111) as u8)
     }
 
-    fn parse<'a, E>(input: &'a str) -> IResult<&str, Self, E>
+    fn parse<'a, E>(input: &'a str) -> IResult<&'a str, Self, E>
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
@@ -204,7 +204,7 @@ impl Permissions {
         (self.0 & 0b001) != 0
     }
 
-    fn parse<'a, E>(input: &'a str) -> IResult<&str, (bool, Self), E>
+    fn parse<'a, E>(input: &'a str) -> IResult<&'a str, (bool, Self), E>
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {

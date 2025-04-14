@@ -63,7 +63,7 @@ pub(crate) struct PCIBridges(Vec<PCIBridge>);
 
 impl PCIBridges {
     pub(crate) fn new(num_devices: usize) -> Result<Self> {
-        let num_bridges = (num_devices + DEVICE_PER_BRIDGE - 1) / DEVICE_PER_BRIDGE;
+        let num_bridges = num_devices.div_ceil(DEVICE_PER_BRIDGE);
         let bridges: Result<Vec<_>> = (0..num_bridges)
             .map(|i| -> Result<PCIBridge> { PCIBridge::new(i, i + 1) })
             .collect();

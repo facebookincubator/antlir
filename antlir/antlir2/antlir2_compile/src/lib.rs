@@ -291,7 +291,6 @@ impl PluginExt for antlir2_features::Plugin {
     ) -> Result<libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn CompileFeature>>>>
     {
         self.get_symbol(b"as_compile_feature\0")
-            .map_err(antlir2_features::Error::from)
             .map_err(Error::from)
     }
 }

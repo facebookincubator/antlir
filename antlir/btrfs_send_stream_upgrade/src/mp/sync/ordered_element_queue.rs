@@ -45,7 +45,7 @@ struct OrderedElementQueueInternal<T: OrderedElement> {
 ///        11 - 11 (shared) -> Item 2
 ///                11 - 15 (not shared) -> Item 3
 /// * All items from 0 to 15 are present exactly once except for 11, which has
-/// been marked as shared.
+///   been marked as shared.
 ///
 /// These are bad sets of items that will result in deadlocks:
 ///

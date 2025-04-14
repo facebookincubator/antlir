@@ -67,7 +67,7 @@ impl antlir2_compile::CompileFeature for EnsureDirExists {
             Ok(_) => {
                 let uid = ctx.uid(&self.user)?;
                 let gid = ctx.gid(&self.group)?;
-                chown(&dst, Some(uid.into()), Some(gid.into())).map_err(std::io::Error::from)?;
+                chown(&dst, Some(uid.into()), Some(gid.into()))?;
                 std::fs::set_permissions(&dst, Permissions::from_mode(self.mode.0))?;
             }
             Err(e) => match e.kind() {
