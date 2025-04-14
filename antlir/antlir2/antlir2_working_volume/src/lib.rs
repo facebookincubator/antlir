@@ -8,18 +8,16 @@
 #![feature(duration_constructors)]
 
 use std::fmt::Debug;
+use std::fs::OpenOptions;
 use std::io::ErrorKind;
-use std::os::fd::AsRawFd;
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use nix::dir::Dir;
-use nix::errno::Errno;
-use nix::fcntl::flock;
+use nix::fcntl::Flock;
 use nix::fcntl::FlockArg;
-use nix::fcntl::OFlag;
-use nix::sys::stat::Mode;
+use nix::libc;
 use tracing::trace;
 use uuid::Uuid;
 
@@ -79,11 +77,16 @@ impl WorkingVolume {
     pub fn ensure(path: PathBuf) -> Result<Self> {
         // If we're on Eden, create a new redirection
         // https://www.internalfb.com/intern/wiki/EdenFS/detecting-an-eden-mount/#on-linux-and-macos
-        match Dir::open(".eden", OFlag::O_RDONLY, Mode::empty()) {
+        match OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_DIRECTORY)
+            .open(".eden")
+        {
             Ok(dir) => {
                 // There seems to be some racy behavior with eden adding
                 // redirects, take an exclusive lock before adding
-                flock(dir.as_raw_fd(), FlockArg::LockExclusive).map_err(std::io::Error::from)?;
+                let _locked_dir = Flock::lock(dir, FlockArg::LockExclusive)
+                    .map_err(|(_fd, err)| std::io::Error::from(err))?;
                 if !path.exists() {
                     let mut cmd = Command::new("eden");
                     let res = cmd
@@ -114,8 +117,8 @@ impl WorkingVolume {
                 }
                 Ok(Self { path })
             }
-            Err(e) => match e {
-                Errno::ENOENT => {
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => {
                     trace!("no .eden: {e:?}");
                     if let Err(e) = std::fs::create_dir(&path) {
                         match e.kind() {
@@ -126,7 +129,7 @@ impl WorkingVolume {
                         Ok(Self { path })
                     }
                 }
-                _ => Err(Error::CheckEden(std::io::Error::from(e))),
+                _ => Err(Error::CheckEden(e)),
             },
         }
     }
