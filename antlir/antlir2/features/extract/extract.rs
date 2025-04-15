@@ -86,12 +86,12 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
                 // not explode in this case. This env var has no effect when
                 // running on the native host (x86_64 or aarch64).
                 // TODO: Remove this after the issue is found and fixed with qemu-aarch64.
-                .setenv(("QEMU_RESERVED_VA", "0x40000000"))
+                .setenv(("QEMU_RESERVED_VA", "0x80000000"))
                 .build(),
         )?
         .command(interpreter)?;
     } else {
-        cmd.env("QEMU_RESERVED_VA", "0x40000000");
+        cmd.env("QEMU_RESERVED_VA", "0x80000000");
     }
 
     cmd.arg("--list").arg(binary);
