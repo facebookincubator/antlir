@@ -28,9 +28,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub use isolate_cfg::InvocationType;
 pub use isolate_cfg::IsolationContext;
 pub use isolate_unshare::mount::unshare_and_privatize_mount_ns;
-/// Set up an isolated environment to run a compilation process.
-pub use sys::nspawn;
-pub use sys::unshare;
 /// Dynamic information about the isolated environment that might be necessary
 /// for the image build.
 pub use sys::IsolatedContext;
+/// Set up an isolated environment to run a compilation process.
+pub use sys::nspawn;
+pub use sys::unshare;

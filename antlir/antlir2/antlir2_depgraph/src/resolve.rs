@@ -18,10 +18,10 @@ use tracing::error;
 #[cfg(test)]
 use tracing::trace;
 
-use crate::fact_interop::FactExt;
 use crate::Error;
 use crate::ItemKey;
 use crate::Result;
+use crate::fact_interop::FactExt;
 
 fn get_path_item(conn: &Connection, path: &Path) -> Result<Option<PathItem>> {
     let key = ItemKey::Path(path.to_owned());

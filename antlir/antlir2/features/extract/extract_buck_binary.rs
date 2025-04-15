@@ -11,20 +11,20 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use antlir2_compile::CompilerContext;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::FsEntry;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::Path as PathItem;
-use antlir2_depgraph_if::Requirement;
-use antlir2_depgraph_if::Validator;
 use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::PathInLayer;
 use extract::copy_dep;
-use serde::de::Deserializer;
-use serde::de::Error as _;
 use serde::Deserialize;
 use serde::Serialize;
+use serde::de::Deserializer;
+use serde::de::Error as _;
 use tracing::trace;
 
 pub type Feature = ExtractBuckBinary;

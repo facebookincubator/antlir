@@ -9,13 +9,13 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 
-use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
+use antlir2_isolate::unshare;
 use antlir2_overlayfs::OverlayFs;
-use anyhow::anyhow;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
+use anyhow::ensure;
 use clap::Parser;
 use clap::ValueEnum;
 use nix::unistd::Gid;

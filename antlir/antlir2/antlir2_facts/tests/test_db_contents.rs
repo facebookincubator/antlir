@@ -9,11 +9,11 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
 
+use antlir2_facts::RoDatabase;
 use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
-use antlir2_facts::RoDatabase;
 use tracing_test::traced_test;
 
 fn open_db() -> RoDatabase {

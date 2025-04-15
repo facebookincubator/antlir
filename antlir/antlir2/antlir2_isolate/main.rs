@@ -9,11 +9,11 @@ use std::collections::HashSet;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolationContext;
-use anyhow::ensure;
+use antlir2_isolate::nspawn;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use clap::Parser;
 use tracing_subscriber::prelude::*;
 

@@ -11,12 +11,12 @@ use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
 
-use antlir2_isolate::nspawn;
-use antlir2_isolate::unshare;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
-use anyhow::anyhow;
+use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use anyhow::Context;
+use anyhow::anyhow;
 use clap::Parser;
 use tracing_subscriber::filter;
 use tracing_subscriber::prelude::*;

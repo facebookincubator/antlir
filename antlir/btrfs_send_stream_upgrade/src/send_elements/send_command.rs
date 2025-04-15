@@ -15,8 +15,8 @@ use slog::info;
 use slog::trace;
 
 use crate::send_elements::send_attribute::SendAttribute;
-use crate::send_elements::send_attribute_header::BtrfsSendAttributeType;
 use crate::send_elements::send_attribute_header::BTRFS_ENCODED_IO_COMPRESSION_ZSTD;
+use crate::send_elements::send_attribute_header::BtrfsSendAttributeType;
 use crate::send_elements::send_command_header::SendCommandHeader;
 use crate::send_elements::send_version::SendVersion;
 use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;

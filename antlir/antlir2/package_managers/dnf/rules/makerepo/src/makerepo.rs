@@ -11,17 +11,17 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use clap::Parser;
 use clap::ValueEnum;
-use flate2::write::GzEncoder;
 use flate2::GzBuilder;
+use flate2::write::GzEncoder;
+use quick_xml::Writer as XmlWriter;
 use quick_xml::events::BytesEnd;
 use quick_xml::events::BytesStart;
 use quick_xml::events::Event;
-use quick_xml::Writer as XmlWriter;
 use serde::Deserialize;
 
 #[derive(Debug, Parser)]

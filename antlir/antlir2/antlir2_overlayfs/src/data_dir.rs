@@ -13,8 +13,8 @@
 //! This module contains functions to mangle and unmangle these directories.
 
 use std::ffi::OsStr;
-use std::fs::create_dir_all;
 use std::fs::File;
+use std::fs::create_dir_all;
 use std::os::unix::ffi::OsStrExt as _;
 use std::os::unix::fs::FileTypeExt as _;
 use std::path::Path;

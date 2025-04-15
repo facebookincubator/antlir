@@ -21,12 +21,12 @@ use antlir2_features::Feature;
 use buck_label::Label;
 use cap_std::fs::Dir;
 use nix::libc;
-use openat2::openat2;
 use openat2::OpenHow;
 use openat2::ResolveFlags;
-use serde::de::DeserializeOwned;
+use openat2::openat2;
 use serde::Deserialize;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 pub mod util;
 

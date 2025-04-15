@@ -11,11 +11,11 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
-use anyhow::ensure;
+use antlir2_isolate::unshare;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use chrono::prelude::*;
 use itertools::Itertools;
 #[cfg(feature = "libcap")]
@@ -26,9 +26,9 @@ use nix::unistd::Uid;
 use nix::unistd::User;
 use serde::Deserialize;
 
-use crate::run_cmd;
 use crate::BuildAppliance;
 use crate::PackageFormat;
+use crate::run_cmd;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

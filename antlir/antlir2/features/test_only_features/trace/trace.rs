@@ -6,8 +6,8 @@
  */
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::item::Item;
 use antlir2_features as _;
 use serde::Deserialize;
 use serde::Serialize;

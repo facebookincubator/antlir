@@ -13,11 +13,11 @@ use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::Duration;
 
-use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
-use anyhow::ensure;
+use antlir2_isolate::unshare;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use clap::Parser;
 use json_arg::JsonFile;
 

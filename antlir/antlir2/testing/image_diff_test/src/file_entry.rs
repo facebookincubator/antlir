@@ -19,18 +19,18 @@ use antlir2_facts::fact::user::User;
 use antlir2_mode::Mode;
 use anyhow::Context;
 use anyhow::Result;
+use base64::Engine;
 use base64::alphabet::STANDARD;
+use base64::engine::DecodePaddingMode;
 use base64::engine::general_purpose::GeneralPurpose;
 use base64::engine::general_purpose::GeneralPurposeConfig;
-use base64::engine::DecodePaddingMode;
-use base64::Engine;
 use md5::Digest;
 use md5::Md5;
-use serde::de::Error as _;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_with::serde_as;
+use serde::de::Error as _;
 use serde_with::DisplayFromStr;
+use serde_with::serde_as;
 
 // Bring back the pre 0.20 bevahiour and allow either padded or un-padded base64 strings at decode time.
 const STANDARD_INDIFFERENT: GeneralPurpose = GeneralPurpose::new(

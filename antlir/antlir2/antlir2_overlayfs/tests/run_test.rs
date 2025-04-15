@@ -9,9 +9,9 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_overlayfs::OverlayFs;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use clap::Parser;
 use json_arg::JsonFile;
 use tracing::trace;

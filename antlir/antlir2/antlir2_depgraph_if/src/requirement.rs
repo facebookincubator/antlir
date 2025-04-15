@@ -10,8 +10,8 @@ use std::fmt::Debug;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::item::ItemKey;
 use crate::Validator;
+use crate::item::ItemKey;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Requirement {

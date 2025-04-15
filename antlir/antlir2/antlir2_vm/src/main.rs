@@ -22,9 +22,9 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command;
 
+use anyhow::Context;
 use anyhow::anyhow;
 use anyhow::bail;
-use anyhow::Context;
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
@@ -37,8 +37,8 @@ use tracing::debug;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::prelude::*;
 
-use crate::isolation::isolated;
 use crate::isolation::Platform;
+use crate::isolation::isolated;
 use crate::share::NinePShare;
 use crate::share::VirtiofsShare;
 use crate::types::MachineOpts;
@@ -48,8 +48,8 @@ use crate::utils::create_tpx_blobs;
 use crate::utils::create_tpx_logs;
 use crate::utils::env_names_to_kvpairs;
 use crate::utils::log_command;
-use crate::vm::VMError;
 use crate::vm::VM;
+use crate::vm::VMError;
 
 type Result<T> = std::result::Result<T, anyhow::Error>;
 

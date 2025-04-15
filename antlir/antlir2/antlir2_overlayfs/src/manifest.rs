@@ -12,28 +12,28 @@
 //! antlir2_overlayfs layer to/from a format that RE/CAS can safely record.
 
 use std::ffi::OsStr;
-use std::fs::create_dir_all;
 use std::fs::OpenOptions;
 use std::fs::Permissions;
+use std::fs::create_dir_all;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::ffi::OsStringExt;
-use std::os::unix::fs::fchown;
-use std::os::unix::fs::symlink;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::fchown;
+use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::bail;
 use nix::fcntl::OFlag;
-use nix::sys::stat::makedev;
-use nix::sys::stat::mknod;
 use nix::sys::stat::Mode;
 use nix::sys::stat::SFlag;
+use nix::sys::stat::makedev;
+use nix::sys::stat::mknod;
 use nix::unistd::mkfifo;
 use serde::Deserialize;
 use serde::Serialize;

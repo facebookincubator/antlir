@@ -9,10 +9,10 @@ use std::path::Path;
 
 use cap_std::fs::Dir;
 
-use crate::compare;
 use crate::Change;
 use crate::Contents;
 use crate::Result;
+use crate::compare;
 
 pub struct Iter<C> {
     rx: std::sync::mpsc::IntoIter<Result<Change<C>>>,

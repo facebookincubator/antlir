@@ -5,10 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use nix::mount::mount;
 use nix::mount::MsFlags;
-use nix::sched::unshare;
+use nix::mount::mount;
 use nix::sched::CloneFlags;
+use nix::sched::unshare;
 
 /// Unshare into a new mount namespace and make it private so that any new
 /// mounts can't escape back ot the parent mount namespace.

@@ -7,8 +7,8 @@
 
 use std::path::PathBuf;
 
-use structopt::clap::AppSettings;
 use structopt::StructOpt;
+use structopt::clap::AppSettings;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(about = "Command to upgrade a btrfs send stream")]

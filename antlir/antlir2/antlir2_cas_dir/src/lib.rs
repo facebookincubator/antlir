@@ -13,9 +13,9 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use nix::sys::stat::Mode;
 use nix::sys::stat::SFlag;
 use nix::unistd::Gid;

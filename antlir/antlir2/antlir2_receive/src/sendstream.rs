@@ -9,9 +9,9 @@ use std::path::Path;
 use std::process::Command;
 
 use antlir2_btrfs::Subvolume;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use tracing::trace;
 
 use crate::Receive;

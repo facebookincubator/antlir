@@ -18,13 +18,13 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use antlir2_isolate::nspawn;
-use antlir2_isolate::unshare;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
-use anyhow::ensure;
+use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use bon::builder;
 use image_test_lib::Test;
 use tempfile::NamedTempFile;

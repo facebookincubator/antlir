@@ -15,9 +15,9 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::Context;
+use nix::mount::MsFlags;
 use nix::mount::mount;
 use nix::mount::umount;
-use nix::mount::MsFlags;
 use tracing::error;
 use tracing::trace;
 
