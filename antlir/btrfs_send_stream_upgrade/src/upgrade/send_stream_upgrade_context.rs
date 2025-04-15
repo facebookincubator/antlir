@@ -10,12 +10,12 @@ use std::mem;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use slog::crit;
-use slog::o;
-use slog::trace;
 use slog::Drain;
 use slog::Level;
 use slog::Logger;
+use slog::crit;
+use slog::o;
+use slog::trace;
 
 use crate::mp::sync::sync_container::SyncContainer;
 use crate::send_elements::send_version::SendVersion;

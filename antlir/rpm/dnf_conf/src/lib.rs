@@ -12,8 +12,8 @@ use configparser::ini::Ini;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_with::serde_as;
 use serde_with::DisplayFromStr;
+use serde_with::serde_as;
 use url::Url;
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]

@@ -12,12 +12,13 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use anyhow::anyhow;
 use anyhow::Context;
+use anyhow::anyhow;
 use clap::Parser;
 use regex::Regex;
 use sha2::Digest;
 use sha2::Sha256;
+use starlark::StarlarkResultExt;
 use starlark::any::ProvidesStaticType;
 use starlark::environment::FrozenModule;
 use starlark::environment::Globals;
@@ -29,16 +30,15 @@ use starlark::eval::FileLoader;
 use starlark::starlark_module;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
-use starlark::values::none::NoneType;
 use starlark::values::OwnedFrozenValue;
 use starlark::values::Value;
-use starlark::StarlarkResultExt;
+use starlark::values::none::NoneType;
+use test::TestFn;
 use test::test::ShouldPanic;
 use test::test::TestDesc;
 use test::test::TestDescAndFn;
 use test::test::TestName;
 use test::test::TestType;
-use test::TestFn;
 
 #[derive(Debug, ProvidesStaticType, Default)]
 struct FailStore(RefCell<Option<String>>);

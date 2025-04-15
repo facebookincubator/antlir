@@ -8,9 +8,9 @@
 use std::collections::BTreeSet;
 use std::fmt::Display;
 
+use antlir2_depgraph_if::Validator;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
-use antlir2_depgraph_if::Validator;
 use antlir2_features::Feature;
 
 use crate::Result;

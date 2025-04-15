@@ -8,10 +8,10 @@
 use std::borrow::Cow;
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph_if::item::Item;
-use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::Validator;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
 use antlir2_features::types::GroupName;
 use antlir2_features::types::UserName;
 use anyhow::Context;

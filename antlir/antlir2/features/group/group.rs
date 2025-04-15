@@ -6,17 +6,17 @@
  */
 
 use antlir2_compile::CompilerContext;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_depgraph_if::item::Group as GroupItem;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
-use antlir2_depgraph_if::Requirement;
-use antlir2_depgraph_if::Validator;
 use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::GroupName;
+use antlir2_users::GroupId;
 use antlir2_users::group::GroupRecord;
 use antlir2_users::group::GroupRecordPassword;
 use antlir2_users::uidmaps::UidMap;
-use antlir2_users::GroupId;
 use anyhow::Context;
 use serde::Deserialize;
 use serde::Serialize;

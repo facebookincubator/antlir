@@ -7,8 +7,8 @@
 
 use std::any::Any;
 
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 pub mod dir_entry;
 pub mod rpm;

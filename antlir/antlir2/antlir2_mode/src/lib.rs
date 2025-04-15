@@ -17,18 +17,18 @@ use std::fmt::Display;
 use std::os::unix::fs::PermissionsExt;
 use std::str::FromStr;
 
+use nom::Finish;
+use nom::IResult;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::oct_digit1;
 use nom::combinator::all_consuming;
-use nom::error::convert_error;
 use nom::error::ContextError;
 use nom::error::ParseError;
 use nom::error::VerboseError;
+use nom::error::convert_error;
 use nom::multi::many_m_n;
 use nom::multi::separated_list0;
-use nom::Finish;
-use nom::IResult;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]

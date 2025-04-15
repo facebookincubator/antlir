@@ -6,17 +6,17 @@
  */
 
 use std::fs::Permissions;
-use std::os::unix::fs::chown;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::chown;
 
 use antlir2_compile::CompilerContext;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::FsEntry;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::Path;
-use antlir2_depgraph_if::Requirement;
-use antlir2_depgraph_if::Validator;
 use antlir2_features::stat::Mode;
 use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;

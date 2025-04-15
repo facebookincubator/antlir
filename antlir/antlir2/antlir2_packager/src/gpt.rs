@@ -12,9 +12,9 @@ use std::io::SeekFrom;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
 use bytesize::ByteSize;
 use serde::Deserialize;
 use uuid::Uuid;

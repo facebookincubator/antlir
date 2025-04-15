@@ -14,13 +14,13 @@ use std::path::PathBuf;
 
 use antlir2_change_stream::Iter;
 use antlir2_change_stream::Operation;
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::bail;
 use clap::Parser;
+use nix::sys::stat::SFlag;
 use nix::sys::stat::major;
 use nix::sys::stat::minor;
-use nix::sys::stat::SFlag;
 use tar::Builder;
 use tar::EntryType;
 use tar::Header;

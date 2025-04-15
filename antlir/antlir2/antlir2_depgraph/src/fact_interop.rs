@@ -12,8 +12,8 @@ use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::FsEntry;
 use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::Path as PathItem;
-use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::Fact as _;
+use antlir2_facts::fact::dir_entry::DirEntry;
 
 pub(crate) trait ItemKeyExt {
     fn fact_kind(&self) -> &'static str;

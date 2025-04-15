@@ -7,9 +7,9 @@
 
 use std::process::Command;
 
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;

@@ -26,9 +26,9 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde::de::Error as _;
-use serde::Deserialize;
 
 pub trait DeserializeReader<T> {
     type Error;

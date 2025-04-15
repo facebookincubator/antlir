@@ -11,10 +11,10 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::path::PathBuf;
 
+use antlir2_facts::RoDatabase;
 use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
-use antlir2_facts::RoDatabase;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;

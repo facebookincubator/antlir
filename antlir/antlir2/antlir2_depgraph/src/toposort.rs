@@ -12,10 +12,10 @@ use petgraph::graph::DiGraph;
 use petgraph::visit::Dfs;
 use rusqlite::Connection;
 
-use crate::error::ContextExt;
 use crate::Cycle;
 use crate::Error;
 use crate::Result;
+use crate::error::ContextExt;
 
 /// Topologically sort pending features in dependency order
 pub(crate) fn toposort(db: &Connection) -> Result<Vec<Feature>> {

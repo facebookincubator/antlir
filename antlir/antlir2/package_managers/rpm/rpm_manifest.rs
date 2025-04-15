@@ -9,8 +9,8 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::PathBuf;
 
-use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::RoDatabase;
+use antlir2_facts::fact::rpm::Rpm;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;

@@ -13,11 +13,11 @@ use std::path::Path;
 
 use anyhow::Context;
 use anyhow::Result;
-use libc::c_char;
-use libc::c_uint;
 use libc::AT_FDCWD;
 use libc::AT_RECURSIVE;
 use libc::AT_SYMLINK_NOFOLLOW;
+use libc::c_char;
+use libc::c_uint;
 use rustix::mount::MountAttrFlags;
 
 #[repr(C)]

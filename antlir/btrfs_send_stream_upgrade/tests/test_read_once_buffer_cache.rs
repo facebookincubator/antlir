@@ -16,8 +16,8 @@ pub use btrfs_send_stream_upgrade_lib::mp::sync::read_once_buffer_cache::ReadOnc
 pub use btrfs_send_stream_upgrade_lib::send_elements::send_version::SendVersion;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
-use rand::thread_rng;
 use rand::Rng;
+use rand::thread_rng;
 use structopt::StructOpt;
 
 const FIVE_MILLISECONDS: time::Duration = time::Duration::from_millis(5);

@@ -8,11 +8,11 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::RoDatabase;
-use anyhow::ensure;
+use antlir2_facts::fact::rpm::Rpm;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use clap::Parser;
 
 #[derive(Parser)]

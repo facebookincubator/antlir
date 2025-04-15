@@ -14,12 +14,12 @@ use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 use antlir2_compile::CompilerContext;
-use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::item::Item;
 use antlir2_features::types::UserName;
-use antlir2_isolate::sys::unshare;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
+use antlir2_isolate::sys::unshare;
 use anyhow::Context;
 use itertools::Itertools;
 use serde::Deserialize;

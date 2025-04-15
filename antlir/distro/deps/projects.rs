@@ -9,15 +9,15 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use serde::ser::SerializeTuple;
-use serde::ser::Serializer;
+use anyhow::ensure;
 use serde::Deserialize;
 use serde::Serialize;
-use signedsource::sign_with_generated_header;
+use serde::ser::SerializeTuple;
+use serde::ser::Serializer;
 use signedsource::Comment;
+use signedsource::sign_with_generated_header;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename = "struct")]

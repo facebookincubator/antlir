@@ -9,9 +9,9 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command;
 
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::ensure;
 use clap::Parser;
 use regex::Regex;
 

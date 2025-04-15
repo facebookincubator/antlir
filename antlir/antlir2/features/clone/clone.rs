@@ -11,15 +11,15 @@ use std::collections::HashSet;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
-use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::CompilerContext;
+use antlir2_compile::util::copy_with_metadata;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
 use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::FsEntry;
 use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::Path as PathItem;
-use antlir2_depgraph_if::Requirement;
-use antlir2_depgraph_if::Validator;
 use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;

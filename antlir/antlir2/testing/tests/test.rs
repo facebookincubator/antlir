@@ -8,8 +8,8 @@
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
-use nix::unistd::getuid;
 use nix::unistd::User;
+use nix::unistd::getuid;
 use rustix::fs::statfs;
 
 #[test]

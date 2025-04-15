@@ -13,12 +13,12 @@ use cap_std::fs::MetadataExt;
 use cap_std::fs::OpenOptions;
 use cap_std::fs::OpenOptionsExt;
 
+use super::Instruction;
 use super::maybe_chmod;
 use super::maybe_chown;
 use super::maybe_set_times;
 use super::sanitize_mode;
 use super::xattr_ops;
-use super::Instruction;
 use crate::Change;
 use crate::Operation;
 use crate::Result;

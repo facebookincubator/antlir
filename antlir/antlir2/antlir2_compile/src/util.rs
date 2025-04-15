@@ -8,8 +8,8 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::fs::FileTimes;
-use std::os::unix::fs::fchown;
 use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::fchown;
 use std::path::Path;
 
 use tracing::trace;

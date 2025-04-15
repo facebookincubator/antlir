@@ -13,10 +13,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use allocative::Allocative;
+use anyhow::Context;
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::ensure;
-use anyhow::Context;
 use clap::Parser;
 use derive_more::Deref;
 use derive_more::Display;
@@ -34,10 +34,6 @@ use starlark::starlark_module;
 use starlark::starlark_simple_value;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
-use starlark::values::dict::UnpackDictEntries;
-use starlark::values::list_or_tuple::UnpackListOrTuple;
-use starlark::values::starlark_value;
-use starlark::values::structs::AllocStruct;
 use starlark::values::AllocValue;
 use starlark::values::FreezeErrorContext;
 use starlark::values::NoSerialize;
@@ -46,6 +42,10 @@ use starlark::values::StringValue;
 use starlark::values::UnpackValue;
 use starlark::values::Value;
 use starlark::values::ValueLike;
+use starlark::values::dict::UnpackDictEntries;
+use starlark::values::list_or_tuple::UnpackListOrTuple;
+use starlark::values::starlark_value;
+use starlark::values::structs::AllocStruct;
 
 fn bzl_globals() -> GlobalsBuilder {
     GlobalsBuilder::extended_by(&[

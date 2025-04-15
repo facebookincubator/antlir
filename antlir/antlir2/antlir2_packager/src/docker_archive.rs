@@ -10,14 +10,14 @@ use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
 
-use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
+use antlir2_isolate::unshare;
 use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
 
-use crate::run_cmd;
 use crate::BuildAppliance;
+use crate::run_cmd;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

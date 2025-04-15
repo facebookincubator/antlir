@@ -10,14 +10,14 @@
 use std::ffi::OsString;
 use std::process::Command;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
 use clap::Parser;
 use isolate_cfg::IsolationContext;
 use json_arg::Json;
-use nix::sched::unshare;
 use nix::sched::CloneFlags;
+use nix::sched::unshare;
 
 mod isolation;
 pub(crate) mod net;

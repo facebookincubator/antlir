@@ -16,29 +16,29 @@ use std::path::Path;
 use std::str::FromStr;
 
 use maplit::btreemap;
+use nom::Finish;
+use nom::IResult;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
 use nom::character::complete::newline;
 use nom::combinator::all_consuming;
-use nom::error::context;
-use nom::error::convert_error;
 use nom::error::ContextError;
 use nom::error::ParseError;
 use nom::error::VerboseError;
+use nom::error::context;
+use nom::error::convert_error;
 use nom::multi::many0;
 use nom::multi::separated_list0;
 use nom::sequence::tuple;
-use nom::Finish;
-use nom::IResult;
 
-use crate::shadow::ShadowRecord;
-use crate::shadow::ShadowRecordPassword;
 use crate::Error;
 use crate::GroupId;
 use crate::Id;
 use crate::Result;
 use crate::UserId;
+use crate::shadow::ShadowRecord;
+use crate::shadow::ShadowRecordPassword;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EtcPasswd<'a> {

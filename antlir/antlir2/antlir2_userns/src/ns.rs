@@ -8,10 +8,10 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
+use anyhow::anyhow;
 use serde::Deserialize;
 use serde::Serialize;
 

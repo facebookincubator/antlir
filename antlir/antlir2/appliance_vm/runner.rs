@@ -18,9 +18,9 @@ use std::process::Command;
 use std::process::Stdio;
 use std::time::Duration;
 
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::bail;
 use clap::Parser;
 use tracing::error;
 use tracing::trace;

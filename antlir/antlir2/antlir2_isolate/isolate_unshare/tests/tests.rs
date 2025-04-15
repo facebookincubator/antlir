@@ -9,10 +9,10 @@
 
 use std::path::Path;
 
-use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
-use nix::mount::mount;
+use antlir2_isolate::unshare;
 use nix::mount::MsFlags;
+use nix::mount::mount;
 use tempfile::TempDir;
 
 fn assert_cmd_success(out: &std::process::Output) {

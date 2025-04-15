@@ -37,12 +37,12 @@ pub fn find_repo_root(path_in_repo: impl AsRef<Path>) -> Result<PathBuf, FindRoo
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
     use std::fs::create_dir;
     use std::fs::create_dir_all;
-    use std::fs::File;
 
-    use anyhow::anyhow;
     use anyhow::Result;
+    use anyhow::anyhow;
     use tempfile::TempDir;
 
     use super::*;

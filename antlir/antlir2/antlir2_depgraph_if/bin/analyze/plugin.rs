@@ -7,9 +7,9 @@
 
 use std::fmt::Debug;
 
-use antlir2_depgraph_if::item::Item;
 use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::RequiresProvides;
+use antlir2_depgraph_if::item::Item;
 use antlir2_features::Feature;
 use anyhow::Context;
 use anyhow::Result;

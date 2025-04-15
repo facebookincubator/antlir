@@ -12,10 +12,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::Arch;
-use antlir2_isolate::unshare;
+use antlir2_compile::util::copy_with_metadata;
 use antlir2_isolate::IsolationContext;
+use antlir2_isolate::unshare;
 use antlir2_path::PathExt;
 use anyhow::Context;
 use anyhow::Result;
