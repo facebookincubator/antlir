@@ -9,6 +9,10 @@ oncall("antlir")
 feature.new(
     name = "test-only-login",
     features = [
+        feature.remove(
+            must_exist = False,
+            path = "/root/.ssh",
+        ),
         feature.ensure_subdirs_exist(
             group = "root",
             into_dir = "/root",
