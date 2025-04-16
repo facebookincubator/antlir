@@ -74,8 +74,8 @@ impl<P> fbthrift::Serialize<P> for ShapePath
 where
     P: fbthrift::ProtocolWriter,
 {
-    fn write(&self, p: &mut P) {
-        self.0.write(p)
+    fn rs_thrift_write(&self, p: &mut P) {
+        self.0.rs_thrift_write(p)
     }
 }
 
@@ -83,11 +83,11 @@ impl<P> fbthrift::Deserialize<P> for ShapePath
 where
     P: fbthrift::ProtocolReader,
 {
-    fn read(p: &mut P) -> anyhow::Result<Self>
+    fn rs_thrift_read(p: &mut P) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
-        String::read(p).map(Self)
+        String::rs_thrift_read(p).map(Self)
     }
 }
 

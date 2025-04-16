@@ -36,7 +36,7 @@ impl ::fbthrift::ttype::GetTType for {{name}} {
 impl<P> ::fbthrift::Serialize<P> for {{name}}
 where P: ::fbthrift::protocol::ProtocolWriter
 {
-    fn write(&self, p: &mut P) {
+    fn rs_thrift_write(&self, p: &mut P) {
         p.write_string(&self.to_string())
     }
 }
@@ -44,7 +44,7 @@ where P: ::fbthrift::protocol::ProtocolWriter
 impl<P> ::fbthrift::Deserialize<P> for {{name}}
 where P: ::fbthrift::protocol::ProtocolReader
 {
-    fn read(p: &mut P) -> ::anyhow::Result<Self>
+    fn rs_thrift_read(p: &mut P) -> ::anyhow::Result<Self>
     where Self: Sized {
         p.read_string()?.parse()
     }
