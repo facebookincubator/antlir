@@ -47,16 +47,16 @@ impl ::fbthrift::ttype::GetTType for {{name}} {
 impl<P> ::fbthrift::Serialize<P> for {{name}}
 where P: ::fbthrift::protocol::ProtocolWriter
 {
-    fn write(&self, p: &mut P) {
+    fn rs_thrift_write(&self, p: &mut P) {
         p.write_struct_begin("{{name}}");
         {{#each thrift_fields}}
         {{#if this.1.required}}
         p.write_field_begin("{{this.0}}", <{{type this.1.type}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@key}});
-        ::fbthrift::Serialize::write(&self.r#{{this.0}}, p);
+        ::fbthrift::Serialize::rs_thrift_write(&self.r#{{this.0}}, p);
         {{else}}
         if let Some(x) = &self.r#{{this.0}} {
             p.write_field_begin("{{this.0}}", <{{type this.1.type}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@key}});
-            ::fbthrift::Serialize::write(x, p);
+            ::fbthrift::Serialize::rs_thrift_write(x, p);
         }
         {{/if}}
         p.write_field_end();
@@ -70,7 +70,7 @@ impl<P> ::fbthrift::Deserialize<P> for {{name}}
 where
     P: ::fbthrift::ProtocolReader,
 {
-    fn read(p: &mut P) -> ::anyhow::Result<Self> {
+    fn rs_thrift_read(p: &mut P) -> ::anyhow::Result<Self> {
         {{#each thrift_fields}}
         {{#if (has-default-value this.1)}}
         {{#if this.1.required}}
@@ -95,7 +95,7 @@ where
             }
             {{#each thrift_fields}}
             else if (fty == <{{type this.1.type}} as ::fbthrift::ttype::GetTType>::TTYPE) && (fid == {{@key}}) {
-                r#field_{{this.0}} = ::std::option::Option::Some(::fbthrift::Deserialize::read(p)?);
+                r#field_{{this.0}} = ::std::option::Option::Some(::fbthrift::Deserialize::rs_thrift_read(p)?);
             }
             {{/each}}
             else {
