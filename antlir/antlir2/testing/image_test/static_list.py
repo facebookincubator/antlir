@@ -26,18 +26,26 @@ import sys
 def main():
     sys.argv.pop(0)
     which = sys.argv.pop(0)
-    spawn = sys.argv.pop(-4)
-    assert spawn == "spawn", f"expected to find and remove 'spawn', but saw {spawn}"
     if which == "cpp":
+        if sys.argv[-5] == "spawn":
+            sys.argv.pop(-5)
+        elif sys.argv[-4] == "spawn":
+            sys.argv.pop(-4)
+        else:
+            raise RuntimeError(
+                f"expected to find and remove 'spawn', but saw ({sys.argv[-5]}, {sys.argv[-4]})"
+            )
         parser = argparse.ArgumentParser()
         parser.add_argument("image_test_bin")
         parser.add_argument("--wrap", required=True)
         parser.add_argument("--spec", required=True)
         parser.add_argument("test_type", choices=["gtest"])
         parser.add_argument("cmd", nargs="+")
-        args = parser.parse_args(sys.argv)
-        os.execv(args.wrap, [args.wrap] + args.cmd)
+        args, extras = parser.parse_known_args(sys.argv)
+        os.execv(args.wrap, [args.wrap] + args.cmd + extras)
     if which == "py":
+        spawn = sys.argv.pop(-4)
+        assert spawn == "spawn", f"expected to find and remove 'spawn', but saw {spawn}"
         parser = argparse.ArgumentParser()
         parser.add_argument("--wrap", required=True)
         parser.add_argument("--spec", required=True)
