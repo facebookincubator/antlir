@@ -184,7 +184,7 @@ with open(args.metadata, "w") as f:
 split_binary = anon_rule(
     impl = _split_binary_impl,
     attrs = {
-        "cxx_toolchain": attrs.option(attrs.dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]), default = None),
+        "cxx_toolchain": attrs.option(attrs.toolchain_dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]), default = None),
         "objcopy": attrs.option(attrs.exec_dep(), default = None),
         "src": attrs.dep(),
     },
