@@ -268,6 +268,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         DefaultInfo(),
         FeatureAnalysis(
+            buck_only_data = struct(
+                original_source = ctx.attrs.src,
+            ),
             feature_type = "install",
             build_phase = BuildPhase(ctx.attrs.build_phase),
             data = struct(
