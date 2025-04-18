@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "d55b54e5c217523b4eadac10a0a5205b3173b661",
+    rev = "a7c6d79e25b5396160f94be9c4767ce927b108f3",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "3f7fd58d245ddd8838946177ce15e8e7ddac517d",
+    rev = "d48b37c8d1e6a6b95e89c9b714a83a53c523c748",
     visibility = [],
 )
 
@@ -16596,18 +16596,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "rand-0.9.0.crate",
-    sha256 = "3779b94aeb87e8bd4e834cee3650289ee9e0d5677f976ecdb6d219e5f4f6cd94",
-    strip_prefix = "rand-0.9.0",
-    urls = ["https://static.crates.io/crates/rand/0.9.0/download"],
+    name = "rand-0.9.1.crate",
+    sha256 = "9fbfd9d094a40bf3ae768db9361049ace4c0e04a4fd6b359518bd7b73a73dd97",
+    strip_prefix = "rand-0.9.1",
+    urls = ["https://static.crates.io/crates/rand/0.9.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rand-0.9.0",
-    srcs = [":rand-0.9.0.crate"],
+    name = "rand-0.9.1",
+    srcs = [":rand-0.9.1.crate"],
     crate = "rand",
-    crate_root = "rand-0.9.0.crate/src/lib.rs",
+    crate_root = "rand-0.9.1.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -16622,7 +16622,6 @@ cargo.rust_library(
     deps = [
         ":rand_chacha-0.9.0",
         ":rand_core-0.9.3",
-        ":zerocopy-0.8.24",
     ],
 )
 
@@ -21016,7 +21015,10 @@ cargo.rust_library(
     crate_root = "starlark-rust-a9d911d33fd77ff2/gazebo/strong_hash/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":strong_hash_derive-0.1.0"],
+    deps = [
+        ":ref-cast-1.0.24",
+        ":strong_hash_derive-0.1.0",
+    ],
 )
 
 cargo.rust_library(
@@ -23898,7 +23900,7 @@ cargo.rust_library(
         ":log-0.4.27",
         ":nix-0.29.0",
         ":proc-mounts-0.3.0",
-        ":rand-0.9.0",
+        ":rand-0.9.1",
         ":serde-1.0.219",
         ":serde_json-1.0.140",
         ":tempfile-3.19.1",
@@ -23932,7 +23934,7 @@ cargo.rust_binary(
         ":log-0.4.27",
         ":nix-0.29.0",
         ":proc-mounts-0.3.0",
-        ":rand-0.9.0",
+        ":rand-0.9.1",
         ":serde-1.0.219",
         ":serde_json-1.0.140",
         ":tempfile-3.19.1",
