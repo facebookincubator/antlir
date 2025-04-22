@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "7f807cf71b1985ff7197e4129ab98e4e36ac9431",
+    rev = "350955beef40abec1e9d13112c9d2b7f95c29022",
     visibility = [],
 )
 
@@ -1348,7 +1348,7 @@ cargo.rust_library(
                 ":async-io-2.4.0",
                 ":futures-io-0.3.31",
                 ":rustix-0.38.44",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
             ],
         ),
         "linux-x86_64": dict(
@@ -1356,7 +1356,7 @@ cargo.rust_library(
                 ":async-io-2.4.0",
                 ":futures-io-0.3.31",
                 ":rustix-0.38.44",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
             ],
         ),
         "macos-arm64": dict(
@@ -1364,7 +1364,7 @@ cargo.rust_library(
                 ":async-io-2.4.0",
                 ":futures-io-0.3.31",
                 ":rustix-0.38.44",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
             ],
         ),
         "macos-x86_64": dict(
@@ -1372,7 +1372,7 @@ cargo.rust_library(
                 ":async-io-2.4.0",
                 ":futures-io-0.3.31",
                 ":rustix-0.38.44",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
             ],
         ),
         "windows-gnu": dict(
@@ -2548,23 +2548,23 @@ cargo.rust_library(
 
 alias(
     name = "bon",
-    actual = ":bon-3.6.1",
+    actual = ":bon-3.6.3",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "bon-3.6.1.crate",
-    sha256 = "94054366e2ff97b455acdd4fdb03913f717febc57b7bbd1741b2c3b87efae030",
-    strip_prefix = "bon-3.6.1",
-    urls = ["https://static.crates.io/crates/bon/3.6.1/download"],
+    name = "bon-3.6.3.crate",
+    sha256 = "ced38439e7a86a4761f7f7d5ded5ff009135939ecb464a24452eaa4c1696af7d",
+    strip_prefix = "bon-3.6.3",
+    urls = ["https://static.crates.io/crates/bon/3.6.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "bon-3.6.1",
-    srcs = [":bon-3.6.1.crate"],
+    name = "bon-3.6.3",
+    srcs = [":bon-3.6.3.crate"],
     crate = "bon",
-    crate_root = "bon-3.6.1.crate/src/lib.rs",
+    crate_root = "bon-3.6.3.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -2573,24 +2573,24 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [
-        ":bon-macros-3.6.1",
+        ":bon-macros-3.6.3",
         ":rustversion-1.0.20",
     ],
 )
 
 http_archive(
-    name = "bon-macros-3.6.1.crate",
-    sha256 = "542a990e676ce0a0a895ae54b2d94afd012434f2228a85b186c6bc1a7056cdc6",
-    strip_prefix = "bon-macros-3.6.1",
-    urls = ["https://static.crates.io/crates/bon-macros/3.6.1/download"],
+    name = "bon-macros-3.6.3.crate",
+    sha256 = "0ce61d2d3844c6b8d31b2353d9f66cf5e632b3e9549583fe3cac2f4f6136725e",
+    strip_prefix = "bon-macros-3.6.3",
+    urls = ["https://static.crates.io/crates/bon-macros/3.6.3/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "bon-macros-3.6.1",
-    srcs = [":bon-macros-3.6.1.crate"],
+    name = "bon-macros-3.6.3",
+    srcs = [":bon-macros-3.6.3.crate"],
     crate = "bon_macros",
-    crate_root = "bon-macros-3.6.1.crate/src/lib.rs",
+    crate_root = "bon-macros-3.6.3.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     proc_macro = True,
@@ -3432,31 +3432,37 @@ buildscript_run(
 )
 
 http_archive(
-    name = "cap-primitives-3.4.3.crate",
-    sha256 = "50ad0183a9659850877cefe8f5b87d564b2dd1fe78b18945813687f29c0a6878",
-    strip_prefix = "cap-primitives-3.4.3",
-    urls = ["https://static.crates.io/crates/cap-primitives/3.4.3/download"],
+    name = "cap-primitives-3.4.4.crate",
+    sha256 = "0a1e394ed14f39f8bc26f59d4c0c010dbe7f0a1b9bafff451b1f98b67c8af62a",
+    strip_prefix = "cap-primitives-3.4.4",
+    urls = ["https://static.crates.io/crates/cap-primitives/3.4.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cap-primitives-3.4.3",
-    srcs = [":cap-primitives-3.4.3.crate"],
+    name = "cap-primitives-3.4.4",
+    srcs = [":cap-primitives-3.4.4.crate"],
     crate = "cap_primitives",
-    crate_root = "cap-primitives-3.4.3.crate/src/lib.rs",
+    crate_root = "cap-primitives-3.4.4.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [
+                ":rustix-1.0.5",
+                ":rustix-linux-procfs-0.1.1",
+            ],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [
+                ":rustix-1.0.5",
+                ":rustix-linux-procfs-0.1.1",
+            ],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [":rustix-1.0.5"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [":rustix-1.0.5"],
         ),
         "windows-gnu": dict(
             deps = [
@@ -3471,7 +3477,7 @@ cargo.rust_library(
             ],
         ),
     },
-    rustc_flags = ["@$(location :cap-primitives-3.4.3-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :cap-primitives-3.4.4-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":ambient-authority-0.0.2",
@@ -3484,84 +3490,84 @@ cargo.rust_library(
 )
 
 cargo.rust_binary(
-    name = "cap-primitives-3.4.3-build-script-build",
-    srcs = [":cap-primitives-3.4.3.crate"],
+    name = "cap-primitives-3.4.4-build-script-build",
+    srcs = [":cap-primitives-3.4.4.crate"],
     crate = "build_script_build",
-    crate_root = "cap-primitives-3.4.3.crate/build.rs",
+    crate_root = "cap-primitives-3.4.4.crate/build.rs",
     edition = "2021",
     visibility = [],
 )
 
 buildscript_run(
-    name = "cap-primitives-3.4.3-build-script-run",
+    name = "cap-primitives-3.4.4-build-script-run",
     package_name = "cap-primitives",
-    buildscript_rule = ":cap-primitives-3.4.3-build-script-build",
-    version = "3.4.3",
+    buildscript_rule = ":cap-primitives-3.4.4-build-script-build",
+    version = "3.4.4",
 )
 
 alias(
     name = "cap-std",
-    actual = ":cap-std-3.4.3",
+    actual = ":cap-std-3.4.4",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "cap-std-3.4.3.crate",
-    sha256 = "1c41814365b796ed12688026cb90a1e03236a84ccf009628f9c43c8aa3af250a",
-    strip_prefix = "cap-std-3.4.3",
-    urls = ["https://static.crates.io/crates/cap-std/3.4.3/download"],
+    name = "cap-std-3.4.4.crate",
+    sha256 = "07c0355ca583dd58f176c3c12489d684163861ede3c9efa6fd8bba314c984189",
+    strip_prefix = "cap-std-3.4.4",
+    urls = ["https://static.crates.io/crates/cap-std/3.4.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cap-std-3.4.3",
-    srcs = [":cap-std-3.4.3.crate"],
+    name = "cap-std-3.4.4",
+    srcs = [":cap-std-3.4.4.crate"],
     crate = "cap_std",
-    crate_root = "cap-std-3.4.3.crate/src/lib.rs",
+    crate_root = "cap-std-3.4.4.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :cap-std-3.4.3-build-script-run[out_dir])",
+        "OUT_DIR": "$(location :cap-std-3.4.4-build-script-run[out_dir])",
     },
     features = ["default"],
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [":rustix-1.0.5"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [":rustix-1.0.5"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [":rustix-1.0.5"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.44"],
+            deps = [":rustix-1.0.5"],
         ),
     },
-    rustc_flags = ["@$(location :cap-std-3.4.3-build-script-run[rustc_flags])"],
+    rustc_flags = ["@$(location :cap-std-3.4.4-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
-        ":cap-primitives-3.4.3",
+        ":cap-primitives-3.4.4",
         ":io-extras-0.18.4",
         ":io-lifetimes-2.0.4",
     ],
 )
 
 cargo.rust_binary(
-    name = "cap-std-3.4.3-build-script-build",
-    srcs = [":cap-std-3.4.3.crate"],
+    name = "cap-std-3.4.4-build-script-build",
+    srcs = [":cap-std-3.4.4.crate"],
     crate = "build_script_build",
-    crate_root = "cap-std-3.4.3.crate/build.rs",
+    crate_root = "cap-std-3.4.4.crate/build.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
 )
 
 buildscript_run(
-    name = "cap-std-3.4.3-build-script-run",
+    name = "cap-std-3.4.4-build-script-run",
     package_name = "cap-std",
-    buildscript_rule = ":cap-std-3.4.3-build-script-build",
+    buildscript_rule = ":cap-std-3.4.4-build-script-build",
     features = ["default"],
-    version = "3.4.3",
+    version = "3.4.4",
 )
 
 http_archive(
@@ -6890,7 +6896,7 @@ cargo.rust_library(
         ":anstream-0.6.18",
         ":anstyle-1.0.10",
         ":env_filter-0.1.3",
-        ":jiff-0.2.8",
+        ":jiff-0.2.10",
         ":log-0.4.27",
     ],
 )
@@ -10480,18 +10486,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "jiff-0.2.8.crate",
-    sha256 = "e5ad87c89110f55e4cd4dc2893a9790820206729eaf221555f742d540b0724a0",
-    strip_prefix = "jiff-0.2.8",
-    urls = ["https://static.crates.io/crates/jiff/0.2.8/download"],
+    name = "jiff-0.2.10.crate",
+    sha256 = "5a064218214dc6a10fbae5ec5fa888d80c45d611aba169222fc272072bf7aef6",
+    strip_prefix = "jiff-0.2.10",
+    urls = ["https://static.crates.io/crates/jiff/0.2.10/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "jiff-0.2.8",
-    srcs = [":jiff-0.2.8.crate"],
+    name = "jiff-0.2.10",
+    srcs = [":jiff-0.2.10.crate"],
     crate = "jiff",
-    crate_root = "jiff-0.2.8.crate/src/lib.rs",
+    crate_root = "jiff-0.2.10.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -11421,6 +11427,7 @@ cargo.rust_library(
         "general",
         "ioctl",
         "no_std",
+        "prctl",
     ],
     visibility = [],
 )
@@ -18258,17 +18265,14 @@ cargo.rust_library(
         "default",
         "event",
         "fs",
-        "itoa",
         "libc",
         "libc-extra-traits",
         "libc_errno",
         "mm",
         "mount",
         "net",
-        "once_cell",
         "pipe",
         "process",
-        "procfs",
         "std",
         "termios",
         "thread",
@@ -18284,7 +18288,6 @@ cargo.rust_library(
             deps = [
                 ":libc-0.2.172",
                 ":linux-raw-sys-0.4.15",
-                ":once_cell-1.21.3",
             ],
         ),
         "linux-x86_64": dict(
@@ -18294,7 +18297,6 @@ cargo.rust_library(
             deps = [
                 ":libc-0.2.172",
                 ":linux-raw-sys-0.4.15",
-                ":once_cell-1.21.3",
             ],
         ),
         "macos-arm64": dict(
@@ -18324,10 +18326,7 @@ cargo.rust_library(
     },
     rustc_flags = ["@$(location :rustix-0.38.44-build-script-run[rustc_flags])"],
     visibility = [],
-    deps = [
-        ":bitflags-2.9.0",
-        ":itoa-1.0.15",
-    ],
+    deps = [":bitflags-2.9.0"],
 )
 
 cargo.rust_binary(
@@ -18341,17 +18340,14 @@ cargo.rust_binary(
         "default",
         "event",
         "fs",
-        "itoa",
         "libc",
         "libc-extra-traits",
         "libc_errno",
         "mm",
         "mount",
         "net",
-        "once_cell",
         "pipe",
         "process",
-        "procfs",
         "std",
         "termios",
         "thread",
@@ -18371,17 +18367,14 @@ buildscript_run(
         "default",
         "event",
         "fs",
-        "itoa",
         "libc",
         "libc-extra-traits",
         "libc_errno",
         "mm",
         "mount",
         "net",
-        "once_cell",
         "pipe",
         "process",
-        "procfs",
         "std",
         "termios",
         "thread",
@@ -18413,6 +18406,7 @@ cargo.rust_library(
         "alloc",
         "default",
         "fs",
+        "process",
         "std",
         "termios",
         "time",
@@ -18476,6 +18470,7 @@ cargo.rust_binary(
         "alloc",
         "default",
         "fs",
+        "process",
         "std",
         "termios",
         "time",
@@ -18491,11 +18486,37 @@ buildscript_run(
         "alloc",
         "default",
         "fs",
+        "process",
         "std",
         "termios",
         "time",
     ],
     version = "1.0.5",
+)
+
+http_archive(
+    name = "rustix-linux-procfs-0.1.1.crate",
+    sha256 = "2fc84bf7e9aa16c4f2c758f27412dc9841341e16aa682d9c7ac308fe3ee12056",
+    strip_prefix = "rustix-linux-procfs-0.1.1",
+    urls = ["https://static.crates.io/crates/rustix-linux-procfs/0.1.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "rustix-linux-procfs-0.1.1",
+    srcs = [":rustix-linux-procfs-0.1.1.crate"],
+    crate = "rustix_linux_procfs",
+    crate_root = "rustix-linux-procfs-0.1.1.crate/src/lib.rs",
+    edition = "2021",
+    features = [
+        "default",
+        "std",
+    ],
+    visibility = [],
+    deps = [
+        ":once_cell-1.21.3",
+        ":rustix-1.0.5",
+    ],
 )
 
 alias(
@@ -20100,7 +20121,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":libc-0.2.172",
-        ":signal-hook-registry-1.4.2",
+        ":signal-hook-registry-1.4.5",
     ],
 )
 
@@ -20131,18 +20152,18 @@ buildscript_run(
 )
 
 http_archive(
-    name = "signal-hook-registry-1.4.2.crate",
-    sha256 = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1",
-    strip_prefix = "signal-hook-registry-1.4.2",
-    urls = ["https://static.crates.io/crates/signal-hook-registry/1.4.2/download"],
+    name = "signal-hook-registry-1.4.5.crate",
+    sha256 = "9203b8055f63a2a00e2f593bb0510367fe707d7ff1e5c872de2f537b339e5410",
+    strip_prefix = "signal-hook-registry-1.4.5",
+    urls = ["https://static.crates.io/crates/signal-hook-registry/1.4.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "signal-hook-registry-1.4.2",
-    srcs = [":signal-hook-registry-1.4.2.crate"],
+    name = "signal-hook-registry-1.4.5",
+    srcs = [":signal-hook-registry-1.4.5.crate"],
     crate = "signal_hook_registry",
-    crate_root = "signal-hook-registry-1.4.2.crate/src/lib.rs",
+    crate_root = "signal-hook-registry-1.4.5.crate/src/lib.rs",
     edition = "2015",
     visibility = [],
     deps = [":libc-0.2.172"],
@@ -22715,28 +22736,28 @@ cargo.rust_library(
         "linux-arm64": dict(
             deps = [
                 ":libc-0.2.172",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
                 ":socket2-0.5.9",
             ],
         ),
         "linux-x86_64": dict(
             deps = [
                 ":libc-0.2.172",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
                 ":socket2-0.5.9",
             ],
         ),
         "macos-arm64": dict(
             deps = [
                 ":libc-0.2.172",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
                 ":socket2-0.5.9",
             ],
         ),
         "macos-x86_64": dict(
             deps = [
                 ":libc-0.2.172",
-                ":signal-hook-registry-1.4.2",
+                ":signal-hook-registry-1.4.5",
                 ":socket2-0.5.9",
             ],
         ),
