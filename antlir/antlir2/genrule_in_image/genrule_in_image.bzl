@@ -85,6 +85,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         return ctx.actions.anon_target(layer_rule, {
             "antlir2": ctx.attrs._layer_antlir2,
             "flavor": ctx.attrs.flavor,
+            "name": "genrule_layer//{}:{}".format(ctx.label.package, ctx.label.name),
             "parent_layer": ctx.attrs.layer,
             "rootless": ctx.attrs._rootless,
             "target_arch": ctx.attrs._target_arch,
