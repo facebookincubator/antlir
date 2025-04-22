@@ -32,7 +32,10 @@ boost_system_library(
     name = "boost_thread",
     # TODO(T213442795): hardcoding this version is gross but antlir doesn't
     # understand ld scripts
-    path = "/usr/lib64/libboost_thread.so.1.75.0",
+    path = select({
+        "//antlir/antlir2/os:centos10": "/usr/lib64/libboost_thread.so.1.83.0",
+        "DEFAULT": "/usr/lib64/libboost_thread.so.1.75.0",
+    }),
     exported_deps = [":boost_system"],
 )
 

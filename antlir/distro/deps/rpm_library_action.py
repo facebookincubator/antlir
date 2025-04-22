@@ -32,19 +32,15 @@ def main():
                 dst = p.relative_to(subdir)
                 headers[dst] = p
     else:
-        rpm_files = {
-            Path(p)
-            for p in (
-                subprocess.run(
-                    ["rpm", "-q", "-l", args.rpm_name],
-                    check=True,
-                    text=True,
-                    capture_output=True,
-                )
-                .stdout.strip()
-                .splitlines()
+        try:
+            res = subprocess.run(
+                ["rpm", "-q", "-l", args.rpm_name],
+                text=True,
+                capture_output=True,
             )
-        }
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(res.stderr) from e
+        rpm_files = {Path(p) for p in (res.stdout.strip().splitlines())}
         rpm_headers = {p for p in rpm_files if INCLUDE_BASE in p.parents}
         for h in rpm_headers:
             dst = h.relative_to(INCLUDE_BASE)

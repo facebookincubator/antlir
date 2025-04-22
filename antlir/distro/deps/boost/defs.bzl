@@ -10,7 +10,7 @@ def boost_system_library(
         *,
         name: str,
         header_only: bool = False,
-        path: str | None = None,
+        path: str | Select | None = None,
         exported_deps: list[str] | None = None):
     if not name.startswith("boost"):
         fail("boost library should start with boost")
