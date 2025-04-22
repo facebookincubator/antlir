@@ -197,8 +197,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         if parent_flavor:
             expect(
                 ctx.attrs.flavor[FlavorInfo].label.raw_target() == parent_flavor[FlavorInfo].label.raw_target(),
-                "flavor ({}) was different from parent_layer's flavor ({})",
+                "{}: flavor ({}) was different from parent_layer's ({}) flavor ({})",
+                ctx.label.raw_target(),
                 ctx.attrs.flavor[FlavorInfo].label.raw_target(),
+                ctx.attrs.parent_layer.label.raw_target(),
                 parent_flavor[FlavorInfo].label.raw_target(),
             )
     if ctx.attrs.parent_layer:
