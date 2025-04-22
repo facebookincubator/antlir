@@ -14,7 +14,7 @@ constraint_setting(
 constraint_value(
     name = "build-for-distro",
     constraint_setting = ":target",
-    visibility = ["//antlir/distro/platform:"],
+    visibility = ["//antlir/distro/platform/..."],
 )
 
 # Constraint that can be used to basically say "this is not compatible with any platform"
