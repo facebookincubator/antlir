@@ -1,4 +1,3 @@
-load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
@@ -12,20 +11,5 @@ rpm_library(
 rpm_library(
     name = "ssl",
     rpm = "openssl-devel",
-    visibility = ["PUBLIC"],
-)
-
-# These '*Android' deps are totally useless since CentOS has nothing to do with
-# Android, but it breaks some 'buck2 uquery's and janky macros that append
-# platform suffixes like this
-alias(
-    name = "cryptoAndroid",
-    actual = ":crypto",
-    visibility = ["PUBLIC"],
-)
-
-alias(
-    name = "sslAndroid",
-    actual = ":ssl",
     visibility = ["PUBLIC"],
 )
