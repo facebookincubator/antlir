@@ -17,7 +17,7 @@ def _mountpoint(mount: mount_record) -> str:
 
 def all_mounts(
         *,
-        features: list[feature_record | typing.Any],
+        features: list[feature_record | typing.Any] | None,
         parent_layer: LayerInfo | Provider | None) -> list[mount_record]:
     """
     Find all the mounts that would need to be directly applied to this layer
@@ -25,6 +25,8 @@ def all_mounts(
     be easily handled without having to recursively look up mounts required by
     other mounted-in layers.
     """
+    if not features:
+        return []
     verify_feature_records(features)
     mounts = list(parent_layer.mounts) if parent_layer else []
     for feat in features:
