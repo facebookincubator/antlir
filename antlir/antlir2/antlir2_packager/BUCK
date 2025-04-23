@@ -14,17 +14,10 @@ rust_binary(
         "//antlir/antlir2/libcap:available": ["libcap"],
         "DEFAULT": [],
     }),
-    resources = {
-        "sendstream-upgrade": internal_external(
-            fb = "//antlir/btrfs_send_stream_upgrade/facebook:sendstream-upgrade",
-            oss = "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade",
-        ),
-    },
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
         "blake3",
-        "buck-resources",
         "bytesize",
         "cap-std",
         "chrono",

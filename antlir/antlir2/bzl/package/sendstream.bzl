@@ -7,6 +7,7 @@ load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":macro.bzl", "package_macro")
 
 SendstreamInfo = provider(fields = [
@@ -74,7 +75,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     spec = ctx.actions.write_json(
         "spec.json",
         {"sendstream": {
-            "compression_level": ctx.attrs.compression_level,
             "incremental_parent": incremental_parent,
             "subvol_symlink": subvol_symlink.as_output() if not userspace else None,
             "userspace": userspace,
@@ -82,6 +82,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         }},
         with_inputs = True,
     )
+
+    sendstream_v1 = ctx.actions.declare_output("image.sendstream.v1")
+
     ctx.actions.run(
         cmd_args(
             "sudo" if not ctx.attrs._rootless else cmd_args(),
@@ -89,7 +92,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "--rootless" if ctx.attrs._rootless else cmd_args(),
             cmd_args(spec, format = "--spec={}"),
             cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
-            cmd_args(sendstream.as_output(), format = "--out={}"),
+            cmd_args(sendstream_v1.as_output(), format = "--out={}"),
         ),
         local_only = True,  # needs root and local subvol
         # the old output is used to clean up the local subvolume
@@ -97,6 +100,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         category = "antlir2_package",
         identifier = "sendstream",
         env = {"RUST_LOG": "trace"},
+    )
+
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs.sendstream_upgrader[RunInfo],
+            cmd_args(sendstream_v1, format = "--input={}"),
+            cmd_args(sendstream.as_output(), format = "--output={}"),
+            cmd_args(str(ctx.attrs.compression_level), format = "--compression-level={}"),
+        ),
+        category = "antlir2_package",
+        identifier = "sendstream_upgrade",
+        # This *can* run on RE, but the (frequently very large) input file is
+        # already available locally (since it was generated with local_only=True
+        # right above)
+        prefer_local = True,
     )
     return [
         DefaultInfo(sendstream),
@@ -118,6 +136,11 @@ _attrs = {
         default = None,
     ),
     "labels": attrs.list(attrs.string(), default = []),
+    "sendstream_upgrader": attrs.default_only(attrs.exec_dep(default =
+                                                                 internal_external(
+                                                                     fb = "//antlir/btrfs_send_stream_upgrade/facebook:sendstream-upgrade",
+                                                                     oss = "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade",
+                                                                 ))),
     "volume_name": attrs.string(default = "volume"),
     "_rootless": rootless_cfg.is_rootless_attr,
 } | layer_attrs | rootless_cfg.attrs

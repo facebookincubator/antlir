@@ -7,7 +7,6 @@
 
 use std::path::Path;
 use std::process::Command;
-use std::process::Stdio;
 
 use antlir2_btrfs::SnapshotFlags;
 use antlir2_btrfs::Subvolume;
@@ -62,18 +61,10 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
 
                 let mut btrfs_send = cmd
                     .arg(snapshot.path())
-                    .stdout(Stdio::piped())
+                    .arg("-f")
+                    .arg(file.path())
                     .spawn()
                     .context("while spawning btrfs-send")?;
-                let upgrader =
-                    buck_resources::get("antlir/antlir2/antlir2_packager/sendstream-upgrade")?;
-                let mut upgrade = Command::new(upgrader)
-                    .arg("--compression-level")
-                    .arg(spec.compression_level.to_string())
-                    .stdin(btrfs_send.stdout.take().expect("this is a pipe"))
-                    .stdout(file.as_file().try_clone()?)
-                    .spawn()
-                    .context("while spawning sendstream-upgrade")?;
 
                 if !btrfs_send
                     .wait()
@@ -81,13 +72,6 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
                     .success()
                 {
                     return Err(anyhow!("btrfs-send failed"));
-                }
-                if !upgrade
-                    .wait()
-                    .context("while waiting for sendstream-upgrade")?
-                    .success()
-                {
-                    return Err(anyhow!("sendstream-upgrade failed"));
                 }
                 Ok(file)
             })
