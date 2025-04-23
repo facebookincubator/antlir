@@ -23,7 +23,6 @@ pub struct Sendstream {
     incremental_parent: Option<PathBuf>,
     subvol_symlink: Option<PathBuf>,
     userspace: bool,
-    compression_level: u32,
 }
 
 impl PackageFormat for Sendstream {

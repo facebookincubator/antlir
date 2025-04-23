@@ -10,6 +10,7 @@ use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::BufWriter;
 use std::io::Read;
 use std::io::Write;
 use std::os::unix::ffi::OsStrExt;
@@ -17,15 +18,12 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
-use std::process::Stdio;
 use std::time::Duration;
 use std::time::UNIX_EPOCH;
 
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
-use anyhow::anyhow;
 use nix::sys::stat::Mode;
 use tracing::trace;
 use uuid::Uuid;
@@ -43,16 +41,7 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
     let rootless = antlir2_rootless::init().context("while initializing rootless")?;
     let canonical_layer = layer.canonicalize()?;
 
-    let upgrader = buck_resources::get("antlir/antlir2/antlir2_packager/sendstream-upgrade")?;
-    let mut upgrade = Command::new(upgrader)
-        .arg("--compression-level")
-        .arg(spec.compression_level.to_string())
-        .stdin(Stdio::piped())
-        .stdout(File::create(out).context("while creating output file")?)
-        .spawn()
-        .context("while spawning sendstream-upgrade")?;
-
-    let mut f = upgrade.stdin.take().expect("this is a pipe");
+    let mut f = BufWriter::new(File::create(out).context("while creating output file")?);
 
     // Write the magic sentinel and version number. This packager always
     // produces uncompressed v1 sendstreams, and lets the sendstream-upgrade
@@ -377,16 +366,12 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
     }
 
     f.write_all(&command::end())?;
-    drop(f);
-
-    let status = upgrade
-        .wait()
-        .context("while waiting for sendstream-upgrade to finish")?;
-    if !status.success() {
-        Err(anyhow!("sendstream-upgrade failed: {status}"))
-    } else {
-        Ok(())
-    }
+    f.flush().context("while flushing BufWriter")?;
+    f.into_inner()
+        .context("while dropping BufWriter")?
+        .sync_all()
+        .context("while syncing output file")?;
+    Ok(())
 }
 
 fn get_xattrs(path: &Path) -> Result<HashMap<OsString, Vec<u8>>> {
