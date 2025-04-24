@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "510d1302fe5a2d52777340ca4605d243bb294723",
+    rev = "a18caddc4e299272505b69b674c232552b8ade51",
     visibility = [],
 )
 
@@ -8876,7 +8876,7 @@ cargo.rust_library(
         ":indexmap-2.9.0",
         ":slab-0.4.9",
         ":tokio-1.44.2",
-        ":tokio-util-0.7.14",
+        ":tokio-util-0.7.15",
         ":tracing-0.1.41",
     ],
 )
@@ -8999,6 +8999,7 @@ cargo.rust_library(
     features = [
         "default-hasher",
         "nightly",
+        "raw-entry",
     ],
     visibility = [],
     deps = [":foldhash-0.1.5"],
@@ -12451,36 +12452,36 @@ buildscript_run(
 )
 
 http_archive(
-    name = "munge-0.4.3.crate",
-    sha256 = "a0091202c98cf06da46c279fdf50cccb6b1c43b4521abdf6a27b4c7e71d5d9d7",
-    strip_prefix = "munge-0.4.3",
-    urls = ["https://static.crates.io/crates/munge/0.4.3/download"],
+    name = "munge-0.4.4.crate",
+    sha256 = "9e22e7961c873e8b305b176d2a4e1d41ce7ba31bc1c52d2a107a89568ec74c55",
+    strip_prefix = "munge-0.4.4",
+    urls = ["https://static.crates.io/crates/munge/0.4.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "munge-0.4.3",
-    srcs = [":munge-0.4.3.crate"],
+    name = "munge-0.4.4",
+    srcs = [":munge-0.4.4.crate"],
     crate = "munge",
-    crate_root = "munge-0.4.3.crate/src/lib.rs",
+    crate_root = "munge-0.4.4.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":munge_macro-0.4.3"],
+    deps = [":munge_macro-0.4.4"],
 )
 
 http_archive(
-    name = "munge_macro-0.4.3.crate",
-    sha256 = "734799cf91479720b2f970c61a22850940dd91e27d4f02b1c6fc792778df2459",
-    strip_prefix = "munge_macro-0.4.3",
-    urls = ["https://static.crates.io/crates/munge_macro/0.4.3/download"],
+    name = "munge_macro-0.4.4.crate",
+    sha256 = "0ac7d860b767c6398e88fe93db73ce53eb496057aa6895ffa4d60cb02e1d1c6b",
+    strip_prefix = "munge_macro-0.4.4",
+    urls = ["https://static.crates.io/crates/munge_macro/0.4.4/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "munge_macro-0.4.3",
-    srcs = [":munge_macro-0.4.3.crate"],
+    name = "munge_macro-0.4.4",
+    srcs = [":munge_macro-0.4.4.crate"],
     crate = "munge_macro",
-    crate_root = "munge_macro-0.4.3.crate/src/lib.rs",
+    crate_root = "munge_macro-0.4.4.crate/src/lib.rs",
     edition = "2021",
     proc_macro = True,
     visibility = [],
@@ -12568,7 +12569,7 @@ cargo.rust_library(
         ":thiserror-1.0.69",
         ":tokio-1.44.2",
         ":tokio-native-tls-0.3.1",
-        ":tokio-util-0.7.14",
+        ":tokio-util-0.7.15",
         ":twox-hash-1.6.3",
         ":url-2.5.4",
     ],
@@ -17353,7 +17354,7 @@ cargo.rust_library(
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.2",
                 ":tokio-socks-0.5.2",
-                ":tokio-util-0.7.14",
+                ":tokio-util-0.7.15",
                 ":webpki-roots-0.25.4",
             ],
         ),
@@ -17376,7 +17377,7 @@ cargo.rust_library(
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.2",
                 ":tokio-socks-0.5.2",
-                ":tokio-util-0.7.14",
+                ":tokio-util-0.7.15",
                 ":webpki-roots-0.25.4",
             ],
         ),
@@ -17400,7 +17401,7 @@ cargo.rust_library(
                 ":system-configuration-0.5.1",
                 ":tokio-1.44.2",
                 ":tokio-socks-0.5.2",
-                ":tokio-util-0.7.14",
+                ":tokio-util-0.7.15",
                 ":webpki-roots-0.25.4",
             ],
         ),
@@ -17424,7 +17425,7 @@ cargo.rust_library(
                 ":system-configuration-0.5.1",
                 ":tokio-1.44.2",
                 ":tokio-socks-0.5.2",
-                ":tokio-util-0.7.14",
+                ":tokio-util-0.7.15",
                 ":webpki-roots-0.25.4",
             ],
         ),
@@ -17447,7 +17448,7 @@ cargo.rust_library(
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.2",
                 ":tokio-socks-0.5.2",
-                ":tokio-util-0.7.14",
+                ":tokio-util-0.7.15",
                 ":webpki-roots-0.25.4",
                 ":winreg-0.50.0",
             ],
@@ -17471,7 +17472,7 @@ cargo.rust_library(
                 ":pin-project-lite-0.2.16",
                 ":tokio-1.44.2",
                 ":tokio-socks-0.5.2",
-                ":tokio-util-0.7.14",
+                ":tokio-util-0.7.15",
                 ":webpki-roots-0.25.4",
                 ":winreg-0.50.0",
             ],
@@ -17815,7 +17816,7 @@ cargo.rust_library(
     deps = [
         ":bytecheck-0.8.1",
         ":hashbrown-0.15.2",
-        ":munge-0.4.3",
+        ":munge-0.4.4",
         ":ptr_meta-0.3.0",
         ":rancor-0.1.0",
         ":rend-0.5.2",
@@ -20783,6 +20784,35 @@ cargo.rust_library(
     visibility = [],
 )
 
+alias(
+    name = "spin",
+    actual = ":spin-0.10.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "spin-0.10.0.crate",
+    sha256 = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591",
+    strip_prefix = "spin-0.10.0",
+    urls = ["https://static.crates.io/crates/spin/0.10.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "spin-0.10.0",
+    srcs = [":spin-0.10.0.crate"],
+    crate = "spin",
+    crate_root = "spin-0.10.0.crate/src/lib.rs",
+    edition = "2015",
+    features = [
+        "mutex",
+        "rwlock",
+        "spin_mutex",
+        "std",
+    ],
+    visibility = [],
+)
+
 http_archive(
     name = "spin-0.5.2.crate",
     sha256 = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d",
@@ -23018,7 +23048,7 @@ cargo.rust_library(
         ":futures-core-0.3.31",
         ":pin-project-lite-0.2.16",
         ":tokio-1.44.2",
-        ":tokio-util-0.7.14",
+        ":tokio-util-0.7.15",
     ],
 )
 
@@ -23096,23 +23126,23 @@ cargo.rust_library(
 
 alias(
     name = "tokio-util",
-    actual = ":tokio-util-0.7.14",
+    actual = ":tokio-util-0.7.15",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tokio-util-0.7.14.crate",
-    sha256 = "6b9590b93e6fcc1739458317cccd391ad3955e2bde8913edf6f95f9e65a8f034",
-    strip_prefix = "tokio-util-0.7.14",
-    urls = ["https://static.crates.io/crates/tokio-util/0.7.14/download"],
+    name = "tokio-util-0.7.15.crate",
+    sha256 = "66a539a9ad6d5d281510d5bd368c973d636c02dbf8a67300bfb6b950696ad7df",
+    strip_prefix = "tokio-util-0.7.15",
+    urls = ["https://static.crates.io/crates/tokio-util/0.7.15/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tokio-util-0.7.14",
-    srcs = [":tokio-util-0.7.14.crate"],
+    name = "tokio-util-0.7.15",
+    srcs = [":tokio-util-0.7.15.crate"],
     crate = "tokio_util",
-    crate_root = "tokio-util-0.7.14.crate/src/lib.rs",
+    crate_root = "tokio-util-0.7.15.crate/src/lib.rs",
     edition = "2021",
     features = [
         "codec",
@@ -25213,7 +25243,7 @@ cargo.rust_library(
         ":tokio-1.44.2",
         ":tokio-rustls-0.25.0",
         ":tokio-tungstenite-0.21.0",
-        ":tokio-util-0.7.14",
+        ":tokio-util-0.7.15",
         ":tower-service-0.3.3",
         ":tracing-0.1.41",
     ],
