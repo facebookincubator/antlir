@@ -33,13 +33,20 @@ def main():
                 headers[dst] = p
     else:
         try:
+            rpm = subprocess.run(
+                ["rpm", "-q", "--whatprovides", args.rpm_name],
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout.strip()
             res = subprocess.run(
-                ["rpm", "-q", "-l", args.rpm_name],
+                ["rpm", "-q", "-l", rpm],
+                check=True,
                 text=True,
                 capture_output=True,
             )
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(res.stderr) from e
+            raise RuntimeError(e.stderr + "\n" + e.stdout) from e
         rpm_files = {Path(p) for p in (res.stdout.strip().splitlines())}
         rpm_headers = {p for p in rpm_files if INCLUDE_BASE in p.parents}
         for h in rpm_headers:
