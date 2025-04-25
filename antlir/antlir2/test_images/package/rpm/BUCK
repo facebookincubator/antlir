@@ -38,12 +38,18 @@ image.layer(
             # symlink libadd.so.1 (SONAME) to this path during rpmbuild
             dst = "/usr/lib64/libadd.so.1.2",
         ),
+        feature.ensure_dirs_exist(dirs = "/dir/with space"),
+        feature.install_text(
+            dst = "/dir/with space/hello world.txt",
+            text = "File with space in dir with space\n",
+        ),
     ],
 )
 
 package.rpm(
     name = "add.rpm",
     # @oss-disable
+    dirs = ["/dir/with space"],
     disable_ldconfig = True,
     layer = ":layer",
     license = "none",
