@@ -1,3 +1,4 @@
+load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
@@ -13,3 +14,23 @@ rpm_library(
     rpm = "openssl-devel",
     visibility = ["PUBLIC"],
 )
+
+# These aliases are totally useless since CentOS has nothing to do with Android
+# or Apple platforms, but it breaks some 'buck2 uquery's and janky macros that
+# append platform suffixes like this
+
+[
+    alias(
+        name = dep + platform,
+        actual = ":" + dep,
+        visibility = ["PUBLIC"],
+    )
+    for dep in [
+        "crypto",
+        "ssl",
+    ]
+    for platform in [
+        "Android",
+        "Apple",
+    ]
+]
