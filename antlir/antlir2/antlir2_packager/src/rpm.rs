@@ -338,7 +338,7 @@ AutoProv: {autoprov}
             spec.push('\n');
         }
         for dir in &self.dirs {
-            spec.push_str(&format!("%dir {dir}\n"));
+            spec.push_str(&format!("%dir \"{dir}\"\n"));
         }
 
         let output_dir = tempfile::tempdir().context("while creating temp dir for rpm output")?;
