@@ -9,7 +9,7 @@ oncall("antlir")
 alias(
     name = "kernel",
     actual = internal_external(
-        fb = "//antlir/antlir2/appliance_vm/facebook:msdk[vmlinuz]",
+        fb = "//antlir/antlir2/appliance_vm/facebook:msdk-vmlinuz",
         oss = "//antlir/antlir2/appliance_vm/impl:kernel",
     ),
     visibility = ["PUBLIC"],
