@@ -180,7 +180,7 @@ impl RepomdRecord {
 /// Read info about individual rpm files from `xml_dir` and build repodata in the `out` directory.
 fn main() -> Result<()> {
     let args = Args::parse();
-    std::fs::create_dir(&args.out)
+    std::fs::create_dir_all(&args.out)
         .with_context(|| format!("while creating output dir {}", args.out.display()))?;
     let mut xml_paths: Vec<PathBuf> = std::fs::read_dir(&args.xml_dir)
         .with_context(|| format!("while listing files in {}", args.xml_dir.display()))?
