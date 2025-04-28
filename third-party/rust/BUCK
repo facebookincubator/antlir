@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "4ab4ae2cddb92380505e6436ab42690ffddbf04b",
+    rev = "c31185426b963cdbda2839584910c996f954626d",
     visibility = [],
 )
 
@@ -2381,14 +2381,14 @@ cargo.rust_library(
 
 alias(
     name = "blake3",
-    actual = ":blake3-1.5.2",
+    actual = ":blake3-1.5.5",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "blake3-1.5.2.crate",
-    sha256 = "3d08263faac5cde2a4d52b513dadb80846023aade56fcd8fc99ba73ba8050e92",
-    strip_prefix = "blake3-1.5.2",
+    name = "blake3-1.5.5.crate",
+    sha256 = "b8ee0c1824c4dea5b5f81736aff91bae041d2c07ee1192bec91054e10e3e601e",
+    strip_prefix = "blake3-1.5.5",
     sub_targets = [
         "c/blake3.c",
         "c/blake3.h",
@@ -2401,15 +2401,15 @@ http_archive(
         "c/blake3_sse2_x86-64_unix.S",
         "c/blake3_sse41_x86-64_unix.S",
     ],
-    urls = ["https://static.crates.io/crates/blake3/1.5.2/download"],
+    urls = ["https://static.crates.io/crates/blake3/1.5.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "blake3-1.5.2",
-    srcs = [":blake3-1.5.2.crate"],
+    name = "blake3-1.5.5",
+    srcs = [":blake3-1.5.5.crate"],
     crate = "blake3",
-    crate_root = "blake3-1.5.2.crate/src/lib.rs",
+    crate_root = "blake3-1.5.5.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -2421,7 +2421,7 @@ cargo.rust_library(
     platform = {
         "linux-arm64": dict(
             rustc_flags = ["--cfg=blake3_neon"],
-            deps = [":blake3-1.5.2-simd_neon-aarch64"],
+            deps = [":blake3-1.5.5-simd_neon-aarch64"],
         ),
         "linux-x86_64": dict(
             rustc_flags = [
@@ -2430,11 +2430,11 @@ cargo.rust_library(
                 "--cfg=blake3_sse2_ffi",
                 "--cfg=blake3_sse41_ffi",
             ],
-            deps = [":blake3-1.5.2-simd_x86_unix"],
+            deps = [":blake3-1.5.5-simd_x86_unix"],
         ),
         "macos-arm64": dict(
             rustc_flags = ["--cfg=blake3_neon"],
-            deps = [":blake3-1.5.2-simd_neon-aarch64"],
+            deps = [":blake3-1.5.5-simd_neon-aarch64"],
         ),
         "macos-x86_64": dict(
             rustc_flags = [
@@ -2443,7 +2443,7 @@ cargo.rust_library(
                 "--cfg=blake3_sse2_ffi",
                 "--cfg=blake3_sse41_ffi",
             ],
-            deps = [":blake3-1.5.2-simd_x86_unix"],
+            deps = [":blake3-1.5.5-simd_x86_unix"],
         ),
         "windows-gnu": dict(
             rustc_flags = [
@@ -2475,29 +2475,29 @@ cargo.rust_library(
 )
 
 third_party_rust_cxx_library(
-    name = "blake3-1.5.2-simd_neon-aarch64",
-    srcs = [":blake3-1.5.2.crate[c/blake3_neon.c]"],
+    name = "blake3-1.5.5-simd_neon-aarch64",
+    srcs = [":blake3-1.5.5.crate[c/blake3_neon.c]"],
     headers = [
-        ":blake3-1.5.2.crate[c/blake3.h]",
-        ":blake3-1.5.2.crate[c/blake3_impl.h]",
+        ":blake3-1.5.5.crate[c/blake3.h]",
+        ":blake3-1.5.5.crate[c/blake3_impl.h]",
     ],
     visibility = [],
 )
 
 third_party_rust_cxx_library(
-    name = "blake3-1.5.2-simd_x86_unix",
+    name = "blake3-1.5.5-simd_x86_unix",
     srcs = [
-        ":blake3-1.5.2.crate[c/blake3.c]",
-        ":blake3-1.5.2.crate[c/blake3_avx2_x86-64_unix.S]",
-        ":blake3-1.5.2.crate[c/blake3_avx512_x86-64_unix.S]",
-        ":blake3-1.5.2.crate[c/blake3_dispatch.c]",
-        ":blake3-1.5.2.crate[c/blake3_portable.c]",
-        ":blake3-1.5.2.crate[c/blake3_sse2_x86-64_unix.S]",
-        ":blake3-1.5.2.crate[c/blake3_sse41_x86-64_unix.S]",
+        ":blake3-1.5.5.crate[c/blake3.c]",
+        ":blake3-1.5.5.crate[c/blake3_avx2_x86-64_unix.S]",
+        ":blake3-1.5.5.crate[c/blake3_avx512_x86-64_unix.S]",
+        ":blake3-1.5.5.crate[c/blake3_dispatch.c]",
+        ":blake3-1.5.5.crate[c/blake3_portable.c]",
+        ":blake3-1.5.5.crate[c/blake3_sse2_x86-64_unix.S]",
+        ":blake3-1.5.5.crate[c/blake3_sse41_x86-64_unix.S]",
     ],
     headers = [
-        ":blake3-1.5.2.crate[c/blake3.h]",
-        ":blake3-1.5.2.crate[c/blake3_impl.h]",
+        ":blake3-1.5.5.crate[c/blake3.h]",
+        ":blake3-1.5.5.crate[c/blake3_impl.h]",
     ],
     compatible_with = [
         "prelude//os/constraints:linux",
