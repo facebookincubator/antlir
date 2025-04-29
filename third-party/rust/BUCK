@@ -6,7 +6,7 @@ load(":defs.bzl", "third_party_rust_cxx_library", "buildscript_run")
 git_fetch(
     name = "fbthrift-d83134f25cdb7b98.git",
     repo = "https://github.com/facebook/fbthrift.git",
-    rev = "c31185426b963cdbda2839584910c996f954626d",
+    rev = "101911f31d1c1869ecee878e45a54d9b0f4a8d4f",
     visibility = [],
 )
 
@@ -20,7 +20,7 @@ git_fetch(
 git_fetch(
     name = "starlark-rust-a9d911d33fd77ff2.git",
     repo = "https://github.com/facebook/starlark-rust.git",
-    rev = "2d826792259fbc81ccaebd8a9e5a5b5baa8d2c33",
+    rev = "dde7ce916a29a2bcd602211f93dafaf68f2570e5",
     sub_targets = [
         "allocative/allocative",
         "starlark",
@@ -1051,18 +1051,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "async-executor-1.13.1.crate",
-    sha256 = "30ca9a001c1e8ba5149f91a74362376cc6bc5b919d92d988668657bd570bdcec",
-    strip_prefix = "async-executor-1.13.1",
-    urls = ["https://static.crates.io/crates/async-executor/1.13.1/download"],
+    name = "async-executor-1.13.2.crate",
+    sha256 = "bb812ffb58524bdd10860d7d974e2f01cc0950c2438a74ee5ec2e2280c6c4ffa",
+    strip_prefix = "async-executor-1.13.2",
+    urls = ["https://static.crates.io/crates/async-executor/1.13.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "async-executor-1.13.1",
-    srcs = [":async-executor-1.13.1.crate"],
+    name = "async-executor-1.13.2",
+    srcs = [":async-executor-1.13.2.crate"],
     crate = "async_executor",
-    crate_root = "async-executor-1.13.1.crate/src/lib.rs",
+    crate_root = "async-executor-1.13.2.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
     deps = [
@@ -1070,6 +1070,7 @@ cargo.rust_library(
         ":concurrent-queue-2.5.0",
         ":fastrand-2.3.0",
         ":futures-lite-2.6.0",
+        ":pin-project-lite-0.2.16",
         ":slab-0.4.9",
     ],
 )
@@ -1571,7 +1572,7 @@ cargo.rust_library(
     crate_root = "atomic-0.6.0.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":bytemuck-1.22.0"],
+    deps = [":bytemuck-1.23.0"],
 )
 
 http_archive(
@@ -2153,7 +2154,7 @@ cargo.rust_library(
     deps = [
         ":array-init-2.1.0",
         ":binrw_derive-0.14.1",
-        ":bytemuck-1.22.0",
+        ":bytemuck-1.23.0",
     ],
 )
 
@@ -3117,23 +3118,23 @@ cargo.rust_library(
 
 alias(
     name = "bytemuck",
-    actual = ":bytemuck-1.22.0",
+    actual = ":bytemuck-1.23.0",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "bytemuck-1.22.0.crate",
-    sha256 = "b6b1fc10dbac614ebc03540c9dbd60e83887fda27794998c6528f1782047d540",
-    strip_prefix = "bytemuck-1.22.0",
-    urls = ["https://static.crates.io/crates/bytemuck/1.22.0/download"],
+    name = "bytemuck-1.23.0.crate",
+    sha256 = "9134a6ef01ce4b366b50689c94f82c14bc72bc5d0386829828a2e2752ef7958c",
+    strip_prefix = "bytemuck-1.23.0",
+    urls = ["https://static.crates.io/crates/bytemuck/1.23.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "bytemuck-1.22.0",
-    srcs = [":bytemuck-1.22.0.crate"],
+    name = "bytemuck-1.23.0",
+    srcs = [":bytemuck-1.23.0.crate"],
     crate = "bytemuck",
-    crate_root = "bytemuck-1.22.0.crate/src/lib.rs",
+    crate_root = "bytemuck-1.23.0.crate/src/lib.rs",
     edition = "2018",
     features = [
         "bytemuck_derive",
@@ -4224,24 +4225,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "clap_complete-4.5.47.crate",
-    sha256 = "c06f5378ea264ad4f82bbc826628b5aad714a75abf6ece087e923010eb937fb6",
-    strip_prefix = "clap_complete-4.5.47",
-    urls = ["https://static.crates.io/crates/clap_complete/4.5.47/download"],
+    name = "clap_complete-4.5.48.crate",
+    sha256 = "be8c97f3a6f02b9e24cadc12aaba75201d18754b53ea0a9d99642f806ccdb4c9",
+    strip_prefix = "clap_complete-4.5.48",
+    urls = ["https://static.crates.io/crates/clap_complete/4.5.48/download"],
     visibility = [],
 )
 
 alias(
     name = "clap_complete",
-    actual = ":clap_complete-4.5.47-clap_complete",
+    actual = ":clap_complete-4.5.48-clap_complete",
     visibility = ["PUBLIC"],
 )
 
 cargo.rust_library(
-    name = "clap_complete-4.5.47-clap_complete",
-    srcs = [":clap_complete-4.5.47.crate"],
+    name = "clap_complete-4.5.48-clap_complete",
+    srcs = [":clap_complete-4.5.48.crate"],
     crate = "clap_complete",
-    crate_root = "clap_complete-4.5.47.crate/src/lib.rs",
+    crate_root = "clap_complete-4.5.48.crate/src/lib.rs",
     edition = "2021",
     features = ["default"],
     visibility = [],
@@ -15643,7 +15644,7 @@ cargo.rust_library(
     crate_root = "proc-macro-crate-3.3.0.crate/src/lib.rs",
     edition = "2021",
     visibility = [],
-    deps = [":toml_edit-0.22.25"],
+    deps = [":toml_edit-0.22.26"],
 )
 
 alias(
@@ -23148,23 +23149,23 @@ cargo.rust_library(
 
 alias(
     name = "toml",
-    actual = ":toml-0.8.21",
+    actual = ":toml-0.8.22",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "toml-0.8.21.crate",
-    sha256 = "900f6c86a685850b1bc9f6223b20125115ee3f31e01207d81655bbcc0aea9231",
-    strip_prefix = "toml-0.8.21",
-    urls = ["https://static.crates.io/crates/toml/0.8.21/download"],
+    name = "toml-0.8.22.crate",
+    sha256 = "05ae329d1f08c4d17a59bed7ff5b5a769d062e64a62d34a3261b219e62cd5aae",
+    strip_prefix = "toml-0.8.22",
+    urls = ["https://static.crates.io/crates/toml/0.8.22/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "toml-0.8.21",
-    srcs = [":toml-0.8.21.crate"],
+    name = "toml-0.8.22",
+    srcs = [":toml-0.8.22.crate"],
     crate = "toml",
-    crate_root = "toml-0.8.21.crate/src/lib.rs",
+    crate_root = "toml-0.8.22.crate/src/lib.rs",
     edition = "2021",
     features = [
         "default",
@@ -23176,7 +23177,7 @@ cargo.rust_library(
         ":serde-1.0.219",
         ":serde_spanned-0.6.8",
         ":toml_datetime-0.6.9",
-        ":toml_edit-0.22.25",
+        ":toml_edit-0.22.26",
     ],
 )
 
@@ -23234,18 +23235,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "toml_edit-0.22.25.crate",
-    sha256 = "10558ed0bd2a1562e630926a2d1f0b98c827da99fabd3fe20920a59642504485",
-    strip_prefix = "toml_edit-0.22.25",
-    urls = ["https://static.crates.io/crates/toml_edit/0.22.25/download"],
+    name = "toml_edit-0.22.26.crate",
+    sha256 = "310068873db2c5b3e7659d2cc35d21855dbafa50d1ce336397c666e3cb08137e",
+    strip_prefix = "toml_edit-0.22.26",
+    urls = ["https://static.crates.io/crates/toml_edit/0.22.26/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "toml_edit-0.22.25",
-    srcs = [":toml_edit-0.22.25.crate"],
+    name = "toml_edit-0.22.26",
+    srcs = [":toml_edit-0.22.26.crate"],
     crate = "toml_edit",
-    crate_root = "toml_edit-0.22.25.crate/src/lib.rs",
+    crate_root = "toml_edit-0.22.26.crate/src/lib.rs",
     edition = "2021",
     features = [
         "display",
@@ -23258,24 +23259,24 @@ cargo.rust_library(
         ":serde-1.0.219",
         ":serde_spanned-0.6.8",
         ":toml_datetime-0.6.9",
-        ":toml_write-0.1.0",
+        ":toml_write-0.1.1",
         ":winnow-0.7.7",
     ],
 )
 
 http_archive(
-    name = "toml_write-0.1.0.crate",
-    sha256 = "28391a4201ba7eb1984cfeb6862c0b3ea2cfe23332298967c749dddc0d6cd976",
-    strip_prefix = "toml_write-0.1.0",
-    urls = ["https://static.crates.io/crates/toml_write/0.1.0/download"],
+    name = "toml_write-0.1.1.crate",
+    sha256 = "bfb942dfe1d8e29a7ee7fcbde5bd2b9a25fb89aa70caea2eba3bee836ff41076",
+    strip_prefix = "toml_write-0.1.1",
+    urls = ["https://static.crates.io/crates/toml_write/0.1.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "toml_write-0.1.0",
-    srcs = [":toml_write-0.1.0.crate"],
+    name = "toml_write-0.1.1",
+    srcs = [":toml_write-0.1.1.crate"],
     crate = "toml_write",
-    crate_root = "toml_write-0.1.0.crate/src/lib.rs",
+    crate_root = "toml_write-0.1.1.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -26353,7 +26354,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":async-broadcast-0.7.2",
-        ":async-executor-1.13.1",
+        ":async-executor-1.13.2",
         ":async-fs-2.1.2",
         ":async-io-2.4.0",
         ":async-lock-3.4.0",
