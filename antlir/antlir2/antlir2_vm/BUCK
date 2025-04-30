@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "python_binary", "rust_binary")
 
 oncall("antlir")
 
@@ -83,5 +83,25 @@ image.layer(
 package.unprivileged_dir(
     name = "container-dir",
     layer = ":container-image",
+    visibility = ["PUBLIC"],
+)
+
+python_binary(
+    name = "static-list",
+    srcs = ["static_list.py"],
+    main_module = "antlir.antlir2.antlir2_vm.static_list",
+)
+
+buck_command_alias(
+    name = "static-list-cpp",
+    args = ["cpp"],
+    exe = ":static-list",
+    visibility = ["PUBLIC"],
+)
+
+buck_command_alias(
+    name = "static-list-py",
+    args = ["py"],
+    exe = ":static-list",
     visibility = ["PUBLIC"],
 )

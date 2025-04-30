@@ -90,6 +90,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         common_args,
     )
 
+    env = env_from_wrapped_test(ctx.attrs.test)
+    if ctx.attrs._static_list_wrapper:
+        original = env.pop("STATIC_LIST_TESTS_BINARY", None)
+        if original:
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
+                ctx.attrs._static_list_wrapper[RunInfo],
+                cmd_args(original, format = "--wrap={}"),
+            ))
+
     return [
         DefaultInfo(
             test_script,
@@ -105,7 +114,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             type = ctx.attrs.test[ExternalRunnerTestInfo].test_type,
             labels = ctx.attrs.test_labels + inner_labels,
             contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
-            env = env_from_wrapped_test(ctx.attrs.test),
+            env = env,
             run_from_project_root = True,
         ),
     ]
@@ -141,6 +150,7 @@ _vm_test = rule(
         ),
         "timeout_secs": attrs.int(doc = "total allowed execution time for the test"),
         "vm_host": attrs.dep(providers = [VMHostInfo], doc = "VM host target for the test"),
+        "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
     },
 )
 
@@ -195,6 +205,7 @@ def _implicit_vm_test(
         postmortem: bool = False,
         labels: list[str] | None = None,
         _add_outer_labels: list[str] = [],
+        _static_list_wrapper: str | None = None,
         **kwargs) -> list[str]:
     """Wraps a unit test rule to execute inside a VM. @vm_host must be a VM
     target constructed by `:defs.bzl::vm.host()`.
@@ -245,6 +256,7 @@ def _implicit_vm_test(
         expect_failure = expect_failure,
         postmortem = postmortem,
         compatible_with = kwargs.get("compatible_with"),
+        _static_list_wrapper = _static_list_wrapper,
         target_compatible_with = kwargs.get("target_compatible_with"),
         labels = labels,
     )
@@ -253,9 +265,13 @@ def _implicit_vm_test(
 vm_cpp_test = partial(
     _implicit_vm_test,
     cpp_unittest,
+    _static_list_wrapper = "antlir//antlir/antlir2/antlir2_vm:static-list-cpp",
     # @oss-disable
-    supports_static_listing = False,
 )
-vm_python_test = partial(_implicit_vm_test, python_unittest, supports_static_listing = False)
+vm_python_test = partial(
+    _implicit_vm_test,
+    python_unittest,
+    _static_list_wrapper = "antlir//antlir/antlir2/antlir2_vm:static-list-py",
+)
 vm_rust_test = partial(_implicit_vm_test, rust_unittest)
 vm_sh_test = partial(_implicit_vm_test, buck_sh_test)
