@@ -40,3 +40,40 @@ image_diff_test(
     diff_type = "file",
     layer = ":add-group",
 )
+
+image.layer(
+    name = "existing-base",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/etc",
+        ),
+        feature.install_text(
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\nantlir:x:1000:0::/:/fakeshell\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\nantlir:x:1000:antlir\n",
+        ),
+    ],
+)
+
+image.layer(
+    name = "readd-existing-group",
+    features = [
+        feature.group_add(
+            groupname = "antlir",
+            uidmap = "antlir",
+        ),
+    ],
+    parent_layer = ":existing-base",
+)
+
+image_diff_test(
+    name = "readd-existing-group-test",
+    diff = "readd-existing-group.toml",
+    diff_type = "file",
+    layer = ":readd-existing-group",
+)

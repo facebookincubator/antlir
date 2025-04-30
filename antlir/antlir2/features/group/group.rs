@@ -18,8 +18,10 @@ use antlir2_users::group::GroupRecord;
 use antlir2_users::group::GroupRecordPassword;
 use antlir2_users::uidmaps::UidMap;
 use anyhow::Context;
+use anyhow::anyhow;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::debug;
 
 pub type Feature = Group;
 
@@ -49,13 +51,23 @@ impl antlir2_compile::CompileFeature for Group {
     #[tracing::instrument(skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let mut groups_db = ctx.groups_db()?;
-        let record = GroupRecord {
+        let new_record = GroupRecord {
             name: self.groupname.to_owned().into(),
             password: GroupRecordPassword::X,
             gid: get_gid(&self.uidmap, &self.groupname)?,
             users: Vec::new(),
         };
-        groups_db.push(record)?;
+        if let Some(existing) = groups_db.get_group_by_name(&self.groupname) {
+            debug!(
+                "group '{}' already existed and all important fields are identical, not duplicating it",
+                self.groupname
+            );
+            if existing.gid != new_record.gid || existing.password != new_record.password {
+                return Err(anyhow!("group '{}' already existed, but has incompatible settings with the new entry - new: {new_record:?}\nold: {existing:?}", self.groupname).into());
+            }
+            return Ok(());
+        }
+        groups_db.push(new_record)?;
         std::fs::write(ctx.dst_path("/etc/group")?, groups_db.to_string())?;
         Ok(())
     }
