@@ -25,8 +25,11 @@ pub enum Test {
         test_cmd: Vec<OsString>,
     },
     Gtest {
-        #[clap(long, env = "GTEST_OUTPUT")]
+        test: PathBuf,
+        #[clap(long = "gtest_output", env = "GTEST_OUTPUT", require_equals = true)]
         output: Option<String>,
+        #[clap(long = "gtest_list_tests")]
+        gtest_list_tests: bool,
         #[clap(allow_hyphen_values = true)]
         test_cmd: Vec<OsString>,
     },
@@ -98,9 +101,15 @@ impl Test {
         match self {
             Self::Custom { test_cmd } => test_cmd,
             Self::Gtest {
+                test,
                 mut test_cmd,
+                gtest_list_tests,
                 output,
             } => {
+                test_cmd.insert(0, test.into());
+                if gtest_list_tests {
+                    test_cmd.push("--gtest_list_tests".into());
+                }
                 if let Some(out) = output {
                     test_cmd.push(format!("--gtest_output={out}").into());
                 }
@@ -136,9 +145,9 @@ impl Test {
     pub fn is_list_tests(&self) -> bool {
         match self {
             Self::Custom { .. } => false,
-            Self::Gtest { test_cmd, .. } => {
-                test_cmd.contains(&OsString::from("--gtest_list_tests".to_string()))
-            }
+            Self::Gtest {
+                gtest_list_tests, ..
+            } => *gtest_list_tests,
             Self::Rust { test_cmd, .. } => test_cmd.contains(&OsString::from("--list".to_string())),
             Self::Pyunit { list_tests, .. } => list_tests.is_some(),
         }
@@ -219,7 +228,7 @@ mod test {
     #[test]
     fn test_gtest() {
         env::set_var("GTEST_OUTPUT", "/here/here");
-        let arg = TestArgs::parse_from(["test", "gtest", "whatever"]);
+        let arg = TestArgs::parse_from(["test", "gtest", "/path/to/the/test"]);
         assert!(!arg.test.is_list_tests());
         assert_eq!(
             arg.test.output_dirs(),
@@ -227,16 +236,57 @@ mod test {
         );
         assert_eq!(
             arg.test.into_inner_cmd(),
-            vec!["whatever", "--gtest_output=/here/here"]
+            vec!["/path/to/the/test", "--gtest_output=/here/here"]
         );
 
         env::remove_var("GTEST_OUTPUT");
-        let arg = TestArgs::parse_from(["test", "gtest", "whatever", "--gtest_list_tests"]);
+        let arg =
+            TestArgs::parse_from(["test", "gtest", "/path/to/the/test", "--gtest_list_tests"]);
         assert!(arg.test.is_list_tests());
         assert_eq!(arg.test.output_dirs(), HashSet::new());
         assert_eq!(
             arg.test.into_inner_cmd(),
-            vec!["whatever", "--gtest_list_tests"]
+            vec!["/path/to/the/test", "--gtest_list_tests"],
+        );
+
+        let arg = TestArgs::parse_from([
+            "test",
+            "gtest",
+            "/path/to/the/test",
+            "--gtest_list_tests",
+            "--gtest_output=json:/foo/bar",
+        ]);
+        assert!(arg.test.is_list_tests());
+        assert_eq!(
+            arg.test.output_dirs(),
+            HashSet::from([PathBuf::from("/foo")]),
+            "{arg:#?}",
+        );
+        assert_eq!(
+            arg.test.into_inner_cmd(),
+            vec![
+                "/path/to/the/test",
+                "--gtest_list_tests",
+                "--gtest_output=json:/foo/bar"
+            ]
+        );
+
+        let arg = TestArgs::parse_from([
+            "test",
+            "gtest",
+            "/path/to/the/test",
+            "--gtest_catch_exceptions=0",
+            "--gtest_filter=foo/bar/baz",
+        ]);
+        assert!(!arg.test.is_list_tests());
+        assert!(arg.test.output_dirs().is_empty());
+        assert_eq!(
+            arg.test.into_inner_cmd(),
+            vec![
+                "/path/to/the/test",
+                "--gtest_catch_exceptions=0",
+                "--gtest_filter=foo/bar/baz",
+            ]
         );
     }
 
