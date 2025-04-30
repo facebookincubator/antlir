@@ -80,12 +80,20 @@ pub(crate) struct Arg {
 
 pub(crate) fn starlark_doc(file: Label) -> Result<Doc> {
     let out = Command::new("buck2")
+        .arg("--isolation-dir")
+        .arg("antlir2docs")
         .arg("docs")
         .arg("starlark")
+        .arg("--config")
+        .arg("antlir2.docs=1")
         .arg("--format=json")
         .arg(&file)
         .output()
         .context("while running buck2 docs")?;
-    ensure!(out.status.success(), "buck2 docs failed");
+    ensure!(
+        out.status.success(),
+        "buck2 docs failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     serde_json::from_slice(&out.stdout).context("while deserializing")
 }

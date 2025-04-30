@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_binary")
 load(":register_templates_src.bzl", "register_templates_src")
 
 oncall("antlir")
@@ -26,4 +26,14 @@ rust_binary(
         "tera",
         "//antlir/buck2/buck_label:buck_label",
     ],
+)
+
+python_unittest(
+    name = "test-gen_api-contents",
+    srcs = ["test_gen_api_contents.py"],
+    env = {
+        "GEN_API": "$(exe :gen_api)",
+    },
+    # These tests need to call `buck2 docs`, and so can't ever use RE.
+    remote_execution = "local",
 )
