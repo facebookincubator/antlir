@@ -51,7 +51,7 @@ def _os_label(os: os_t) -> str:
 def _platform_label(os: os_t, arch: arch_t) -> str:
     return "antlir//antlir/distro/platform:" + _platform_name(os, arch)
 
-def alias_for_current_image_platform(*, name: str, actual: str):
+def alias_for_current_image_platform(*, name: str, actual: str, visibility = None):
     """
     Configure another target (typically a binary rule) to build against the
     antlir2 system platform for whatever configuration is currently active - in
@@ -77,6 +77,7 @@ def alias_for_current_image_platform(*, name: str, actual: str):
         actual = actual,
         target_compatible_with = select(tcw),
         platform = select(platform),
+        visibility = visibility,
     )
 
 def default_image_platform(os: str | None = None):
