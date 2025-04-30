@@ -125,7 +125,7 @@ fn run(args: &RunCmdArgs) -> Result<()> {
         }
         // Don't run the test command inside the VM. Hijack it with our stub so we shut it down as
         // soon as default target is reached.
-        vm_args.mode.command = Some(vec!["exit".into()]);
+        vm_args.mode.command = Some(vec!["sh".into(), "-c".into(), "exit".into()]);
     }
 
     let machine_opts = args.machine_spec.clone().into_inner();
@@ -248,7 +248,7 @@ fn record_envs(envs: &[KvPair]) -> Result<()> {
         std::fs::write(
             file,
             envs.iter()
-                .map(|s| s.to_os_string().to_string_lossy().to_string())
+                .map(|s| s.to_os_string_for_env().to_string_lossy().to_string())
                 .collect::<Vec<_>>()
                 .join("\n"),
         )?;
