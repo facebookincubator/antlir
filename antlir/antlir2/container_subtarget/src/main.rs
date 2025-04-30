@@ -99,6 +99,7 @@ fn main() -> anyhow::Result<()> {
         .inputs(bind_ro_inputs)
         .outputs(bind_rw)
         .ephemeral(true)
+        .tmpfs(Path::new("/tmp"))
         .enable_network(args.enable_network);
     if !args.rootless {
         cmd_builder.invocation_type(match (args.boot, args.pipe) {
