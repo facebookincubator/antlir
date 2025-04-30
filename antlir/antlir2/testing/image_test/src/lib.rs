@@ -189,11 +189,15 @@ where
 }
 
 impl KvPair {
-    pub fn to_os_string(&self) -> OsString {
+    pub fn to_os_string_for_env(&self) -> OsString {
         let mut value = OsString::new();
-        value.push(self.key.clone());
+        value.push(OsStr::new("'"));
+        value.push(&self.key);
+        value.push(OsStr::new("'"));
         value.push(OsStr::new("="));
-        value.push(self.value.clone());
+        value.push(OsStr::new("'"));
+        value.push(&self.value);
+        value.push(OsStr::new("'"));
         value
     }
 }
@@ -318,8 +322,8 @@ mod test {
     #[test]
     fn test_kvpair_to_os_string() {
         assert_eq!(
-            KvPair::from(("a", "b")).to_os_string(),
-            OsString::from("a=b"),
+            KvPair::from(("a", "b")).to_os_string_for_env(),
+            OsString::from("'a'='b'"),
         )
     }
 }

@@ -264,8 +264,9 @@ impl<S: Share> VM<S> {
             // ssh hang instead because we add a bash command below.
             ssh_cmd.arg("-t");
         }
+        ssh_cmd.arg("env");
         self.args.command_envs.iter().for_each(|kv| {
-            ssh_cmd.arg(kv.to_os_string());
+            ssh_cmd.arg(kv.to_os_string_for_env());
         });
         if let Some(command) = &self.args.mode.command {
             ssh_cmd.args(command);
@@ -277,8 +278,9 @@ impl<S: Share> VM<S> {
 
     fn ssh_first_boot_command(&self) -> Result<Command> {
         let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+        ssh_cmd.arg("env");
         self.args.command_envs.iter().for_each(|kv| {
-            ssh_cmd.arg(kv.to_os_string());
+            ssh_cmd.arg(kv.to_os_string_for_env());
         });
 
         if let Some(command) = &self.args.first_boot_command {
