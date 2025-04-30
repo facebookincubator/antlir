@@ -22,6 +22,7 @@ load("//antlir/antlir2/features/symlink:symlink.bzl", "ensure_dir_symlink", "ens
 load("//antlir/antlir2/features/tarball:tarball.bzl", "tarball")
 load("//antlir/antlir2/features/user:user.bzl", "standard_user", "user_add")
 load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod")
+load("//antlir/bzl:structs.bzl", "structs")
 load(":feature.bzl", feature_new = "feature")
 
 feature = struct(
@@ -56,3 +57,6 @@ feature = struct(
     # @oss-disable
     # @oss-disable
 )
+
+if read_config("antlir2", "docs", False):
+    load_symbols(structs.to_dict(feature))
