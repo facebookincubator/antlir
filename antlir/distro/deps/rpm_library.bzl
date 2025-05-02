@@ -20,6 +20,7 @@ def rpm_library(
         archive: bool = False,
         header_glob = None,
         header_only: bool = False,
+        support_linker_l: bool = False,
         visibility: list[str] = ["PUBLIC"],
         compatible_with_os: list[str] = [],
         test_include_headers: list[str] | Select = [],
@@ -81,6 +82,8 @@ def rpm_library(
                 --rpm-name={rpm_name} \
                 --lib={lib} \
                 --header-glob='{header_globs}'
+
+            {cp_L_dir}
         """.format(
             header_globs = json.encode(header_glob),
             lib = lib,
@@ -88,6 +91,7 @@ def rpm_library(
             soname = soname,
             maybe_archive = "--out-archive=$OUT/{}".format(archive_name) if archive else "",
             maybe_shared_lib = "--out-shared-lib=$OUT/{}".format(soname) if not (header_only or archive) else "",
+            cp_L_dir = "mkdir $OUT/L && cp --reflink=auto $OUT/{soname} $OUT/L/ && cp --reflink=auto $OUT/{soname} $OUT/L/lib{soname}".format(soname = soname) if support_linker_l else "",
         ),
         outs = {
             "headers": "headers",
@@ -95,7 +99,9 @@ def rpm_library(
             soname: soname,
         } if not (header_only or archive) else {}) | ({
             archive_name: archive_name,
-        } if archive else {}),
+        } if archive else {}) | ({
+            "L": "L",
+        } if support_linker_l else {}),
         rootless = True,
         layer = ":{}--layer".format(name),
         target_compatible_with = target_compatible_with,
@@ -109,6 +115,7 @@ def rpm_library(
         static_lib = ":{}--outputs[{}]".format(name, archive_name) if archive else None,
         header_only = header_only,
         extract_soname = kwargs.pop("extract_soname", not archive),
+        exported_linker_flags = ["-L$(location :{}--outputs[L])".format(name)] if support_linker_l else [],
         preferred_linkage = "shared" if not archive else "static",
         target_compatible_with = target_compatible_with,
         labels = [

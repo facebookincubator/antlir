@@ -5,5 +5,6 @@ oncall("antlir")
 rpm_library(
     name = "z",
     rpm = "zlib-devel",
+    support_linker_l = True,
     visibility = ["PUBLIC"],
 )
