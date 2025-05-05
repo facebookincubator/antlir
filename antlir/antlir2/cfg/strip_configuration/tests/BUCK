@@ -18,8 +18,14 @@ prelude.write_file(
 )
 
 strip_configuration_alias(
-    name = "cpu-arch.unconfigured",
+    name = "cpu-arch.stripped_alias",
     actual = ":cpu-arch",
+)
+
+prelude.configured_alias(
+    name = "cpu-arch.configured_alias",
+    actual = ":cpu-arch",
+    platform = "antlir//antlir/antlir2/cfg/strip_configuration:empty-platform",
 )
 
 image.layer(
@@ -31,8 +37,12 @@ image.layer(
             dst = "/cpu-arch",
         ),
         feature.install(
-            src = ":cpu-arch.unconfigured",
-            dst = "/cpu-arch.unconfigured",
+            src = ":cpu-arch.stripped_alias",
+            dst = "/cpu-arch.stripped_alias",
+        ),
+        feature.install(
+            src = ":cpu-arch.configured_alias",
+            dst = "/cpu-arch.configured_alias",
         ),
     ],
 )

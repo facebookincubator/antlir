@@ -15,8 +15,14 @@ fn test_strip_configuration() {
     );
     assert_eq!(
         "no-configuration",
-        std::fs::read_to_string("/cpu-arch.unconfigured")
-            .expect("failed to read /cpu-arch.unconfigured")
+        std::fs::read_to_string("/cpu-arch.stripped_alias")
+            .expect("failed to read /cpu-arch.stripped_alias")
             .trim()
-    )
+    );
+    assert_eq!(
+        "no-configuration",
+        std::fs::read_to_string("/cpu-arch.configured_alias")
+            .expect("failed to read /cpu-arch.configured_alias")
+            .trim()
+    );
 }
