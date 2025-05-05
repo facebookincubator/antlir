@@ -1,0 +1,7 @@
+load(":impl.bzl", "transition_to_distro_platform")
+
+oncall("antlir")
+
+transition_to_distro_platform(
+    name = "to-current-distro-platform",
+)

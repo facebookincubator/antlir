@@ -25,6 +25,9 @@ def ParseTimeFeature(
         # Deps resolved for the execution platform. These should not be installed
         # into images because they are produced only to be run on the build worker
         exec_deps: dict[str, typing.Any] | None = None,
+        # Deps that are transitioned to target the distro platform (instead of
+        # the default fbcode platforms)
+        distro_platform_deps: dict[str, typing.Any] | None = None,
         # Sources/deps that do not require named tracking between the parse and
         # analysis phases. Useful to support `select` in features that accept lists
         # of dependencies.
@@ -41,6 +44,7 @@ def ParseTimeFeature(
         srcs or {},
         deps or {},
         exec_deps or {},
+        distro_platform_deps or {},
         unnamed_deps_or_srcs or [],
         args or {},
     )
