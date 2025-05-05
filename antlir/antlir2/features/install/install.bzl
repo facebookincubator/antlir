@@ -12,17 +12,23 @@ load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
+    "MultiFeatureAnalysis",
     "ParseTimeFeature",
 )
+load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_rule")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:stat.bzl", "stat")
+load("//antlir/bzl:types.bzl", "types")
 
 default_permissions = record(
     binary = field(int | None, default = None),
     file = field(int | None, default = None),
     directory = field(int | None, default = None),
 )
+
+transition_to_distro_platform = enum("no", "yes", "yes-without-rpm-deps")
+_transition_to_distro_platform_enum = transition_to_distro_platform
 
 def install(
         *,
@@ -37,7 +43,8 @@ def install(
         always_use_gnu_debuglink: bool = False,
         setcap: str | None = None,
         default_permissions: default_permissions = default_permissions(),
-        ignore_symlink_tree: bool = False):
+        ignore_symlink_tree: bool = False,
+        transition_to_distro_platform: transition_to_distro_platform | str | bool = False):
     """
     Install a file or directory into the image.
 
@@ -67,6 +74,17 @@ def install(
         setcap: add file capabilities to the installed file
 
             Specified in the form described in `cap_from_text(3)`.
+
+        transition_to_distro_platform: build 'src' for the image distro
+
+            Transition the 'src' build target platform to match the distro of
+            this image, including linking against distro-provided third-party
+            deps.
+            If 'yes', any RPM dependencies of 'src' will be determined and
+            installed automatically.
+            If 'yes-without-rpm-deps', 'src' will be reconfigured for the distro
+            platform, but there will be no attempt to determine and install RPM
+            dependencies that 'src' may need.
     """
 
     # the default mode is determined later, after we know if the thing being
@@ -79,16 +97,41 @@ def install(
     if always_use_gnu_debuglink and not split_debuginfo:
         fail("always_use_gnu_debuglink requires split_debuginfo=True")
 
+    exec_deps = {
+        "_objcopy": internal_external(
+            fb = "fbsource//third-party/binutils:objcopy",
+            oss = "toolchains//:objcopy",
+        ),
+    }
+    deps = {}
+    deps_or_srcs = {}
+    distro_platform_deps = {}
+
+    if types.is_bool(transition_to_distro_platform):
+        transition_to_distro_platform = _transition_to_distro_platform_enum("yes" if transition_to_distro_platform else "no")
+    if types.is_string(transition_to_distro_platform):
+        transition_to_distro_platform = _transition_to_distro_platform_enum(transition_to_distro_platform)
+
+    if transition_to_distro_platform == _transition_to_distro_platform_enum("no"):
+        deps_or_srcs["src"] = src
+    elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes"):
+        distro_platform_deps["src"] = src
+        exec_deps["_rpm_find_requires"] = "antlir//antlir/distro/rpm:find-requires"
+        exec_deps["_rpm_plugin"] = "antlir//antlir/antlir2/features/rpm:rpm"
+        exec_deps["_rpm_plan"] = "antlir//antlir/antlir2/features/rpm:plan"
+        deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
+    elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes-without-rpm-deps"):
+        distro_platform_deps["src"] = src
+    else:
+        fail("impossible transition_to_distro_platform value '{}'".format(transition_to_distro_platform))
+
     return ParseTimeFeature(
         feature_type = "install",
         plugin = "antlir//antlir/antlir2/features/install:install",
-        deps_or_srcs = {"src": src},
-        exec_deps = {
-            "_objcopy": internal_external(
-                fb = "fbsource//third-party/binutils:objcopy",
-                oss = "toolchains//:objcopy",
-            ),
-        },
+        deps_or_srcs = deps_or_srcs,
+        deps = deps,
+        distro_platform_deps = distro_platform_deps,
+        exec_deps = exec_deps,
         kwargs = {
             "always_use_gnu_debuglink": always_use_gnu_debuglink,
             "default_binary_mode": default_permissions.binary,
@@ -102,6 +145,7 @@ def install(
             "setcap": setcap,
             "split_debuginfo": split_debuginfo,
             "text": None,
+            "transition_to_distro_platform": transition_to_distro_platform.value,
             "user": user,
             "xattrs": xattrs,
             "_binaries_require_repo": binaries_require_repo.select_value,
@@ -154,7 +198,7 @@ shared_libraries_record = record(
     dir_name = field(str),
 )
 
-def _impl(ctx: AnalysisContext) -> list[Provider]:
+def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     binary_info = None
     required_run_infos = []
     required_artifacts = []
@@ -265,31 +309,67 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # `attrs.source()`, then we can default the mode to 444
         if mode == None:
             mode = 0o444
-    return [
-        DefaultInfo(),
-        FeatureAnalysis(
-            buck_only_data = struct(
-                original_source = ctx.attrs.src,
-            ),
-            feature_type = "install",
-            build_phase = BuildPhase(ctx.attrs.build_phase),
-            data = struct(
-                src = src,
-                dst = ctx.attrs.dst,
-                mode = mode,
-                user = ctx.attrs.user,
-                group = ctx.attrs.group,
-                binary_info = binary_info,
-                xattrs = ctx.attrs.xattrs,
-                setcap = ctx.attrs.setcap,
-                always_use_gnu_debuglink = ctx.attrs.always_use_gnu_debuglink,
-                shared_libraries = shared_libraries,
-            ),
-            required_artifacts = [src] + required_artifacts,
-            required_run_infos = required_run_infos,
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+
+    install_feature = FeatureAnalysis(
+        buck_only_data = struct(
+            original_source = ctx.attrs.src,
         ),
-    ]
+        feature_type = "install",
+        build_phase = BuildPhase(ctx.attrs.build_phase),
+        data = struct(
+            src = src,
+            dst = ctx.attrs.dst,
+            mode = mode,
+            user = ctx.attrs.user,
+            group = ctx.attrs.group,
+            binary_info = binary_info,
+            xattrs = ctx.attrs.xattrs,
+            setcap = ctx.attrs.setcap,
+            always_use_gnu_debuglink = ctx.attrs.always_use_gnu_debuglink,
+            shared_libraries = shared_libraries,
+        ),
+        required_artifacts = [src] + required_artifacts,
+        required_run_infos = required_run_infos,
+        plugin = ctx.attrs.plugin[FeaturePluginInfo],
+    )
+
+    if ctx.attrs.transition_to_distro_platform != "yes":
+        return [
+            DefaultInfo(),
+            install_feature,
+        ]
+
+    # otherwise we need to produce an rpm feature too
+    rpm_subjects = ctx.actions.declare_output("rpm_requires.txt")
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._rpm_find_requires[RunInfo],
+            rpm_subjects.as_output(),
+            src,
+        ),
+        category = "rpm_find_requires",
+    )
+    anon_rpm_target = ctx.actions.anon_target(
+        rpms_rule,
+        {
+            "action": "install",
+            "driver": ctx.attrs._rpm_driver,
+            "plan": ctx.attrs._rpm_plan,
+            "plugin": ctx.attrs._rpm_plugin,
+            "subjects": [],
+            "subjects_src": rpm_subjects,
+        },
+    )
+
+    def _map(rpm_feature_providers):
+        return [
+            DefaultInfo(),
+            MultiFeatureAnalysis(
+                features = [install_feature, rpm_feature_providers[FeatureAnalysis]],
+            ),
+        ]
+
+    return anon_rpm_target.promise.map(_map)
 
 install_rule = rule(
     impl = _impl,
@@ -315,10 +395,14 @@ install_rule = rule(
         "setcap": attrs.option(attrs.string(), default = None),
         "split_debuginfo": attrs.bool(default = True),
         "src": attrs.option(
-            attrs.one_of(attrs.dep(), attrs.source()),
+            attrs.one_of(
+                attrs.dep(),
+                attrs.source(),
+            ),
             default = None,
         ),
         "text": attrs.option(attrs.string(), default = None),
+        "transition_to_distro_platform": attrs.enum(transition_to_distro_platform.values(), default = "no"),
         "user": attrs.one_of(
             attrs.string(),
             attrs.int(),
@@ -327,5 +411,9 @@ install_rule = rule(
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
         "_binaries_require_repo": binaries_require_repo.optional_attr,
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
+        "_rpm_driver": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
+        "_rpm_find_requires": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
+        "_rpm_plan": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
+        "_rpm_plugin": attrs.option(attrs.exec_dep(providers = [FeaturePluginInfo]), default = None),
     },
 )
