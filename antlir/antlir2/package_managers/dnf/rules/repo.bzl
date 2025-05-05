@@ -133,6 +133,7 @@ repo_attrs = {
 _repo = rule(
     impl = _impl,
     attrs = repo_attrs,
+    supports_incoming_transition = True,
 )
 
 repo = rule_with_default_target_platform(_repo)
