@@ -59,7 +59,7 @@ def extract_from_layer(
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
         plugin = "antlir//antlir/antlir2/features/extract:extract_from_layer",
-        antlir2_configured_deps = {
+        deps = {
             "layer": layer,
         },
         kwargs = {

@@ -139,9 +139,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             feature_deps.append(feat)
             continue
 
-        feature_type, plugin, kwargs, deps_or_srcs, srcs, deps, exec_deps, antlir2_configured_deps, unnamed_deps_or_srcs, args = feat
+        feature_type, plugin, kwargs, deps_or_srcs, srcs, deps, exec_deps, unnamed_deps_or_srcs, args = feat
 
-        anon_kwargs = kwargs | deps_or_srcs | srcs | deps | exec_deps | antlir2_configured_deps
+        anon_kwargs = kwargs | deps_or_srcs | srcs | deps | exec_deps
         anon_kwargs["plugin"] = plugin
 
         # TODO: make args consistent with the other types
@@ -253,11 +253,6 @@ _nested_feature_type = attrs.option(
                 attrs.string(),
                 attrs.exec_dep(),
                 doc = "ParseTimeFeature.exec_deps",
-            ),
-            attrs.dict(
-                attrs.string(),
-                attrs.dep(),
-                doc = "ParseTimeFeature.antlir2_configured_deps",
             ),
             attrs.list(
                 attrs.one_of(attrs.dep(), attrs.source()),
