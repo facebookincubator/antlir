@@ -19,20 +19,23 @@
 # configuration that we know will be irrelevant - prime example is the `rpm`
 # snapshot rules - the output of that rule is always 100% identical no matter
 # what the platform configuration may be, so that work should be shared.
-def _strip_configuration_transition_impl(
-        platform: PlatformInfo,  # @unused
-        refs: struct) -> PlatformInfo:  # @unused
-    return PlatformInfo(
-        label = "<stripped>",
-        configuration = ConfigurationInfo(constraints = {}, values = {}),
-    )
-
-_strip_configuration_transition = transition(
-    impl = _strip_configuration_transition_impl,
-    refs = {},
-)
 
 def _strip_configuration_impl(ctx: AnalysisContext) -> list[Provider]:
+    plat = ctx.attrs._stripped_platform[PlatformInfo]
+    return [
+        DefaultInfo(),
+        TransitionInfo(impl = lambda platform: plat),
+    ]
+
+strip_configuration = rule(
+    impl = _strip_configuration_impl,
+    attrs = {
+        "_stripped_platform": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/cfg/strip_configuration:empty-platform")),
+    },
+    is_configuration_rule = True,
+)
+
+def _strip_configuration_alias_impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.label.package not in [
         "antlir/antlir2/cfg/strip_configuration/tests",
         # @oss-disable
@@ -44,9 +47,9 @@ def _strip_configuration_impl(ctx: AnalysisContext) -> list[Provider]:
     return ctx.attrs.actual.providers
 
 strip_configuration_alias = rule(
-    impl = _strip_configuration_impl,
+    impl = _strip_configuration_alias_impl,
     attrs = {
-        "actual": attrs.transition_dep(cfg = _strip_configuration_transition),
+        "actual": attrs.transition_dep(cfg = "antlir//antlir/antlir2/cfg/strip_configuration:strip-configuration"),
         "labels": attrs.list(attrs.string(), default = []),
     },
 )

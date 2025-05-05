@@ -1,0 +1,14 @@
+load("@prelude//:rules.bzl", "platform")
+load(":strip_configuration.bzl", "strip_configuration")
+
+oncall("antlir")
+
+platform(
+    name = "empty-platform",
+    # a totally empty platform
+    visibility = ["PUBLIC"],
+)
+
+strip_configuration(
+    name = "strip-configuration",
+)
