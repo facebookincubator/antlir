@@ -45,40 +45,8 @@ def define_platforms():
                 os = os,
             )
 
-def _os_label(os: os_t) -> str:
-    return "antlir//antlir/antlir2/os:" + os.name
-
 def _platform_label(os: os_t, arch: arch_t) -> str:
     return "antlir//antlir/distro/platform:" + _platform_name(os, arch)
-
-def alias_for_current_image_platform(*, name: str, actual: str, visibility = None):
-    """
-    Configure another target (typically a binary rule) to build against the
-    antlir2 system platform for whatever configuration is currently active - in
-    other words, build a binary against the system platform for an image in
-    which the binary is being installed.
-    """
-    tcw = {"DEFAULT": ["antlir//antlir/distro:incompatible"]}
-    platform = {}
-    for os in OSES:
-        if not os.has_platform_toolchain:
-            continue
-        os_tcw = {"DEFAULT": ["antlir//antlir/distro:incompatible"]}
-        os_plat = {}
-        for arch in os.architectures:
-            os_plat[_cpu_label(arch)] = _platform_label(os, arch)
-            os_tcw[_cpu_label(arch)] = []
-
-        platform[_os_label(os)] = select(os_plat)
-        tcw[_os_label(os)] = select(os_tcw)
-
-    native.configured_alias(
-        name = name,
-        actual = actual,
-        target_compatible_with = select(tcw),
-        platform = select(platform),
-        visibility = visibility,
-    )
 
 def default_image_platform(os: str | None = None):
     os = os or get_default_os_for_package()

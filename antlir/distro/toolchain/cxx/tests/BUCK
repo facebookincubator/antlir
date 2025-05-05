@@ -5,7 +5,6 @@ load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 load("//antlir/bzl:build_defs.bzl", "cpp_binary", "cpp_library", "third_party")
 load("//antlir/distro/platform:defs.bzl", "default_image_platform")
-load("//antlir/distro/rpm:requires.bzl", "install_all_binary_rpm_requirements")
 
 oncall("antlir")
 
@@ -187,54 +186,5 @@ image_python_test(
 antlir2_configured_alias(
     name = "test-c9-from-install",
     actual = ":test-from-install",
-    default_os = "centos9",
-)
-
-image.layer(
-    name = "test-layer-from-global-query-pre",
-    features = [
-        feature.rpms_install(rpms = [
-            "binutils",
-            "coreutils",
-        ]),
-        feature.ensure_dirs_exist(dirs = "/test"),
-        feature.install(
-            src = ":main",
-            dst = select({
-                "//antlir/antlir2/os:centos10": "/test/main-for-centos10",
-                "//antlir/antlir2/os:centos9": "/test/main-for-centos9",
-            }),
-            never_use_dev_binary_symlink = True,
-            transition_to_distro_platform = "yes-without-rpm-deps",
-        ),
-    ],
-)
-
-image.layer(
-    name = "test-layer-from-global-query",
-    features = [
-        install_all_binary_rpm_requirements(layer = ":test-layer-from-global-query-pre"),
-    ],
-    parent_layer = ":test-layer-from-global-query-pre",
-)
-
-image_python_test(
-    name = "test-from-global-query",
-    srcs = ["test.py"],
-    default_os = "centos10",
-    env = {
-        "INSTALL_MODE": "global-query",
-        "OS": select({
-            "//antlir/antlir2/os:centos10": "centos10",
-            "//antlir/antlir2/os:centos9": "centos9",
-            "DEFAULT": "<NEVER USED>",
-        }),
-    },
-    layer = ":test-layer-from-install",
-)
-
-antlir2_configured_alias(
-    name = "test-c9-from-global-query",
-    actual = ":test-from-global-query",
     default_os = "centos9",
 )
