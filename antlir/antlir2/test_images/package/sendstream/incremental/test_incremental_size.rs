@@ -18,7 +18,7 @@ fn size_of(resource: &str) -> ByteSize {
 }
 
 macro_rules! assert_size_close {
-    ($resource:literal, $expected:expr, $tolerance:expr) => {
+    ($resource:literal, $expected:expr_2021, $tolerance:expr_2021) => {
         assert!(
             $tolerance < $expected,
             "tolerance should be smaller than the expected size"

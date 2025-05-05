@@ -539,7 +539,8 @@ Options=rw"#;
 
         // no RUST_LOG
         if env::var_os("RUST_LOG").is_some() {
-            env::remove_var("RUST_LOG");
+            // TODO: Audit that the environment access only happens in single-threaded code.
+            unsafe { env::remove_var("RUST_LOG") };
             let _ = tracing::subscriber::set_default(
                 tracing_subscriber::fmt()
                     .with_env_filter(EnvFilter::from_default_env())
@@ -549,7 +550,8 @@ Options=rw"#;
         }
 
         // RUST_LOG set at a more verbose level than what we want from virtiofsd
-        env::set_var("RUST_LOG", "debug");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("RUST_LOG", "debug") };
         let _ = tracing::subscriber::set_default(
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::from_default_env())
@@ -558,7 +560,8 @@ Options=rw"#;
         assert_eq!(share.virtiofsd_log_level(), Some("warn"));
 
         // RUST_LOG set to a less verbose level
-        env::set_var("RUST_LOG", "error");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("RUST_LOG", "error") };
         let _ = tracing::subscriber::set_default(
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::from_default_env())
@@ -567,7 +570,8 @@ Options=rw"#;
         assert_eq!(share.virtiofsd_log_level(), None);
 
         // Explicit virtiofsd level
-        env::set_var("RUST_LOG", "debug,virtiofsd=info");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("RUST_LOG", "debug,virtiofsd=info") };
         let _ = tracing::subscriber::set_default(
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::from_default_env())

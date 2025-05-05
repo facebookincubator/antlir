@@ -318,7 +318,7 @@ impl GraphBuilder {
     fn verify_no_missing_deps(&self) -> Result<()> {
         // TODO: we can easily detect multiple errors, but the interface in this
         // crate is to only return one, so just limit it to one error
-        if let Some((key, feature)) = self
+        let x = match self
             .db
             .as_ref()
             .prepare(
@@ -358,14 +358,16 @@ impl GraphBuilder {
             })?
             .next()
             .transpose()?
-        {
-            Err(Error::MissingItem {
-                key,
-                required_by: feature,
-            })
-        } else {
-            Ok(())
-        }
+            {
+                Some((key, feature)) => {
+                    Err(Error::MissingItem {
+                        key,
+                        required_by: feature,
+                    })
+                },
+                _ => Ok(())
+            };
+        x
     }
 
     fn verify_no_invalid_deps(&self) -> Result<()> {
@@ -523,7 +525,7 @@ impl Graph {
 
     /// Iterate over features in topographical order (dependencies sorted before the
     /// features that require them).
-    pub fn pending_features(&self) -> Result<impl Iterator<Item = Feature>> {
+    pub fn pending_features(&self) -> Result<impl Iterator<Item = Feature> + use<>> {
         let features = toposort::toposort(self.db.as_ref())?;
         Ok(features.into_iter())
     }

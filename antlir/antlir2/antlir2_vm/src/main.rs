@@ -475,7 +475,8 @@ mod test {
         assert!(get_test_vm_args(&command, vec![], false).is_err());
 
         let env_var_test = valid;
-        std::env::set_var("TEST_PILOT_A", "A");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { std::env::set_var("TEST_PILOT_A", "A") };
         let parsed =
             get_test_vm_args(&env_var_test, vec![], false).expect("Parsing should succeed");
         assert!(

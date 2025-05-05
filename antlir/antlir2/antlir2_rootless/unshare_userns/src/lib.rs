@@ -24,7 +24,7 @@ pub struct Map<'a> {
 
 mod c {
     use std::os::raw::c_char;
-    extern "C" {
+    unsafe extern "C" {
         pub(crate) fn unshare_userns(
             pid_cstr: *const c_char,
             uid_map_outside_root: *const c_char,

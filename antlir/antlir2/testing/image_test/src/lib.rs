@@ -227,7 +227,8 @@ mod test {
 
     #[test]
     fn test_gtest() {
-        env::set_var("GTEST_OUTPUT", "/here/here");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("GTEST_OUTPUT", "/here/here") };
         let arg = TestArgs::parse_from(["test", "gtest", "/path/to/the/test"]);
         assert!(!arg.test.is_list_tests());
         assert_eq!(
@@ -239,7 +240,8 @@ mod test {
             vec!["/path/to/the/test", "--gtest_output=/here/here"]
         );
 
-        env::remove_var("GTEST_OUTPUT");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::remove_var("GTEST_OUTPUT") };
         let arg =
             TestArgs::parse_from(["test", "gtest", "/path/to/the/test", "--gtest_list_tests"]);
         assert!(arg.test.is_list_tests());

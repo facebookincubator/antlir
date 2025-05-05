@@ -195,16 +195,19 @@ trait TryToField {
 
 impl<'v> TryToField for Value<'v> {
     fn try_to_field(&self, reg: &TypeRegistry) -> anyhow::Result<ir::Field> {
-        if let Ok(ty) = self.try_to_type(reg) {
-            Ok(ir::Field {
+        match self.try_to_type(reg) {
+            Ok(ty) => Ok(ir::Field {
                 ty,
                 required: true,
                 default_value: None,
-            })
-        } else if let Some(f) = self.downcast_ref::<StarlarkField>() {
-            Ok(f.0.clone())
-        } else {
-            Err(anyhow!("cannot convert {:?} to field", self))
+            }),
+            _ => {
+                if let Some(f) = self.downcast_ref::<StarlarkField>() {
+                    Ok(f.0.clone())
+                } else {
+                    Err(anyhow!("cannot convert {:?} to field", self))
+                }
+            }
         }
     }
 }
