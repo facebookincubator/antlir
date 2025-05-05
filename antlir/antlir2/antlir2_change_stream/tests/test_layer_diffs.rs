@@ -80,10 +80,10 @@ fn set_times<C>(filename: &str) -> Vec<Change<C>> {
     vec![Change::new(PathBuf::from(filename), zero_times())]
 }
 
-fn file_changes<C>(
+fn file_changes<C, T: IntoIterator<Item = Operation<C>>>(
     path: &str,
-    operations: impl IntoIterator<Item = Operation<C>>,
-) -> impl Iterator<Item = Change<C>> {
+    operations: T,
+) -> impl Iterator<Item = Change<C>> + use<C, T> {
     let path = PathBuf::from(path);
     operations
         .into_iter()

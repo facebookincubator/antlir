@@ -35,18 +35,20 @@ unsafe fn mount_setattr(
     flags: c_uint,
     attr: &mount_attr,
 ) -> Result<(), std::io::Error> {
-    if libc::syscall(
-        libc::SYS_mount_setattr,
-        dirfd,
-        path,
-        flags,
-        attr as *const _ as usize,
-        std::mem::size_of::<mount_attr>(),
-    ) == -1
-    {
-        Err(std::io::Error::last_os_error())
-    } else {
-        Ok(())
+    unsafe {
+        if libc::syscall(
+            libc::SYS_mount_setattr,
+            dirfd,
+            path,
+            flags,
+            attr as *const _ as usize,
+            std::mem::size_of::<mount_attr>(),
+        ) == -1
+        {
+            Err(std::io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
     }
 }
 

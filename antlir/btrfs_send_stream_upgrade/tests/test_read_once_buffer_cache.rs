@@ -88,13 +88,13 @@ fn populate_tempfile(tempfile: &mut tempfile::NamedTempFile) -> anyhow::Result<(
 fn populate_read_ranges(vec: &mut [Vec<u16>]) -> anyhow::Result<u16> {
     let mut rng = thread_rng();
     let mut reader = 0usize;
-    let start_offset = 2 * (rng.gen::<u16>() % MAX_HALF_START_OFFSET);
+    let start_offset = 2 * (rng.r#gen::<u16>() % MAX_HALF_START_OFFSET);
     let mut start = start_offset;
     while start < MAXIMUM_NUMBER {
         // Since u16 is two bytes long, let's ensure that all lengths
         // are multiples of two to keep both bytes together
         // Also skip zero values
-        let length: u16 = 2 * (rng.gen::<u16>() % MAX_HALF_LENGTH + 1u16);
+        let length: u16 = 2 * (rng.r#gen::<u16>() % MAX_HALF_LENGTH + 1u16);
         let end = std::cmp::min(start + length, MAXIMUM_NUMBER);
         vec[reader].push(start);
         vec[reader].push(end);

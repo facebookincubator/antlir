@@ -7,7 +7,7 @@
 
 use r#impl::Feature;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn init_tracing(dispatch: &tracing::Dispatch) {
     let _ = tracing::dispatcher::set_global_default(dispatch.clone());
     tracing_core::callsite::rebuild_interest_cache();
@@ -17,7 +17,7 @@ static_assertions::assert_impl_all!(
     Feature: antlir2_depgraph_if::RequiresProvides, antlir2_compile::CompileFeature,
 );
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn as_requires_provides(
     feature: &antlir2_features::Feature,
 ) -> antlir2_features::Result<Box<dyn antlir2_depgraph_if::RequiresProvides>> {
@@ -26,7 +26,7 @@ pub extern "Rust" fn as_requires_provides(
     Ok(feature)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn as_compile_feature(
     feature: &antlir2_features::Feature,
 ) -> antlir2_features::Result<Box<dyn antlir2_compile::CompileFeature>> {

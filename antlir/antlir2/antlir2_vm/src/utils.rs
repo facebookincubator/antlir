@@ -193,10 +193,12 @@ mod test {
 
         fn test(&self) {
             ALLOWED_ENV_NAMES.iter().for_each(|name| {
-                env::remove_var(name);
+                // TODO: Audit that the environment access only happens in single-threaded code.
+                unsafe { env::remove_var(name) };
             });
             self.envs.iter().for_each(|(name, val)| {
-                env::set_var(name, val);
+                // TODO: Audit that the environment access only happens in single-threaded code.
+                unsafe { env::set_var(name, val) };
             });
             let result: HashMap<_, _> =
                 env_names_to_kvpairs(self.passenv.iter().map(|s| s.to_string()).collect())
