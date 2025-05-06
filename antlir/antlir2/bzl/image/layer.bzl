@@ -674,9 +674,8 @@ def layer(
     Build a new image layer from the given `features` and `parent_layer`.
     """
 
-    # TODO(vmagro): codemod existing callsites to use default_os directly
-    if kwargs.get("flavor", None) and default_os:
-        fail("default_os= is preferred, stop setting flavor=")
+    if "flavor" in kwargs:
+        fail("flavor cannot be manually set on layer targets")
 
     # Some layers must inherit their parent flavor and not the package setting,
     # but this should be a narrow use case mainly limited to antlir-owned macros.
