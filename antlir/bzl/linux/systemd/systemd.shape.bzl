@@ -23,6 +23,8 @@ service_t = shape.shape(
     exec_start = shape.field(shape.list(str), optional = True),
     standard_output = shape.field(str, optional = True),
     timeout_start = shape.field(str, optional = True),
+    restart = shape.field(str, optional = True),
+    restart_sec = shape.field(str, optional = True),
 )
 
 timer_t = shape.shape(
