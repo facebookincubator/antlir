@@ -24,6 +24,7 @@ use crate::run_cmd;
 #[serde(deny_unknown_fields)]
 pub struct Tar {
     build_appliance: BuildAppliance,
+    preserve_xattrs: bool,
 }
 
 impl PackageFormat for Tar {
@@ -43,28 +44,29 @@ impl PackageFormat for Tar {
             .working_directory(Path::new("/__antlir2__/working_directory"))
             .build();
 
-        run_cmd(
-            unshare(isol_context)?
-                .command("tar")?
-                .arg("--sparse")
-                .arg("--one-file-system")
-                .arg("--acls")
-                .arg("--xattrs")
-                // Sorted by name to ensure reproducibility, as well as
-                // predictable ordering when the tar is read as a byte stream.
-                // Some use cases require consumption of tar's contents with a
-                // known ordering, such as when the tar contains incremental
-                // btrfs snapshots that may be opportunistically skipped.
-                .arg("--sort=name")
-                .arg("-C")
-                .arg("/__antlir2__/root")
-                .arg("-c")
-                .arg("-f")
-                .arg("/__antlir2__/out/tar")
-                .arg(".")
-                .stdout(Stdio::piped()),
-        )
-        .context("Failed to build tar")?;
+        let mut tar_cmd = unshare(isol_context)?.command("tar")?;
+        tar_cmd
+            .arg("--sparse")
+            .arg("--one-file-system")
+            .arg("--acls")
+            // Sorted by name to ensure reproducibility, as well as
+            // predictable ordering when the tar is read as a byte stream.
+            // Some use cases require consumption of tar's contents with a
+            // known ordering, such as when the tar contains incremental
+            // btrfs snapshots that may be opportunistically skipped.
+            .arg("--sort=name")
+            .arg("-C")
+            .arg("/__antlir2__/root")
+            .arg("-c")
+            .arg("-f")
+            .arg("/__antlir2__/out/tar")
+            .arg(".")
+            .stdout(Stdio::piped());
+        if self.preserve_xattrs {
+            tar_cmd.arg("--xattrs");
+        };
+
+        run_cmd(&mut tar_cmd).context("Failed to build tar")?;
 
         Ok(())
     }
