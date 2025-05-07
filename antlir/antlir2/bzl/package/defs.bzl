@@ -365,6 +365,9 @@ _tar, tar_anon = _new_package_rule(
     sudo = True,
     uses_build_appliance = True,
     force_extension = "tar",
+    rule_attrs = {
+        "preserve_xattrs": attrs.bool(default = True),
+    },
 )
 
 _tar_gz = _new_compressed_package_rule(
