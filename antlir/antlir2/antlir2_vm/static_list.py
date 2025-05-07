@@ -27,7 +27,6 @@ def main():
     sys.argv.pop(0)
     which = sys.argv[0]
     if which == "cpp":
-        print(sys.argv)
         # First get the real gtest lister binary
         parser = argparse.ArgumentParser()
         parser.add_argument("--wrap", required=True)
@@ -38,7 +37,14 @@ def main():
         parser = argparse.ArgumentParser()
         parser.add_argument("binary")
         args, extras = parser.parse_known_args(extras[-2:])
-        os.execv(wrapped, [wrapped, args.binary] + extras)
+        # This should be simplified and this gross `!= "gtest"` check should be
+        # removed when the json static listing migration is fully complete and
+        # we don't have to worry about multiple cli args formats
+        wrapped_argv = [wrapped]
+        if args.binary != "gtest":
+            wrapped_argv.append(args.binary)
+        wrapped_argv.extend(extras)
+        os.execv(wrapped, wrapped_argv)
     if which == "py":
         parser = argparse.ArgumentParser()
         parser.add_argument("--wrap", required=True)
