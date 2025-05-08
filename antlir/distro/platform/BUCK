@@ -16,6 +16,9 @@ platform(
         "ovr_config//os/constraints:linux",
         # TODO: figure out how to build sanitized binaries?
         # @oss-disable
+        # python_binary targets are destined for an image that has no fbcode
+        # repo or runtime, it must be packaged standalone
+        # @oss-disable
     ],
     visibility = ["//antlir/..."],
 )

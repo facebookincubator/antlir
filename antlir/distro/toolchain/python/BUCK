@@ -1,0 +1,21 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load(":defs.bzl", "image_python_toolchain")
+
+oncall("antlir")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.rpms_install(rpms = [
+            "python3",
+            "binutils",
+        ]),
+    ],
+)
+
+image_python_toolchain(
+    name = "toolchain",
+    layer = ":layer",
+    visibility = ["PUBLIC"],
+)
