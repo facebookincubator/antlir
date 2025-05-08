@@ -1,4 +1,4 @@
-# @generated SignedSource<<645ffd15d11d4835836882841e0f52ff>>
+# @generated SignedSource<<5cf8b3c952bbc55c59379e3cb93fdc41>>
 PROJECTS = [
     ("binutils", "iberty"),
     ("boost", "boost"),
@@ -75,6 +75,7 @@ PROJECTS = [
     ("pcre", "pcre"),
     ("pcre", "pcrecpp"),
     ("protobuf", "protobuf"),
+    ("python3", "python3"),
     ("re2", "re2"),
     ("readline", "readline"),
     ("rpm", "librpm"),

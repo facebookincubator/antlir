@@ -146,10 +146,23 @@ def rpm_library(
         ],
     )
 
+    image.layer(
+        name = "{}--test-deps-layer".format(name),
+        features = [
+            feature.install(
+                src = ":{}--test-deps-binary".format(name),
+                dst = "/test-deps-binary",
+                transition_to_distro_platform = True,
+            ),
+            feature.rpms_install(rpms = ["/bin/sh"]),  # need shell to invoke the test
+        ],
+    )
+
     image_sh_test(
         name = "{}--test-deps".format(name),
-        test = ":{}--test-deps-binary".format(name),
-        layer = "antlir//antlir/distro/deps:base",
+        test = "antlir//antlir/distro/deps:test-deps-binary",
+        layer = ":{}--test-deps-layer".format(name),
+        # layer = "antlir//antlir/distro/deps:rpm_library_test_layer",
         default_target_platform = default_image_platform(),
         rootless = True,
         labels = ["antlir-distro-dep-test"],

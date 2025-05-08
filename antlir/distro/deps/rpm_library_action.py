@@ -27,10 +27,9 @@ def main():
     headers = {}
     if args.header_glob:
         for subdir, pattern in args.header_glob:
-            for p in glob.glob(pattern, root_dir=subdir, recursive=True):
-                p = Path(p)
-                dst = p.relative_to(subdir)
-                headers[dst] = p
+            for relpath in glob.glob(pattern, root_dir=subdir, recursive=True):
+                relpath = Path(relpath)
+                headers[relpath] = subdir / relpath
     else:
         try:
             rpm = subprocess.run(

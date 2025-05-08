@@ -2,7 +2,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/bzl:build_defs.bzl", "python_library", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_library", "rust_binary")
 load(":unavailable.bzl", "unavailable")
 
 oncall("antlir")
@@ -79,4 +79,8 @@ python_library(
     name = "rpm_library_action",
     srcs = ["rpm_library_action.py"],
     labels = ["autodeps2_generated"],
+)
+
+export_file(
+    name = "test-deps-binary",
 )

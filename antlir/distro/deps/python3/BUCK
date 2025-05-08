@@ -1,0 +1,13 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "python3",
+    header_glob = [
+        ("/usr/include/python3.9", "**/*.h"),
+        ("/usr/include/python3.12", "**/*.h"),
+    ],
+    test_include_headers = ["Python.h"],
+    visibility = ["PUBLIC"],
+)
