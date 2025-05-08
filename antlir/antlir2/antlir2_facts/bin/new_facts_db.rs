@@ -197,7 +197,7 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
         .arg("-qa")
         .arg("--queryformat")
         .arg(OsStr::from_bytes(
-            b"%{NAME}\xff%{EPOCH}\xff%{VERSION}\xff%{RELEASE}\xff%{ARCH}\xff%{CHANGELOGTEXT}\xff%{OS}\xff%{SIZE}\xff%{SOURCERPM}\xff",
+            b"%{NAME}\xff%{EPOCH}\xff%{VERSION}\xff%{RELEASE}\xff%{ARCH}\xff%{CHANGELOGTEXT}\xff%{OS}\xff%{SIZE}\xff%{SOURCERPM}\xff%{PKGID}\xff",
         ))
         .output();
     if matches!(out, Err(ref e) if e.kind() == ErrorKind::NotFound) {
@@ -209,7 +209,7 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
         "rpm -qa failed: {}",
         String::from_utf8_lossy(&out.stderr)
     );
-    for (name, epoch, version, release, arch, changelog, os, size, source_rpm) in
+    for (name, epoch, version, release, arch, changelog, os, size, source_rpm, pkgid) in
         out.stdout.split(|b| *b == 0xff).tuples()
     {
         let name = decode_rpm_field!(name)?;
@@ -221,6 +221,7 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
         let os = decode_rpm_field!(os, opt)?;
         let size = decode_rpm_field!(size, opt)?;
         let source_rpm = decode_rpm_field!(source_rpm)?;
+        let pkgid = decode_rpm_field!(pkgid)?;
         let rpm = Rpm::builder()
             .name(name)
             .epoch(match epoch {
@@ -239,6 +240,7 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
                     .with_context(|| format!("while parsing size '{s}'"))
             })?)
             .source_rpm(source_rpm)
+            .pkgid(pkgid)
             .build();
         remove.remove(&rpm.key());
         tx.insert(&rpm)
