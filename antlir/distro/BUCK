@@ -1,7 +1,18 @@
-load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
+load("@prelude//:rules.bzl", "config_setting", "constraint_setting", "constraint_value")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 
 oncall("antlir")
+
+# Mark that a build is configured to target an antlir system platform (in other
+# words, not the fbcode platform)
+config_setting(
+    name = "build-for-distro",
+    constraint_values = [
+        "ovr_config//os/constraints:linux",
+        ":build-for-distro-constraint",
+    ],
+    visibility = ["//antlir/distro/platform/..."],
+)
 
 # Provide a constraint that can be used to turn on antlir2 toolchain or not
 constraint_setting(
@@ -9,10 +20,8 @@ constraint_setting(
     visibility = [],
 )
 
-# Mark that a build is configured to target an antlir system platform (in other
-# words, not the fbcode platform)
 constraint_value(
-    name = "build-for-distro",
+    name = "build-for-distro-constraint",
     constraint_setting = ":target",
     visibility = ["//antlir/distro/..."],
 )

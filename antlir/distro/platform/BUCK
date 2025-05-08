@@ -8,7 +8,7 @@ platform(
     constraint_values = [
         # Set this constraint so that the default toolchains selected by
         # buck are the ones defined for antlir distro targets
-        "antlir//antlir/distro:build-for-distro",
+        "antlir//antlir/distro:build-for-distro-constraint",
         # TODO: using the linker wrapper that understands these flags would
         # unblock this
         # @oss-disable

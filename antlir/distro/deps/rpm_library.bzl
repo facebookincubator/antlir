@@ -8,7 +8,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "cpp_binary", "write_file")
+load("//antlir/bzl:build_defs.bzl", "alias", "cpp_binary", "write_file")
 load("//antlir/distro/platform:defs.bzl", "default_image_platform")
 load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
@@ -123,6 +123,16 @@ def rpm_library(
         ],
         **kwargs
     )
+
+    # These aliases are totally useless since CentOS has nothing to do with
+    # fbcode, Android or Apple platforms, but it breaks some 'buck2 uquery's and
+    # janky macros that append platform suffixes like this
+    for suffix in ["Fbcode", "Apple", "Android"]:
+        alias(
+            name = name + suffix,
+            actual = ":" + name,
+            visibility = ["PUBLIC"],
+        )
 
     write_file(
         name = "{}--test-deps-main.cpp".format(name),
