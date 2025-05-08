@@ -140,6 +140,7 @@ cxx_genrule = shim.cxx_genrule
 python_binary = shim.python_binary
 python_library = shim.python_library
 python_unittest = shim.python_unittest
+cpp_python_extension = shim.cpp_python_extension
 buck_command_alias = shim.buck_command_alias
 buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
