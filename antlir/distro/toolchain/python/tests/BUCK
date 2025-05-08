@@ -97,9 +97,7 @@ image.layer(
     name = "test-layer-from-install",
     features = [
         feature.rpms_install(rpms = [
-            "python3",
             "util-linux",
-            "unzip",
         ]),
         feature.ensure_dirs_exist(dirs = "/test"),
         feature.install(
