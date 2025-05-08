@@ -23,6 +23,8 @@ def _image_platform(
         name = name,
         constraint_values = [
             _cpu_label(arch, constraint = True),
+            # this is the python version, it changes based on OS
+            os.py_constraint,
         ],
         visibility = ["PUBLIC"],
         deps = [

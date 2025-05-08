@@ -192,6 +192,15 @@ def _python_unittest(*args, **kwargs):
 
     _wrap_internal(native.python_test, args, kwargs)
 
+def _cpp_python_extension(*args, **kwargs):
+    _wrap_internal(cpp_python_extension, args, kwargs, is_titled_labels = True)
+
+def _rust_python_extension(name: str, **_kwargs):
+    native.alias(
+        name = name,
+        actual = "antlir//antlir:empty",
+    )
+
 def _rust_unittest(*args, **kwargs):
     kwargs.pop("nodefaultlibs", None)
     kwargs.pop("allocator", None)
@@ -291,6 +300,7 @@ shim = struct(
     python_binary = _python_binary,
     python_library = _python_library,
     python_unittest = _python_unittest,
+    cpp_python_extension = _cpp_python_extension,
     rust_binary = _rust_binary,
     rust_bindgen_library = _rust_bindgen_library,
     rust_library = _rust_library,

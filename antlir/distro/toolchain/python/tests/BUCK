@@ -2,7 +2,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
-load("//antlir/bzl:build_defs.bzl", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "cpp_python_extension", "python_binary")
 load("//antlir/distro/platform:defs.bzl", "default_image_platform")
 
 oncall("antlir")
@@ -18,6 +18,11 @@ python_binary(
         "//antlir/antlir2/os:centos10",  # need a newer python only in c10
         "//antlir/distro:build-for-distro",
     ],
+    deps = [":ext"],
+)
+
+cpp_python_extension(
+    name = "ext",
 )
 
 image.layer(

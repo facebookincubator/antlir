@@ -23,6 +23,7 @@ os_t = record(
     flavor = str,
     target = str,
     has_platform_toolchain = bool,
+    py_constraint = str,
 )
 
 def _new_os(name: str, **kwargs):
@@ -40,6 +41,9 @@ def _new_os(name: str, **kwargs):
     )
     kwargs.setdefault("target", "antlir//antlir/antlir2/os:" + name)
     kwargs.setdefault("has_platform_toolchain", True)
+    # Default to py version 3.12 if we don't know what python version
+    py_ver = kwargs.get("py_constraint", "ovr_config//third-party/python/constraints:3.12")
+    kwargs.setdefault("py_constraint", py_ver)
     return os_t(
         name = name,
         **kwargs
@@ -54,9 +58,11 @@ OSES = [
     ),
     _new_os(
         name = "centos9",
+        py_constraint = "ovr_config//third-party/python/constraints:3.9",
     ),
     _new_os(
         name = "centos10",
+        py_constraint = "ovr_config//third-party/python/constraints:3.12",
     ),
 ]
 
