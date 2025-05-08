@@ -39,6 +39,8 @@ pub struct Rpm {
     size: u64,
     #[builder(setter(into))]
     source_rpm: String,
+    #[builder(setter(into))]
+    pkgid: String,
 }
 
 fn skip_epoch(epoch: &u64) -> bool {
@@ -145,6 +147,7 @@ mod tests {
             .arch("x86_64")
             .changelog(Some("- CVE-2024-1234".into()))
             .source_rpm("foo.src.rpm")
+            .pkgid("pkgid")
             .build();
         assert_eq!(rpm.patched_cves(), BTreeSet::from(["CVE-2024-1234"]));
     }
