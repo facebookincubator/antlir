@@ -6,7 +6,7 @@
 def ensure_single_output(
         dep: Dependency | Artifact | DefaultInfo | ProviderCollection,
         optional: bool = False) -> Artifact | None:
-    if type(dep) == "artifact":
+    if isinstance(dep, Artifact):
         return dep
     elif isinstance(dep, DefaultInfo):
         default_outputs = dep.default_outputs
