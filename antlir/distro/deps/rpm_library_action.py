@@ -7,6 +7,7 @@
 import argparse
 import glob
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -27,9 +28,14 @@ def main():
     headers = {}
     if args.header_glob:
         for subdir, pattern in args.header_glob:
-            for relpath in glob.glob(pattern, root_dir=subdir, recursive=True):
+            if not os.path.exists(subdir):
+                continue
+            old_cwd = os.getcwd()
+            os.chdir(subdir)
+            for relpath in glob.glob(pattern, recursive=True):
                 relpath = Path(relpath)
                 headers[relpath] = subdir / relpath
+            os.chdir(old_cwd)
     else:
         try:
             rpm = subprocess.run(

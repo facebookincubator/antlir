@@ -1,13 +1,35 @@
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
 
+any_version_header_glob = [
+    ("/usr/include/python3.9", "**/*.h"),
+    ("/usr/include/python3.12", "**/*.h"),
+]
+
 rpm_library(
     name = "python3",
-    header_glob = [
-        ("/usr/include/python3.9", "**/*.h"),
-        ("/usr/include/python3.12", "**/*.h"),
-    ],
+    header_glob = internal_external(
+        fb = select({
+            "DEFAULT": any_version_header_glob,
+            "ovr_config//third-party/python/constraints:3.12": [
+                ("/usr/include/python3.12", "**/*.h"),
+            ],
+            "ovr_config//third-party/python/constraints:3.9": [
+                ("/usr/include/python3.9", "**/*.h"),
+            ],
+        }),
+        oss = any_version_header_glob,
+    ),
+    rpm = internal_external(
+        fb = select({
+            "DEFAULT": "python3-devel",
+            "ovr_config//third-party/python/constraints:3.12": "python3.12-devel",
+            "ovr_config//third-party/python/constraints:3.9": "python3.9-devel",
+        }),
+        oss = "python3-devel",
+    ),
     test_include_headers = ["Python.h"],
     visibility = ["PUBLIC"],
 )

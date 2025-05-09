@@ -15,7 +15,7 @@ load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 def rpm_library(
         *,
         name: str,
-        rpm: str | None = None,
+        rpm: str | Select | None = None,
         lib: str | None = None,
         archive: bool = False,
         header_glob = None,
@@ -59,7 +59,7 @@ def rpm_library(
     image.layer(
         name = "{}--layer".format(name),
         features = [
-            feature.rpms_install(rpms = [rpm]),
+            feature.rpms_install(subjects = [rpm]),
         ],
         parent_layer = "antlir//antlir/distro/deps:base",
         rootless = True,
@@ -72,7 +72,12 @@ def rpm_library(
 
     genrule_in_image(
         name = "{}--outputs".format(name),
-        bash = """
+        bash = selects.apply(
+            selects.join(
+                header_glob = header_glob,
+                rpm = rpm,
+            ),
+            lambda sels: """
             mkdir "$OUT/headers"
 
             rpm-library-action \
@@ -85,13 +90,14 @@ def rpm_library(
 
             {cp_L_dir}
         """.format(
-            header_globs = json.encode(header_glob),
-            lib = lib,
-            rpm_name = rpm,
-            soname = soname,
-            maybe_archive = "--out-archive=$OUT/{}".format(archive_name) if archive else "",
-            maybe_shared_lib = "--out-shared-lib=$OUT/{}".format(soname) if not (header_only or archive) else "",
-            cp_L_dir = "mkdir $OUT/L && cp --reflink=auto $OUT/{soname} $OUT/L/ && cp --reflink=auto $OUT/{soname} $OUT/L/lib{soname}".format(soname = soname) if support_linker_l else "",
+                header_globs = json.encode(sels.header_glob),
+                lib = lib,
+                rpm_name = sels.rpm,
+                soname = soname,
+                maybe_archive = "--out-archive=$OUT/{}".format(archive_name) if archive else "",
+                maybe_shared_lib = "--out-shared-lib=$OUT/{}".format(soname) if not (header_only or archive) else "",
+                cp_L_dir = "mkdir $OUT/L && cp --reflink=auto $OUT/{soname} $OUT/L/ && cp --reflink=auto $OUT/{soname} $OUT/L/lib{soname}".format(soname = soname) if support_linker_l else "",
+            ),
         ),
         outs = {
             "headers": "headers",
