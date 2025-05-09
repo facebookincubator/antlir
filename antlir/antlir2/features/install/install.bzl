@@ -8,7 +8,7 @@ load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -120,6 +120,7 @@ def install(
         exec_deps["_rpm_find_requires"] = "antlir//antlir/distro/rpm:find-requires"
         exec_deps["_rpm_plugin"] = "antlir//antlir/antlir2/features/rpm:rpm"
         exec_deps["_rpm_plan"] = "antlir//antlir/antlir2/features/rpm:plan"
+        distro_platform_deps["_python_pex_deps"] = "antlir//antlir/distro/toolchain/python:pex-deps"
         deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
     elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes-without-rpm-deps"):
         distro_platform_deps["src"] = src
@@ -340,14 +341,18 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             install_feature,
         ]
 
+    features = [
+        install_feature,
+    ]
+
     # the rpm dependency finder can only find native dependencies, it doesn't
-    # understand things like PEX "binaries"
-    extra_rpm_deps = []
+    # understand things like PEX "binaries", so we must include another feature
+    # if that's what we're installing
     if isinstance(ctx.attrs.src, Dependency):
         # this is just an easy way to guess if 'src' is a python_binary based on
         # the limited information we have at this point
         if "library-info" in ctx.attrs.src[DefaultInfo].sub_targets and PythonLibraryInfo in ctx.attrs.src.sub_target("library-info"):
-            extra_rpm_deps += ["python3", "unzip"]
+            features.extend([f.analysis for f in ctx.attrs._python_pex_deps[FeatureInfo].features])
 
     # otherwise we need to produce an rpm feature too
     rpm_subjects = ctx.actions.declare_output("rpm_requires.txt")
@@ -356,7 +361,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             ctx.attrs._rpm_find_requires[RunInfo],
             rpm_subjects.as_output(),
             src,
-            extra_rpm_deps,
         ),
         category = "rpm_find_requires",
     )
@@ -376,7 +380,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         return [
             DefaultInfo(),
             MultiFeatureAnalysis(
-                features = [install_feature, rpm_feature_providers[FeatureAnalysis]],
+                features = features + [rpm_feature_providers[FeatureAnalysis]],
             ),
         ]
 
@@ -422,6 +426,7 @@ install_rule = rule(
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
         "_binaries_require_repo": binaries_require_repo.optional_attr,
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
+        "_python_pex_deps": attrs.option(attrs.dep(providers = [FeatureInfo]), default = None),
         "_rpm_driver": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
         "_rpm_find_requires": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plan": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),

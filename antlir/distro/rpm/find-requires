@@ -3,13 +3,5 @@ set -ex
 
 out="$1"
 shift
-src="$1"
-shift
 
-/usr/lib/rpm/rpmdeps --define="_use_internal_dependency_generator 1" --requires "$src" > "$out"
-
-# the caller might want to add additional deps, so allow them to do that here by
-# just appending args to this script so that it can be done in one run action
-for rpm in "$@"; do
-  echo "$rpm" >> "$out"
-done
+exec /usr/lib/rpm/rpmdeps --define="_use_internal_dependency_generator 1" --requires "$@" > "$out"

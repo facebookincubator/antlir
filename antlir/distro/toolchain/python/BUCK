@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":defs.bzl", "image_python_toolchain")
 
 oncall("antlir")
@@ -17,5 +18,28 @@ image.layer(
 image_python_toolchain(
     name = "toolchain",
     layer = ":layer",
+    visibility = ["PUBLIC"],
+)
+
+feature.new(
+    name = "pex-deps",
+    features = [
+        feature.rpms_install(
+            subjects = [
+                "unzip",
+                # we might not always want whatever "floating" python is used by
+                # the distro, so if it is set, make sure to request the specific
+                # version we want
+                internal_external(
+                    fb = select({
+                        "DEFAULT": "python3",
+                        "ovr_config//third-party/python/constraints:3.12": "python3.12",
+                        "ovr_config//third-party/python/constraints:3.9": "python3.9",
+                    }),
+                    oss = "python3",
+                ),
+            ],
+        ),
+    ],
     visibility = ["PUBLIC"],
 )
