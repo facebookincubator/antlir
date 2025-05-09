@@ -303,7 +303,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                     binary_info = None
             elif ctx.attrs.setcap:
                 fail("install src {} is not a binary, setcap should not be used".format(ctx.attrs.src))
-    elif type(src) == "artifact":
+    elif isinstance(src, Artifact):
         # If the source is an artifact, that means it was given as an
         # `attrs.source()`, and is thus not a dependency.
         # Buck2 does not allow a user to pass a raw directory as an
