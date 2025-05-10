@@ -457,9 +457,9 @@ def _python_data(
     )
 
     python_library_kwargs.setdefault("typing", False)
+    python_library_kwargs.setdefault("compatible_with", ["ovr_config//os:linux"])
     python_library(
         name = name,
-        compatible_with = ["ovr_config//os:linux"],
         srcs = {":{}.py".format(name): "{}.py".format(module)},
         deps = [shape_impl + "-python"],
         # Antlir users should not directly use `shape`, but we do use it
