@@ -16,6 +16,23 @@ def new_arch_t(s: str) -> arch_t:
         select_key = {"aarch64": "ovr_config//cpu:arm64", "x86_64": "ovr_config//cpu:x86_64"}[s],
     )
 
+python_t = record(
+    version_str = str,
+    constraint = str,
+    interpreter = str,
+)
+
+def new_python_t(
+    version_str: str | None = None,
+    constraint: str | None = None,
+    interpreter: str | None = None,
+) -> python_t:
+    return python_t(
+        version_str = version_str or "CPython 3.12",
+        constraint = constraint or "ovr_config//third-party/python/constraints:3.12",
+        interpreter = interpreter or "python3"
+    )
+
 os_t = record(
     name = str,
     architectures = list[arch_t],
@@ -23,7 +40,7 @@ os_t = record(
     flavor = str,
     target = str,
     has_platform_toolchain = bool,
-    py_constraint = str,
+    python = python_t,
 )
 
 def _new_os(name: str, **kwargs):
@@ -41,9 +58,7 @@ def _new_os(name: str, **kwargs):
     )
     kwargs.setdefault("target", "antlir//antlir/antlir2/os:" + name)
     kwargs.setdefault("has_platform_toolchain", True)
-    # Default to py version 3.12 if we don't know what python version
-    py_ver = kwargs.get("py_constraint", "ovr_config//third-party/python/constraints:3.12")
-    kwargs.setdefault("py_constraint", py_ver)
+    kwargs.setdefault("python", new_python_t())
     return os_t(
         name = name,
         **kwargs
@@ -58,11 +73,10 @@ OSES = [
     ),
     _new_os(
         name = "centos9",
-        py_constraint = "ovr_config//third-party/python/constraints:3.9",
+        python = new_python_t(interpreter = "python3.12")
     ),
     _new_os(
         name = "centos10",
-        py_constraint = "ovr_config//third-party/python/constraints:3.12",
     ),
 ]
 
