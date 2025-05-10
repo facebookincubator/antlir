@@ -3,21 +3,20 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 load("//antlir/bzl:build_defs.bzl", "cpp_python_extension", "python_binary")
-load("//antlir/distro/platform:defs.bzl", "default_image_platform")
 
 oncall("antlir")
 
 python_binary(
     name = "main",
     srcs = ["main.py"],
-    default_target_platform = default_image_platform("centos10"),
     main_function = "antlir.distro.toolchain.python.tests.main.main",
     # This should only be built for a centos system platform, use compatibility
     # attrs to guarantee that
-    target_compatible_with = [
-        "//antlir/antlir2/os:centos10",  # need a newer python only in c10
-        "//antlir/distro:build-for-distro",
-    ],
+    target_compatible_with = select({
+        "//antlir/antlir2/os:centos10": ["//antlir/distro:build-for-distro"],
+        "//antlir/antlir2/os:centos9": ["//antlir/distro:build-for-distro"],
+        "DEFAULT": ["antlir//antlir/distro:incompatible"],
+    }),
     deps = [":ext"],
 )
 
@@ -73,24 +72,10 @@ image.layer(
     features = [
         feature.rpms_install(rpms = [
             "python3",
+            "python3.12",
         ]),
         feature.rpms_install(rpms = [":main-rpm"]),
     ],
-)
-
-image_python_test(
-    name = "test-from-rpm",
-    srcs = ["test.py"],
-    default_os = "centos10",
-    env = {
-        "INSTALL_MODE": "rpm",
-        "OS": select({
-            "//antlir/antlir2/os:centos10": "centos10",
-            "//antlir/antlir2/os:centos9": "centos9",
-            "DEFAULT": "<NEVER USED>",
-        }),
-    },
-    layer = ":test-layer-from-rpm",
 )
 
 image.layer(
@@ -112,17 +97,48 @@ image.layer(
     ],
 )
 
-image_python_test(
-    name = "test-from-install",
-    srcs = ["test.py"],
-    default_os = "centos10",
-    env = {
-        "INSTALL_MODE": "install",
-        "OS": select({
-            "//antlir/antlir2/os:centos10": "centos10",
-            "//antlir/antlir2/os:centos9": "centos9",
-            "DEFAULT": "<NEVER USED>",
-        }),
-    },
-    layer = ":test-layer-from-install",
-)
+[
+    image_python_test(
+        name = "test-from-rpm-{}".format(os),
+        srcs = ["test.py"],
+        default_os = os,
+        env = {
+            "INSTALL_MODE": "rpm",
+            "INTERPRETER": select({
+                "//antlir/antlir2/os:centos10": "/usr/bin/python3",
+                "//antlir/antlir2/os:centos9": "/usr/bin/python3.12",
+                "DEFAULT": "<NEVER USED>",
+            }),
+            "OS": select({
+                "//antlir/antlir2/os:centos10": "centos10",
+                "//antlir/antlir2/os:centos9": "centos9",
+                "DEFAULT": "<NEVER USED>",
+            }),
+        },
+        layer = ":test-layer-from-rpm",
+    )
+    for os in ("centos9", "centos10")
+]
+
+[
+    image_python_test(
+        name = "test-from-install-{}".format(os),
+        srcs = ["test.py"],
+        default_os = os,
+        env = {
+            "INSTALL_MODE": "install",
+            "INTERPRETER": select({
+                "//antlir/antlir2/os:centos10": "/usr/bin/python3",
+                "//antlir/antlir2/os:centos9": "/usr/bin/python3.12",
+                "DEFAULT": "<NEVER USED>",
+            }),
+            "OS": select({
+                "//antlir/antlir2/os:centos10": "centos10",
+                "//antlir/antlir2/os:centos9": "centos9",
+                "DEFAULT": "<NEVER USED>",
+            }),
+        },
+        layer = ":test-layer-from-install",
+    )
+    for os in ("centos9", "centos10")
+]

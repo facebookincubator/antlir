@@ -21,10 +21,12 @@ def _image_platform(
         arch: arch_t):
     platform(
         name = name,
+        # Any constraints listed in here should go in fbcode/antlir/distro/transition/impl.bzl
+        # as well so they are preserved during distro platform transitions.
         constraint_values = [
             _cpu_label(arch, constraint = True),
             # this is the python version, it changes based on OS
-            os.py_constraint,
+            os.python.constraint,
         ],
         visibility = ["PUBLIC"],
         deps = [

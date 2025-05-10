@@ -12,6 +12,7 @@ from unittest import TestCase
 class Test(TestCase):
     def setUp(self) -> None:
         self.os = os.environ["OS"]
+        self.interpreter = os.environ["INTERPRETER"]
         os_release = {}
         with open("/etc/os-release", "r") as f:
             for line in f.readlines():
@@ -36,7 +37,7 @@ class Test(TestCase):
         """
         res = subprocess.run([self.binary], check=True, capture_output=True, text=True)
         res = json.loads(res.stdout)
-        self.assertEqual(res["python_interpreter"], "/usr/bin/python3")
+        self.assertEqual(res["python_interpreter"], self.interpreter)
 
     def test_pex_looks_standalone(self) -> None:
         """
@@ -47,10 +48,11 @@ class Test(TestCase):
             binary_contents = f.read()
         # sanity check that 'python3' can be found, otherwise something is
         # really wrong
+        interpreter_name = os.path.basename(self.interpreter)
         self.assertIn(
-            b"python3",
+            interpreter_name.encode(),
             binary_contents,
-            "'python3' not found in pex contents, something looks very wrong",
+            f"'{interpreter_name}' not found in pex contents, something looks very wrong",
         )
         self.assertNotIn(
             b"buck-out",

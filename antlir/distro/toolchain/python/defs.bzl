@@ -39,7 +39,7 @@ def _single_image_python_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             fail_with_message = ctx.attrs.fail_with_message[RunInfo],
             host_interpreter = ctx.attrs.host_python[RunInfo],
             generate_static_extension_info = ctx.attrs.generate_static_extension_info,
-            interpreter = RunInfo(cmd_args("python3")),
+            interpreter = RunInfo(cmd_args(ctx.attrs.interpreter)),
             make_py_package_inplace = ctx.attrs.make_py_package_inplace[RunInfo],
             make_py_package_manifest_module = ctx.attrs.make_py_package_manifest_module[RunInfo],
             make_py_package_modules = ctx.attrs.make_py_package_modules[RunInfo],
@@ -62,6 +62,7 @@ _single_image_python_toolchain = rule(
         "fail_with_message": attrs.default_only(attrs.dep(providers = [RunInfo], default = "prelude//python/tools:fail_with_message")),
         "generate_static_extension_info": attrs.default_only(attrs.dep(default = "prelude//python/tools:generate_static_extension_info")),
         "host_python": attrs.exec_dep(),
+        "interpreter": attrs.string(default = "python3"),
         "make_py_package_inplace": attrs.default_only(attrs.dep(providers = [RunInfo], default = "prelude//python/tools:make_py_package_inplace")),
         "make_py_package_manifest_module": attrs.default_only(attrs.dep(providers = [RunInfo], default = "prelude//python/tools:make_py_package_manifest_module")),
         "make_py_package_modules": attrs.default_only(attrs.dep(providers = [RunInfo], default = "prelude//python/tools:make_py_package_modules")),
@@ -120,14 +121,25 @@ def image_python_toolchain(
         )
         _single_image_python_toolchain(
             name = "{}--{}".format(name, os.name),
-            host_python = _layer_tool("{}--{}".format(name, os.name), "python3"),
+            host_python = select(
+                {
+                    os.select_key: _layer_tool("{}--{}".format(name, os.name), os.python.interpreter)
+                    for os in oses
+                } |
+                # See above comment about DEFAULT
+                {"DEFAULT": _layer_tool("{}--{}".format(name, oses[0].name), oses[0].python.interpreter)},
+            ),
+            interpreter = select({
+                os.select_key: os.python.interpreter
+                for os in oses
+            } | {"DEFAULT": "python3"}),
             platform_name = selects.apply(select({
                 "ovr_config//cpu:arm64": "aarch64",
                 "ovr_config//cpu:x86_64": "x86_64",
             }), lambda arch: os.name + "-" + arch),
-            python_version = {
-                "centos10": "CPython 3.12",
-                "centos9": "CPython 3.9",
-            }.get(os.name, None),
+            python_version = select({
+                os.select_key: os.python.version_str
+                for os in oses
+            } | {"DEFAULT": oses[0].python.version_str}),
             visibility = [],
         )

@@ -8,10 +8,8 @@ oncall("antlir")
 image.layer(
     name = "layer",
     features = [
-        feature.rpms_install(rpms = [
-            "python3",
-            "binutils",
-        ]),
+        feature.rpms_install(rpms = ["binutils"]),
+        ":pex-deps",
     ],
 )
 
