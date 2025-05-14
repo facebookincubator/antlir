@@ -528,7 +528,11 @@ def driver(spec) -> None:
                 universal_newlines=True,
                 check=False,
             ).stdout.lower()
-            if ("key id" not in stdout) or ("signature" not in stdout):
+            # the interface of this is truly awful, but do the best we can to
+            # determine if the rpm is signed or not
+            if ("key id" not in stdout and "key fingerprint" not in stdout) or (
+                "signature" not in stdout
+            ):
                 gpg_errors[pkg].append("RPM is not signed")
 
     if gpg_warnings:
