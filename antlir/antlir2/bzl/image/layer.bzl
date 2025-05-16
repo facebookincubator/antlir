@@ -772,5 +772,6 @@ def layer(
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
         _materialize_to_subvol = "antlir//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol",
         _binaries_require_repo = binaries_require_repo.select_value,
+        exec_compatible_with = ["prelude//platforms:may_run_local"],
         **kwargs
     )

@@ -159,5 +159,6 @@ def genrule_in_image(
         default_os = default_os,
         rootless = rootless,
         labels = labels,
+        exec_compatible_with = ["prelude//platforms:may_run_local"],
         **kwargs
     )

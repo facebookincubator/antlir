@@ -42,6 +42,12 @@ def package_macro(
         if not rootless:
             additional_labels += ["uses_sudo"]
         labels = selects.apply(labels, lambda labels: additional_labels + list(labels))
+
+        # Package actions use local_only=True, but add it as a constraint on the
+        # exec platform too so that aarch64 devservers don't try to run it
+        # remotely anyway
+        kwargs.setdefault("exec_compatible_with", ["prelude//platforms:may_run_local"])
+
         buck_rule(
             default_os = default_os,
             rootless = rootless,

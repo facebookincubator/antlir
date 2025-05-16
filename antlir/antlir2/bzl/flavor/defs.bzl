@@ -51,4 +51,12 @@ _flavor = rule(
     attrs = _flavor_attrs,
 )
 
-flavor = rule_with_default_target_platform(_flavor)
+_flavor_macro = rule_with_default_target_platform(_flavor)
+
+def flavor(**kwargs):
+    # TODO(T224478114) The flavor depends on the build_appliance as an exec_dep,
+    # which is mostly used in local_only=True actions, so put that in
+    # exec_compatible_with too to force it to resolve the same way (or at least
+    # to the same cpu architecture)
+    kwargs.setdefault("exec_compatible_with", ["prelude//platforms:may_run_local"])
+    return _flavor_macro(**kwargs)
