@@ -330,6 +330,16 @@ def feature(
 
     kwargs.update(attrs)
 
+    # TODO(T224478114) this really should not be necessary, but it currently is
+    # since feature preserves its `exec_dep` plugins and downstream consumers
+    # (other features and layer rules) use it, blindly assuming that the
+    # execution platform for both targets is the same, even though there is
+    # nothing that guarantees that.
+    # As a quick workaround, just require that the feature execution happens on
+    # aarch64 if the build host is aarch64, otherwise let it float
+    if native.host_info().arch.is_aarch64:
+        kwargs.setdefault("exec_compatible_with", ["ovr_config//cpu:arm64"])
+
     return feature_rule(
         name = name,
         visibility = visibility,
