@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import json
 import os
 import platform
 import subprocess
@@ -52,3 +53,14 @@ class Test(TestCase):
                     "aarch64": "/lib/ld-linux-aarch64.so.1",
                 }[platform.machine()],
             )
+
+    def test_build_mode(self) -> None:
+        """
+        Test that the built binary's recorded BUILD_MODE matches the test env var
+        """
+        out = json.loads(
+            subprocess.run(
+                [self.binary], check=True, capture_output=True, text=True
+            ).stdout
+        )
+        self.assertEqual(os.environ["BUILD_MODE"], out["build_mode"])

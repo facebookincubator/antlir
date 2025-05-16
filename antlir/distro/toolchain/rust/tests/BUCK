@@ -8,6 +8,12 @@ load("//antlir/distro/platform:defs.bzl", "default_image_platform")
 
 oncall("antlir")
 
+build_mode = select({
+    "DEFAULT": "unknown",
+    "ovr_config//build_mode:dev": "dev",
+    "ovr_config//build_mode:opt": "opt",
+})
+
 rust_binary(
     name = "main",
     srcs = ["main.rs"],
@@ -17,7 +23,11 @@ rust_binary(
         "//antlir/distro:build-for-distro",
     ],
     default_target_platform = default_image_platform(),
+    env = {
+        "BUILD_MODE": build_mode,
+    },
     unittests = False,
+    deps = ["serde_json"],
 )
 
 image.layer(
@@ -79,6 +89,7 @@ image_python_test(
     srcs = ["test.py"],
     default_os = "centos10",
     env = {
+        "BUILD_MODE": build_mode,
         "INSTALL_MODE": "rpm",
         "OS": select({
             "//antlir/antlir2/os:centos10": "centos10",
@@ -119,6 +130,7 @@ image_python_test(
     srcs = ["test.py"],
     default_os = "centos10",
     env = {
+        "BUILD_MODE": build_mode,
         "INSTALL_MODE": "install",
         "OS": select({
             "//antlir/antlir2/os:centos10": "centos10",

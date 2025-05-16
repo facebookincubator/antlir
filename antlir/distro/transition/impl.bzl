@@ -51,6 +51,8 @@ transition_to_distro_platform = rule(
             default = [
                 "ovr_config//cpu/constraints:cpu",
                 "ovr_config//toolchain/python/constraints:python-version",
+                "ovr_config//build_mode/constraints:build_mode",
+                "ovr_config//build_mode/constraints:core_build_mode",
                 # also anything under //antlir gets preserved
             ],
         )),
