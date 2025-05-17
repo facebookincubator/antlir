@@ -84,6 +84,7 @@ if is_facebook:
     OSES.extend([
         _new_os(
             name = "eln",
+            has_platform_toolchain = False,
         ),
         # centos8 builds are flaky but it's effectively dead in prod so we don't
         # care and don't need a system toolchain for it (or its rhel8(.8)
