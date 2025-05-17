@@ -192,10 +192,7 @@ def _python_unittest(*args, **kwargs):
 
     _wrap_internal(native.python_test, args, kwargs)
 
-def _cpp_python_extension(*args, **kwargs):
-    _wrap_internal(cpp_python_extension, args, kwargs, is_titled_labels = True)
-
-def _rust_python_extension(name: str, **_kwargs):
+def _cpp_python_extension(name: str, **_kwargs):
     native.alias(
         name = name,
         actual = "antlir//antlir:empty",
