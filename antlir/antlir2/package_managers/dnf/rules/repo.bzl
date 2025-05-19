@@ -136,7 +136,12 @@ _repo = rule(
     supports_incoming_transition = True,
 )
 
-repo = rule_with_default_target_platform(_repo)
+_repo_macro = rule_with_default_target_platform(_repo)
+
+def repo(**kwargs):
+    # the repodata action is local_only=True, so we can't run it remotely
+    kwargs.setdefault("exec_compatible_with", ["prelude//platforms:may_run_local"])
+    _repo_macro(**kwargs)
 
 RepoSetInfo = provider(fields = ["repos"])
 
