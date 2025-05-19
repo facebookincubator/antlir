@@ -45,6 +45,11 @@ def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
         ExternalRunnerTestInfo(
             type = "simple",
             command = [test_cmd],
+            default_executor = CommandExecutorConfig(
+                local_enabled = True,
+                # test requires local subvolume and cannot be run on RE
+                remote_enabled = False,
+            ),
         ),
     ]
 
@@ -82,5 +87,10 @@ def image_diff_test(
         default_os = default_os or get_default_os_for_package(),
         rootless = rootless,
         labels = labels,
+        # Test execution platform is not *usually* where tests run, but since
+        # `image_diff_test` is `local_only=True`, use this to force exec_deps to
+        # resolve to the host platform where the test is actually going to
+        # execute
+        exec_compatible_with = ["prelude//platforms:may_run_local"],
         **kwargs
     )
