@@ -7,5 +7,5 @@
 set -e
 
 echo "this is some stdout of a test that is expected to fail"
-echo "this is some stderr of a test that is expected to fail" > /dev/stderr
+echo "this is some stderr of a test that is expected to fail" >&2
 exit 1
