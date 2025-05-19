@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl:json_file.bzl", "json_file")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
@@ -20,7 +21,7 @@ feature.new(
             target = "/__antlir2__/dnf/dnf.conf",
         ),
         feature.install(
-            src = "base.py",
+            src = "antlir2_dnf_base.py",
             dst = "/__antlir2__/dnf/base.py",
         ),
         feature.install(
@@ -60,4 +61,17 @@ json_file(
             oss = "PUBLIC",
         ),
     ],
+)
+
+prelude = native
+
+prelude.python_bootstrap_library(
+    name = "antlir2_dnf_base",
+    srcs = ["antlir2_dnf_base.py"],
+    visibility = ["//antlir/..."],
+)
+
+export_file(
+    name = "antlir2_dnf_base.py",
+    visibility = ["//antlir/antlir2/features/facebook/chef_solo/..."],
 )

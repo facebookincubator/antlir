@@ -1,4 +1,3 @@
-load("@prelude//:export_exe.bzl", "export_exe")
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
@@ -37,8 +36,11 @@ rust_binary(
     ],
 )
 
-export_exe(
+prelude = native
+
+prelude.python_bootstrap_binary(
     name = "driver",
-    src = "driver.py",
+    main = "driver.py",
     visibility = ["PUBLIC"],
+    deps = ["//antlir/antlir2/package_managers/dnf/build_appliance:antlir2_dnf_base"],
 )
