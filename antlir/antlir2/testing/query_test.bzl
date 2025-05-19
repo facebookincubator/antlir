@@ -47,6 +47,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ExternalRunnerTestInfo(
             command = [script],
             type = "custom",
+            default_executor = CommandExecutorConfig(
+                local_enabled = True,
+                # it's easier to say remote_enabled=False than provide the
+                # correct RE configuration that would be required if it were
+                # True
+                remote_enabled = False,
+            ),
         ),
     ]
 
