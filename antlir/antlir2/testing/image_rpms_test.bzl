@@ -45,6 +45,13 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
         ExternalRunnerTestInfo(
             type = "simple",
             command = [script],
+            default_executor = CommandExecutorConfig(
+                local_enabled = True,
+                # it's easier to say remote_enabled=False than provide the
+                # correct RE configuration that would be required if it were
+                # True
+                remote_enabled = False,
+            ),
         ),
     ]
 
@@ -76,6 +83,11 @@ def image_test_rpm_names(
         default_os = default_os or get_default_os_for_package(),
         rootless = rootless,
         labels = labels,
+        # Test execution platform is not *usually* where tests run, but since
+        # `image_diff_test` is `local_only=True`, use this to force exec_deps to
+        # resolve to the host platform where the test is actually going to
+        # execute
+        exec_compatible_with = ["prelude//platforms:may_run_local"],
         **kwargs
     )
 
@@ -96,7 +108,7 @@ _rpm_integrity_test = rule(
     attrs = {
         "ignored_files": attrs.list(attrs.string(doc = "path that is allowed to fail integrity test"), default = []),
         "ignored_rpms": attrs.list(attrs.string(doc = "name of rpm that is ignored for integrity checks"), default = []),
-        "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
+        "image_rpms_test": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
     },
 )
 
