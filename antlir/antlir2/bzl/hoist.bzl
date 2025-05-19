@@ -83,5 +83,6 @@ def hoist(
         name = name,
         default_os = default_os,
         rootless = rootless,
+        exec_compatible_with = ["prelude//platforms:may_run_local"],
         **kwargs
     )
