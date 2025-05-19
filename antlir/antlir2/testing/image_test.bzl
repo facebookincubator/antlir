@@ -262,6 +262,13 @@ def _implicit_image_test(
         )
         labels = selects.apply(labels, lambda labels: labels + ["uses_sudo"])
 
+    if not exec_compatible_with:
+        # Test execution platform is not *usually* where tests run, but since
+        # `image_diff_test` is `local_only=True`, use this to force exec_deps to
+        # resolve to the host platform where the test is actually going to
+        # execute
+        exec_compatible_with = ["prelude//platforms:may_run_local"]
+
     image_test(
         name = name,
         layer = layer,
