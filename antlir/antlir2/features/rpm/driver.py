@@ -15,7 +15,6 @@
 # ensure that we're using the same python that dnf itself is using
 
 import copy
-import importlib.util
 import json
 import os
 import re
@@ -25,18 +24,14 @@ import threading
 from collections import defaultdict
 from urllib.parse import urlparse
 
+import antlir2_dnf_base
+
 import dnf
 import hawkey
 import libdnf
 import rpm as librpm
 from dnf.i18n import ucd
 from dnf.module.module_base import ModuleBase
-
-spec = importlib.util.spec_from_file_location(
-    "antlir2_dnf_base", "/__antlir2__/dnf/base.py"
-)
-antlir2_dnf_base = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(antlir2_dnf_base)
 
 
 class AntlirError(Exception):

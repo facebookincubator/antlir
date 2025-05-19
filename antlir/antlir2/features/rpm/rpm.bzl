@@ -77,7 +77,7 @@ def _install_common(
             "action": action,
             "subjects": subjects,
         },
-        deps = {
+        distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
         },
         exec_deps = {
@@ -151,7 +151,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
             "action": "remove_if_exists",
             "subjects": rpms,
         },
-        deps = {
+        distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
         },
         exec_deps = {
@@ -179,7 +179,7 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
             "action": "remove",
             "subjects": rpms,
         },
-        deps = {
+        distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
         },
         exec_deps = {
@@ -204,7 +204,7 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
                 lambda sels: ":".join([sels.name, sels.stream]),
             )],
         },
-        deps = {
+        distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
         },
         exec_deps = {

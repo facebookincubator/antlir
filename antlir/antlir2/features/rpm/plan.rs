@@ -47,7 +47,7 @@ struct Args {
     #[clap(long)]
     items: JsonFile<Vec<RpmItem>>,
     #[clap(long)]
-    driver_cmd: Vec<PathBuf>,
+    driver_cmd: Vec<String>,
     #[clap(long)]
     out: PathBuf,
 }
