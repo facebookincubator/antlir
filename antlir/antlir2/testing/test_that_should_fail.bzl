@@ -42,6 +42,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
             env = ctx.attrs.test[ExternalRunnerTestInfo].env,
             run_from_project_root = ctx.attrs.test[ExternalRunnerTestInfo].run_from_project_root,
+            default_executor = ctx.attrs.test[ExternalRunnerTestInfo].default_executor,
         ),
         RunInfo(test_cmd),
         DefaultInfo(script),
@@ -85,6 +86,11 @@ def test_that_should_fail(
         labels = labels,
         stdout_re = stdout_re,
         stderr_re = stderr_re,
+        # Test execution platform is not *usually* where tests run, but since
+        # `image_diff_test` is `local_only=True`, use this to force exec_deps to
+        # resolve to the host platform where the test is actually going to
+        # execute
+        exec_compatible_with = ["prelude//platforms:may_run_local"],
         **default_target_platform_kwargs()
     )
 
