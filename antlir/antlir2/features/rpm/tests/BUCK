@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
@@ -497,6 +498,33 @@ test_rpms(
     features = [
         feature.rpms_install(rpms = [
             "antlir2-postscript-tmpdir",
+            "/usr/bin/umount",  # for the test
+        ]),
+        ":test-deps",
+    ],
+)
+
+image_python_test(
+    name = "test-postscript-tmpdir-not-left-behind",
+    srcs = ["test_postscript_tmpdir_not_left_behind.py"],
+    layer = ":postscript-tmpdir--layer",
+)
+
+antlir2_configured_alias(
+    name = "test-postscript-tmpdir-not-left-behind-dnf5",
+    actual = ":test-postscript-tmpdir-not-left-behind",
+    default_os = "eln",
+)
+
+test_rpms(
+    name = "postscript-proc-self",
+    also_eln_dnf5 = True,
+    expected = expected_t(installed = [
+        "antlir2-postscript-proc-self",
+    ]),
+    features = [
+        feature.rpms_install(rpms = [
+            "antlir2-postscript-proc-self",
         ]),
         ":test-deps",
     ],

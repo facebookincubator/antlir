@@ -408,6 +408,19 @@ def driver(spec) -> None:
         return resolve(out, spec, base, local_rpms, explicitly_installed_package_names)
 
     assert mode == "run"
+
+    for path in ["/tmp", "/proc", "/dev"]:
+        dst = os.path.join(spec["install_root"], path.lstrip("/"))
+        # Normally I don't like to implicitly create things in the image, there
+        # is a lot of baggage that one must get when they use `rpm` - plus, the
+        # 'filesystem' rpm which is transitively required by basically
+        # everything would end up creating these mountpoints anyway
+        os.makedirs(dst, exist_ok=True)
+        subprocess.run(
+            ["mount", "--rbind", path, dst],
+            check=True,
+        )
+
     assert "resolved_transaction" in spec
 
     # Even though the transaction has been pre-resolved, we need to make sure
