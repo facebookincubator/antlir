@@ -33,6 +33,15 @@ feature.new(
             dst = "/__antlir2__/dnf/versionlock.json",
             mode = "a+rx",
         ),
+        feature.rpms_install(rpms = [
+            "dnf",
+            "python3",
+            "python3-dnf",
+            "python3-hawkey",
+            "python3-libdnf",
+            "python3-rpm",
+            "/bin/mount",
+        ]),
     ],
     visibility = [
         internal_external(
