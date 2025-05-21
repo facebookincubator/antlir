@@ -98,8 +98,8 @@ pub(crate) fn isolated(
         .platform(Platform::get().clone())
         .working_directory(repo.clone())
         .tmpfs(Path::new("/run"))
+        .devtmpfs(Path::new("/dev"))
         .tmpfs(Path::new("/mnt/xarfuse"))
-        .tmpfs(Path::new("/dev/shm"))
         .outputs(outputs);
     builder.setenv(
         envs.into_iter()
