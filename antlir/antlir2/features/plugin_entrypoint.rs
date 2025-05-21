@@ -8,8 +8,8 @@
 use r#impl::Feature;
 
 #[unsafe(no_mangle)]
-pub fn init_tracing(dispatch: &tracing::Dispatch) {
-    let _ = tracing::dispatcher::set_global_default(dispatch.clone());
+pub fn init_tracing(dispatch: tracing::Dispatch) {
+    let _ = tracing::dispatcher::set_global_default(dispatch);
     tracing_core::callsite::rebuild_interest_cache();
 }
 
