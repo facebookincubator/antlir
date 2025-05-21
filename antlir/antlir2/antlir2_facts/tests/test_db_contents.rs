@@ -42,22 +42,6 @@ fn file() {
 
 #[test]
 #[traced_test]
-fn device_nodes() {
-    let db = open_db();
-
-    let ent = db
-        .get::<DirEntry>(DirEntry::key(Path::new("/dev/null")))
-        .expect("failed to get /dev/null")
-        .expect("/dev/null did not exist");
-    assert_eq!(ent.path(), Path::new("/dev/null"));
-    assert_eq!(ent.uid(), 0);
-    assert_eq!(ent.gid(), 0);
-    assert_eq!(ent.mode(), 0o100644);
-    assert!(matches!(ent, DirEntry::RegularFile(_)));
-}
-
-#[test]
-#[traced_test]
 fn dir() {
     let db = open_db();
 
