@@ -121,7 +121,7 @@ def install(
         exec_deps["_rpm_plugin"] = "antlir//antlir/antlir2/features/rpm:rpm"
         exec_deps["_rpm_plan"] = "antlir//antlir/antlir2/features/rpm:plan"
         distro_platform_deps["_python_pex_deps"] = "antlir//antlir/distro/toolchain/python:pex-deps"
-        deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
+        distro_platform_deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
     elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes-without-rpm-deps"):
         distro_platform_deps["src"] = src
     else:
