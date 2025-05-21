@@ -208,7 +208,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     if not flavor:
         flavor = ctx.attrs.flavor
     flavor_info = flavor[FlavorInfo] if flavor else None
-    build_appliance = ctx.attrs.build_appliance or flavor_info.default_build_appliance
+    build_appliance = ctx.attrs.build_appliance
 
     # Expose a number of things as sub-targets for both humans doing `buck
     # build` and cases where we must access a specific output from the macro
@@ -218,15 +218,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     }
     if ctx.attrs.parent_layer:
         sub_targets["parent_layer"] = ctx.attrs.parent_layer.providers
-
-    # Expose the build appliance as a subtarget so that it can be used by test
-    # macros like image_rpms_test. Generally this should be accessed by the
-    # provider, but that is unavailable at macro parse time.
-    if build_appliance:
-        sub_targets["build_appliance"] = build_appliance.providers if hasattr(build_appliance, "providers") else [
-            build_appliance[LayerInfo],
-            build_appliance[DefaultInfo],
-        ]
 
     if flavor:
         sub_targets["flavor"] = flavor.providers
@@ -529,7 +520,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             sub_targets = sub_targets,
         ),
         LayerInfo(
-            build_appliance = build_appliance,
             facts_db = facts_db,
             flavor = flavor,
             flavor_info = flavor_info,

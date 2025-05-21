@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
-load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
@@ -58,7 +58,7 @@ _image_command_alias = rule(
         "pass_env": attrs.list(attrs.string(), default = []),
         "root": attrs.source(allow_directory = True),
         "_command_alias": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/image_command_alias:command_alias")),
-    } | attrs_selected_by_cfg() | cfg_attrs(),
+    } | cfg_attrs(),
     cfg = layer_cfg,
 )
 

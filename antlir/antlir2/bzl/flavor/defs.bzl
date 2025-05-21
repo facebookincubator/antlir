@@ -4,12 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorDnfInfo", "FlavorInfo")
+load("//antlir/antlir2/bzl:types.bzl", "FlavorDnfInfo", "FlavorInfo")
 # @oss-disable
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoSetInfo")
 
 _flavor_attrs = {
-    "default_build_appliance": attrs.exec_dep(providers = [BuildApplianceInfo]),
     "default_dnf_excluded_rpms": attrs.list(
         attrs.string(),
         default = [],
@@ -29,7 +28,6 @@ _flavor_attrs = {
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         FlavorInfo(
-            default_build_appliance = ctx.attrs.default_build_appliance,
             dnf_info = FlavorDnfInfo(
                 default_excluded_rpms = ctx.attrs.default_dnf_excluded_rpms,
                 default_extra_repo_set = ctx.attrs.default_dnf_extra_repo_set,
@@ -40,7 +38,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             label = ctx.label,
         ),
         DefaultInfo(sub_targets = {
-            "default_build_appliance": ctx.attrs.default_build_appliance.providers,
             "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
         }),
     # @oss-disable
