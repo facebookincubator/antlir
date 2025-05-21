@@ -26,7 +26,7 @@ trait PluginExt {
     >;
 }
 
-impl PluginExt for antlir2_features::Plugin {
+impl PluginExt for antlir2_features::plugin::Plugin {
     fn as_requires_provides_fn(
         &self,
     ) -> Result<

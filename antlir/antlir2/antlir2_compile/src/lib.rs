@@ -285,7 +285,7 @@ trait PluginExt {
     ) -> Result<libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn CompileFeature>>>>;
 }
 
-impl PluginExt for antlir2_features::Plugin {
+impl PluginExt for antlir2_features::plugin::Plugin {
     fn as_compile_feature_fn(
         &self,
     ) -> Result<libloading::Symbol<fn(&Feature) -> antlir2_features::Result<Box<dyn CompileFeature>>>>

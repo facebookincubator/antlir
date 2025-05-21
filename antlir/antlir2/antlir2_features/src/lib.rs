@@ -7,8 +7,6 @@
 
 use std::cmp::Ordering;
 use std::hash::Hash;
-use std::path::Path;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use buck_label::Label;
@@ -16,8 +14,11 @@ use once_cell::sync::OnceCell;
 use serde::Deserialize;
 use serde::Serialize;
 
+pub mod plugin;
 pub mod stat;
 pub mod types;
+
+use plugin::Plugin;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -37,7 +38,7 @@ pub struct Feature {
     pub feature_type: String,
     pub data: serde_json::Value,
     #[serde(rename = "plugin")]
-    plugin_json: PluginJson,
+    plugin_json: plugin::PluginJson,
     #[serde(skip)]
     plugin: OnceCell<Arc<Plugin>>,
 }
@@ -62,18 +63,6 @@ impl Hash for Feature {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-struct PluginJson {
-    plugin: PathBuf,
-    libs: PathBuf,
-}
-
-pub struct Plugin {
-    path: PathBuf,
-    lib: &'static libloading::Library,
-}
-
 impl Feature {
     pub fn plugin(&self) -> Result<&Plugin> {
         if let Some(plugin) = &self.plugin.get() {
@@ -86,42 +75,6 @@ impl Feature {
             };
             Ok(plugin)
         }
-    }
-}
-
-impl Plugin {
-    fn open(path: &Path) -> Result<Self> {
-        let lib = Box::leak(Box::new(libloading::Library::new(path)?));
-        let init_tracing: libloading::Symbol<fn(&tracing::Dispatch) -> ()> =
-            unsafe { lib.get(b"init_tracing")? };
-        tracing::dispatcher::get_default(|dispatch| {
-            init_tracing(dispatch);
-        });
-
-        Ok(Self {
-            path: path.to_owned(),
-            lib,
-        })
-    }
-
-    pub fn get_symbol<T>(&self, symbol: &[u8]) -> Result<libloading::Symbol<T>> {
-        unsafe { self.lib.get(symbol).map_err(Error::from) }
-    }
-}
-
-impl PartialEq for Plugin {
-    fn eq(&self, other: &Self) -> bool {
-        self.path == other.path
-    }
-}
-
-impl Eq for Plugin {}
-
-impl std::fmt::Debug for Plugin {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Plugin")
-            .field("path", &self.path)
-            .finish_non_exhaustive()
     }
 }
 
