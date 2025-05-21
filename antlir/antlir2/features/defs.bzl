@@ -121,8 +121,8 @@ def feature_impl(
         ],
         visibility = [":" + name],
         deps = [
-            "static_assertions",
             "serde_json",
+            "static_assertions",
             "tracing",
             "tracing-core",
             "//antlir/antlir2/antlir2_compile:antlir2_compile",
