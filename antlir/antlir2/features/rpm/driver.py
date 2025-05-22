@@ -409,13 +409,16 @@ def driver(spec) -> None:
 
     assert mode == "run"
 
-    for path in ["/tmp", "/proc", "/dev"]:
+    for path, mode in [("/tmp", 0o1777), ("/proc", 0o555), ("/dev", 0o755)]:
         dst = os.path.join(spec["install_root"], path.lstrip("/"))
         # Normally I don't like to implicitly create things in the image, there
         # is a lot of baggage that one must get when they use `rpm` - plus, the
         # 'filesystem' rpm which is transitively required by basically
         # everything would end up creating these mountpoints anyway
-        os.makedirs(dst, exist_ok=True)
+        existed = os.path.exists(dst)
+        os.makedirs(dst, exist_ok=True, mode=mode)
+        if not existed:
+            os.chmod(dst, mode)
         subprocess.run(
             ["mount", "--rbind", path, dst],
             check=True,

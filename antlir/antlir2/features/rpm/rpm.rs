@@ -592,6 +592,9 @@ fn run_dnf_driver(
         // even though the build appliance is mounted readonly, python is still
         // somehow writing .pyc cache files, just ban it
         .setenv(("PYTHONDONTWRITEBYTECODE", "1"))
+        // discourage systemd-tmpfiles postscripts from creating nested subvols,
+        // since antlir does not handle that very nicely
+        .setenv(("SYSTEMD_TMPFILES_FORCE_SUBVOL", "0"))
         .build();
     if ctx.is_planning() {
         isol.inputs((Path::new("/__antlir2__/root"), root.deref()))
