@@ -11,8 +11,6 @@ load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerContents", "LayerInfo")
-load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
-load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":facts.bzl", "facts")
 
@@ -115,7 +113,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         actions = ctx.actions,
         layer = contents,
         parent_facts_db = None,
-        build_appliance = ctx.attrs.build_appliance[BuildApplianceInfo],
+        build_appliance = ctx.attrs.flavor[FlavorInfo].default_build_appliance[BuildApplianceInfo] if ctx.attrs.flavor and ctx.attrs.flavor[FlavorInfo].default_build_appliance else None,
         new_facts_db = ctx.attrs._new_facts_db[RunInfo],
         phase = None,
         rootless = ctx.attrs._rootless,
@@ -154,8 +152,8 @@ _prebuilt = rule(
         "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
         "_overlayfs": attrs.bool(default = False),
         "_rootless": rootless_cfg.is_rootless_attr,
-    } | cfg_attrs() | attrs_selected_by_cfg(),
-    cfg = layer_cfg,
+    } | rootless_cfg.attrs,
+    cfg = rootless_cfg.rule_cfg,
 )
 
 _prebuilt_macro = rule_with_default_target_platform(_prebuilt)
@@ -171,10 +169,6 @@ def prebuilt(*args, **kwargs):
 
     if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
-
-    # prebuilt layers are basically useless on their own, so let's just force
-    # that an os is configured for them by an rdep
-    kwargs.setdefault("compatible_with", [os.select_key for os in OSES])
 
     _prebuilt_macro(
         _btrfs = internal_external(

@@ -11,14 +11,13 @@ load("//antlir/antlir2/os:oses.bzl", "OSES")
 
 prelude = native
 
-def _layer_tool(tcname: str, tool: str, os: str, visibility: list[str] = []) -> str:
+def _layer_tool(tcname: str, tool: str, visibility: list[str] = []) -> str:
     name = tcname + "--" + tool
     if not native.rule_exists(name):
         image_command_alias(
             name = name,
             root = ":{}--root".format(tcname),
             exe = tool,
-            default_os = os,
             rootless = True,
             visibility = visibility,
         )
@@ -30,7 +29,6 @@ def _single_image_cxx_toolchain(
         platform_name,
         platform_deps_aliases,
         layer: str,
-        os: str,
         sysroot: str,
         visibility: list[str] = []):
     package.unprivileged_dir(
@@ -53,14 +51,14 @@ def _single_image_cxx_toolchain(
         name = name,
         platform_name = platform_name,
         platform_deps_aliases = platform_deps_aliases,
-        archiver = _layer_tool(name, "llvm-ar", os),
+        archiver = _layer_tool(name, "llvm-ar"),
         archiver_type = "gnu",
         archiver_flags = _llvm_base_args,
-        assembler = _layer_tool(name, "clang", os),
-        c_compiler = _layer_tool(name, "clang", os),
+        assembler = _layer_tool(name, "clang"),
+        c_compiler = _layer_tool(name, "clang"),
         c_compiler_flags = _llvm_base_args,
         compiler_type = "clang",
-        cxx_compiler = _layer_tool(name, "clang++", os),
+        cxx_compiler = _layer_tool(name, "clang++"),
         cxx_compiler_flags = _llvm_base_args,
         cxx_preprocessor_flags = [
             # TODO: this may not always be correct, but I cannot get it to work in
@@ -71,15 +69,15 @@ def _single_image_cxx_toolchain(
             "ovr_config//os:linux",
         ],
         link_ordering = "topological",
-        linker = _layer_tool(name, "clang", os),
+        linker = _layer_tool(name, "clang"),
         linker_flags = ["-fuse-ld=lld"] + _llvm_base_args,
         linker_type = "gnu",
         generate_linker_maps = False, # @oss-enable
-        nm = _layer_tool(name, "llvm-nm", os),
-        objcopy_for_shared_library_interface = _layer_tool(name, "objcopy", os),
+        nm = _layer_tool(name, "llvm-nm"),
+        objcopy_for_shared_library_interface = _layer_tool(name, "objcopy"),
         requires_archives = True,
         shared_library_interface_type = "disabled",
-        strip = _layer_tool(name, "strip", os),
+        strip = _layer_tool(name, "strip"),
         visibility = visibility,
     )
 
@@ -123,7 +121,6 @@ def image_cxx_toolchain(
         )
         _single_image_cxx_toolchain(
             name = "{}--{}".format(name, os.name),
-            os = os.name,
             platform_name = selects.apply(select({
                 "ovr_config//cpu:arm64": "aarch64",
                 "ovr_config//cpu:x86_64": "x86_64",

@@ -16,14 +16,13 @@ load("//antlir/antlir2/os:oses.bzl", "OSES")
 
 prelude = native
 
-def _layer_tool(tcname: str, tool: str, os: str, visibility: list[str] = []) -> str:
+def _layer_tool(tcname: str, tool: str, visibility: list[str] = []) -> str:
     name = tcname + "--" + tool
     if not native.rule_exists(name):
         image_command_alias(
             name = name,
             root = ":{}--root".format(tcname),
             exe = tool,
-            default_os = os,
             rootless = True,
             pass_env = ["PYTHONPATH"],
             visibility = visibility,
@@ -124,11 +123,11 @@ def image_python_toolchain(
             name = "{}--{}".format(name, os.name),
             host_python = select(
                 {
-                    os.select_key: _layer_tool("{}--{}".format(name, os.name), os.python.interpreter, os.name)
+                    os.select_key: _layer_tool("{}--{}".format(name, os.name), os.python.interpreter)
                     for os in oses
                 } |
                 # See above comment about DEFAULT
-                {"DEFAULT": _layer_tool("{}--{}".format(name, oses[0].name), oses[0].python.interpreter, os.name)},
+                {"DEFAULT": _layer_tool("{}--{}".format(name, oses[0].name), oses[0].python.interpreter)},
             ),
             interpreter = select({
                 os.select_key: os.python.interpreter
