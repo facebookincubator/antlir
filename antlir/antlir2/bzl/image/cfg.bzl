@@ -10,7 +10,7 @@ distinct from the default target platform used by the `buck2 build`.
 """
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
-load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo")
+load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
@@ -45,13 +45,16 @@ def cfg_attrs():
 
 def attrs_selected_by_cfg():
     return {
-        "build_appliance": attrs.exec_dep(
-            providers = [BuildApplianceInfo],
-            default = select({os.select_key: os.build_appliance for os in OSES}),
-        ),
-        "flavor": attrs.dep(
-            providers = [FlavorInfo],
-            default = select({os.select_key: os.flavor for os in OSES}),
+        # only attrs.option because it cannot be set on build appliance layers
+        "flavor": attrs.option(
+            attrs.dep(providers = [FlavorInfo]),
+            default = select({
+                # We always need to provide a DEFAULT branch that resolves to
+                # None since this is an attrs.option(). When everything is
+                # default_os (TODO(T168220644)) and this is not an option, this
+                # can be removed.
+                "DEFAULT": None,
+            } | {os.select_key: os.flavor for os in OSES}),
         ),
         "_rootless": rootless_cfg.is_rootless_attr,
         "_working_format": attrs.default_only(attrs.string(

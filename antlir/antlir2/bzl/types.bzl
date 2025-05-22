@@ -11,6 +11,7 @@ FeatureInfo = provider(fields = [
 ])
 
 FlavorInfo = provider(fields = [
+    "default_build_appliance",  # The default build_appliance to use on images of this flavor
     "dnf_info",  # FlavorDnfInfo provider for dnf-based distros
     "label",  # The buck label for this flavor
 ])
@@ -32,6 +33,7 @@ LayerContents = record(
 )
 
 LayerInfo = provider(fields = [
+    "build_appliance",  # dep on the build appliance that was use to build this (if any)
     "facts_db",  # Database managed by antlir2_facts
     "features",  # List of all feature analyses
     "flavor",  # dep on the flavor this layer was built with
