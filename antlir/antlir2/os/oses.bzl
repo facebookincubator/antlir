@@ -38,6 +38,7 @@ os_t = record(
     architectures = list[arch_t],
     select_key = str,
     flavor = str,
+    build_appliance = str | Select,
     target = str,
     has_platform_toolchain = bool,
     python = python_t,
@@ -56,6 +57,13 @@ def _new_os(name: str, **kwargs):
             oss = "//flavor/",
         ) + name + ":" + name,
     )
+    kwargs.setdefault(
+        "build_appliance",
+        internal_external(
+            fb = "antlir//antlir/antlir2/facebook/images/build_appliance/{}:build-appliance".format(name),
+            oss = "antlir//flavor//{}:build-appliance".format(name),
+        )
+    )
     kwargs.setdefault("target", "antlir//antlir/antlir2/os:" + name)
     kwargs.setdefault("has_platform_toolchain", True)
     kwargs.setdefault("python", new_python_t())
@@ -69,10 +77,20 @@ OSES = [
         name = "none",
         select_key = "antlir//antlir/antlir2/os:none",
         flavor = "antlir//antlir/antlir2/flavor:none",
+        # TODO: this should have its own build_appliance that doesn't have dnf
+        # installed, but is not strictly necessary right now
+        build_appliance = internal_external(
+            fb = "antlir//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
+            oss = "//flavor/centos9:build-appliance",
+        ),
         has_platform_toolchain = False,
     ),
     _new_os(
         name = "centos9",
+        build_appliance = select({
+            "DEFAULT": "antlir//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
+            "antlir//antlir/antlir2/facebook/flavor/centos9:corp": "antlir//antlir/antlir2/facebook/images/build_appliance/centos9_corp:build-appliance",
+        }),
         python = new_python_t(interpreter = "python3.12")
     ),
     _new_os(
