@@ -12,6 +12,7 @@ load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
 def _impl(ctx: AnalysisContext) -> Promise:
     return ctx.actions.anon_target(layer_rule, {
         "antlir2": ctx.attrs._antlir2,
+        "build_appliance": ctx.attrs.build_appliance,
         "flavor": ctx.attrs.flavor,
         "name": str(ctx.label.raw_target()),
         "parent_layer": ctx.attrs.layer,

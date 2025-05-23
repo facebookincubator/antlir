@@ -17,12 +17,11 @@ load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 
 # Attrs that are required by all packages
 common_attrs = {
-    "build_appliance": attrs.option(attrs.exec_dep(providers = [BuildApplianceInfo]), default = None),
     "labels": attrs.list(attrs.string(), default = []),
     "out": attrs.option(attrs.string(doc = "Output filename"), default = None),
 } | layer_attrs
 
-# Attrs that will only ever be used as default_only
+# Attrs that are not expected for users to pass
 default_attrs = {
     "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
     "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
@@ -33,7 +32,7 @@ default_attrs = {
     "_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),
-} | {k: attrs.default_only(v) for k, v in attrs_selected_by_cfg().items()}
+} | attrs_selected_by_cfg()
 
 def _generic_impl_with_layer(
         layer: [Dependency, ProviderCollection],
@@ -46,7 +45,7 @@ def _generic_impl_with_layer(
         sudo: bool,
         force_extension: str | None,
         uses_build_appliance: bool) -> list[Provider]:
-    build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
+    build_appliance = ctx.attrs.build_appliance
 
     output_name = ctx.attrs.out or ctx.label.name
     if force_extension and not output_name.endswith("." + force_extension):
@@ -101,6 +100,7 @@ def _generic_impl(
         uses_build_appliance: bool):
     if ctx.attrs.dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
+            "build_appliance": ctx.attrs.build_appliance,
             "flavor": ctx.attrs.flavor,
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
