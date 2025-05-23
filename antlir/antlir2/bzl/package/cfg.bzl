@@ -5,16 +5,13 @@
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/image:cfg.bzl", _cfg_attrs = "cfg_attrs")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
 load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:internal_external.bzl", "is_facebook")
-
-def cfg_attrs():
-    return _cfg_attrs() | rootless_cfg.attrs
 
 # Let the layer be configured by the same configuration attrs in image.layer
 layer_attrs = {

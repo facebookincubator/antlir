@@ -6,14 +6,14 @@
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/appliance_vm:defs.bzl", "ApplianceVmInfo")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
-load("//antlir/antlir2/bzl/package:cfg.bzl", "cfg_attrs", "package_cfg")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs")
+load("//antlir/antlir2/bzl/package:cfg.bzl", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
 load(":macro.bzl", "package_macro")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     package = ctx.actions.declare_output("image.btrfs")
-    first_layer = ctx.attrs.subvols.values()[0]["layer"]
-    build_appliance = ctx.attrs.build_appliance or first_layer[LayerInfo].build_appliance
+    build_appliance = ctx.attrs.build_appliance
 
     spec = ctx.actions.write_json(
         "spec.json",
@@ -84,7 +84,7 @@ _btrfs = rule(
             default = None,
         ),
         "_rootless": rootless_cfg.is_rootless_attr,
-    } | cfg_attrs(),
+    } | attrs_selected_by_cfg() | cfg_attrs(),
     cfg = package_cfg,
 )
 
