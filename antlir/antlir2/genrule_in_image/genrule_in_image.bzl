@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
@@ -50,7 +49,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 ctx.attrs._genrule_in_image[RunInfo],
                 "--rootless" if ctx.attrs._rootless else cmd_args(),
                 cmd_args(layer[LayerInfo].contents.subvol_symlink, format = "--layer={}") if ctx.attrs._working_format == "btrfs" else cmd_args(),
-                cmd_args(layer[LayerInfo].contents.overlayfs.json_file_with_inputs, format = "--layer={}") if ctx.attrs._working_format == "overlayfs" else cmd_args(),
                 cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
                 "--dir" if out_is_dir else cmd_args(),
@@ -92,7 +90,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             "target_arch": ctx.attrs._target_arch,
             "_analyze_feature": ctx.attrs._layer_analyze_feature,
             "_feature_features": [ctx.attrs._prep_feature],
-            "_materialize_to_subvol": ctx.attrs._materialize_to_subvol,
             "_new_facts_db": ctx.attrs._new_facts_db,
             "_rootless": ctx.attrs._rootless,
             "_run_container": None,
@@ -126,7 +123,6 @@ _genrule_in_image = rule(
         "_genrule_in_image": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/genrule_in_image:genrule_in_image")),
         "_layer_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
         "_layer_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
-        "_materialize_to_subvol": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol")),
         "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
         "_prep_feature": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/genrule_in_image:prep")),
         "_target_arch": attrs.default_only(attrs.string(
@@ -147,9 +143,6 @@ def genrule_in_image(
     default_os = default_os or get_default_os_for_package()
     if rootless == None:
         rootless = get_antlir2_rootless()
-    if get_antlir2_use_overlayfs():
-        kwargs["working_format"] = "overlayfs"
-        rootless = True
 
     labels = kwargs.pop("labels", [])
     if not rootless:

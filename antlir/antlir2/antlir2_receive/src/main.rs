@@ -10,7 +10,6 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use antlir2_btrfs::Subvolume;
-use antlir2_cas_dir::CasDir;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use clap::Parser;
@@ -48,8 +47,6 @@ pub(crate) struct Receive {
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Format {
     Sendstream,
-    #[clap(name = "cas_dir")]
-    CasDir,
     Tar,
     #[cfg(facebook)]
     Caf,
@@ -121,13 +118,6 @@ impl Receive {
         match self.format {
             Format::Sendstream => {
                 sendstream::recv_sendstream(&self, &dst)?;
-            }
-            Format::CasDir => {
-                let subvol = Subvolume::create(&dst).context("while creating subvol")?;
-                let cas_dir = CasDir::open(self.source).context("while opening CasDir")?;
-                cas_dir
-                    .hydrate_into(subvol.path())
-                    .context("while materializing CasDir")?;
             }
             Format::Tar => {
                 let subvol = Subvolume::create(&dst).context("while creating subvol")?;

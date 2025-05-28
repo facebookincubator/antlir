@@ -5,7 +5,6 @@
 
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
-load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
@@ -95,14 +94,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
             cmd_args("--rootless") if ctx.attrs._rootless else cmd_args(),
-            cmd_args("--working-format=overlayfs") if ctx.attrs._overlayfs else cmd_args(),
         ),
         category = "antlir2_prebuilt_layer",
         identifier = format,
-        # needs local subvolumes
-        local_only = not ctx.attrs._overlayfs,
+        # needs to create a local subvolume
+        local_only = True,
         # the old output is used to clean up the local subvolume
-        no_outputs_cleanup = not ctx.attrs._overlayfs,
+        no_outputs_cleanup = True,
         env = {
             "RUST_LOG": "antlir2=trace",
         },
@@ -147,12 +145,11 @@ _prebuilt = rule(
         "antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_receive:antlir2-receive")),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
-        "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
+        "format": attrs.enum(["sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
         "_btrfs": attrs.option(attrs.exec_dep(), default = None),
         "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
-        "_overlayfs": attrs.bool(default = False),
         "_rootless": rootless_cfg.is_rootless_attr,
     } | cfg_attrs() | attrs_selected_by_cfg(),
     cfg = layer_cfg,
@@ -162,10 +159,6 @@ _prebuilt_macro = rule_with_default_target_platform(_prebuilt)
 
 def prebuilt(*args, **kwargs):
     rootless = kwargs.pop("rootless", get_antlir2_rootless())
-
-    if get_antlir2_use_overlayfs():
-        kwargs["_overlayfs"] = True
-        rootless = True
 
     kwargs["rootless"] = rootless
 

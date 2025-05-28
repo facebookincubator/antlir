@@ -11,8 +11,3 @@ constraint_value(
     name = "btrfs",
     constraint_setting = ":working_format",
 )
-
-constraint_value(
-    name = "overlayfs",
-    constraint_setting = ":working_format",
-)

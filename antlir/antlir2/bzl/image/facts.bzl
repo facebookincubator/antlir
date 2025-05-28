@@ -32,15 +32,12 @@ def _new_facts_db(
     sudo = True
     if rootless:  # rootless builds must avoid sudo
         sudo = False
-    if layer.overlayfs:  # overlayfs layers have metadata accessible without root
-        sudo = False
 
     actions.run(
         cmd_args(
             "sudo" if sudo else cmd_args(),
             new_facts_db,
-            cmd_args(layer.subvol_symlink, format = "--subvol-symlink={}") if layer.subvol_symlink else cmd_args(),
-            cmd_args(layer.overlayfs.json_file_with_inputs, format = "--overlayfs={}") if layer.overlayfs else cmd_args(),
+            cmd_args(layer.subvol_symlink, format = "--subvol-symlink={}"),
             cmd_args(parent_facts_db, format = "--parent={}") if parent_facts_db else cmd_args(),
             cmd_args(build_appliance.dir, format = "--build-appliance={}") if build_appliance else cmd_args(),
             cmd_args(output.as_output(), format = "--db={}"),
@@ -48,8 +45,8 @@ def _new_facts_db(
         ),
         category = "antlir2_facts",
         identifier = prefix,
-        # needs local subvol if not overlayfs
-        local_only = not layer.overlayfs,
+        # needs local subvol
+        local_only = True,
         env = {
             "RUST_LOG": "populate=trace",
         },

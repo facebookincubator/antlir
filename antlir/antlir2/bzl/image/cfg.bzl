@@ -34,7 +34,7 @@ def cfg_attrs():
             doc = "Build this image for a specific target arch without using `buck -c`",
         ),
         "working_format": attrs.option(
-            attrs.enum(["btrfs", "overlayfs"]),
+            attrs.enum(["btrfs"]),
             default = None,
             doc = "Underlying on-disk format for the layer build",
         ),
@@ -58,7 +58,6 @@ def attrs_selected_by_cfg():
             default = select({
                 "DEFAULT": "btrfs",
                 "antlir//antlir/antlir2/cfg:btrfs": "btrfs",
-                "antlir//antlir/antlir2/cfg:overlayfs": "overlayfs",
             }),
         )),
     }
@@ -122,7 +121,6 @@ layer_cfg = transition(
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:dnf",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
         "working_format.btrfs": "antlir//antlir/antlir2/cfg:btrfs",
-        "working_format.overlayfs": "antlir//antlir/antlir2/cfg:overlayfs",
     } | (
         # @oss-disable
         {} # @oss-enable

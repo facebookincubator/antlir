@@ -6,7 +6,6 @@
 # @oss-disable
 load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
-load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs", "OverlayLayer", "get_antlir2_use_overlayfs")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless_config_set", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
@@ -56,48 +55,12 @@ def _compile(
     Compile features into a new image layer
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
-    if ctx.attrs._working_format == "overlayfs":
-        parent_layers = (parent.overlayfs.layers + [parent.overlayfs.top]) if parent else []
-        overlayfs_model_out = ctx.actions.declare_output(identifier, "overlayfs-out.json")
-        data_dir = ctx.actions.declare_output(identifier, "overlayfs-data-dir", dir = True)
-        manifest = ctx.actions.declare_output(identifier, "overlayfs-manifest.json")
-        overlayfs_model_out = ctx.actions.write_json(overlayfs_model_out, struct(
-            top = OverlayLayer(
-                data_dir = data_dir.as_output(),
-                manifest = manifest.as_output(),
-            ),
-            layers = parent_layers,
-        ), with_inputs = True)
-        overlayfs_model = ctx.actions.declare_output(identifier, "overlayfs.json")
-        overlayfs_model_with_inputs = ctx.actions.write_json(overlayfs_model, struct(
-            top = OverlayLayer(
-                data_dir = data_dir,
-                manifest = manifest,
-            ),
-            layers = parent_layers,
-        ), with_inputs = True)
-        overlayfs = OverlayFs(
-            top = OverlayLayer(
-                data_dir = data_dir,
-                manifest = manifest,
-            ),
-            layers = parent_layers,
-            json_file_with_inputs = overlayfs_model_with_inputs,
-            json_file = overlayfs_model,
-        )
-        parent_arg = cmd_args()  # parent is included in the output
-        out_arg = cmd_args(overlayfs_model_out, format = "--output={}")
-        contents = LayerContents(
-            overlayfs = overlayfs,
-            subvol_symlink = None,
-        )
-    elif ctx.attrs._working_format == "btrfs":
+    if ctx.attrs._working_format == "btrfs":
         parent_arg = cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args()
         subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink")
         out_arg = cmd_args(subvol_symlink.as_output(), format = "--output={}")
         contents = LayerContents(
             subvol_symlink = subvol_symlink,
-            overlayfs = None,
         )
     else:
         fail("unknown working format '{}'".format(ctx.attrs._working_format))
@@ -455,9 +418,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 rootless = ctx.attrs._rootless,
                 binaries_require_repo = ctx.attrs._binaries_require_repo,
             )
-        if layer.overlayfs:
-            phase_sub_targets["overlayfs"] = [DefaultInfo(layer.overlayfs.json_file)]
-            # TODO: support [container] for overlayfs backed layers
 
         debug_sub_targets[phase.value] = [
             DefaultInfo(
@@ -488,29 +448,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             ctx.attrs._rootless,
             binaries_require_repo = ctx.attrs._binaries_require_repo,
         )
-    elif ctx.attrs._materialize_to_subvol:
-        subvol_symlink = ctx.actions.declare_output("subvol_symlink")
-        ctx.actions.run(
-            cmd_args(
-                ctx.attrs._materialize_to_subvol[RunInfo],
-                cmd_args(layer.overlayfs.json_file_with_inputs, format = "--model={}"),
-                cmd_args(subvol_symlink.as_output(), format = "--subvol-symlink={}"),
-            ),
-            category = "materialize_to_subvol",
-            local_only = True,  # deals with local subvolumes
-        )
-        sub_targets["subvol_symlink"] = [DefaultInfo(subvol_symlink)]
-        sub_targets["container"] = _container_sub_target(
-            ctx.attrs._run_container,
-            LayerContents(subvol_symlink = subvol_symlink),
-            mounts,
-            ctx.attrs._rootless,
-            binaries_require_repo = ctx.attrs._binaries_require_repo,
-        )
-    else:
-        # This won't happen until we migrate more complex targets, since this
-        # will only affect anon layers
-        fail("RE builds must be provided with _materialize_to_subvol")
 
     sub_targets["subvol_symlink"] = [DefaultInfo(subvol_symlink)]
 
@@ -606,9 +543,7 @@ _layer_attrs = {
             configurations (like systemd-cd).
         """,
     ),
-    "_materialize_to_subvol": attrs.option(attrs.exec_dep(), default = None),
     "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
-    "_overlayfs": attrs.bool(default = False),
     "_run_container": attrs.option(attrs.exec_dep(), default = None),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -619,7 +554,6 @@ _layer_attrs = {
         default = select({
             "DEFAULT": "btrfs",
             "antlir//antlir/antlir2/cfg:btrfs": "btrfs",
-            "antlir//antlir/antlir2/cfg:overlayfs": "overlayfs",
         }),
     )),
 }
@@ -711,10 +645,6 @@ def layer(
     elif rootless == None:
         rootless = get_antlir2_rootless()
 
-    if get_antlir2_use_overlayfs():
-        kwargs["working_format"] = "overlayfs"
-        rootless = True
-
     additional_labels = []
     # @oss-disable
     if not rootless:
@@ -760,7 +690,6 @@ def layer(
         visibility = get_visibility(visibility),
         target_compatible_with = target_compatible_with,
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
-        _materialize_to_subvol = "antlir//antlir/antlir2/antlir2_overlayfs:materialize-to-subvol",
         _binaries_require_repo = binaries_require_repo.select_value,
         exec_compatible_with = ["prelude//platforms:may_run_local"],
         **kwargs
