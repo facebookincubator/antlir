@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/antlir2_overlayfs:overlayfs.bzl", "OverlayFs")
-
 FeatureInfo = provider(fields = [
     # Transitive set of feature records deserializable by Antlir tools
     "features",
@@ -23,12 +21,10 @@ FlavorDnfInfo = provider(fields = [
     "reflink_flavor",  # Key to identify rpm2extents output for a compatible version
 ])
 
-# A layer is backed by either a local btrfs subvol or antlir2_overlayfs.
-# Eventually all layers will be backed by overlayfs (TODO(T156455885)), but
-# while RE builds are being worked on, most are still a local subvol.
+# Eventually antlir2 hopes to support other storage formats, but for now only
+# local subvolumes are supported
 LayerContents = record(
-    subvol_symlink = field(Artifact | None, default = None),  # symlink pointing to the built subvol
-    overlayfs = field(OverlayFs | None, default = None),  # antlir2_overlayfs record
+    subvol_symlink = field(Artifact),  # symlink pointing to the built subvol
 )
 
 LayerInfo = provider(fields = [
@@ -41,9 +37,9 @@ LayerInfo = provider(fields = [
     "parent",  # Dependency for the parent of the layer, if one exists
     "contents",  # LayerContents record
     "phase_contents",  # LayerContents broken out by all the internal phases
-    # Symlink to local subvolume in antlir2-out/. Kept around for a
-    # transitionary period while the whole antlir ecosystem grows to support
-    # antlir2_overlayfs
+    # Symlink to local subvolume in antlir2-out/. Usage should be moved to
+    # .contents.subvol_symlink but this is kept around for compatibility reasons
+    # during that transition
     "subvol_symlink",
 ])
 

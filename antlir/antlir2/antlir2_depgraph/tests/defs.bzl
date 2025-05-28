@@ -66,13 +66,13 @@ def bad_depgraph(
     )
 
 def _good_impl(ctx: AnalysisContext) -> list[Provider]:
-    layer = ctx.attrs.layer[LayerInfo].contents
+    layer_contents = ctx.attrs.layer[LayerInfo].contents
     return [
         DefaultInfo(),
         ExternalRunnerTestInfo(
             # force the layer to be built for the test to be considered a
             # success
-            command = [cmd_args("true", hidden = [layer.overlayfs or layer.subvol_symlink])],
+            command = [cmd_args("true", hidden = [layer_contents.subvol_symlink])],
             type = "custom",
         ),
     ]

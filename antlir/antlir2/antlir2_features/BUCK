@@ -13,7 +13,6 @@ rust_library(
         "thiserror",
         "tracing",
         "tracing-core",
-        "//antlir/antlir2/antlir2_overlayfs:antlir2_overlayfs",
         "//antlir/buck2/buck_label:buck_label",
     ],
 )

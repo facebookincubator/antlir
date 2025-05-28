@@ -8,7 +8,6 @@
 use std::path::Path;
 use std::path::PathBuf;
 
-use antlir2_overlayfs::BuckModel as OverlayfsModel;
 use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;
@@ -53,21 +52,12 @@ pub type GroupName = String;
 #[serde(rename_all = "snake_case")]
 pub enum LayerContents {
     SubvolSymlink(PathBuf),
-    Overlayfs(OverlayfsModel),
 }
 
 impl LayerContents {
     pub fn as_subvol_symlink(&self) -> Option<&Path> {
         match self {
             Self::SubvolSymlink(p) => Some(p),
-            _ => None,
-        }
-    }
-
-    pub fn as_overlayfs(&self) -> Option<&OverlayfsModel> {
-        match self {
-            Self::Overlayfs(m) => Some(m),
-            _ => None,
         }
     }
 }

@@ -83,7 +83,6 @@ def plan(
             plan[RunInfo],
             cmd_args(label, format = "--label={}"),
             "--rootless" if rootless else cmd_args(),
-            cmd_args(parent_layer_contents.overlayfs.json_file_with_inputs, format = "--parent-overlayfs={}") if parent_layer_contents and parent_layer_contents.overlayfs else cmd_args(),
             cmd_args(parent_layer_contents.subvol_symlink, format = "--parent-subvol-symlink={}") if parent_layer_contents and parent_layer_contents.subvol_symlink else cmd_args(),
             cmd_args(build_appliance.dir, format = "--build-appliance={}"),
             cmd_args(dnf_repodatas, format = "--repodatas={}"),
@@ -98,7 +97,7 @@ def plan(
         category = "rpm_plan",
         identifier = identifier,
         # local_only if the parent is only available as a subvol
-        local_only = bool(parent_layer_contents and not parent_layer_contents.overlayfs),
+        local_only = bool(parent_layer_contents and parent_layer_contents.subvol_symlink),
     )
 
     repos = compiler_plan_to_local_repos(

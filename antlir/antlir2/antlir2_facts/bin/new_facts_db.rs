@@ -22,7 +22,6 @@ use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
 use antlir2_isolate::IsolationContext;
 use antlir2_isolate::sys::unshare;
-use antlir2_overlayfs::OverlayFs;
 use antlir2_path::PathExt;
 use antlir2_systemd::UnitFile;
 use antlir2_users::group::EtcGroup;
@@ -34,16 +33,13 @@ use anyhow::ensure;
 use clap::Parser;
 use fxhash::FxHashSet;
 use itertools::Itertools;
-use json_arg::JsonFile;
 use jwalk::WalkDir;
 use tracing::warn;
 
 #[derive(Parser)]
 struct Args {
-    #[clap(long, conflicts_with = "overlayfs")]
-    subvol_symlink: Option<PathBuf>,
-    #[clap(long, conflicts_with = "subvol_symlink")]
-    overlayfs: Option<JsonFile<antlir2_overlayfs::BuckModel>>,
+    #[clap(long)]
+    subvol_symlink: PathBuf,
     #[clap(long)]
     parent: Option<PathBuf>,
     #[clap(long)]
@@ -270,14 +266,12 @@ fn populate_systemd_units(tx: &mut Transaction, root: &Path) -> Result<()> {
 
 enum Root {
     Subvol(PathBuf),
-    Overlayfs(OverlayFs),
 }
 
 impl Root {
     fn path(&self) -> &Path {
         match self {
             Self::Subvol(p) => p,
-            Self::Overlayfs(fs) => fs.mountpoint(),
         }
     }
 }
@@ -318,23 +312,7 @@ fn main() -> Result<()> {
 
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
-    let root = match (args.subvol_symlink, args.overlayfs) {
-        (Some(subvol_symlink), None) => Root::Subvol(subvol_symlink),
-        (None, Some(model)) => Root::Overlayfs(
-            // TODO: we ideally should be able to generate changes to the db
-            // incrementally just by looking at the upper layer, but we still
-            // need to run `rpm -q` (unless we want to record it as part of
-            // feature.rpm and feature.chef_solo which seems very error-prone),
-            // so just mount the overlayfs and treat it the same as a subvol
-            OverlayFs::mount(
-                antlir2_overlayfs::Opts::builder()
-                    .model(model.into_inner())
-                    .build(),
-            )
-            .context("while mounting overlayfs")?,
-        ),
-        _ => bail!("impossible combination"),
-    };
+    let root = Root::Subvol(args.subvol_symlink);
 
     populate(&mut tx, root.path(), args.build_appliance.as_deref())?;
 

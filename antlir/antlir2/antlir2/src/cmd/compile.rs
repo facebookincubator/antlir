@@ -14,11 +14,9 @@ use antlir2_compile::Arch;
 use antlir2_compile::CompileFeature;
 use antlir2_compile::CompilerContext;
 use antlir2_features::Feature;
-use antlir2_overlayfs::OverlayFs;
 use antlir2_rootless::Rootless;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
-use anyhow::anyhow;
 use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;
@@ -70,20 +68,17 @@ pub(crate) struct Compile {
 #[derive(Debug, ValueEnum, Clone, Copy)]
 enum WorkingFormat {
     Btrfs,
-    Overlayfs,
 }
 
 #[derive(Debug)]
 enum WorkingLayer {
     Btrfs(Subvolume),
-    OverlayFs(OverlayFs),
 }
 
 impl WorkingLayer {
     fn path(&self) -> &Path {
         match self {
             WorkingLayer::Btrfs(subvol) => subvol.path(),
-            WorkingLayer::OverlayFs(fs) => fs.mountpoint(),
         }
     }
 }
@@ -94,7 +89,6 @@ impl Compile {
         // this must happen before unshare
         let working_volume = match self.working_format {
             WorkingFormat::Btrfs => Some(WorkingVolume::ensure(self.working_dir.clone())?),
-            WorkingFormat::Overlayfs => None,
         };
 
         let rootless = match self.rootless {
@@ -195,10 +189,6 @@ impl Compile {
                 }
                 drop(root_guard);
             }
-            WorkingLayer::OverlayFs(fs) => {
-                drop(ctx);
-                fs.finalize().context("while finalizing overlayfs")?;
-            }
         }
 
         Ok(())
@@ -237,18 +227,6 @@ impl Compile {
                 };
                 debug!("produced r/w subvol '{subvol:?}'");
                 Ok(WorkingLayer::Btrfs(subvol))
-            }
-            WorkingFormat::Overlayfs => {
-                if self.parent.is_some() {
-                    return Err(anyhow!("overlayfs encodes parent in --output").into());
-                }
-
-                let model =
-                    std::fs::read_to_string(&self.output).context("while reading model json")?;
-                let model = serde_json::from_str(&model).context("while parsing model json")?;
-                let opts = antlir2_overlayfs::Opts::builder().model(model).build();
-                let fs = OverlayFs::mount(opts).context("while mounting overlayfs")?;
-                Ok(WorkingLayer::OverlayFs(fs))
             }
         }
     }
