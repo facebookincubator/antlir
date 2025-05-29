@@ -5,7 +5,6 @@
 
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
@@ -80,7 +79,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 user = ctx.attrs.user,
                 group = ctx.attrs.group,
             ),
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
             build_phase = BuildPhase(ctx.attrs.build_phase),
         ))
     return [
@@ -97,7 +96,7 @@ ensure_dir_exists_rule = rule(
         "group": attrs.string(),
         "into_dir": attrs.string(),
         "mode": attrs.one_of(attrs.string(), attrs.int()),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "subdirs_to_create": attrs.string(),
         "user": attrs.string(),
     },

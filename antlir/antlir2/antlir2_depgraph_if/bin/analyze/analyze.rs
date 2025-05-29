@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use antlir2_depgraph_if::AnalyzedFeature;
 use antlir2_depgraph_if::RequiresProvides;
 use antlir2_features::Feature;
+use antlir2_features::plugin::Plugin;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -23,6 +24,8 @@ use plugin::FeatureWrapper;
 
 #[derive(Debug, Parser)]
 struct Args {
+    #[clap(long)]
+    plugin: Plugin,
     #[clap(long)]
     feature: JsonFile<Feature>,
     #[clap(long)]

@@ -6,6 +6,7 @@
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "os_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":btrfs.bzl", "btrfs")
@@ -19,6 +20,11 @@ load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 common_attrs = {
     "labels": attrs.list(attrs.string(), default = []),
     "out": attrs.option(attrs.string(doc = "Output filename"), default = None),
+    "_plugins": attrs.list(
+        attrs.dep(providers = [FeaturePluginInfo]),
+        default = [],
+        doc = "Used as a way to pass plugins to anon layer targets",
+    ),
 } | layer_attrs
 
 # Attrs that are not expected for users to pass
@@ -26,7 +32,7 @@ default_attrs = {
     "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
     "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
     "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
-    "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta"),
+    "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
     "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
     "_run_container": attrs.exec_dep(default = "antlir//antlir/antlir2/container_subtarget:run"),
     "_target_arch": attrs.default_only(attrs.string(
@@ -108,6 +114,7 @@ def _generic_impl(
             "_antlir2": ctx.attrs._antlir2,
             "_dot_meta_feature": ctx.attrs._dot_meta_feature,
             "_new_facts_db": ctx.attrs._new_facts_db,
+            "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
             "_rootless": ctx.attrs._rootless,
             "_run_container": ctx.attrs._run_container,
             "_target_arch": ctx.attrs._target_arch,
@@ -165,6 +172,9 @@ def _new_package_rule(
     return (
         rule(
             cfg = package_cfg,
+            # Because this can instantiate an implicit layer, it must also
+            # depend on the feature plugins
+            uses_plugins = [FeaturePluginPluginKind],
             **kwargs
         ),
         anon_rule(
@@ -187,6 +197,7 @@ def _compressed_impl(
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
             "out": "uncompressed",
+            "_plugins": ctx.plugins[FeaturePluginPluginKind],
         } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys} | (
             {"dot_meta": ctx.attrs.dot_meta} if ctx.attrs.dot_meta != None else {}
         ),
@@ -257,6 +268,9 @@ def _new_compressed_package_rule(
             "dot_meta": attrs.option(attrs.bool(), default = None),
         },
         cfg = package_cfg,
+        # Because this can instantiate an implicit layer, it must also
+        # depend on the feature plugins
+        uses_plugins = [FeaturePluginPluginKind],
     )
 
 _cpio, _cpio_anon = _new_package_rule(

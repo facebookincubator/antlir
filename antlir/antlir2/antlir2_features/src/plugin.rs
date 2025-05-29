@@ -5,39 +5,61 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::hash::Hash;
-use std::path::Path;
-use std::path::PathBuf;
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::str::FromStr;
+use std::sync::Mutex;
 
-use serde::Deserialize;
-use serde::Serialize;
+use buck_label::Label;
+use libloading::Library;
+use once_cell::sync::Lazy;
 
 use crate::Error;
 use crate::Result;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub(crate) struct PluginJson {
-    pub(crate) plugin: PathBuf,
-    libs: PathBuf,
-}
+pub(crate) static REGISTRY: Lazy<Mutex<HashMap<Label, &'static Plugin>>> =
+    Lazy::new(Default::default);
 
+/// CLI arg "parser" that immediately loads the plugin libraries and leaks it to
+/// remain available for the rest of the process's lifetime
+#[derive(Clone)]
 pub struct Plugin {
-    path: PathBuf,
-    lib: &'static libloading::Library,
+    src: String,
+    lib: &'static Library,
 }
 
 impl Plugin {
-    pub(crate) fn open(path: &Path) -> Result<Self> {
-        let lib = Box::leak(Box::new(libloading::Library::new(path)?));
+    fn register(src: &str) -> Result<&'static Self> {
+        let lib = Box::leak(Box::new(libloading::Library::new(src)?));
+
         let init_tracing: libloading::Symbol<fn(tracing::Dispatch) -> ()> =
             unsafe { lib.get(b"init_tracing")? };
         init_tracing(tracing::Dispatch::new(PluginForwardingSubscriber));
 
-        Ok(Self {
-            path: path.to_owned(),
+        let label: libloading::Symbol<fn() -> &'static str> = unsafe { lib.get(b"label\0")? };
+
+        let init_tracing: libloading::Symbol<fn(&tracing::Dispatch) -> ()> =
+            unsafe { lib.get(b"init_tracing")? };
+        tracing::dispatcher::get_default(|dispatch| {
+            init_tracing(dispatch);
+        });
+
+        let this = Self {
+            src: src.to_owned(),
             lib,
-        })
+        };
+
+        let plugin = Box::leak(Box::new(this));
+        let label = label();
+        let label: Label = label
+            .parse()
+            .map_err(|_| Error::BadPlugin(format!("'{label}' is not a valid label")))?;
+
+        REGISTRY
+            .lock()
+            .expect("registry lock is poisoned")
+            .insert(label, plugin);
+        Ok(plugin)
     }
 
     pub fn get_symbol<T>(&self, symbol: &[u8]) -> Result<libloading::Symbol<T>> {
@@ -45,19 +67,17 @@ impl Plugin {
     }
 }
 
-impl PartialEq for Plugin {
-    fn eq(&self, other: &Self) -> bool {
-        self.path == other.path
+impl FromStr for Plugin {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Self::register(s).cloned()
     }
 }
 
-impl Eq for Plugin {}
-
-impl std::fmt::Debug for Plugin {
+impl Debug for Plugin {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Plugin")
-            .field("path", &self.path)
-            .finish_non_exhaustive()
+        f.debug_struct("Plugin").field("src", &self.src).finish()
     }
 }
 

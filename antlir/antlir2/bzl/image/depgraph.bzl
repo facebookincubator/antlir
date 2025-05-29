@@ -14,6 +14,10 @@ load(
 )
 load("//antlir/antlir2/bzl/feature:feature.bzl", "as_json_for_depgraph")
 load(
+    "//antlir/antlir2/features:defs.bzl",
+    "FeaturePluginInfo",  # @unused Used as type
+)
+load(
     "//antlir/antlir2/features:feature_info.bzl",
     "feature_record",  # @unused Used as type
 )
@@ -21,6 +25,7 @@ load(
 def analyze_features(
         *,
         ctx: AnalysisContext,
+        plugins: dict[str, FeaturePluginInfo | typing.Any],
         features: list[feature_record | typing.Any],
         identifier: str,
         phase: BuildPhase) -> list[Artifact]:
@@ -48,9 +53,13 @@ def analyze_features(
             identifier + "/features/" + phase.value,
             "{}[{}].analyzed.json".format(feature.feature_type, idx),
         )
+
+        plugin = plugins[str(feature.plugin)]
+
         ctx.actions.run(
             cmd_args(
                 ctx.attrs._analyze_feature[RunInfo],
+                cmd_args(plugin.plugin, format = "--plugin={}", hidden = [plugin.libs]),
                 cmd_args(input, format = "--feature={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
             ),
@@ -64,6 +73,7 @@ def analyze_features(
 def build_depgraph(
         *,
         ctx: AnalysisContext,
+        plugins: dict[str, FeaturePluginInfo | typing.Any],
         parent: Artifact | None,
         features: list[feature_record | typing.Any],
         identifier: str,
@@ -73,6 +83,7 @@ def build_depgraph(
 
     analyzed_features = analyze_features(
         ctx = ctx,
+        plugins = plugins,
         features = features,
         identifier = identifier,
         phase = phase,

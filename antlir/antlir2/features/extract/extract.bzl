@@ -25,7 +25,6 @@ load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep_analyze")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -123,7 +122,7 @@ def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
                 layer = layer_dep_analyze(ctx.attrs.layer),
                 binaries = ctx.attrs.binaries,
             ),
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
         ),
     ]
 
@@ -132,7 +131,7 @@ extract_from_layer_rule = rule(
     attrs = {
         "binaries": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
     },
 )
 
@@ -177,7 +176,7 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
                 ),
             ),
             required_artifacts = [src],
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
         ),
     ]
 
@@ -185,7 +184,7 @@ extract_buck_binary_rule = rule(
     impl = _extract_buck_binary_impl,
     attrs = {
         "dst": attrs.option(attrs.string(), default = None),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "src": attrs.dep(providers = [RunInfo]),
         "strip": attrs.bool(default = True),
         "target_arch": attrs.string(),

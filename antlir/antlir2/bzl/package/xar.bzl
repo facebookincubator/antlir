@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginPluginKind")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":defs.bzl", "common_attrs", "default_attrs", "squashfs_anon")
 load(":macro.bzl", "package_macro")
@@ -12,6 +13,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     squash = ctx.actions.anon_target(squashfs_anon, {
         k: getattr(ctx.attrs, k)
         for k in list(layer_attrs) + list(common_attrs) + list(default_attrs)
+    } | {
+        "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
     }).artifact("package")
     spec = ctx.actions.write_json(
         "spec.json",
@@ -43,6 +46,9 @@ _xar = rule(
         "executable": attrs.string(doc = "Executable within the XAR root that serves as the entrypoint"),
     } | layer_attrs | default_attrs | common_attrs,
     cfg = package_cfg,
+    # Because this can instantiate an implicit layer, it must also
+    # depend on the feature plugins
+    uses_plugins = [FeaturePluginPluginKind],
 )
 
 xar = package_macro(_xar)

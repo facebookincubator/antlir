@@ -8,7 +8,7 @@
 use r#impl::Feature;
 
 #[unsafe(no_mangle)]
-pub fn init_tracing(dispatch: tracing::Dispatch) {
+pub extern "Rust" fn init_tracing(dispatch: tracing::Dispatch) {
     let _ = tracing::dispatcher::set_global_default(dispatch);
     tracing_core::callsite::rebuild_interest_cache();
 }
@@ -33,4 +33,9 @@ pub extern "Rust" fn as_compile_feature(
     let feature: Box<Feature> = serde_json::from_value(feature.data.clone())
         .map_err(antlir2_features::Error::Deserialize)?;
     Ok(feature)
+}
+
+#[unsafe(no_mangle)]
+pub extern "Rust" fn label() -> &'static str {
+    env!("LABEL")
 }

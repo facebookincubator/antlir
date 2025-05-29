@@ -9,7 +9,6 @@ load(
     "//antlir/antlir2/bzl:types.bzl",
     "BuildApplianceInfo",  # @unused Used as type
 )
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
@@ -270,7 +269,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             required_artifacts = artifacts,
             build_phase = BuildPhase("package_manager"),
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
             reduce_fn = _reduce_rpm_features,
             planner = rpm_planner(plan = ctx.attrs.plan, driver_cmd = ctx.attrs.driver[RunInfo]),
         ),
@@ -287,7 +286,7 @@ rpms_rule = rule(
         # aarch64 builds until dnf5 is the only thing we support
         "driver": attrs.dep(providers = [RunInfo]),
         "plan": attrs.exec_dep(providers = [RunInfo]),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "subjects": attrs.list(attrs.string()),
         "subjects_src": attrs.option(attrs.source(), default = None),
         # TODO: refactor this into a more obvious interface

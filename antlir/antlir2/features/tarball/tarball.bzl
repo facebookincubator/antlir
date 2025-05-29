@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def tarball(
@@ -37,7 +36,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 strip_components = ctx.attrs.strip_components,
             ),
             required_artifacts = [ctx.attrs.src],
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
         ),
     ]
 
@@ -46,7 +45,7 @@ tarball_rule = rule(
     attrs = {
         "force_root_ownership": attrs.bool(),
         "into_dir": attrs.string(),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "src": attrs.source(),
         "strip_components": attrs.int(default = 0),
     },

@@ -14,6 +14,7 @@ use antlir2_compile::Arch;
 use antlir2_compile::CompileFeature;
 use antlir2_compile::CompilerContext;
 use antlir2_features::Feature;
+use antlir2_features::plugin::Plugin;
 use antlir2_rootless::Rootless;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
@@ -56,6 +57,9 @@ pub(crate) struct Compile {
     /// Architecture of the image being built
     target_arch: Arch,
 
+    #[clap(long = "plugin")]
+    /// Plugins that implement the features
+    plugins: Vec<Plugin>,
     #[clap(long)]
     /// Path to features to build into this image
     features: JsonFile<Vec<Feature>>,

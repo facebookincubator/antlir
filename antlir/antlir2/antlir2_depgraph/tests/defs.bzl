@@ -9,6 +9,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/image:depgraph.bzl", "analyze_features")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
 
 def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
     features = ctx.attrs.features[FeatureInfo]
@@ -18,6 +19,7 @@ def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
         features = features.features,
         identifier = "depgraph_test",
         phase = BuildPhase("compile"),
+        plugins = {str(plugin.label.raw_target()): plugin[FeaturePluginInfo] for plugin in ctx.plugins[FeaturePluginPluginKind]},
     )
 
     return cmd_args(
@@ -43,11 +45,12 @@ _bad_depgraph = rule(
     impl = _bad_impl,
     attrs = {
         "error_regex": attrs.string(),
-        "features": attrs.dep(providers = [FeatureInfo]),
+        "features": attrs.dep(providers = [FeatureInfo], pulls_plugins = [FeaturePluginPluginKind]),
         "parent": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "test_depgraph": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_depgraph/tests/test_depgraph:test-depgraph")),
         "_analyze_feature": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_depgraph_if:analyze")),
     },
+    uses_plugins = [FeaturePluginPluginKind],
 )
 
 def bad_depgraph(
