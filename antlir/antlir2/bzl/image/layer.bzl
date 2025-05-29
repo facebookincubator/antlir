@@ -720,6 +720,11 @@ def layer(
         target_compatible_with = target_compatible_with,
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
         _binaries_require_repo = binaries_require_repo.select_value,
-        exec_compatible_with = ["prelude//platforms:may_run_local"],
+        exec_compatible_with = ["prelude//platforms:may_run_local"] + select({
+            # arm images can be built on x86_64 hosts, but the reverse
+            # is not true
+            "ovr_config//cpu:arm64": ["ovr_config//os:linux"],
+            "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64", "ovr_config//os:linux"],
+        }),
         **kwargs
     )
