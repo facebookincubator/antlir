@@ -17,6 +17,10 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "rust_library")
 load("//antlir/bzl:oss_shim.bzl", blocklist_deps_test = "ret_none") # @oss-enable
 
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+
+FeaturePluginPluginKind = plugins.kind()
+
 FeaturePluginInfo = provider(fields = [
     "plugin",
     "libs",
@@ -119,6 +123,9 @@ def feature_impl(
             # See feature_plugin impl above for more details.
             "-Clink-arg=-Wl,-rpath=$ORIGIN/lib",
         ],
+        env = {
+            "LABEL": normalize_target(":" + name),
+        },
         visibility = [":" + name],
         deps = [
             "serde_json",

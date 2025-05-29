@@ -6,13 +6,14 @@
 load("@prelude//utils:arglike.bzl", "ArgLike")
 load("@prelude//utils:utils.bzl", "map_val")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 
 def ParseTimeFeature(
         *,
         feature_type: str,
         # Plugin that implements this feature
         plugin: str,
+        # Plugins that this feature uses internally
+        uses_plugins: dict[str, str] | None = None,
         # Items in this list may be either raw source files, or dependencies
         # produced by another rule. If a dependency, the full provider set will be
         # made available to the analysis code for the feature.
@@ -39,6 +40,7 @@ def ParseTimeFeature(
     return (
         feature_type,
         plugin,
+        uses_plugins or {},
         kwargs,
         deps_or_srcs or {},
         srcs or {},
@@ -94,7 +96,7 @@ FeatureAnalysis = provider(fields = {
     # implementation to inform buck of dynamic dependencies.
     "planner": provider_field(Planner | None, default = None),
     # Binary plugin implementation of this feature
-    "plugin": provider_field(FeaturePluginInfo | Provider),
+    "plugin": provider_field(ProvidersLabel),
     # Some features must be folded into one feature that acts on all the inputs
     # at once (typically package manager features) for performance, correctness
     # or both. This function will be called with two arguments, both of type
@@ -128,7 +130,7 @@ feature_record = record(
     feature_type = str,
     label = TargetLabel,
     analysis = FeatureAnalysis,
-    plugin = FeaturePluginInfo | Provider,
+    plugin = ProvidersLabel,
 )
 
 def data_only_feature_rule(
@@ -150,13 +152,13 @@ def data_only_feature_rule(
                 feature_type = feature_type,
                 data = struct(**attrs),
                 build_phase = build_phase,
-                plugin = ctx.attrs.plugin[FeaturePluginInfo],
+                plugin = ctx.attrs.plugin,
             ),
         ]
 
     return rule(
         impl = _impl,
-        attrs = feature_attrs | {"plugin": attrs.exec_dep(providers = [FeaturePluginInfo])},
+        attrs = feature_attrs | {"plugin": attrs.label()},
     )
 
 def with_phase_override(

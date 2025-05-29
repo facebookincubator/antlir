@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
@@ -45,7 +44,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             build_phase = BuildPhase("compile"),
             required_artifacts = [uidmap],
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
         ),
     ]
 
@@ -53,7 +52,7 @@ group_rule = rule(
     impl = _impl,
     attrs = {
         "groupname": attrs.string(),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "uidmap": attrs.dep(),
     },
 )

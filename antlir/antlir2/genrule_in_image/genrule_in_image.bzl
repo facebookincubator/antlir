@@ -10,6 +10,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
 load("//antlir/antlir2/bzl/image:mounts.bzl", "all_mounts", "container_mount_args")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginPluginKind")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
@@ -91,6 +92,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             "_analyze_feature": ctx.attrs._layer_analyze_feature,
             "_feature_features": [ctx.attrs._prep_feature],
             "_new_facts_db": ctx.attrs._new_facts_db,
+            "_plugins": ctx.plugins[FeaturePluginPluginKind],
             "_rootless": ctx.attrs._rootless,
             "_run_container": None,
             "_selected_target_arch": ctx.attrs._target_arch,
@@ -124,12 +126,15 @@ _genrule_in_image = rule(
         "_layer_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
         "_layer_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
         "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
-        "_prep_feature": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/genrule_in_image:prep")),
+        "_prep_feature": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/genrule_in_image:prep", pulls_plugins = [FeaturePluginPluginKind])),
         "_target_arch": attrs.default_only(attrs.string(
             default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         )),
     } | attrs_selected_by_cfg() | cfg_attrs(),
     cfg = layer_cfg,
+    # Because this can instantiate an implicit layer, it must also
+    # depend on the feature plugins
+    uses_plugins = [FeaturePluginPluginKind],
 )
 
 _genrule_in_image_macro = rule_with_default_target_platform(_genrule_in_image)

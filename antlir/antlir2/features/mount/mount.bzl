@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load("//antlir/bzl:types.bzl", "types")
 
@@ -72,7 +71,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 buck_only_data = struct(
                     layer = ctx.attrs.layer,
                 ),
-                plugin = ctx.attrs.plugin[FeaturePluginInfo],
+                plugin = ctx.attrs.plugin,
             ),
         ]
     elif ctx.attrs.source_kind == "host":
@@ -87,7 +86,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                         is_directory = ctx.attrs.is_directory,
                     ),
                 ),
-                plugin = ctx.attrs.plugin[FeaturePluginInfo],
+                plugin = ctx.attrs.plugin,
             ),
         ]
     else:
@@ -100,7 +99,7 @@ mount_rule = rule(
         "is_directory": attrs.option(attrs.bool()),
         "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "mountpoint": attrs.option(attrs.string()),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "source_kind": attrs.enum(["layer", "host"]),
         "_implicit_from_antlir1": attrs.bool(default = False),
     },

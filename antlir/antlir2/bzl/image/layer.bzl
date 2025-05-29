@@ -19,6 +19,7 @@ load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-en
 
 load("//antlir/bzl:oss_shim.bzl", fb_defaults = "empty_dict") # @oss-enable
 # @oss-disable
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
 load(
     "//antlir/antlir2/features/mount:mount.bzl",
     "DefaultMountpointInfo",
@@ -48,6 +49,7 @@ def _compile(
         logs: OutputArtifact,
         rootless: bool,
         target_arch: str,
+        plugins: list[FeaturePluginInfo | typing.Any],
         topo_features: Artifact,
         plans: typing.Any,
         hidden_deps: typing.Any) -> LayerContents:
@@ -77,6 +79,10 @@ def _compile(
             out_arg,
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd_args(target_arch, format = "--target-arch={}"),
+            [
+                cmd_args(plugin.plugin, format = "--plugin={}", hidden = [plugin.libs])
+                for plugin in plugins
+            ],
             cmd_args(topo_features, format = "--features={}"),
             cmd_args(plans, format = "--plans={}"),
             cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
@@ -187,6 +193,13 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     all_features = features[FeatureInfo].features
 
+    plugin_list = (ctx.attrs._plugins or []) + (
+        ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []
+    )
+    all_plugins = {}
+    for plugin in plugin_list:
+        all_plugins[str(plugin.label.raw_target())] = plugin[FeaturePluginInfo]
+
     dnf_available_repos = []
     if types.is_list(ctx.attrs.dnf_available_repos):
         dnf_available_repos = ctx.attrs.dnf_available_repos
@@ -288,9 +301,19 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         # package managers)
         features = reduce_features(features)
 
+        # this could be ever-so-slightly more optimal by loading only the
+        # plugins that are needed for this phase, but that's not a huge win
+        phase_plugins = {}
+        for feat in features:
+            plugin = str(feat.plugin)
+            if plugin not in all_plugins:
+                fail("{}: '{}' was not found in the list of plugins ({}), but it was used - this should be impossible".format(ctx.label, plugin, all_plugins.keys()))
+            phase_plugins[plugin] = all_plugins[plugin]
+
         # facts_db also holds the depgraph
         facts_db, topo_features = build_depgraph(
             ctx = ctx,
+            plugins = phase_plugins,
             features = features,
             identifier = identifier,
             parent = facts_db,
@@ -306,8 +329,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         compile_feature_hidden_deps = [
             [feat.analysis.required_artifacts for feat in features],
             [feat.analysis.required_run_infos for feat in features],
-            [feat.plugin.plugin for feat in features],
-            [feat.plugin.libs for feat in features],
         ]
 
         # Cover all the other inputs needed for compiling a feature by writing
@@ -388,6 +409,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             logs = logs["compile"].as_output(),
             rootless = ctx.attrs._rootless,
             target_arch = ctx.attrs._selected_target_arch,
+            plugins = phase_plugins.values(),
             topo_features = topo_features,
             plans = plans,
             hidden_deps = compile_feature_hidden_deps,
@@ -544,6 +566,11 @@ _layer_attrs = {
         """,
     ),
     "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
+    "_plugins": attrs.list(
+        attrs.dep(providers = [FeaturePluginInfo]),
+        default = [],
+        doc = "Used as a way to pass plugins to anon layer targets",
+    ),
     "_run_container": attrs.option(attrs.exec_dep(), default = None),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -572,6 +599,7 @@ layer_rule = rule(
     impl = _impl,
     attrs = _layer_attrs,
     cfg = layer_cfg,
+    uses_plugins = [FeaturePluginPluginKind],
 )
 
 def layer(

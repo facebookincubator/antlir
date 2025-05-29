@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
@@ -148,7 +147,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 usergroup = usergroup,
             ),
             required_artifacts = [ctx.attrs.src_layer[LayerInfo].facts_db],
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
         ),
     ]
 
@@ -158,7 +157,7 @@ clone_rule = rule(
         "dst_path": attrs.option(attrs.string(), default = None),
         "group": attrs.option(attrs.string(), default = None),
         "path": attrs.option(attrs.string(), default = None),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "src_layer": attrs.dep(providers = [LayerInfo]),
         "src_path": attrs.option(attrs.string(), default = None),
         "user": attrs.option(attrs.string(), default = None),

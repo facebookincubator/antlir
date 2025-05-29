@@ -8,6 +8,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "shared_features_attrs")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
 
 def _impl(ctx: AnalysisContext) -> Promise:
     return ctx.actions.anon_target(layer_rule, {
@@ -20,6 +21,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "_analyze_feature": ctx.attrs._analyze_feature,
         "_feature_features": [ctx.attrs._dot_meta_feature],
         "_new_facts_db": ctx.attrs._new_facts_db,
+        "_plugins": ctx.attrs._plugins,
         "_rootless": ctx.attrs._rootless,
         "_run_container": ctx.attrs._run_container,
         "_selected_target_arch": ctx.attrs._target_arch,
@@ -32,8 +34,13 @@ stamp_buildinfo_rule = rule(
                 "layer": attrs.dep(providers = [LayerInfo]),
                 "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
                 "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
-                "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta"),
+                "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
                 "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
+                "_plugins": attrs.list(
+                    attrs.dep(providers = [FeaturePluginInfo]),
+                    default = [],
+                    doc = "Used as a way to pass plugins to anon layer targets",
+                ),
                 "_run_container": attrs.exec_dep(default = "antlir//antlir/antlir2/container_subtarget:run"),
                 "_target_arch": attrs.default_only(attrs.string(
                     default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -46,6 +53,9 @@ stamp_buildinfo_rule = rule(
     doc = """
     Stamp build info into a layer that is about to be packaged up.
     """,
+    # Because this can instantiate an implicit layer, it must also
+    # depend on the feature plugins
+    uses_plugins = [FeaturePluginPluginKind],
 )
 
 stamp_buildinfo = rule_with_default_target_platform(stamp_buildinfo_rule)

@@ -53,7 +53,7 @@ function must then be added to the `_anon_rules` map in this file.
 
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginPluginKind")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis", "feature_record")
 load("//antlir/antlir2/features/clone:clone.bzl", "clone_rule")
 load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta_rule")
@@ -137,9 +137,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             feature_deps.append(feat)
             continue
 
-        feature_type, plugin, kwargs, deps_or_srcs, srcs, deps, exec_deps, distro_platform_deps, unnamed_deps_or_srcs, args = feat
+        feature_type, plugin, uses_plugins, kwargs, deps_or_srcs, srcs, deps, exec_deps, distro_platform_deps, unnamed_deps_or_srcs, args = feat
 
-        anon_kwargs = kwargs | deps_or_srcs | srcs | deps | exec_deps | distro_platform_deps
+        anon_kwargs = uses_plugins | kwargs | deps_or_srcs | srcs | deps | exec_deps | distro_platform_deps
         anon_kwargs["plugin"] = plugin
 
         # TODO: make args consistent with the other types
@@ -218,12 +218,29 @@ nestable_value = _nestable_value
 # able to do nothing for certain configurations
 _nested_feature_type = attrs.option(
     attrs.one_of(
-        attrs.dep(providers = [FeatureInfo], doc = "feature targets to include"),
+        attrs.dep(
+            providers = [FeatureInfo],
+            pulls_and_pushes_plugins = [FeaturePluginPluginKind],
+            doc = "feature targets to include",
+        ),
         attrs.tuple(
             attrs.string(doc = "ParseTimeFeature.feature_type"),
-            attrs.exec_dep(
-                providers = [FeaturePluginInfo],
-                doc = "ParseTimeFeature.plugin",
+            attrs.one_of(
+                attrs.plugin_dep(
+                    kind = FeaturePluginPluginKind,
+                    doc = "ParseTimeFeature.plugin",
+                ),
+                attrs.label(),
+            ),
+            attrs.dict(
+                attrs.string(),
+                attrs.one_of(
+                    attrs.plugin_dep(
+                        kind = FeaturePluginPluginKind,
+                        doc = "ParseTimeFeature.uses_plugins",
+                    ),
+                    attrs.label(),
+                ),
             ),
             attrs.dict(attrs.string(), _nestable_value, doc = "kwargs"),
             attrs.dict(
@@ -290,6 +307,7 @@ feature_rule = rule(
     impl = _impl,
     attrs = shared_features_attrs | cfg_attrs(),
     cfg = feature_cfg,
+    uses_plugins = [FeaturePluginPluginKind],
 )
 
 def feature_attrs(features) -> dict[str, typing.Any]:
@@ -379,5 +397,6 @@ def as_json_for_depgraph(feature: feature_record | typing.Any) -> struct:
         data = feature.analysis.data,
         feature_type = feature.feature_type,
         label = feature.label,
-        plugin = feature.plugin,
+        # this is a ProvidersLabel that needs explicit conversion to a string
+        plugin = str(feature.plugin),
     )

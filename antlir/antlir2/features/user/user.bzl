@@ -5,7 +5,6 @@
 
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
@@ -124,7 +123,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             build_phase = BuildPhase("compile"),
             required_artifacts = [uidmap],
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            plugin = ctx.attrs.plugin,
         ),
     ]
 
@@ -133,7 +132,7 @@ user_rule = rule(
     attrs = {
         "comment": attrs.option(attrs.string(), default = None),
         "home_dir": attrs.string(),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "primary_group": attrs.string(),
         "shell": attrs.string(),
         "supplementary_groups": attrs.list(attrs.string()),

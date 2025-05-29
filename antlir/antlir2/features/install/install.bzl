@@ -9,7 +9,6 @@ load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
@@ -107,6 +106,7 @@ def install(
     deps = {}
     deps_or_srcs = {}
     distro_platform_deps = {}
+    uses_plugins = {}
 
     if types.is_bool(transition_to_distro_platform):
         transition_to_distro_platform = _transition_to_distro_platform_enum("yes" if transition_to_distro_platform else "no")
@@ -118,7 +118,7 @@ def install(
     elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes"):
         distro_platform_deps["src"] = src
         exec_deps["_rpm_find_requires"] = "antlir//antlir/distro/rpm:find-requires"
-        exec_deps["_rpm_plugin"] = "antlir//antlir/antlir2/features/rpm:rpm"
+        uses_plugins["_rpm_plugin"] = "antlir//antlir/antlir2/features/rpm:rpm"
         exec_deps["_rpm_plan"] = "antlir//antlir/antlir2/features/rpm:plan"
         distro_platform_deps["_python_pex_deps"] = "antlir//antlir/distro/toolchain/python:pex-deps"
         distro_platform_deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
@@ -134,6 +134,7 @@ def install(
         deps = deps,
         distro_platform_deps = distro_platform_deps,
         exec_deps = exec_deps,
+        uses_plugins = uses_plugins,
         kwargs = {
             "always_use_gnu_debuglink": always_use_gnu_debuglink,
             "default_binary_mode": default_permissions.binary,
@@ -332,7 +333,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         ),
         required_artifacts = [src] + required_artifacts,
         required_run_infos = required_run_infos,
-        plugin = ctx.attrs.plugin[FeaturePluginInfo],
+        plugin = ctx.attrs.plugin,
     )
 
     if ctx.attrs.transition_to_distro_platform != "yes":
@@ -406,7 +407,7 @@ install_rule = rule(
             default = False,
             doc = "Always install as a regular file, even in @mode/dev",
         ),
-        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "plugin": attrs.label(),
         "setcap": attrs.option(attrs.string(), default = None),
         "split_debuginfo": attrs.bool(default = True),
         "src": attrs.option(
@@ -430,6 +431,6 @@ install_rule = rule(
         "_rpm_driver": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
         "_rpm_find_requires": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plan": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
-        "_rpm_plugin": attrs.option(attrs.exec_dep(providers = [FeaturePluginInfo]), default = None),
+        "_rpm_plugin": attrs.option(attrs.label(), default = None),
     },
 )
