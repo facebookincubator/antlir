@@ -7,9 +7,6 @@
 
 use std::any::Any;
 
-use serde::Serialize;
-use serde::de::DeserializeOwned;
-
 pub mod dir_entry;
 pub mod rpm;
 pub mod systemd;
@@ -17,13 +14,15 @@ pub mod user;
 
 use super::Key;
 
-pub trait Fact: Any + Serialize + DeserializeOwned {
-    fn kind() -> &'static str
-    where
-        Self: Sized,
-    {
-        std::any::type_name::<Self>()
-    }
-
+#[typetag::serde(tag = "type", content = "value")]
+pub trait Fact: Any {
     fn key(&self) -> Key;
 }
+
+// This is used side-by-side with typetag so that it can be its own column in
+// the database
+pub fn fact_kind<F: Fact>() -> &'static str {
+    std::any::type_name::<F>()
+}
+
+static_assertions::assert_obj_safe!(Fact);
