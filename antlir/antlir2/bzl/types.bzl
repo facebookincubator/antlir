@@ -37,10 +37,6 @@ LayerInfo = provider(fields = [
     "parent",  # Dependency for the parent of the layer, if one exists
     "contents",  # LayerContents record
     "phase_contents",  # LayerContents broken out by all the internal phases
-    # Symlink to local subvolume in antlir2-out/. Usage should be moved to
-    # .contents.subvol_symlink but this is kept around for compatibility reasons
-    # during that transition
-    "subvol_symlink",
 ])
 
 BuildApplianceInfo = provider(fields = {

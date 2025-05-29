@@ -124,7 +124,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             label = ctx.label,
             facts_db = facts_db,
             contents = contents,
-            subvol_symlink = contents.subvol_symlink,
             mounts = [],
             flavor = ctx.attrs.flavor,
             phase_contents = [(

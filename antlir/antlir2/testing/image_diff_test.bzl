@@ -22,7 +22,7 @@ def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.diff_type, format = "--diff-type={}"),
         cmd_args(ctx.attrs.diff, format = "--expected={}"),
         cmd_args(
-            ctx.attrs.layer[LayerInfo].parent[LayerInfo].subvol_symlink,
+            ctx.attrs.layer[LayerInfo].parent[LayerInfo].contents.subvol_symlink,
             format = "--parent={}",
         ),
         cmd_args(
@@ -30,7 +30,7 @@ def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
             format = "--parent-facts-db={}",
         ),
         cmd_args(
-            ctx.attrs.layer[LayerInfo].subvol_symlink,
+            ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
             format = "--layer={}",
         ),
         cmd_args(
