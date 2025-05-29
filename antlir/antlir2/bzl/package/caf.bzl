@@ -13,7 +13,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     li = ctx.attrs.layer[LayerInfo]
     return [
         ctx.attrs.layer[DefaultInfo],
-        CafLayerPackageInfo(subvol_symlink = li.subvol_symlink),
+        CafLayerPackageInfo(subvol_symlink = li.contents.subvol_symlink),
     ]
 
 _caf = rule(
