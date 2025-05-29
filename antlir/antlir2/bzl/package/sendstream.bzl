@@ -37,7 +37,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if not userspace:
         subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     else:
-        subvol_symlink = ctx.attrs.layer[LayerInfo].subvol_symlink
+        subvol_symlink = ctx.attrs.layer[LayerInfo].contents.subvol_symlink
 
     if ctx.attrs.incremental_parent:
         incremental_parent_layer = _find_incremental_parent(
@@ -62,7 +62,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         )
 
         if userspace:
-            incremental_parent = ctx.attrs.incremental_parent[SendstreamInfo].layer[LayerInfo].subvol_symlink
+            incremental_parent = ctx.attrs.incremental_parent[SendstreamInfo].layer[LayerInfo].contents.subvol_symlink
         else:
             incremental_parent = ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink
         if incremental_parent == None:

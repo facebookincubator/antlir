@@ -471,7 +471,9 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             binaries_require_repo = ctx.attrs._binaries_require_repo,
         )
 
-    sub_targets["subvol_symlink"] = [DefaultInfo(subvol_symlink)]
+        sub_targets["subvol_symlink"] = [DefaultInfo(layer.subvol_symlink)]
+    else:
+        fail("no subvol_symlink, this is impossible when the only supported format is btrfs")
 
     providers = [
         DefaultInfo(
@@ -487,7 +489,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             parent = ctx.attrs.parent_layer,
             features = all_features,
             contents = layer,
-            subvol_symlink = subvol_symlink,
             phase_contents = phase_contents,
         ),
     ]

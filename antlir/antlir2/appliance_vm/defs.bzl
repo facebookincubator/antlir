@@ -29,7 +29,7 @@ def _appliance_vm_impl(ctx: AnalysisContext) -> list[Provider]:
             runner,
             cmd_args(crosvm, format = "--crosvm={}"),
             cmd_args(ensure_single_output(kernel), format = "--kernel={}"),
-            cmd_args(rootfs[LayerInfo].subvol_symlink, format = "--rootfs={}"),
+            cmd_args(rootfs[LayerInfo].contents.subvol_symlink, format = "--rootfs={}"),
             cmd_args(str(timeout_ms), format = "--timeout-ms={}"),
             "--",
         )

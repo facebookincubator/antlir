@@ -26,7 +26,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "seed_device": ctx.attrs.seed_device,
             "subvols": {
                 path: {
-                    "layer": subvol["layer"][LayerInfo].subvol_symlink,
+                    "layer": subvol["layer"][LayerInfo].contents.subvol_symlink,
                     "writable": subvol.get("writable") or False,
                 }
                 for path, subvol in ctx.attrs.subvols.items()
