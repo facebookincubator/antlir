@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load(":dep_distance_extender.bzl", "dep_distance_extender")
 load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
 def sysroot_dep(
@@ -27,12 +28,17 @@ def sysroot_dep(
     )
 
     prebuilt_cxx_library(
-        name = name,
+        name = name + "--actual",
         shared_lib = (":" + lib) if not archive else None,
         static_lib = (":" + lib) if archive else None,
         preferred_linkage = "shared" if not archive else "static",
         extract_soname = not archive,
-        visibility = visibility,
         labels = ["antlir-distro-dep"],
+        visibility = [],
         **kwargs
+    )
+    dep_distance_extender(
+        name = name,
+        actual = ":" + name + "--actual",
+        visibility = visibility,
     )

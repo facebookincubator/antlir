@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/distro/deps:dep_distance_extender.bzl", "dep_distance_extender")
 load(":defs.bzl", "image_cxx_toolchain")
 
 oncall("antlir")
@@ -20,7 +21,14 @@ image.layer(
 # whatever OS is configured for the leaf node (usually that will just be left
 # the default, unless the user uses antlir2_configured_alias)
 image_cxx_toolchain(
-    name = "toolchain",
+    name = "toolchain--actual",
     layer = ":layer",
+    visibility = [],
+)
+
+dep_distance_extender(
+    name = "toolchain",
+    actual = ":toolchain--actual",
+    toolchain = True,
     visibility = ["PUBLIC"],
 )

@@ -101,6 +101,9 @@ def _buck_command_alias(*args, **kwargs):
 def _alias(*args, **kwargs):
     _wrap_internal(native.alias, args, kwargs)
 
+def _toolchain_alias(*args, **kwargs):
+    native.toolchain_alias(*args, **kwargs)
+
 def _buck_filegroup(*args, **kwargs):
     _wrap_internal(native.filegroup, args, kwargs)
 
@@ -282,6 +285,7 @@ shim = struct(
     # Rules -- IMPORTANT -- wrap **ALL** rules with `_wrap_internal`
     #
     alias = _alias,
+    toolchain_alias = _toolchain_alias,
     buck_command_alias = _buck_command_alias,
     buck_filegroup = _buck_filegroup,
     buck_genrule = _buck_genrule,

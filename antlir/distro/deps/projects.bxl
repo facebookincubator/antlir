@@ -11,7 +11,7 @@ def _query_impl(ctx: bxl.Context):
             # only consider deps inside a sub-project
             continue
         project = target.label.package.removeprefix("antlir/distro/deps/")
-        name = target.label.name
+        name = target.label.name.removesuffix("--actual")
         deps.append(struct(project = project, name = name))
     ctx.output.print_json(deps)
 

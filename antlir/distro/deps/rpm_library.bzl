@@ -10,6 +10,7 @@ load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "alias", "cpp_binary", "write_file")
 load("//antlir/distro/platform:defs.bzl", "default_image_platform")
+load(":dep_distance_extender.bzl", "dep_distance_extender")
 load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
 def rpm_library(
@@ -114,8 +115,7 @@ def rpm_library(
     )
 
     prebuilt_cxx_library(
-        name = name,
-        visibility = visibility,
+        name = name + "--actual",
         header_dirs = [":{}--outputs[headers]".format(name)],
         shared_lib = ":{}--outputs[{}]".format(name, soname) if not (header_only or archive) else None,
         static_lib = ":{}--outputs[{}]".format(name, archive_name) if archive else None,
@@ -127,7 +127,14 @@ def rpm_library(
         labels = [
             "antlir-distro-rpm-library",
         ],
+        visibility = [],
         **kwargs
+    )
+    dep_distance_extender(
+        name = name,
+        actual = ":" + name + "--actual",
+        target_compatible_with = target_compatible_with,
+        visibility = visibility,
     )
 
     # These aliases are totally useless since CentOS has nothing to do with
@@ -137,6 +144,7 @@ def rpm_library(
         alias(
             name = name + suffix,
             actual = ":" + name,
+            target_compatible_with = target_compatible_with,
             visibility = ["PUBLIC"],
         )
 

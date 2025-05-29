@@ -2,6 +2,7 @@ load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
+load("//antlir/distro/deps:dep_distance_extender.bzl", "dep_distance_extender")
 load(":defs.bzl", "clang_rt_library", "libs")
 
 oncall("antlir")
@@ -14,7 +15,7 @@ image.layer(
 )
 
 genrule_in_image(
-    name = "libs",
+    name = "libs--actual",
     outs = {lib: "lib{}.a".format(lib) for lib in libs},
     bash = selects.apply(
         select({
@@ -26,6 +27,13 @@ genrule_in_image(
         """.format(triple),
     ),
     layer = ":layer",
+    visibility = [],
+)
+
+dep_distance_extender(
+    name = "libs",
+    actual = ":libs--actual",
+    visibility = [],
 )
 
 [
