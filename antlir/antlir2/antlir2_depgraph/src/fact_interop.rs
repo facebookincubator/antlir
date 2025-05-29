@@ -12,8 +12,8 @@ use antlir2_depgraph_if::item::FileType;
 use antlir2_depgraph_if::item::FsEntry;
 use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::Path as PathItem;
-use antlir2_facts::fact::Fact as _;
 use antlir2_facts::fact::dir_entry::DirEntry;
+use antlir2_facts::fact::fact_kind;
 
 pub(crate) trait ItemKeyExt {
     fn fact_kind(&self) -> &'static str;
@@ -23,9 +23,9 @@ pub(crate) trait ItemKeyExt {
 impl ItemKeyExt for ItemKey {
     fn fact_kind(&self) -> &'static str {
         match self {
-            Self::Path(_) => antlir2_facts::fact::dir_entry::DirEntry::kind(),
-            Self::User(_) => antlir2_facts::fact::user::User::kind(),
-            Self::Group(_) => antlir2_facts::fact::user::Group::kind(),
+            Self::Path(_) => fact_kind::<antlir2_facts::fact::dir_entry::DirEntry>(),
+            Self::User(_) => fact_kind::<antlir2_facts::fact::user::User>(),
+            Self::Group(_) => fact_kind::<antlir2_facts::fact::user::Group>(),
         }
     }
 

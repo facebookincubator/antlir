@@ -20,8 +20,10 @@ rust_library(
         "rusqlite",
         "serde",
         "serde_json",
+        "static_assertions",
         "thiserror",
         "typed-builder",
+        "typetag",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
     ],
 )

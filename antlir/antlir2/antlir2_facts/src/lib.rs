@@ -20,6 +20,8 @@ use rusqlite::Rows;
 
 pub mod fact;
 use fact::Fact;
+use fact::fact_kind;
+use serde::de::DeserializeOwned;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -84,10 +86,10 @@ impl RwDatabase {
     where
         F: Fact,
     {
-        let val = serde_json::to_string(fact)?;
+        let val = serde_json::to_string(fact as &dyn Fact)?;
         self.db.execute(
             "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
-            (F::kind(), fact.key().as_ref(), val),
+            (fact_kind::<F>(), fact.key().as_ref(), val),
         )?;
         Ok(())
     }
@@ -130,11 +132,11 @@ impl RoDatabase {
 #[doc(hidden)]
 pub fn get_with_connection<F>(db: &Connection, key: impl Into<Key>) -> Result<Option<F>>
 where
-    F: Fact,
+    F: Fact + DeserializeOwned,
 {
     let key: Key = key.into();
     let mut stmt = db.prepare("SELECT value FROM facts WHERE kind=? AND key=?")?;
-    stmt.query_row((F::kind(), key.as_ref()), row_to_fact)
+    stmt.query_row((fact_kind::<F>(), key.as_ref()), row_to_fact)
         .optional()
         .map_err(Error::from)
 }
@@ -142,13 +144,13 @@ where
 impl<const RW: bool> Database<{ RW }> {
     pub fn get<F>(&self, key: impl Into<Key>) -> Result<Option<F>>
     where
-        F: Fact,
+        F: Fact + DeserializeOwned,
     {
         let key: Key = key.into();
         let mut stmt = self
             .db
             .prepare("SELECT value FROM facts WHERE kind=? AND key=?")?;
-        stmt.query_row((F::kind(), key.as_ref()), row_to_fact)
+        stmt.query_row((fact_kind::<F>(), key.as_ref()), row_to_fact)
             .optional()
             .map_err(Error::from)
     }
@@ -156,7 +158,7 @@ impl<const RW: bool> Database<{ RW }> {
     // Iterate over all facts of a given type.
     pub fn iter<F>(&self) -> Result<FactIter<F>>
     where
-        F: Fact,
+        F: Fact + DeserializeOwned,
     {
         // The lifetimes here are pretty hairy, so this eagerly loads all
         // matching keys. Most use cases require iterating over the entire Fact
@@ -165,7 +167,7 @@ impl<const RW: bool> Database<{ RW }> {
         let mut stmt = self
             .db
             .prepare("SELECT value FROM facts WHERE kind=? ORDER BY key ASC")?;
-        let rows = stmt.query((F::kind(),))?;
+        let rows = stmt.query((fact_kind::<F>(),))?;
         let facts = rows_to_facts::<F>(rows)?;
         Ok(FactIter {
             iter: facts.into_iter(),
@@ -176,7 +178,7 @@ impl<const RW: bool> Database<{ RW }> {
     /// can iterate over [fact::DirEntry]s under a certain path.
     pub fn iter_prefix<F>(&self, key: &Key) -> Result<FactIter<F>>
     where
-        F: Fact,
+        F: Fact + DeserializeOwned,
     {
         // The lifetimes here are pretty hairy, so this eagerly loads all
         // matching keys. The 'clone' feature is really the only use case that
@@ -191,7 +193,7 @@ impl<const RW: bool> Database<{ RW }> {
         let mut stmt = self.db.prepare(
             "SELECT value FROM facts WHERE kind=? AND key>=? AND key<? ORDER BY key ASC",
         )?;
-        let rows = stmt.query((F::kind(), key.as_ref(), end.as_slice()))?;
+        let rows = stmt.query((fact_kind::<F>(), key.as_ref(), end.as_slice()))?;
         let facts = rows_to_facts::<F>(rows)?;
         Ok(FactIter {
             iter: facts.into_iter(),
@@ -206,7 +208,7 @@ impl<const RW: bool> Database<{ RW }> {
         // keys.
         let mut stmt = self.db.prepare("SELECT key FROM facts WHERE kind=?")?;
         let keys: Vec<Key> = stmt
-            .query_map((F::kind(),), |row| row.get(0).map(Key))?
+            .query_map((fact_kind::<F>(),), |row| row.get(0).map(Key))?
             .map(|res| res.map_err(Error::from))
             .collect::<Result<_>>()?;
         Ok(KeyIter(keys.into_iter()))
@@ -237,10 +239,10 @@ impl<'db> Transaction<'db> {
     where
         F: Fact,
     {
-        let val = serde_json::to_string(fact)?;
+        let val = serde_json::to_string(fact as &dyn Fact)?;
         self.tx.execute(
             "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
-            (F::kind(), fact.key().as_ref(), val),
+            (fact_kind::<F>(), fact.key().as_ref(), val),
         )?;
         Ok(())
     }
@@ -251,7 +253,7 @@ impl<'db> Transaction<'db> {
     {
         let num_rows = self.tx.execute(
             "DELETE FROM facts WHERE kind=? AND key=?",
-            (F::kind(), key.as_ref()),
+            (fact_kind::<F>(), key.as_ref()),
         )?;
         Ok(num_rows > 0)
     }
@@ -264,7 +266,7 @@ impl<'db> Transaction<'db> {
         // keys.
         let mut stmt = self.tx.prepare("SELECT key FROM facts WHERE kind=?")?;
         let keys: Vec<Key> = stmt
-            .query_map((F::kind(),), |row| row.get(0).map(Key))?
+            .query_map((fact_kind::<F>(),), |row| row.get(0).map(Key))?
             .map(|res| res.map_err(Error::from))
             .collect::<Result<_>>()?;
         Ok(KeyIter(keys.into_iter()))
@@ -278,20 +280,26 @@ impl<'db> Transaction<'db> {
 
 fn row_to_fact<F>(row: &Row) -> rusqlite::Result<F>
 where
-    F: for<'de> Fact,
+    F: for<'de> Fact + DeserializeOwned,
 {
     // We can make this strong assertion about deserialization always
     // working because we know that the databases will only ever be read by
     // processes that are using the exact same code version as was used to
     // write them, since all antlir2 binaries are atomically built out of
     // (or possibly in the future, pinned into) the repo.
-    Ok(serde_json::from_str(row.get_ref("value")?.as_str()?)
-        .expect("invalid JSON can never be stored in the DB"))
+    let mut val: serde_json::Value = serde_json::from_str(row.get_ref("value")?.as_str()?)
+        .expect("invalid JSON can never be stored in the DB");
+    let inner = val
+        .as_object_mut()
+        .expect("invalid JSON can never be stored in the DB")
+        .remove("value")
+        .expect("invalid JSON can never be stored in the DB");
+    Ok(serde_json::from_value(inner).expect("invalid JSON can never be stored in the DB"))
 }
 
 fn rows_to_facts<F>(rows: Rows) -> rusqlite::Result<Vec<F>>
 where
-    F: for<'de> Fact,
+    F: for<'de> Fact + DeserializeOwned,
 {
     rows.mapped(row_to_fact).collect()
 }
