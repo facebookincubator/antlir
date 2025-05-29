@@ -155,6 +155,7 @@ http_archive = shim.http_archive
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 target_utils = shim.target_utils
 alias = shim.alias
+toolchain_alias = shim.toolchain_alias
 add_test_framework_label = shim.add_test_framework_label
 third_party = struct(
     library = shim.third_party.library,
