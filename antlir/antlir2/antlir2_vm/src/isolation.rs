@@ -7,7 +7,6 @@
 
 use std::collections::BTreeMap;
 use std::collections::HashSet;
-use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -17,13 +16,12 @@ use antlir2_isolate::unshare;
 use image_test_lib::KvPair;
 use once_cell::sync::OnceCell;
 use thiserror::Error;
+use tracing::warn;
 
 use crate::types::MountPlatformDecision;
 
 #[derive(Error, Debug)]
 pub(crate) enum IsolationError {
-    #[error("Failed to find repo root: `{0}`")]
-    RepoRootError(String),
     #[error("Failed to set platform")]
     PlatformError,
     #[error(transparent)]
@@ -47,11 +45,13 @@ static PLATFORM: OnceCell<Platform> = OnceCell::new();
 impl Platform {
     /// Get repo root
     pub(crate) fn repo_root() -> Result<PathBuf> {
-        let repo = find_root::find_repo_root(
-            env::current_exe().map_err(|e| IsolationError::RepoRootError(e.to_string()))?,
-        )
-        .map_err(|e| IsolationError::RepoRootError(e.to_string()))?;
-        Ok(repo)
+        match find_root::find_repo_root(std::env::current_exe()?) {
+            Ok(repo) => Ok(repo),
+            Err(e) => {
+                warn!("couldn't find repo root, just using cwd instead: {e:#?}");
+                Ok(std::env::current_dir()?)
+            }
+        }
     }
 
     /// Query the environment and set PLATFORM. Should be called exactly once

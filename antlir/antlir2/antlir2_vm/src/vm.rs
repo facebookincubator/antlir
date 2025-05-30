@@ -37,6 +37,7 @@ use uuid::Uuid;
 
 use crate::disk::QCow2DiskError;
 use crate::disk::QCow2Disks;
+use crate::isolation::IsolationError;
 use crate::isolation::Platform;
 use crate::net::VirtualNICError;
 use crate::net::VirtualNICs;
@@ -118,6 +119,8 @@ pub(crate) enum VMError {
     TimeOutError,
     #[error("Failed to clean up: {desc}: `{err}`")]
     CleanupError { desc: String, err: std::io::Error },
+    #[error(transparent)]
+    Isolation(#[from] IsolationError),
 }
 
 type Result<T> = std::result::Result<T, VMError>;
@@ -264,7 +267,12 @@ impl<S: Share> VM<S> {
             // ssh hang instead because we add a bash command below.
             ssh_cmd.arg("-t");
         }
+        let mut cd_cmd = OsString::from("cd ");
+        cd_cmd.push(Platform::repo_root()?);
+        cd_cmd.push(";");
+        ssh_cmd.arg(cd_cmd);
         ssh_cmd.arg("env");
+        ssh_cmd.arg("--");
         self.args.command_envs.iter().for_each(|kv| {
             ssh_cmd.arg(kv.to_os_string_for_env());
         });
@@ -284,7 +292,9 @@ impl<S: Share> VM<S> {
         });
 
         if let Some(command) = &self.args.first_boot_command {
-            ssh_cmd.arg(command);
+            // Try to canonicalize the firstboot command to an absolute path
+            // which will be valid in the vm
+            ssh_cmd.arg(std::fs::canonicalize(command).unwrap_or_else(|_| command.into()));
         }
 
         info!("First boot command: {:?}", ssh_cmd);

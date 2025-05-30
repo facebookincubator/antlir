@@ -115,7 +115,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             labels = ctx.attrs.test_labels + inner_labels,
             contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
             env = env,
-            run_from_project_root = True,
+            use_project_relative_paths = ctx.attrs.test[ExternalRunnerTestInfo].use_project_relative_paths,
+            run_from_project_root = ctx.attrs.test[ExternalRunnerTestInfo].run_from_project_root,
+            default_executor = CommandExecutorConfig(
+                local_enabled = True,
+                # We don't (yet) have an RE platform where we can access KVM and
+                # create TAP network devices
+                remote_enabled = False,
+            ),
         ),
     ]
 

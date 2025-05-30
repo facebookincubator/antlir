@@ -19,6 +19,7 @@ mod vm;
 use std::collections::HashSet;
 use std::env;
 use std::ffi::OsString;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -34,6 +35,7 @@ use json_arg::JsonFile;
 use maplit::hashset;
 use tempfile::tempdir;
 use tracing::debug;
+use tracing::warn;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::prelude::*;
 
@@ -306,12 +308,26 @@ fn get_test_vm_args(
         .context("Test command does not match expected format of `<type> <command>`")?;
     let is_list = test_args.test.is_list_tests();
     let mut vm_args = orig_args.clone();
-    vm_args.output_dirs = test_args.test.output_dirs().into_iter().collect();
+    vm_args.output_dirs = test_args
+        .test
+        .output_dirs()
+        .into_iter()
+        .map(|p| p.canonicalize().unwrap_or(p))
+        .collect();
     vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
     vm_args.console_output_file = create_tpx_logs("console.txt", "console logs")?;
     if dump_eth0_traffic {
         vm_args.eth0_output_file = create_tpx_blobs("eth0.pcap", "eth0 traffic")?;
+    }
+    if let Some(console_output_dir) = vm_args
+        .console_output_file
+        .as_ref()
+        .and_then(|f| f.parent())
+    {
+        vm_args
+            .output_dirs
+            .push(console_output_dir.to_owned().canonicalize()?);
     }
     Ok(ValidatedVMArgs {
         inner: vm_args,
@@ -326,9 +342,7 @@ fn writable_outputs(validated_args: &ValidatedVMArgs) -> HashSet<PathBuf> {
 }
 
 fn writable_devices() -> HashSet<PathBuf> {
-    hashset! {
-        // Carry over virtualization support
-        "/dev/kvm".into(),
+    let mut devs = hashset! {
         // And tap networking devices
         "/dev/net/tun".into(),
         // And other device nodes needed by qemu
@@ -336,7 +350,14 @@ fn writable_devices() -> HashSet<PathBuf> {
         // RW bind-mount /dev/fuse for running XAR.
         // More details in antlir/antlir2/testing/image_test/src/main.rs.
         "/dev/fuse".into(),
+    };
+    // Carry over virtualization support
+    if Path::new("/dev/kvm").exists() {
+        devs.insert("/dev/kvm".into());
+    } else {
+        warn!("/dev/kvm not found - tests might be significantly slower!");
     }
+    devs
 }
 
 /// For some tests, an explicit "list test" step is run against the test binary
@@ -399,6 +420,7 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     )?;
     antlir2_rootless::unshare_new_userns()?;
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
+
     let mut command = if validated_args.is_list {
         list_test_command(args, &validated_args)
     } else {
