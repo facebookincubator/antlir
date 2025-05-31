@@ -124,6 +124,19 @@ pub(crate) fn run(
             .with_context(|| format!("while making {} world-writable", path.display()))?;
     }
 
+    // bind LLVM coverage output paths
+    if let Some(llvm_profile_file) = std::env::var_os("LLVM_PROFILE_FILE") {
+        // TPX overrides LLVM_PROFILE_FILE when --collect-coverage is set
+        if llvm_profile_file != "/dev/null" {
+            ctx.outputs(
+                Path::new(&llvm_profile_file)
+                    .parent()
+                    .context("LLVM_PROFILE_FILE did not have parent")?
+                    .to_owned(),
+            );
+        }
+    }
+
     if spec.rootless {
         ctx.devtmpfs(Path::new("/dev"));
     }
