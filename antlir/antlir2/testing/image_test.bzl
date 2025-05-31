@@ -27,7 +27,11 @@ def env_from_wrapped_test(wrapped_test):
 
     # Fix LLVM coverage for wrapped tests
     if "LLVM_COV" in env:
-        env["LLVM_COVERAGE_ADDITIONAL_OBJECT_PATHS"] = cmd_args(wrapped_test[DefaultInfo].default_outputs, delimiter = ";")
+        if "LLVM_COVERAGE_ADDITIONAL_OBJECT_PATHS" in env:
+            additional_object_paths = [env["LLVM_COVERAGE_ADDITIONAL_OBJECT_PATHS"]]
+        else:
+            additional_object_paths = []
+        env["LLVM_COVERAGE_ADDITIONAL_OBJECT_PATHS"] = cmd_args(wrapped_test[DefaultInfo].default_outputs + additional_object_paths, delimiter = ";")
     return env
 
 def _default_list(maybe_value: list[str] | None, default: list[str]) -> list[str]:
