@@ -3,7 +3,7 @@
 [package]
 name = "json_arg"
 version = "0.2.1"
-edition = "2021"
+edition = "2024"
 description = "Easily parse structured CLI args"
 repository = "https://github.com/facebookincubator/antlir/tree/main/antlir/util/cli/json_arg"
 license = "MIT"
