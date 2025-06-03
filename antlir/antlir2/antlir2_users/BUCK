@@ -17,7 +17,7 @@ rust_library(
         "derive_more",
         "maplit",
         "nix",
-        "nom",
+        "nom-old",
         "serde",
         "serde_json",
         "thiserror",
