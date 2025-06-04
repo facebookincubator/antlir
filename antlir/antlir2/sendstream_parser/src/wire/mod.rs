@@ -6,6 +6,7 @@
  */
 
 use nom::IResult;
+use nom::Parser as _;
 
 static MAGIC_HEADER: &[u8] = b"btrfs-stream\0";
 
@@ -24,10 +25,11 @@ pub enum ParserControl {
 
 /// Parse a chunk of bytes to see if we can extract the header expected atop each sendstream.
 fn parse_header<'a>(input: &'a [u8]) -> IResult<&'a [u8], u32> {
-    let (remainder, (_magic, version)) = nom::sequence::tuple((
+    let (remainder, (_magic, version)) = (
         nom::bytes::streaming::tag::<&[u8], &[u8], nom::error::Error<&[u8]>>(MAGIC_HEADER),
         nom::number::streaming::le_u32,
-    ))(input)?;
+    )
+        .parse(input)?;
     Ok((remainder, version))
 }
 

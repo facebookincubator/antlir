@@ -6,6 +6,7 @@
  */
 
 use nom::IResult;
+use nom::Parser as _;
 
 use crate::wire::tlv::attr_types;
 use crate::wire::tlv::parse_tlv;
@@ -125,7 +126,7 @@ macro_rules! parse_subtypes {
 impl<'a> crate::Command<'a> {
     pub(crate) fn parse(input: &'a [u8]) -> IResult<&'a [u8], Self> {
         let (input, hdr) = CommandHeader::parse(input)?;
-        let (input, cmd_data) = nom::bytes::streaming::take(hdr.len)(input)?;
+        let (input, cmd_data) = nom::bytes::streaming::take(hdr.len).parse(input)?;
         let (cmd_remaining, cmd): (_, crate::Command) = parse_subtypes!(
             hdr,
             cmd_data,

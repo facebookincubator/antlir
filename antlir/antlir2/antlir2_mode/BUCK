@@ -9,6 +9,7 @@ rust_library(
         "rstest",
     ],
     deps = [
-        "nom-old",
+        "nom",
+        "nom-language",
     ],
 )

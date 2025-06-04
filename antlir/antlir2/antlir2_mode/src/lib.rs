@@ -19,16 +19,16 @@ use std::str::FromStr;
 
 use nom::Finish;
 use nom::IResult;
+use nom::Parser as _;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::oct_digit1;
 use nom::combinator::all_consuming;
 use nom::error::ContextError;
 use nom::error::ParseError;
-use nom::error::VerboseError;
-use nom::error::convert_error;
 use nom::multi::many_m_n;
 use nom::multi::separated_list0;
+use nom_language::error::convert_error;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
@@ -93,7 +93,7 @@ impl Mode {
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
-        let (input, directives) = separated_list0(tag(","), Directive::parse)(input)?;
+        let (input, directives) = separated_list0(tag(","), Directive::parse).parse(input)?;
 
         let mut bits = 0u32;
         for directive in directives {
@@ -118,11 +118,11 @@ impl Directive {
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
-        let (input, class) = alt((tag("u"), tag("g"), tag("o"), tag("t")))(input)?;
+        let (input, class) = alt((tag("u"), tag("g"), tag("o"), tag("t"))).parse(input)?;
         if class == "t" {
             return Ok((input, Directive::Sticky));
         }
-        let (input, _) = tag("+")(input)?;
+        let (input, _) = tag("+").parse(input)?;
         let (input, (setid, perms)) = Permissions::parse(input)?;
         Ok((
             input,
@@ -176,7 +176,7 @@ impl FromStr for Mode {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, String> {
-        match all_consuming::<_, _, VerboseError<&str>, _>(Self::parse)(s).finish() {
+        match all_consuming(Self::parse).parse(s).finish() {
             Ok((_, mode)) => Ok(mode),
             Err(e) => Err(convert_error(s, e)),
         }
@@ -218,7 +218,7 @@ impl Permissions {
             ))
         } else {
             let (input, symbols) =
-                many_m_n(0, 3, alt((tag("r"), tag("w"), tag("x"), tag("s"))))(input)?;
+                many_m_n(0, 3, alt((tag("r"), tag("w"), tag("x"), tag("s")))).parse(input)?;
             let mut bits = 0;
             let mut setid = false;
             for sym in symbols {

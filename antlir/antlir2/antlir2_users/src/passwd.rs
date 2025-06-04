@@ -18,6 +18,7 @@ use std::str::FromStr;
 use maplit::btreemap;
 use nom::Finish;
 use nom::IResult;
+use nom::Parser as _;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
@@ -25,12 +26,11 @@ use nom::character::complete::newline;
 use nom::combinator::all_consuming;
 use nom::error::ContextError;
 use nom::error::ParseError;
-use nom::error::VerboseError;
 use nom::error::context;
-use nom::error::convert_error;
 use nom::multi::many0;
 use nom::multi::separated_list0;
-use nom::sequence::tuple;
+use nom_language::error::VerboseError;
+use nom_language::error::convert_error;
 
 use crate::Error;
 use crate::GroupId;
@@ -71,9 +71,9 @@ impl<'a> EtcPasswd<'a> {
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
         let (input, records) =
-            separated_list0(newline, context("UserRecord", UserRecord::parse))(input)?;
+            separated_list0(newline, context("UserRecord", UserRecord::parse)).parse(input)?;
         // eat any trailing newlines
-        let (input, _) = all_consuming(many0(newline))(input)?;
+        let (input, _) = all_consuming(many0(newline)).parse(input)?;
         Ok((
             input,
             Self {
@@ -209,7 +209,8 @@ impl UserRecordPassword {
                 nom::bytes::complete::tag("!"),
                 nom::bytes::complete::tag(""),
             )),
-        )(input)?;
+        )
+        .parse(input)?;
         Ok((
             input,
             match txt {
@@ -248,23 +249,22 @@ impl<'a> UserRecord<'a> {
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
-        let colon = char(':');
-        let (input, (name, _, password, _, uid, _, gid, _, comment, _, homedir, _, shell)) =
-            tuple((
-                context("username", take_until1(":")),
-                &colon,
-                UserRecordPassword::parse,
-                &colon,
-                context("uid", nom::character::complete::u32),
-                &colon,
-                context("gid", nom::character::complete::u32),
-                &colon,
-                context("comment", take_until(":")),
-                &colon,
-                context("homedir", take_until1(":")),
-                &colon,
-                context("shell", take_until1("\n")),
-            ))(input)?;
+        let (input, (name, _, password, _, uid, _, gid, _, comment, _, homedir, _, shell)) = (
+            context("username", take_until1(":")),
+            char(':'),
+            UserRecordPassword::parse,
+            char(':'),
+            context("uid", nom::character::complete::u32),
+            char(':'),
+            context("gid", nom::character::complete::u32),
+            char(':'),
+            context("comment", take_until(":")),
+            char(':'),
+            context("homedir", take_until1(":")),
+            char(':'),
+            context("shell", take_until1("\n")),
+        )
+            .parse(input)?;
         Ok((
             input,
             Self {
@@ -330,7 +330,7 @@ impl<'a> Display for UserRecord<'a> {
 
 #[cfg(test)]
 mod tests {
-    use nom::error::VerboseError;
+    use nom_language::error::VerboseError;
     use rstest::rstest;
 
     use super::*;
