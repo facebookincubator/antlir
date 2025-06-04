@@ -17,6 +17,7 @@ use std::str::FromStr;
 use maplit::btreemap;
 use nom::Finish;
 use nom::IResult;
+use nom::Parser as _;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
@@ -24,12 +25,11 @@ use nom::character::complete::newline;
 use nom::combinator::all_consuming;
 use nom::error::ContextError;
 use nom::error::ParseError;
-use nom::error::VerboseError;
 use nom::error::context;
-use nom::error::convert_error;
 use nom::multi::many0;
 use nom::multi::separated_list0;
-use nom::sequence::tuple;
+use nom_language::error::VerboseError;
+use nom_language::error::convert_error;
 
 use crate::Error;
 use crate::Result;
@@ -65,9 +65,9 @@ impl<'a> EtcShadow<'a> {
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
         let (input, records) =
-            separated_list0(newline, context("ShadowRecord", ShadowRecord::parse))(input)?;
+            separated_list0(newline, context("ShadowRecord", ShadowRecord::parse)).parse(input)?;
         // eat any trailing newlines
-        let (input, _) = all_consuming(many0(newline))(input)?;
+        let (input, _) = all_consuming(many0(newline)).parse(input)?;
         Ok((
             input,
             Self {
@@ -240,7 +240,6 @@ impl<'a> ShadowRecord<'a> {
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
-        let colon = char(':');
         let (
             input,
             (
@@ -262,28 +261,29 @@ impl<'a> ShadowRecord<'a> {
                 _,
                 reserved,
             ),
-        ) = tuple((
+        ) = (
             context("username", take_until1(":")),
-            &colon,
+            char(':'),
             context("encrypted_password", take_until(":")),
-            &colon,
+            char(':'),
             context("last_password_change", nom::combinator::opt(Days::parse)),
-            &colon,
+            char(':'),
             context("minimum_password_age", nom::combinator::opt(Days::parse)),
-            &colon,
+            char(':'),
             context("maximum_password_age", nom::combinator::opt(Days::parse)),
-            &colon,
+            char(':'),
             context("password_warning_period", nom::combinator::opt(Days::parse)),
-            &colon,
+            char(':'),
             context(
                 "password_inactivity_period",
                 nom::combinator::opt(Days::parse),
             ),
-            &colon,
+            char(':'),
             context("account_expiration_date", nom::combinator::opt(Days::parse)),
-            &colon,
+            char(':'),
             context("reserved", take_until("\n")),
-        ))(input)?;
+        )
+            .parse(input)?;
         Ok((
             input,
             Self {

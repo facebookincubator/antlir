@@ -14,6 +14,7 @@ use std::time::SystemTime;
 use nix::unistd::Gid;
 use nix::unistd::Uid;
 use nom::IResult;
+use nom::Parser as _;
 use uuid::Uuid;
 
 /// Parse the TLV with the output type's primary attribute tag
@@ -37,18 +38,19 @@ where
     Attr: AttrTypeParam,
 {
     // guarantee that the tlv type is what we expected
-    let (input, _) = nom::bytes::streaming::tag(Attr::attr().tag())(input)?;
+    let (input, _) = nom::bytes::streaming::tag(Attr::attr().tag().as_slice()).parse(input)?;
     match L {
         0 => {
             let (input, len) = nom::number::streaming::le_u16(input)?;
-            let (input, data) = nom::bytes::streaming::take(len)(input)?;
+            let (input, data) = nom::bytes::streaming::take(len).parse(input)?;
             Ok((input, T::parse(data)))
         }
         _ => {
             // this will cause the parser to fail if the length is not
             // exactly L bytes
-            let (input, _) = nom::bytes::streaming::tag((L as u16).to_le_bytes())(input)?;
-            let (input, data) = nom::bytes::streaming::take(L)(input)?;
+            let (input, _) =
+                nom::bytes::streaming::tag((L as u16).to_le_bytes().as_slice()).parse(input)?;
+            let (input, data) = nom::bytes::streaming::take(L).parse(input)?;
             Ok((
                 input,
                 #[allow(clippy::expect_used)]

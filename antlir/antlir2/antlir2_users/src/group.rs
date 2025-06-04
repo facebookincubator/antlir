@@ -17,6 +17,7 @@ use std::str::FromStr;
 use maplit::btreemap;
 use nom::Finish;
 use nom::IResult;
+use nom::Parser as _;
 use nom::bytes::complete::take_until;
 use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
@@ -26,13 +27,12 @@ use nom::combinator::all_consuming;
 use nom::combinator::recognize;
 use nom::error::ContextError;
 use nom::error::ParseError;
-use nom::error::VerboseError;
 use nom::error::context;
-use nom::error::convert_error;
 use nom::multi::many0;
 use nom::multi::many1;
 use nom::multi::separated_list0;
-use nom::sequence::tuple;
+use nom_language::error::VerboseError;
+use nom_language::error::convert_error;
 
 use crate::Error;
 use crate::GroupId;
@@ -67,9 +67,9 @@ impl<'a> EtcGroup<'a> {
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
         let (input, records) =
-            separated_list0(newline, context("GroupRecord", GroupRecord::parse))(input)?;
+            separated_list0(newline, context("GroupRecord", GroupRecord::parse)).parse(input)?;
         // eat trailing newlines
-        let (input, _) = all_consuming(many0(newline))(input)?;
+        let (input, _) = all_consuming(many0(newline)).parse(input)?;
         Ok((
             input,
             Self {
@@ -198,7 +198,7 @@ impl GroupRecordPassword {
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
-        let (input, _) = context("password", char('x'))(input)?;
+        let (input, _) = context("password", char('x')).parse(input)?;
         Ok((input, Self::X))
     }
 }
@@ -224,21 +224,22 @@ impl<'a> GroupRecord<'a> {
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
-        let colon = char(':');
-        let (input, (name, _, password, _, gid, _)) = tuple((
+        let (input, (name, _, password, _, gid, _)) = (
             context("groupname", take_until1(":")),
-            &colon,
+            char(':'),
             GroupRecordPassword::parse,
-            &colon,
+            char(':'),
             context("gid", nom::character::complete::u32),
-            &colon,
-        ))(input)?;
-        let (input, users) = take_until("\n")(input)?;
+            char(':'),
+        )
+            .parse(input)?;
+        let (input, users) = take_until("\n").parse(input)?;
         let (_, users) = context(
             "users",
             // all_consuming(separated_list0(char(','), alphanumeric1)),
             all_consuming(separated_list0(char(','), recognize(many1(none_of(","))))),
-        )(users)?;
+        )
+        .parse(users)?;
         Ok((
             input,
             Self {

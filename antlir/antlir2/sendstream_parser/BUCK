@@ -24,7 +24,7 @@ rust_library(
         "derive_more",
         "hex",
         "nix",
-        "nom-old",
+        "nom",
         "serde",
         "thiserror",
         "tokio",
