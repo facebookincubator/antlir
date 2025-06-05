@@ -252,7 +252,10 @@ def _implicit_image_test(
             # control configuration don't actually do anything (default_os,
             # systemd, default_rou, etc)
             implicit_layer_reason = "image_test_boot",
-            systemd = "inherit-parent",
+            # this implicit layer will never be the thing to install systemd, so
+            # explicitly leave it unconfigured and let the parent_layer enforce
+            # its own systemd configuration (if any)
+            systemd = "unconfigured",
         )
         layer = ":{}--bootable-layer".format(name)
 
@@ -286,7 +289,7 @@ def _implicit_image_test(
         hostname = hostname,
         default_os = default_os,
         # @oss-disable
-        systemd = systemd or "inherit-parent",
+        systemd = systemd or "unconfigured",
         mount_platform = mount_platform,
         rootless = rootless,
         _static_list_wrapper = _static_list_wrapper,
@@ -329,7 +332,10 @@ def image_python_test(
             # control configuration don't actually do anything (default_os,
             # systemd, default_rou, etc)
             implicit_layer_reason = "image_test_xarexec",
-            systemd = "inherit-parent",
+            # this implicit layer will never be the thing to install systemd, so
+            # explicitly leave it unconfigured and let the parent_layer enforce
+            # its own systemd configuration (if any)
+            systemd = "unconfigured",
         )
 
         # In opt modes, we need to use a parent_layer that has fb-xarexec
