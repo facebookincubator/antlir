@@ -10,8 +10,9 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/image:depgraph.bzl", "analyze_features")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
 
-def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
+def _bad_impl(ctx: AnalysisContext) -> list[Provider]:
     features = ctx.attrs.features[FeatureInfo]
 
     analyzed_features = analyze_features(
@@ -22,32 +23,30 @@ def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
         plugins = {str(plugin.label.raw_target()): plugin[FeaturePluginInfo] for plugin in ctx.plugins[FeaturePluginPluginKind]},
     )
 
-    return cmd_args(
+    cmd = cmd_args(
         ctx.attrs.test_depgraph[RunInfo],
         cmd_args(analyzed_features, format = "--feature={}"),
         cmd_args(ctx.attrs.error_regex, format = "--error-regex={}"),
         cmd_args(ctx.attrs.parent[LayerInfo].facts_db, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
     )
-
-def _bad_impl(ctx: AnalysisContext) -> list[Provider]:
-    cmd = _make_test_cmd(ctx)
     return [
         DefaultInfo(),
         RunInfo(args = cmd),
-        ExternalRunnerTestInfo(
-            command = [cmd],
-            type = "custom",
-            run_from_project_root = True,
-        ),
     ]
 
-_bad_depgraph = rule(
+_bad_depgraph_test_runner = rule(
     impl = _bad_impl,
     attrs = {
         "error_regex": attrs.string(),
-        "features": attrs.dep(providers = [FeatureInfo], pulls_plugins = [FeaturePluginPluginKind]),
-        "parent": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "test_depgraph": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_depgraph/tests/test_depgraph:test-depgraph")),
+        "features": attrs.dep(
+            providers = [FeatureInfo],
+            pulls_plugins = [FeaturePluginPluginKind],
+        ),
+        "parent": attrs.option(
+            attrs.dep(providers = [LayerInfo]),
+            default = None,
+        ),
+        "test_depgraph": attrs.default_only(attrs.dep(default = "//antlir/antlir2/antlir2_depgraph/tests/test_depgraph:test-depgraph")),
         "_analyze_feature": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_depgraph_if:analyze")),
     },
     uses_plugins = [FeaturePluginPluginKind],
@@ -62,10 +61,14 @@ def bad_depgraph(
         features = features,
         visibility = [":" + name],
     )
-    _bad_depgraph(
-        name = name,
+    _bad_depgraph_test_runner(
+        name = name + "--test",
         features = ":" + name + "--features",
         **(kwargs | default_target_platform_kwargs())
+    )
+    buck_sh_test(
+        name = name,
+        test = ":" + name + "--test",
     )
 
 def _good_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -76,6 +79,11 @@ def _good_impl(ctx: AnalysisContext) -> list[Provider]:
             # force the layer to be built for the test to be considered a
             # success
             command = [cmd_args("true", hidden = [layer_contents.subvol_symlink])],
+            default_executor = CommandExecutorConfig(
+                local_enabled = True,
+                # Requires local subvolume and cannot be run on RE
+                remote_enabled = False,
+            ),
             type = "custom",
         ),
     ]
