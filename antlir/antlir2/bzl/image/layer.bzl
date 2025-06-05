@@ -507,9 +507,13 @@ _layer_attrs = {
     "default_mountpoint": attrs.option(attrs.string(), default = None),
     "dnf_additional_repos": attrs.option(
         attrs.one_of(
-            attrs.list(attrs.dep(providers = [RepoInfo])),
             attrs.dep(providers = [RepoSetInfo]),
-            attrs.list(attrs.string()),
+            attrs.list(
+                attrs.one_of(
+                    attrs.dep(providers = [RepoInfo]),
+                    attrs.string(),
+                ),
+            ),
         ),
         default = None,
         doc = """
