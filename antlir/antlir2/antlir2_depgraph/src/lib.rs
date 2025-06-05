@@ -18,8 +18,8 @@ use antlir2_depgraph_if::item::ItemKey;
 use antlir2_depgraph_if::item::Path as PathItem;
 use antlir2_facts::RoDatabase;
 use antlir2_facts::RwDatabase;
+use antlir2_facts::fact::FactKind;
 use antlir2_facts::fact::dir_entry::DirEntry;
-use antlir2_facts::fact::fact_kind;
 use antlir2_features::Feature;
 use fxhash::FxHashMap;
 use rusqlite::OptionalExtension as _;
@@ -233,7 +233,7 @@ impl GraphBuilder {
                 AND requires.fact_kind=?1
         "#,
             )?
-            .query_and_then((fact_kind::<DirEntry>(),), |row| {
+            .query_and_then((DirEntry::KIND,), |row| {
                 let item_key: ItemKey = serde_json::from_str(
                     row.get_ref("item_key")?
                         .as_str()
@@ -277,7 +277,7 @@ impl GraphBuilder {
                             (
                                 serde_json::to_string(&canonical_item_key)
                                     .map_err(Error::GraphSerde)?,
-                                fact_kind::<DirEntry>(),
+                                DirEntry::KIND,
                                 fact_key.as_ref(),
                                 validator,
                                 feature,

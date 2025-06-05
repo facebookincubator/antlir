@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// stop warnings from typetag
+#![allow(non_local_definitions)]
+
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 #[cfg(unix)]
@@ -19,9 +22,12 @@ use rusqlite::Row;
 use rusqlite::Rows;
 
 pub mod fact;
-use fact::Fact;
-use fact::fact_kind;
+pub use antlir2_facts_macro::fact_impl;
+pub use fact::Fact;
 use serde::de::DeserializeOwned;
+
+use crate::fact::FactKind;
+extern crate self as antlir2_facts;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -88,8 +94,8 @@ impl RwDatabase {
     {
         let val = serde_json::to_string(fact as &dyn Fact)?;
         self.db.execute(
-            "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
-            (fact_kind::<F>(), fact.key().as_ref(), val),
+            "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (json_extract(?2, '$.type'), ?1, ?2)",
+            (fact.key().as_ref(), val),
         )?;
         Ok(())
     }
@@ -132,11 +138,11 @@ impl RoDatabase {
 #[doc(hidden)]
 pub fn get_with_connection<F>(db: &Connection, key: impl Into<Key>) -> Result<Option<F>>
 where
-    F: Fact + DeserializeOwned,
+    F: Fact + FactKind + DeserializeOwned,
 {
     let key: Key = key.into();
     let mut stmt = db.prepare("SELECT value FROM facts WHERE kind=? AND key=?")?;
-    stmt.query_row((fact_kind::<F>(), key.as_ref()), row_to_fact)
+    stmt.query_row((F::KIND, key.as_ref()), row_to_fact)
         .optional()
         .map_err(Error::from)
 }
@@ -144,13 +150,13 @@ where
 impl<const RW: bool> Database<{ RW }> {
     pub fn get<F>(&self, key: impl Into<Key>) -> Result<Option<F>>
     where
-        F: Fact + DeserializeOwned,
+        F: Fact + FactKind + DeserializeOwned,
     {
         let key: Key = key.into();
         let mut stmt = self
             .db
             .prepare("SELECT value FROM facts WHERE kind=? AND key=?")?;
-        stmt.query_row((fact_kind::<F>(), key.as_ref()), row_to_fact)
+        stmt.query_row((F::KIND, key.as_ref()), row_to_fact)
             .optional()
             .map_err(Error::from)
     }
@@ -158,7 +164,7 @@ impl<const RW: bool> Database<{ RW }> {
     // Iterate over all facts of a given type.
     pub fn iter<F>(&self) -> Result<FactIter<F>>
     where
-        F: Fact + DeserializeOwned,
+        F: Fact + FactKind + DeserializeOwned,
     {
         // The lifetimes here are pretty hairy, so this eagerly loads all
         // matching keys. Most use cases require iterating over the entire Fact
@@ -167,7 +173,7 @@ impl<const RW: bool> Database<{ RW }> {
         let mut stmt = self
             .db
             .prepare("SELECT value FROM facts WHERE kind=? ORDER BY key ASC")?;
-        let rows = stmt.query((fact_kind::<F>(),))?;
+        let rows = stmt.query((F::KIND,))?;
         let facts = rows_to_facts::<F>(rows)?;
         Ok(FactIter {
             iter: facts.into_iter(),
@@ -178,7 +184,7 @@ impl<const RW: bool> Database<{ RW }> {
     /// can iterate over [fact::DirEntry]s under a certain path.
     pub fn iter_prefix<F>(&self, key: &Key) -> Result<FactIter<F>>
     where
-        F: Fact + DeserializeOwned,
+        F: Fact + FactKind + DeserializeOwned,
     {
         // The lifetimes here are pretty hairy, so this eagerly loads all
         // matching keys. The 'clone' feature is really the only use case that
@@ -193,7 +199,7 @@ impl<const RW: bool> Database<{ RW }> {
         let mut stmt = self.db.prepare(
             "SELECT value FROM facts WHERE kind=? AND key>=? AND key<? ORDER BY key ASC",
         )?;
-        let rows = stmt.query((fact_kind::<F>(), key.as_ref(), end.as_slice()))?;
+        let rows = stmt.query((F::KIND, key.as_ref(), end.as_slice()))?;
         let facts = rows_to_facts::<F>(rows)?;
         Ok(FactIter {
             iter: facts.into_iter(),
@@ -202,13 +208,13 @@ impl<const RW: bool> Database<{ RW }> {
 
     pub fn all_keys<F>(&self) -> Result<KeyIter>
     where
-        F: Fact,
+        F: Fact + FactKind,
     {
         // The lifetimes of querying are nasty, so just eagerly load all the
         // keys.
         let mut stmt = self.db.prepare("SELECT key FROM facts WHERE kind=?")?;
         let keys: Vec<Key> = stmt
-            .query_map((fact_kind::<F>(),), |row| row.get(0).map(Key))?
+            .query_map((F::KIND,), |row| row.get(0).map(Key))?
             .map(|res| res.map_err(Error::from))
             .collect::<Result<_>>()?;
         Ok(KeyIter(keys.into_iter()))
@@ -241,32 +247,32 @@ impl<'db> Transaction<'db> {
     {
         let val = serde_json::to_string(fact as &dyn Fact)?;
         self.tx.execute(
-            "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?, ?, ?)",
-            (fact_kind::<F>(), fact.key().as_ref(), val),
+            "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (json_extract(?2, '$.type'), ?1, ?2)",
+            (fact.key().as_ref(), val),
         )?;
         Ok(())
     }
 
     pub fn delete<F>(&mut self, key: &Key) -> Result<bool>
     where
-        F: Fact,
+        F: Fact + FactKind,
     {
         let num_rows = self.tx.execute(
             "DELETE FROM facts WHERE kind=? AND key=?",
-            (fact_kind::<F>(), key.as_ref()),
+            (F::KIND, key.as_ref()),
         )?;
         Ok(num_rows > 0)
     }
 
     pub fn all_keys<F>(&self) -> Result<KeyIter>
     where
-        F: Fact,
+        F: Fact + FactKind,
     {
         // The lifetimes of querying are nasty, so just eagerly load all the
         // keys.
         let mut stmt = self.tx.prepare("SELECT key FROM facts WHERE kind=?")?;
         let keys: Vec<Key> = stmt
-            .query_map((fact_kind::<F>(),), |row| row.get(0).map(Key))?
+            .query_map((F::KIND,), |row| row.get(0).map(Key))?
             .map(|res| res.map_err(Error::from))
             .collect::<Result<_>>()?;
         Ok(KeyIter(keys.into_iter()))
@@ -376,6 +382,17 @@ impl From<String> for Key {
 impl From<PathBuf> for Key {
     fn from(key: PathBuf) -> Self {
         key.into_os_string().into_vec().into()
+    }
+}
+
+#[doc(hidden)]
+pub mod __private {
+    // another module so that we can just
+    // use ::antlir2_facts::__private::typetag::*;
+    // and know that it will always *only* import typetag
+    #[doc(hidden)]
+    pub mod typetag {
+        pub use typetag;
     }
 }
 

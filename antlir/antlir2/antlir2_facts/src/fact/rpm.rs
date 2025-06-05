@@ -15,6 +15,7 @@ use typed_builder::TypedBuilder;
 
 use super::Fact;
 use super::Key;
+use crate::fact_impl;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, TypedBuilder)]
 pub struct Rpm {
@@ -47,7 +48,7 @@ fn skip_epoch(epoch: &u64) -> bool {
     *epoch == 0
 }
 
-#[typetag::serde]
+#[fact_impl("antlir2_facts::fact::rpm::Rpm")]
 impl Fact for Rpm {
     fn key(&self) -> Key {
         // It would be great to just use the name as the key, but a small set of

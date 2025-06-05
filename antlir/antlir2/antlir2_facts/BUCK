@@ -24,7 +24,20 @@ rust_library(
         "thiserror",
         "typed-builder",
         "typetag",
-        "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
+        ":antlir2_facts_macro",
+    ],
+)
+
+rust_library(
+    name = "antlir2_facts_macro",
+    srcs = ["macro.rs"],
+    crate_root = "macro.rs",
+    proc_macro = True,
+    deps = [
+        "proc-macro-error",
+        "proc-macro2",
+        "quote",
+        "syn",
     ],
 )
 

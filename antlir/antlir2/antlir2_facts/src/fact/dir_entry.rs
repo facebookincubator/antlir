@@ -16,6 +16,7 @@ use serde::Serialize;
 
 use super::Fact;
 use super::Key;
+use crate::fact_impl;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum DirEntry {
@@ -24,7 +25,7 @@ pub enum DirEntry {
     RegularFile(RegularFile),
 }
 
-#[typetag::serde]
+#[fact_impl("antlir2_facts::fact::dir_entry::DirEntry")]
 impl Fact for DirEntry {
     fn key(&self) -> Key {
         match self {

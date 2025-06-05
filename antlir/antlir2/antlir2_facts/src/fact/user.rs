@@ -10,6 +10,7 @@ use serde::Serialize;
 
 use super::Fact;
 use super::Key;
+use crate::fact_impl;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct User {
@@ -17,7 +18,7 @@ pub struct User {
     id: u32,
 }
 
-#[typetag::serde]
+#[fact_impl("antlir2_facts::fact::user::User")]
 impl Fact for User {
     fn key(&self) -> Key {
         self.name.as_str().into()
@@ -55,7 +56,7 @@ pub struct Group {
     members: Vec<String>,
 }
 
-#[typetag::serde]
+#[fact_impl("antlir2_facts::fact::user::Group")]
 impl Fact for Group {
     fn key(&self) -> Key {
         self.name.as_str().into()
