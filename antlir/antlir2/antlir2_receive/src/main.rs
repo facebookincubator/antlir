@@ -42,6 +42,10 @@ pub(crate) struct Receive {
     #[clap(long, default_value = "btrfs")]
     /// path to 'btrfs' command
     btrfs: PathBuf,
+    #[clap(long)]
+    facts_db_out: PathBuf,
+    #[clap(long)]
+    build_appliance: Option<PathBuf>,
 }
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
@@ -139,6 +143,13 @@ impl Receive {
         subvol
             .set_readonly(true)
             .context("while making subvol ro")?;
+
+        antlir2_facts::update_db::sync_db_with_layer()
+            .db(&self.facts_db_out)
+            .layer(subvol.path())
+            .maybe_build_appliance(self.build_appliance.as_deref())
+            .call()
+            .context("while updating facts db with layer contents")?;
 
         if self.output.exists() {
             trace!("removing existing output {}", self.output.display());

@@ -20,7 +20,6 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "target_arch": ctx.attrs._target_arch,
         "_analyze_feature": ctx.attrs._analyze_feature,
         "_feature_features": [ctx.attrs._dot_meta_feature],
-        "_new_facts_db": ctx.attrs._new_facts_db,
         "_plugins": ctx.attrs._plugins,
         "_rootless": ctx.attrs._rootless,
         "_run_container": ctx.attrs._run_container,
@@ -35,7 +34,6 @@ stamp_buildinfo_rule = rule(
                 "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
                 "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
                 "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
-                "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
                 "_plugins": attrs.list(
                     attrs.dep(providers = [FeaturePluginInfo]),
                     default = [],

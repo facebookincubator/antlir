@@ -65,6 +65,13 @@ pub(crate) struct Compile {
     features: JsonFile<Vec<Feature>>,
 
     #[clap(long)]
+    parent_facts_db: Option<PathBuf>,
+    #[clap(long)]
+    facts_db_out: PathBuf,
+    #[clap(long)]
+    build_appliance: Option<PathBuf>,
+
+    #[clap(long)]
     /// Pre-computed plans for this compilation phase
     plans: JsonFile<HashMap<String, PathBuf>>,
 }
@@ -132,6 +139,12 @@ impl Compile {
         }
         drop(root_guard);
 
+        if let Some(parent) = &self.parent_facts_db {
+            std::fs::copy(parent, &self.facts_db_out).with_context(|| {
+                format!("while copying existing facts db '{}'", parent.display())
+            })?;
+        }
+
         match layer {
             WorkingLayer::Btrfs(mut subvol) => {
                 let root_guard = rootless.map(|r| r.escalate()).transpose()?;
@@ -172,12 +185,20 @@ impl Compile {
                     .set_readonly(true)
                     .context("while making subvol r/o")?;
 
+                antlir2_facts::update_db::sync_db_with_layer()
+                    .db(&self.facts_db_out)
+                    .layer(subvol.path())
+                    .maybe_build_appliance(self.build_appliance.as_deref())
+                    .call()
+                    .context("while updating facts db with layer contents")?;
+
+                drop(root_guard);
+
                 debug!(
                     "linking {} -> {}",
                     self.output.display(),
                     subvol.path().display(),
                 );
-                drop(root_guard);
 
                 let _ = std::fs::remove_file(&self.output);
                 std::os::unix::fs::symlink(subvol.path(), &self.output)

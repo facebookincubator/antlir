@@ -20,11 +20,12 @@ use rusqlite::OpenFlags;
 use rusqlite::OptionalExtension;
 use rusqlite::Row;
 use rusqlite::Rows;
+use serde::de::DeserializeOwned;
 
 pub mod fact;
 pub use antlir2_facts_macro::fact_impl;
 pub use fact::Fact;
-use serde::de::DeserializeOwned;
+pub mod update_db;
 
 use crate::fact::FactKind;
 extern crate self as antlir2_facts;

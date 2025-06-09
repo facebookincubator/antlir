@@ -33,7 +33,6 @@ load("//antlir/bzl:internal_external.bzl", "is_facebook")
 load("//antlir/bzl:types.bzl", "types")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
-load(":facts.bzl", "facts")
 load(":mount_types.bzl", "mount_record")  # @unused Used as type
 load(
     ":mounts.bzl",
@@ -52,7 +51,9 @@ def _compile(
         plugins: list[FeaturePluginInfo | typing.Any],
         topo_features: Artifact,
         plans: typing.Any,
-        hidden_deps: typing.Any) -> LayerContents:
+        hidden_deps: typing.Any,
+        parent_facts_db: Artifact | None = None,
+        build_appliance: BuildApplianceInfo | Provider | None = None) -> (LayerContents, Artifact):
     """
     Compile features into a new image layer
     """
@@ -66,6 +67,8 @@ def _compile(
         )
     else:
         fail("unknown working format '{}'".format(ctx.attrs._working_format))
+
+    facts_db_out = ctx.actions.declare_output(identifier, "facts")
 
     ctx.actions.run(
         cmd_args(
@@ -86,6 +89,9 @@ def _compile(
             cmd_args(topo_features, format = "--features={}"),
             cmd_args(plans, format = "--plans={}"),
             cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
+            cmd_args(parent_facts_db, format = "--parent-facts-db={}") if parent_facts_db else cmd_args(),
+            cmd_args(facts_db_out.as_output(), format = "--facts-db-out={}"),
+            cmd_args(build_appliance.dir, format = "--build-appliance={}") if build_appliance else cmd_args(),
             hidden = hidden_deps,
         ),
         category = "antlir2",
@@ -106,7 +112,7 @@ def _compile(
         error_handler = antlir2_error_handler,
     )
 
-    return contents
+    return contents, facts_db_out
 
 def _container_sub_target(
         binary: Dependency | None,
@@ -402,7 +408,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
 
         logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
-        layer = _compile(
+        layer, facts_db = _compile(
             ctx = ctx,
             identifier = identifier,
             parent = layer,
@@ -413,18 +419,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             topo_features = topo_features,
             plans = plans,
             hidden_deps = compile_feature_hidden_deps,
+            parent_facts_db = facts_db,
+            build_appliance = build_appliance[BuildApplianceInfo],
         )
         phase_contents.append((phase, layer))
-
-        facts_db = facts.new_facts_db(
-            actions = ctx.actions,
-            parent_facts_db = facts_db,
-            layer = layer,
-            build_appliance = build_appliance[BuildApplianceInfo],
-            new_facts_db = ctx.attrs._new_facts_db[RunInfo],
-            phase = phase,
-            rootless = ctx.attrs._rootless,
-        )
 
         all_logs = ctx.actions.declare_output(identifier, "logs", dir = True)
         ctx.actions.symlinked_dir(all_logs, {key + ".log": artifact for key, artifact in logs.items()})
@@ -500,10 +498,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
 _layer_attrs = {
     "antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
-    "build_appliance": attrs.option(
-        attrs.exec_dep(providers = [BuildApplianceInfo]),
-        default = None,
-    ),
     "default_mountpoint": attrs.option(attrs.string(), default = None),
     "dnf_additional_repos": attrs.option(
         attrs.one_of(
@@ -570,7 +564,6 @@ _layer_attrs = {
             configurations (like systemd-cd).
         """,
     ),
-    "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
     "_plugins": attrs.list(
         attrs.dep(providers = [FeaturePluginInfo]),
         default = [],
