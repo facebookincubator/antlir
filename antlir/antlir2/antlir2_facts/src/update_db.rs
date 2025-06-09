@@ -30,6 +30,7 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
 use anyhow::ensure;
+use bon::builder;
 use clap::Parser;
 use fxhash::FxHashSet;
 use itertools::Itertools;
@@ -264,11 +265,11 @@ fn populate_systemd_units(tx: &mut Transaction, root: &Path) -> Result<()> {
     Ok(())
 }
 
-enum Root {
-    Subvol(PathBuf),
+enum Root<'a> {
+    Subvol(&'a Path),
 }
 
-impl Root {
+impl Root<'_> {
     fn path(&self) -> &Path {
         match self {
             Self::Subvol(p) => p,
@@ -276,50 +277,16 @@ impl Root {
     }
 }
 
-fn main() -> Result<()> {
-    let args = Args::parse();
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::TRACE)
-        .init();
-
-    let rootless = if args.rootless {
-        antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
-        None
-    } else {
-        Some(antlir2_rootless::init().context("while dropping privileges")?)
-    };
-
-    ensure!(
-        !args.db.exists(),
-        "output '{}' already exists",
-        args.db.display()
-    );
-
-    if let Some(parent) = &args.parent {
-        std::fs::copy(parent, &args.db)
-            .with_context(|| format!("while copying existing db '{}'", parent.display()))?;
-    }
-
-    let mut db = RwDatabase::create(&args.db)
-        .with_context(|| format!("while creating db {}", args.db.display()))?;
+#[builder]
+pub fn sync_db_with_layer(db: &Path, layer: &Path, build_appliance: Option<&Path>) -> Result<()> {
+    let mut db =
+        RwDatabase::create(db).with_context(|| format!("while preparing db {}", db.display()))?;
 
     let mut tx = db.transaction().context("while preparing tx")?;
 
-    let uid = nix::unistd::Uid::effective().as_raw();
-    let gid = nix::unistd::Gid::effective().as_raw();
+    let root = Root::Subvol(layer);
 
-    let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-
-    antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
-
-    let root = Root::Subvol(args.subvol_symlink);
-
-    populate(&mut tx, root.path(), args.build_appliance.as_deref())?;
-
-    // make sure all the output files are owned by the unprivileged user
-    std::os::unix::fs::lchown(&args.db, Some(uid), Some(gid))
-        .with_context(|| format!("while chowning {}", args.db.display()))?;
-    drop(root_guard);
+    populate(&mut tx, root.path(), build_appliance)?;
 
     tx.commit().context("while committing tx")?;
 

@@ -8,9 +8,6 @@
 use std::path::Path;
 use std::process::Command;
 
-use antlir2_facts::Fact;
-use antlir2_facts::Key;
-use antlir2_facts::fact_impl;
 use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
@@ -126,13 +123,6 @@ impl<'a> From<&'a str> for UnitType<'a> {
             "scope" => Self::Slice,
             s => Self::Other(s),
         }
-    }
-}
-
-#[fact_impl("antlir2_systemd::UnitFile")]
-impl Fact for UnitFile {
-    fn key(&self) -> Key {
-        self.name().as_bytes().into()
     }
 }
 

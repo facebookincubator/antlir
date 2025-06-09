@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_library")
 
 oncall("antlir")
 
@@ -15,6 +15,12 @@ rust_library(
         "tracing-test",
     ],
     deps = [
+        "anyhow",
+        "bon",
+        "clap",
+        "fxhash",
+        "itertools",
+        "jwalk",
         "once_cell",
         "regex",
         "rusqlite",
@@ -22,9 +28,14 @@ rust_library(
         "serde_json",
         "static_assertions",
         "thiserror",
+        "tracing",
         "typed-builder",
         "typetag",
         ":antlir2_facts_macro",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
+        "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
     ],
 )
 
@@ -38,33 +49,5 @@ rust_library(
         "proc-macro2",
         "quote",
         "syn",
-    ],
-)
-
-rust_binary(
-    name = "new-facts-db",
-    srcs = ["bin/new_facts_db.rs"],
-    compatible_with = [
-        "ovr_config//os:freebsd",
-        "ovr_config//os:linux",
-        "ovr_config//os:macos",
-    ],
-    crate_root = "bin/new_facts_db.rs",
-    visibility = ["PUBLIC"],
-    deps = [
-        "anyhow",
-        "clap",
-        "fxhash",
-        "itertools",
-        "jwalk",
-        "nix",
-        "tracing",
-        "tracing-subscriber",
-        ":antlir2_facts",
-        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
-        "//antlir/antlir2/antlir2_path:antlir2_path",
-        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
-        "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
-        "//antlir/antlir2/antlir2_users:antlir2_users",
     ],
 )

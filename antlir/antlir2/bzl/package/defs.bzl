@@ -33,7 +33,6 @@ default_attrs = {
     "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
     "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
     "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
-    "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
     "_run_container": attrs.exec_dep(default = "antlir//antlir/antlir2/container_subtarget:run"),
     "_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -113,7 +112,6 @@ def _generic_impl(
             "_analyze_feature": ctx.attrs._analyze_feature,
             "_antlir2": ctx.attrs._antlir2,
             "_dot_meta_feature": ctx.attrs._dot_meta_feature,
-            "_new_facts_db": ctx.attrs._new_facts_db,
             "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
             "_rootless": ctx.attrs._rootless,
             "_run_container": ctx.attrs._run_container,

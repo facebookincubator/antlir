@@ -13,7 +13,6 @@ load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "Laye
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
-load(":facts.bzl", "facts")
 
 PrebuiltImageInfo = provider(fields = [
     "format",  # format of the image file
@@ -83,6 +82,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             )
 
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+    facts_db = ctx.actions.declare_output("facts")
     ctx.actions.run(
         cmd_args(
             # this usually requires privileged btrfs operations
@@ -94,6 +94,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
             cmd_args("--rootless") if ctx.attrs._rootless else cmd_args(),
+            cmd_args(facts_db.as_output(), format = "--facts-db-out={}"),
+            cmd_args(ctx.attrs.build_appliance[BuildApplianceInfo].dir, format = "--build-appliance={}"),
         ),
         category = "antlir2_prebuilt_layer",
         identifier = format,
@@ -108,16 +110,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     )
 
     contents = LayerContents(subvol_symlink = subvol_symlink)
-
-    facts_db = facts.new_facts_db(
-        actions = ctx.actions,
-        layer = contents,
-        parent_facts_db = None,
-        build_appliance = ctx.attrs.build_appliance[BuildApplianceInfo],
-        new_facts_db = ctx.attrs._new_facts_db[RunInfo],
-        phase = None,
-        rootless = ctx.attrs._rootless,
-    )
 
     return [
         LayerInfo(
@@ -148,7 +140,6 @@ _prebuilt = rule(
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
         "_btrfs": attrs.option(attrs.exec_dep(), default = None),
-        "_new_facts_db": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_facts:new-facts-db"),
         "_rootless": rootless_cfg.is_rootless_attr,
     } | cfg_attrs() | attrs_selected_by_cfg(),
     cfg = layer_cfg,

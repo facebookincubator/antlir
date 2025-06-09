@@ -13,7 +13,6 @@ rust_library(
         "serde",
         "serde_json",
         "strum",
-        "//antlir/antlir2/antlir2_facts:antlir2_facts",
     ],
 )
 
