@@ -61,7 +61,7 @@ def _new_os(name: str, **kwargs):
         "build_appliance",
         internal_external(
             fb = "antlir//antlir/antlir2/facebook/images/build_appliance/{}:build-appliance".format(name),
-            oss = "antlir//flavor//{}:build-appliance".format(name),
+            oss = "antlir//flavor/{}:build-appliance".format(name),
         )
     )
     kwargs.setdefault("target", "antlir//antlir/antlir2/os:" + name)
