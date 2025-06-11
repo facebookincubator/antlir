@@ -153,3 +153,9 @@ def _at_least_centos(release: int) -> tuple[str, ...]:
 os_matchers = struct(
     at_least_centos = _at_least_centos,
 )
+
+def os_by_name(name: str) -> os_t | None:
+    for os in OSES:
+        if os.name == name:
+            return os
+    return None
