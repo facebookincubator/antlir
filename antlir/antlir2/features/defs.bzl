@@ -52,7 +52,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _feature_plugin = rule(
     impl = _impl,
     attrs = {
-        "deps": attrs.query(),
         "lib": attrs.dep(providers = [RustLinkInfo]),
     },
 )
@@ -142,7 +141,6 @@ def feature_impl(
     feature_plugin(
         name = name,
         lib = ":{}.linked".format(name),
-        deps = "deps(:{}.linked, 1)".format(name),
         visibility = plugin_visibility or visibility or ["PUBLIC"],
     )
 
