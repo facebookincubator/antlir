@@ -122,6 +122,16 @@ if is_facebook:
             architectures = [new_arch_t("x86_64")],
             has_platform_toolchain = False,
         ),
+        _new_os(
+            name = "rhel9",
+            architectures = [new_arch_t("x86_64")],
+            has_platform_toolchain = False,
+        ),
+        _new_os(
+            name = "rhel9.2",
+            architectures = [new_arch_t("x86_64")],
+            has_platform_toolchain = False,
+        ),
     ])
 else:
     # This is very gross, but there are some tests that still assume C8 exists,
