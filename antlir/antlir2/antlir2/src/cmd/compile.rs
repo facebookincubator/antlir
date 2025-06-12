@@ -40,9 +40,6 @@ pub(crate) struct Compile {
     rootless: bool,
 
     #[clap(long)]
-    /// Path to the working volume where images should be built
-    working_dir: PathBuf,
-    #[clap(long)]
     /// Path to a subvolume to use as the starting point
     parent: Option<PathBuf>,
     #[clap(long)]
@@ -99,7 +96,7 @@ impl Compile {
     pub(crate) fn run(self, rootless: Rootless) -> Result<()> {
         // this must happen before unshare
         let working_volume = match self.working_format {
-            WorkingFormat::Btrfs => Some(WorkingVolume::ensure(self.working_dir.clone())?),
+            WorkingFormat::Btrfs => Some(WorkingVolume::ensure()?),
         };
 
         let rootless = match self.rootless {

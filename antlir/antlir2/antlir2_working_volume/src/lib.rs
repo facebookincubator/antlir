@@ -48,7 +48,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 pub struct WorkingVolume {
-    path: PathBuf,
+    _priv: (),
 }
 
 fn get_debug_info() -> String {
@@ -72,9 +72,11 @@ fn get_debug_info() -> String {
     )
 }
 
+const DIRNAME: &str = "antlir2-out";
+
 impl WorkingVolume {
-    /// Ensure this [WorkingVolume] exists and is set up correctly.
-    pub fn ensure(path: PathBuf) -> Result<Self> {
+    /// Ensure the [WorkingVolume] exists and is set up correctly.
+    pub fn ensure() -> Result<Self> {
         // If we're on Eden, create a new redirection
         // https://www.internalfb.com/intern/wiki/EdenFS/detecting-an-eden-mount/#on-linux-and-macos
         match OpenOptions::new()
@@ -87,13 +89,13 @@ impl WorkingVolume {
                 // redirects, take an exclusive lock before adding
                 let _locked_dir = Flock::lock(dir, FlockArg::LockExclusive)
                     .map_err(|(_fd, err)| std::io::Error::from(err))?;
-                if !path.exists() {
+                if !std::fs::exists(DIRNAME).unwrap_or_default() {
                     let mut cmd = Command::new("eden");
                     let res = cmd
                         .env("EDENFSCTL_ONLY_RUST", "1")
                         .arg("redirect")
                         .arg("add")
-                        .arg(&path)
+                        .arg(DIRNAME)
                         .arg("bind")
                         .output()
                         .map_err(|e| Error::AddRedirect {
@@ -106,7 +108,7 @@ impl WorkingVolume {
                         // Eden may still have created the directory before
                         // crashing. Attempt to clean it up so that future
                         // actions don't use it by mistake.
-                        let _ = std::fs::remove_dir(&path);
+                        let _ = std::fs::remove_dir(DIRNAME);
                         return Err(Error::AddRedirect {
                             cmd: format!("{:?}", cmd),
                             debug_info: get_debug_info(),
@@ -115,18 +117,18 @@ impl WorkingVolume {
                         });
                     }
                 }
-                Ok(Self { path })
+                Ok(Self { _priv: () })
             }
             Err(e) => match e.kind() {
                 ErrorKind::NotFound => {
                     trace!("no .eden: {e:?}");
-                    if let Err(e) = std::fs::create_dir(&path) {
+                    if let Err(e) = std::fs::create_dir(DIRNAME) {
                         match e.kind() {
-                            ErrorKind::AlreadyExists => Ok(Self { path }),
+                            ErrorKind::AlreadyExists => Ok(Self { _priv: () }),
                             _ => Err(Error::CreateWorkingVolume(e)),
                         }
                     } else {
-                        Ok(Self { path })
+                        Ok(Self { _priv: () })
                     }
                 }
                 _ => Err(Error::CheckEden(e)),
@@ -135,12 +137,12 @@ impl WorkingVolume {
     }
 
     pub fn path(&self) -> &Path {
-        &self.path
+        Path::new(DIRNAME)
     }
 
     /// Provide a new (non-existent) path for an image build to put its result
     /// into.
     pub fn allocate_new_path(&self) -> Result<PathBuf> {
-        Ok(self.path.join(Uuid::new_v4().simple().to_string()))
+        Ok(self.path().join(Uuid::new_v4().simple().to_string()))
     }
 }
