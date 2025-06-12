@@ -34,8 +34,6 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
-    #[clap(flatten)]
-    setup: SetupArgs,
     #[clap(long)]
     /// Use an unprivileged usernamespace
     rootless: bool,
@@ -54,13 +52,6 @@ pub enum Format {
     Tar,
     #[cfg(facebook)]
     Caf,
-}
-
-#[derive(Parser, Debug)]
-struct SetupArgs {
-    #[clap(long)]
-    /// Path to the working volume where images should be built
-    working_dir: PathBuf,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -104,7 +95,7 @@ impl Receive {
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
         trace!("setting up WorkingVolume");
-        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())?;
+        let working_volume = WorkingVolume::ensure()?;
 
         let rootless = if self.rootless {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;

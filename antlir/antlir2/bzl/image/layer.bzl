@@ -76,7 +76,6 @@ def _compile(
             antlir2,
             cmd_args(logs, format = "--logs={}"),
             "compile",
-            "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
             parent_arg,
             out_arg,

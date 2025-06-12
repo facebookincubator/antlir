@@ -9,6 +9,7 @@ use std::path::Path;
 use std::process::Command;
 
 use antlir2_btrfs::Subvolume;
+use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::ensure;
@@ -17,11 +18,12 @@ use tracing::trace;
 use crate::Receive;
 
 pub(crate) fn recv_sendstream(args: &Receive, dst: &Path) -> Result<()> {
+    let wv = WorkingVolume::ensure()?;
     // make sure that working_dir is btrfs before we try to invoke
     // 'btrfs' so that we can fail with a nicely categorized error
-    antlir2_btrfs::ensure_path_is_on_btrfs(&args.setup.working_dir)?;
+    antlir2_btrfs::ensure_path_is_on_btrfs(wv.path())?;
 
-    let recv_tmp = tempfile::tempdir_in(&args.setup.working_dir)?;
+    let recv_tmp = tempfile::tempdir_in(wv.path())?;
     let mut cmd = Command::new(&args.btrfs);
     cmd.arg("--quiet")
         .arg("receive")

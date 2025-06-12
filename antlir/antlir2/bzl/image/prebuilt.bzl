@@ -88,7 +88,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             # this usually requires privileged btrfs operations
             "sudo" if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs.antlir2_receive[RunInfo],
-            "--working-dir=antlir2-out",
             cmd_args(format, format = "--format={}"),
             cmd_args(ctx.attrs._btrfs[RunInfo], format = "--btrfs={}") if format == "sendstream" and ctx.attrs._btrfs else cmd_args(),
             cmd_args(src, format = "--source={}"),

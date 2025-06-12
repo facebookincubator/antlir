@@ -85,9 +85,7 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
         std::fs::copy(file.path(), out).context("while copying sendstream to output")?;
     }
 
-    let working_directory = canonical_layer.parent().expect("cannot be /").to_owned();
-    let working_volume =
-        WorkingVolume::ensure(working_directory).context("while initializing WorkingVolume")?;
+    let working_volume = WorkingVolume::ensure().context("while initializing WorkingVolume")?;
 
     let final_path = working_volume.allocate_new_path()?;
 
