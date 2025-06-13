@@ -20,7 +20,12 @@ static AGE_THRESHOLD: Duration = Duration::from_days(14);
 
 impl WorkingVolume {
     pub fn garbage_collect_old_subvols(&self) -> Result<()> {
-        for entry in std::fs::read_dir(self.path()).map_err(Error::GarbageCollect)? {
+        for entry in std::fs::read_dir(self.subvols_path())
+            .map_err(Error::GarbageCollect)?
+            // subvolumes used to be created in the root of antlir2-out, so we
+            // need to monitor that for a while too
+            .chain(std::fs::read_dir(self.path()).map_err(Error::GarbageCollect)?)
+        {
             let entry = entry.map_err(Error::GarbageCollect)?;
             let meta = entry.metadata().map_err(Error::GarbageCollect)?;
             if meta.ino() != 256 {

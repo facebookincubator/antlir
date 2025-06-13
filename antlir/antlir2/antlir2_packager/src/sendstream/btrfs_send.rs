@@ -87,7 +87,7 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
 
     let working_volume = WorkingVolume::ensure().context("while initializing WorkingVolume")?;
 
-    let final_path = working_volume.allocate_new_path()?;
+    let final_path = working_volume.allocate_new_subvol_path()?;
 
     let subvol = rootless.as_root(|| {
         snapshot
