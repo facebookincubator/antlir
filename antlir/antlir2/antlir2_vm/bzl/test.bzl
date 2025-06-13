@@ -199,6 +199,11 @@ def _get_internal_labels(test_rule, run_as_bundle: bool) -> (list[str], list[str
     ci_labels = []
     # @oss-disable
 
+    ## "tpx:supports_coverage" label is required to Citadel to discover
+    ## test that produce coverage
+    if test_rule == python_unittest or test_rule == cpp_unittest:
+        ci_labels += ["tpx:supports_coverage"]
+
     return inner_labels, wrapper_labels, ci_labels
 
 def _implicit_vm_test(
