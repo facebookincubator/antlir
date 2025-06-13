@@ -117,32 +117,37 @@ impl WorkingVolume {
                         });
                     }
                 }
-                Ok(Self { _priv: () })
             }
             Err(e) => match e.kind() {
                 ErrorKind::NotFound => {
                     trace!("no .eden: {e:?}");
                     if let Err(e) = std::fs::create_dir(DIRNAME) {
-                        match e.kind() {
-                            ErrorKind::AlreadyExists => Ok(Self { _priv: () }),
-                            _ => Err(Error::CreateWorkingVolume(e)),
+                        if e.kind() != ErrorKind::AlreadyExists {
+                            return Err(Error::CreateWorkingVolume(e));
                         }
-                    } else {
-                        Ok(Self { _priv: () })
                     }
                 }
-                _ => Err(Error::CheckEden(e)),
+                _ => return Err(Error::CheckEden(e)),
             },
-        }
+        };
+        let s = Self { _priv: () };
+        std::fs::create_dir_all(s.subvols_path()).map_err(Error::CreateWorkingVolume)?;
+        Ok(s)
     }
 
     pub fn path(&self) -> &Path {
         Path::new(DIRNAME)
     }
 
+    pub(crate) fn subvols_path(&self) -> PathBuf {
+        self.path().join("subvols")
+    }
+
     /// Provide a new (non-existent) path for an image build to put its result
     /// into.
-    pub fn allocate_new_path(&self) -> Result<PathBuf> {
-        Ok(self.path().join(Uuid::new_v4().simple().to_string()))
+    pub fn allocate_new_subvol_path(&self) -> Result<PathBuf> {
+        Ok(self
+            .subvols_path()
+            .join(Uuid::new_v4().simple().to_string()))
     }
 }

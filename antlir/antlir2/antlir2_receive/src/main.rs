@@ -86,7 +86,7 @@ impl Receive {
     /// version of the subvolume that we're receiving.
     #[tracing::instrument(skip(self), ret, err(Debug))]
     fn prepare_dst(&self, working_volume: &WorkingVolume) -> Result<PathBuf> {
-        let dst = working_volume.allocate_new_path()?;
+        let dst = working_volume.allocate_new_subvol_path()?;
         trace!("WorkingVolume gave us new path {}", dst.display());
 
         Ok(dst)

@@ -236,7 +236,7 @@ impl Compile {
             WorkingFormat::Btrfs => {
                 let dst = working_volume
                     .context("working_volume must have been created for btrfs")?
-                    .allocate_new_path()
+                    .allocate_new_subvol_path()
                     .context("while allocating new path for subvol")?;
                 let _guard = rootless.map(|r| r.escalate()).transpose()?;
                 let subvol = match &self.parent {
