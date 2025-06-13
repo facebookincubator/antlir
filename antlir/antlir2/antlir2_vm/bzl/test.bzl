@@ -279,6 +279,7 @@ vm_python_test = partial(
     _implicit_vm_test,
     python_unittest,
     _static_list_wrapper = "antlir//antlir/antlir2/antlir2_vm:static-list-py",
+    _add_outer_labels = ["tpx:supports_coverage"],
 )
 vm_rust_test = partial(_implicit_vm_test, rust_unittest)
 vm_sh_test = partial(_implicit_vm_test, buck_sh_test)
