@@ -39,6 +39,8 @@ pub enum Test {
         #[clap(long)]
         output: Option<PathBuf>,
         #[clap(long)]
+        output_dirs: Vec<PathBuf>,
+        #[clap(long)]
         test_filter: Vec<OsString>,
         test_cmd: Vec<OsString>,
     },
@@ -71,7 +73,10 @@ impl Test {
             },
             Self::Rust { .. } => HashSet::new(),
             Self::Pyunit {
-                list_tests, output, ..
+                list_tests,
+                output,
+                output_dirs,
+                ..
             } => {
                 let mut paths = HashSet::new();
                 if let Some(p) = list_tests {
@@ -90,6 +95,10 @@ impl Test {
                             .expect("output file always has parent")
                             .to_owned(),
                     );
+                }
+                // Add all output_dirs directly
+                for dir in output_dirs {
+                    paths.insert(dir.clone());
                 }
                 paths
             }
@@ -121,6 +130,7 @@ impl Test {
                 list_tests,
                 test_filter,
                 output,
+                output_dirs,
             } => {
                 if let Some(list) = list_tests {
                     test_cmd.push("--list-tests".into());
@@ -131,6 +141,10 @@ impl Test {
                 if let Some(out) = output {
                     test_cmd.push("--output".into());
                     test_cmd.push(out.into());
+                }
+                for dir in output_dirs {
+                    test_cmd.push("--output-dirs".into());
+                    test_cmd.push(dir.into());
                 }
                 for filter in test_filter {
                     test_cmd.push("--test-filter".into());
@@ -325,6 +339,58 @@ mod test {
         assert!(arg.test.is_list_tests());
         assert!(arg.test.output_dirs().is_empty());
         assert_eq!(arg.test.into_inner_cmd(), vec!["whatever", "--list-tests"]);
+
+        // Test with output_dirs
+        let arg = TestArgs::parse_from([
+            "test",
+            "pyunit",
+            "whatever",
+            "--output-dirs",
+            "/tmp/foo",
+            "--output-dirs",
+            "/tmp/other",
+        ]);
+        assert!(!arg.test.is_list_tests());
+        assert_eq!(
+            arg.test.output_dirs(),
+            HashSet::from([PathBuf::from("/tmp/foo"), PathBuf::from("/tmp/other")])
+        );
+        assert_eq!(
+            arg.test.into_inner_cmd(),
+            vec![
+                "whatever",
+                "--output-dirs",
+                "/tmp/foo",
+                "--output-dirs",
+                "/tmp/other",
+            ]
+        );
+
+        // Test with both output and output_dirs
+        let arg = TestArgs::parse_from([
+            "test",
+            "pyunit",
+            "whatever",
+            "--output",
+            "/here/here",
+            "--output-dirs",
+            "/tmp/foo",
+        ]);
+        assert!(!arg.test.is_list_tests());
+        assert_eq!(
+            arg.test.output_dirs(),
+            HashSet::from([PathBuf::from("/here"), PathBuf::from("/tmp/foo")])
+        );
+        assert_eq!(
+            arg.test.into_inner_cmd(),
+            vec![
+                "whatever",
+                "--output",
+                "/here/here",
+                "--output-dirs",
+                "/tmp/foo",
+            ]
+        );
     }
 
     #[test]
