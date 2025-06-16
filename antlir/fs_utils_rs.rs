@@ -54,9 +54,9 @@ impl IntoPy<PyObject> for AntlirPath {
         // Python->Rust->Python, but it's a necessary indirection evil
         // until/unless we replace antlir.fs_utils.Path with a Rust
         // implementation
-        let fs_utils = PyModule::import_bound(py, "antlir.fs_utils")
-            .expect("antlir.fs_utils must be available");
-        let bytes = PyBytes::new_bound(py, self.0.as_os_str().as_bytes());
+        let fs_utils =
+            PyModule::import(py, "antlir.fs_utils").expect("antlir.fs_utils must be available");
+        let bytes = PyBytes::new(py, self.0.as_os_str().as_bytes());
         // finally, create a fs_utils.Path from the bytes object
         fs_utils
             .getattr("Path")

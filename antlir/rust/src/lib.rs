@@ -13,7 +13,7 @@ use pyo3::prelude::*;
 /// (https://pyo3.rs/v0.16.4/module.html)
 macro_rules! submodule {
     ($module:ident, $full_module_name:literal, $py:ident, $parent_module:ident) => {{
-        let child_module = PyModule::new_bound($py, stringify!($module))?;
+        let child_module = PyModule::new($py, stringify!($module))?;
         $module::$module($py, &child_module)?;
         $parent_module.add_submodule(&child_module)?;
 
@@ -26,7 +26,7 @@ macro_rules! submodule {
         // there might be in pure-Python module imports, since all the
         // initialization is done as part of importing the top level
         // `antlir.rust` module in the first place.
-        $py.import_bound("sys")?
+        $py.import("sys")?
             .getattr("modules")?
             .set_item($full_module_name, child_module)?;
         Ok::<_, pyo3::PyErr>(())
