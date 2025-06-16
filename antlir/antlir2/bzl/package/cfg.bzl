@@ -21,10 +21,6 @@ layer_attrs = {
 def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     constraints = platform.configuration.constraints
 
-    if attrs.target_arch:
-        target_arch = getattr(refs, "arch." + attrs.target_arch)[ConstraintValueInfo]
-        constraints[target_arch.setting.label] = target_arch
-
     if attrs.default_os:
         constraints = os_transition(
             default_os = attrs.default_os,

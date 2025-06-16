@@ -17,7 +17,6 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "flavor": ctx.attrs.flavor,
         "name": str(ctx.label.raw_target()),
         "parent_layer": ctx.attrs.layer,
-        "target_arch": ctx.attrs._target_arch,
         "_analyze_feature": ctx.attrs._analyze_feature,
         "_feature_features": [ctx.attrs._dot_meta_feature],
         "_plugins": ctx.attrs._plugins,
