@@ -274,12 +274,6 @@ fn get_test_vm_args(
     if orig_args.timeout_secs.is_none() {
         return Err(anyhow!("Test command must specify --timeout-secs."));
     }
-    if !orig_args.output_dirs.is_empty() {
-        return Err(anyhow!(
-            "Test command must not specify --output-dirs. \
-            This will be parsed from env and test command parameters instead."
-        ));
-    }
 
     // Forward test runner env vars to the inner test
     let mut env_names = cli_envs;
@@ -314,6 +308,10 @@ fn get_test_vm_args(
         .into_iter()
         .map(|p| p.canonicalize().unwrap_or(p))
         .collect();
+    // User can specify additional output dirs in the test command
+    if !orig_args.output_dirs.is_empty() {
+        vm_args.output_dirs.extend(orig_args.output_dirs.clone());
+    }
     vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
     vm_args.console_output_file = create_tpx_logs("console.txt", "console logs")?;
@@ -488,7 +486,7 @@ mod test {
 
         let mut output_dirs = valid.clone();
         output_dirs.output_dirs = vec![PathBuf::from("/some")];
-        assert!(get_test_vm_args(&output_dirs, vec![], false).is_err());
+        assert!(get_test_vm_args(&output_dirs, vec![], false).is_ok());
 
         let mut command = valid.clone();
         command.mode.command = None;

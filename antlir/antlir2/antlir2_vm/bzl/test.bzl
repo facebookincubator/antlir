@@ -48,6 +48,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.dump_eth0:
         test_cmd = cmd_args(test_cmd, "--dump-eth0-traffic")
 
+    if ctx.attrs.output_dirs:
+        for output_dir in ctx.attrs.output_dirs:
+            test_cmd = cmd_args(test_cmd, "--output-dirs", output_dir)
+
     test_cmd = cmd_args(
         test_cmd,
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
@@ -142,6 +146,10 @@ _vm_test = rule(
             default = None,
         ),
         "labels": attrs.list(attrs.string(), default = []),
+        "output_dirs": attrs.option(
+            attrs.list(attrs.arg(doc = "Output directories to mount into the VM. This should be a macro, like $(location //path/to:some_target)")),
+            default = None,
+        ),
         "postmortem": attrs.bool(
             doc = "If true, the test is run after VM is terminated and its console log is accessible \
             through env $CONSOLE_OUTPUT. This is usually combined with @expect_failure to validate \
@@ -216,6 +224,7 @@ def _implicit_vm_test(
         expect_failure: bool = False,
         postmortem: bool = False,
         labels: list[str] | None = None,
+        output_dirs: list[str] | None = None,
         _add_outer_labels: list[str] = [],
         _static_list_wrapper: str | None = None,
         **kwargs) -> list[str]:
@@ -267,6 +276,7 @@ def _implicit_vm_test(
         first_boot_command = first_boot_command,
         expect_failure = expect_failure,
         postmortem = postmortem,
+        output_dirs = output_dirs,
         compatible_with = kwargs.get("compatible_with"),
         _static_list_wrapper = _static_list_wrapper,
         target_compatible_with = kwargs.get("target_compatible_with"),
