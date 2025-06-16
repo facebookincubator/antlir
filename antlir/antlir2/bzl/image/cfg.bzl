@@ -28,11 +28,6 @@ def cfg_attrs():
             For more details, see:
             https://www.internalfb.com/intern/staticdocs/antlir2/docs/recipes/multi-os-images/
         """),
-        "target_arch": attrs.option(
-            attrs.enum(["x86_64", "aarch64"]),
-            default = None,
-            doc = "Build this image for a specific target arch without using `buck -c`",
-        ),
         "working_format": attrs.option(
             attrs.enum(["btrfs"]),
             default = None,
@@ -64,10 +59,6 @@ def attrs_selected_by_cfg():
 
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     constraints = platform.configuration.constraints
-
-    if attrs.target_arch:
-        target_arch = getattr(refs, "arch." + attrs.target_arch)[ConstraintValueInfo]
-        constraints[target_arch.setting.label] = target_arch
 
     if attrs.default_os:
         # The rule transition to set the default antlir2 OS only happens if the
@@ -115,8 +106,6 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
 layer_cfg = transition(
     impl = _impl,
     refs = {
-        "arch.aarch64": "ovr_config//cpu/constraints:arm64",
-        "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
         "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:dnf",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",

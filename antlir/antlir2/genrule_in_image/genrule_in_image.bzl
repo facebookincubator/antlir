@@ -88,7 +88,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             "name": "genrule_layer//{}:{}".format(ctx.label.package, ctx.label.name),
             "parent_layer": ctx.attrs.layer,
             "rootless": ctx.attrs._rootless,
-            "target_arch": ctx.attrs._target_arch,
             "_analyze_feature": ctx.attrs._layer_analyze_feature,
             "_feature_features": [ctx.attrs._prep_feature],
             "_plugins": ctx.plugins[FeaturePluginPluginKind],

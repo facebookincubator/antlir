@@ -571,8 +571,7 @@ _layer_attrs = {
     "_run_container": attrs.option(attrs.exec_dep(), default = None),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
-        doc = "CPU arch that this layer is being built for. This is always " +
-              "correct, while target_arch might or might not be set",
+        doc = "CPU arch that this layer is being built for.",
     )),
     "_working_format": attrs.default_only(attrs.string(
         default = select({
