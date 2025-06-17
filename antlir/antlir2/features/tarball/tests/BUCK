@@ -110,3 +110,39 @@ image_diff_test(
     diff_type = "file",
     layer = ":tarball",
 )
+
+image.layer(
+    name = "with-xattrs-tar-layer",
+    features = [
+        feature.install_text(
+            dst = "/with-xattrs",
+            text = "\n",
+            xattrs = {"user.foo": "bar"},
+        ),
+    ],
+)
+
+package.tar(
+    name = "with-xattrs.tar",
+    dot_meta = False,
+    layer = ":with-xattrs-tar-layer",
+    rootless = True,
+)
+
+image.layer(
+    name = "install-with-xattrs",
+    features = [
+        feature.tarball(
+            src = ":with-xattrs.tar",
+            into_dir = "/",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "with-xattrs-test",
+    diff = "with-xattrs.toml",
+    diff_type = "file",
+    layer = ":install-with-xattrs",
+)
