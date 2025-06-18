@@ -224,7 +224,11 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
             # mechanism.
             if source in locked_packages:
                 source = locked_packages[source]
-                if spec["versionlock_hard_enforce"] and not source:
+                if (
+                    not source
+                    and spec["versionlock_hard_enforce"]
+                    and action in {"install", "upgrade"}
+                ):
                     raise AntlirError(
                         f"{rpm['subject']} is locked to version {versionlock[rpm['subject']]}, but that version was not found in any available repository"
                     )
