@@ -94,9 +94,6 @@ impl Receive {
 
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
-        trace!("setting up WorkingVolume");
-        let working_volume = WorkingVolume::ensure()?;
-
         let rootless = if self.rootless {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
             antlir2_isolate::unshare_and_privatize_mount_ns()
@@ -106,13 +103,16 @@ impl Receive {
             Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?)
         };
 
+        trace!("setting up WorkingVolume");
+        let working_volume = WorkingVolume::ensure()?;
+
         let dst = self.prepare_dst(&working_volume)?;
 
         let root = rootless.map(|r| r.escalate()).transpose()?;
 
         match self.format {
             Format::Sendstream => {
-                sendstream::recv_sendstream(&self, &dst)?;
+                sendstream::recv_sendstream(&self, &dst, &working_volume)?;
             }
             Format::Tar => {
                 let subvol = Subvolume::create(&dst).context("while creating subvol")?;
