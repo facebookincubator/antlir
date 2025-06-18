@@ -94,17 +94,22 @@ impl Receive {
 
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
-        let rootless = if self.rootless {
+        let rootless = if !self.rootless {
+            Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?)
+        } else {
+            None
+        };
+
+        // setting up the WorkingVolume *must* happen before entering a new
+        // mount namespace, otherwise we won't actually see the eden redirection
+        trace!("setting up WorkingVolume");
+        let working_volume = WorkingVolume::ensure()?;
+
+        if self.rootless {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
             antlir2_isolate::unshare_and_privatize_mount_ns()
                 .context("while isolating mount ns")?;
-            None
-        } else {
-            Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?)
         };
-
-        trace!("setting up WorkingVolume");
-        let working_volume = WorkingVolume::ensure()?;
 
         let dst = self.prepare_dst(&working_volume)?;
 

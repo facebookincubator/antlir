@@ -137,7 +137,11 @@ impl WorkingVolume {
         };
         let s = Self { _priv: () };
         let subvols_dir = s.subvols_path();
-        std::fs::create_dir_all(&subvols_dir).map_err(Error::CreateWorkingVolume)?;
+        if let Err(e) = std::fs::create_dir(&subvols_dir) {
+            if e.kind() != ErrorKind::AlreadyExists {
+                return Err(Error::CreateWorkingVolume(e));
+            }
+        }
         // TODO(vmagro): remove this in a couple weeks once all the
         // currently-incorrect permissions have been fixed
         let rootless = Rootless::get_if_initialized();
