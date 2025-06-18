@@ -29,17 +29,17 @@ def _looks_like_label(s: str) -> bool:
     return False
 
 __VERSIONLOCK_HARD_ENFORCEMENT_KWARG = select({
+    "DEFAULT": True,
     # TODO(vmagro): come up with a better way to handle this, but for now just
     # blocklist the small amount of images that use these non-standard
     # sub-flavo, since there are locked versions that won't exist in these
     # repos.
-    "//antlir/antlir2/facebook/flavor/centos9:corp": False,
-    "//antlir/antlir2/facebook/flavor/centos9:public-only": False,
-    "//antlir/antlir2/os:rhel8": False,
-    "//antlir/antlir2/os:rhel8.8": False,
-    "//antlir/antlir2/os:rhel9": False,
-    "//antlir/antlir2/os:rhel9.2": False,
-    "DEFAULT": True,
+    "antlir//antlir/antlir2/facebook/flavor/centos9:corp": False,
+    "antlir//antlir/antlir2/facebook/flavor/centos9:public-only": False,
+    "antlir//antlir/antlir2/os:rhel8": False,
+    "antlir//antlir/antlir2/os:rhel8.8": False,
+    "antlir//antlir/antlir2/os:rhel9": False,
+    "antlir//antlir/antlir2/os:rhel9.2": False,
 })
 
 def _install_common(
