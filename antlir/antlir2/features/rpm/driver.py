@@ -200,7 +200,9 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
 
     versionlock = spec["versionlock"] or {}
     locked_packages = antlir2_dnf_base.locked_packages(
-        sack=base.sack, versionlock=versionlock
+        sack=base.sack,
+        versionlock=versionlock,
+        hard_enforce=spec["versionlock_hard_enforce"],
     )
 
     module_base = ModuleBase(base)
@@ -222,6 +224,10 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
             # mechanism.
             if source in locked_packages:
                 source = locked_packages[source]
+                if spec["versionlock_hard_enforce"] and not source:
+                    raise AntlirError(
+                        f"{rpm['subject']} is locked to version {versionlock[rpm['subject']]}, but that version was not found in any available repository"
+                    )
         else:
             source = local_rpms[rpm["src"]]
 
@@ -286,6 +292,7 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
         versionlock=versionlock,
         explicitly_installed_package_names=explicitly_installed_package_names,
         excluded_rpms=excluded_rpms,
+        hard_enforce=spec["versionlock_hard_enforce"],
     )
 
     base.resolve(allow_erasing=True)

@@ -46,6 +46,8 @@ struct Args {
     #[clap(long)]
     driver_cmd: Vec<String>,
     #[clap(long)]
+    versionlock_hard_enforce: bool,
+    #[clap(long)]
     out: PathBuf,
 }
 
@@ -84,6 +86,7 @@ fn main() -> Result<()> {
         items: args.items.into_inner(),
         driver_cmd: args.driver_cmd,
         internal_only_options: Default::default(),
+        versionlock_hard_enforce: args.versionlock_hard_enforce,
     };
     let tx = rpm
         .plan(DriverContext::plan(
