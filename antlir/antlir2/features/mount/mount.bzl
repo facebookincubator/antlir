@@ -101,6 +101,5 @@ mount_rule = rule(
         "mountpoint": attrs.option(attrs.string()),
         "plugin": attrs.label(),
         "source_kind": attrs.enum(["layer", "host"]),
-        "_implicit_from_antlir1": attrs.bool(default = False),
     },
 )
