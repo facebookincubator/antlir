@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "python_binary")
@@ -10,10 +11,17 @@ oncall("antlir")
 
 repo_set(
     name = "test-repo-set",
-    repo_sets = internal_external(
-        fb = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9"],
-        oss = ["generated//snapshot/rpm/centos9:repos"],
-    ),
+    compatible_with = [
+        os.select_key
+        for os in OSES
+    ],
+    repo_sets = select({"DEFAULT": []} | {
+        os.select_key: internal_external(
+            fb = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:" + os.name],
+            oss = ["generated//snapshot/rpm/{}:repos".format(os.name)],
+        )
+        for os in OSES
+    }),
     repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
     visibility = [
         "//antlir/antlir2/bzl/feature/tests/rpm:",
@@ -322,14 +330,13 @@ test_rpms(
 
 alias(
     name = "flavor-versionlock",
-    actual = internal_external(
-        fb = "//antlir/antlir2/facebook/flavor/centos9:centos9[default_versionlock]",
-        oss = "//flavor/centos9:centos9[default_versionlock]",
-    ),
+    actual = select({
+        os.select_key: os.flavor + "[default_versionlock]"
+        for os in OSES
+    }),
     compatible_with = [
-        "//antlir/antlir2/os:centos10",
-        "//antlir/antlir2/os:centos9",
-        "//antlir/antlir2/os:eln",
+        os.select_key
+        for os in OSES
     ],
 )
 
@@ -340,9 +347,8 @@ buck_genrule(
         jq '.foo = "2-1"' < $(location :flavor-versionlock) > $OUT
     """,
     compatible_with = [
-        "//antlir/antlir2/os:centos10",
-        "//antlir/antlir2/os:centos9",
-        "//antlir/antlir2/os:eln",
+        os.select_key
+        for os in OSES
     ],
 )
 
@@ -372,45 +378,6 @@ test_rpms(
             # when versionlock is applied to dependencies 'foo-2-1' will end up
             # being installed.
             "foobar",
-        ]),
-        ":test-deps",
-    ],
-)
-
-buck_genrule(
-    name = "versionlock-missing-version.json",
-    out = "versionlock.json",
-    cmd = """
-        jq '.foo = "99-1"' < $(location :flavor-versionlock) > $OUT
-    """,
-    compatible_with = [
-        "//antlir/antlir2/os:centos10",
-        "//antlir/antlir2/os:centos9",
-        "//antlir/antlir2/os:eln",
-    ],
-)
-
-test_rpms(
-    name = "versionlock-missing-version",
-    also_eln_dnf5 = True,
-    dnf_versionlock = ":versionlock-missing-version.json",
-    expected = expected_t(installed = ["foo-3-1"]),
-    features = [
-        feature.rpms_install(rpms = [
-            "foo",  # test rpm
-        ]),
-        ":test-deps",
-    ],
-)
-
-test_rpms(
-    name = "versionlock-missing-version-of-dependency",
-    also_eln_dnf5 = True,
-    dnf_versionlock = ":versionlock-missing-version.json",
-    expected = expected_t(installed = ["foo-3-1"]),
-    features = [
-        feature.rpms_install(rpms = [
-            "requires-any-foo",
         ]),
         ":test-deps",
     ],

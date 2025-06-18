@@ -28,6 +28,20 @@ def _looks_like_label(s: str) -> bool:
         return True
     return False
 
+__VERSIONLOCK_HARD_ENFORCEMENT_KWARG = select({
+    # TODO(vmagro): come up with a better way to handle this, but for now just
+    # blocklist the small amount of images that use these non-standard
+    # sub-flavo, since there are locked versions that won't exist in these
+    # repos.
+    "//antlir/antlir2/facebook/flavor/centos9:corp": False,
+    "//antlir/antlir2/facebook/flavor/centos9:public-only": False,
+    "//antlir/antlir2/os:rhel8": False,
+    "//antlir/antlir2/os:rhel8.8": False,
+    "//antlir/antlir2/os:rhel9": False,
+    "//antlir/antlir2/os:rhel9.2": False,
+    "DEFAULT": True,
+})
+
 def _install_common(
         action: str,
         *,
@@ -75,6 +89,7 @@ def _install_common(
         kwargs = {
             "action": action,
             "subjects": subjects,
+            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -149,6 +164,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
         kwargs = {
             "action": "remove_if_exists",
             "subjects": rpms,
+            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -177,6 +193,7 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
         kwargs = {
             "action": "remove",
             "subjects": rpms,
+            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -202,6 +219,7 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
                 selects.join(name = name, stream = stream),
                 lambda sels: ":".join([sels.name, sels.stream]),
             )],
+            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -231,11 +249,6 @@ rpm_item_record = record(
     feature_label = TargetLabel,
 )
 
-rpms_record = record(
-    items = list[rpm_item_record],
-    driver_cmd = RunInfo,
-)
-
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     rpms = []
     for rpm in ctx.attrs.subjects:
@@ -256,7 +269,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(),
         FeatureAnalysis(
             feature_type = "rpm",
-            data = rpms_record(
+            data = struct(
                 items = [
                     rpm_item_record(
                         action = action_enum(ctx.attrs.action),
@@ -266,12 +279,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                     for rpm in rpms
                 ],
                 driver_cmd = ctx.attrs.driver[RunInfo],
+                versionlock_hard_enforce = ctx.attrs.versionlock_hard_enforce,
             ),
             required_artifacts = artifacts,
             build_phase = BuildPhase("package_manager"),
             plugin = ctx.attrs.plugin,
             reduce_fn = _reduce_rpm_features,
-            planner = rpm_planner(plan = ctx.attrs.plan, driver_cmd = ctx.attrs.driver[RunInfo]),
+            planner = rpm_planner(
+                plan = ctx.attrs.plan,
+                driver_cmd = ctx.attrs.driver[RunInfo],
+                versionlock_hard_enforce = ctx.attrs.versionlock_hard_enforce,
+            ),
         ),
     ]
 
@@ -291,6 +309,7 @@ rpms_rule = rule(
         "subjects_src": attrs.option(attrs.source(), default = None),
         # TODO: refactor this into a more obvious interface
         "unnamed_deps_or_srcs": attrs.list(attrs.one_of(attrs.dep(), attrs.source()), default = []),
+        "versionlock_hard_enforce": attrs.bool(default = True),
     },
 )
 
@@ -299,7 +318,7 @@ def _reduce_rpm_features(left: feature_record | typing.Any, right: feature_recor
     f["analysis"] = structs.to_dict(left.analysis)
     f["analysis"]["data"] = structs.to_dict(f["analysis"]["data"])
     f["analysis"]["data"]["items"] = f["analysis"]["data"]["items"] + right.analysis.data.items
-    f["analysis"]["data"] = rpms_record(**f["analysis"]["data"])
+    f["analysis"]["data"] = structs.from_dict(f["analysis"]["data"])
     f["analysis"]["required_artifacts"] = f["analysis"]["required_artifacts"] + right.analysis.required_artifacts
     f["analysis"] = FeatureAnalysis(**f["analysis"])
     return feature_record(**f)

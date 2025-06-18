@@ -179,21 +179,34 @@ def _versionlock_query(
 
 
 def locked_packages(
-    *, sack: dnf.sack.Sack, versionlock: Mapping[str, str]
-) -> Dict[str, dnf.package.Package]:
+    *, sack: dnf.sack.Sack, versionlock: Mapping[str, str], hard_enforce: bool = True
+) -> Dict[str, Optional[dnf.package.Package]]:
     """
-    Turn a requested versionlock into a set of lockable packages. This allows
-    antlir2 to ignore the versionlock when it references a package that does not
-    actually exist (which unfortunately happens all the time with the bad data
-    quality we have to work with).
+    Turn a requested versionlock into a set of lockable packages, or report that
+    the lock for that package cannot be satisfied.
 
-    The philosophy here is that the image author requested an rpm. If the
-    environment owner provided a bad versionlock, ignoring that impossible
-    versionlock is better than to fail to satisfy the image author request for
-    this rpm to be installed when they have no control over the default
-    versionlock being applied to their image.
+    Historically, antlir2 used to be tolerant of versionlock information being
+    inaccurate and it was just a best-effort mechanism, but now our data is of
+    high enough quality to make a failure build-blocking.
+
+    The underlying idea is now that a missing versionlock is almost always due
+    to an image owner specifying their own versionlock override (because the
+    global ones are now of sufficiently high quality), and they should receive a
+    build failure if their lock cannot be satisfied.
     """
-    return {pkg.name: pkg for pkg in _versionlock_query(sack, versionlock)}
+    if hard_enforce:
+        lock = {k: None for k in versionlock.keys()}
+        # TODO(vmagro): a single blocklisted RPM is ok, but this **must** be
+        # properly solved if this list grows any larger. Even this single RPM
+        # really should just be fixed by fixing its versionlock information, but
+        # blocking it here is faster and easier and gets us safety across all
+        # other RPMs.
+        lock.pop("bnxtnvm")
+    else:
+        lock = {}
+    for pkg in _versionlock_query(sack, versionlock):
+        lock[pkg.name] = pkg
+    return lock
 
 
 def versionlock_sack(
@@ -202,11 +215,14 @@ def versionlock_sack(
     versionlock: Mapping[str, str],
     explicitly_installed_package_names: Set[str],
     excluded_rpms: Set[str],
+    hard_enforce: bool = True,
 ) -> None:
     locked_query = _versionlock_query(sack, versionlock)
 
-    # Only lock packages that had a valid versionlock
-    locked_names = {pkg.name for pkg in locked_query}
+    if hard_enforce:
+        locked_names = set(versionlock.keys())
+    else:
+        locked_names = {pkg.name for pkg in locked_query}
 
     # Explicitly installed package names are excluded from version lock queries.
     # Note that this is not the same as saying they are excluded from version

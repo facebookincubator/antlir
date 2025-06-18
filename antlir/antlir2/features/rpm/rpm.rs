@@ -122,6 +122,7 @@ pub struct RpmItem {
 pub struct Rpm {
     pub items: Vec<RpmItem>,
     pub driver_cmd: Vec<String>,
+    pub versionlock_hard_enforce: bool,
     #[serde(skip_deserializing)]
     pub internal_only_options: InternalOnlyOptions,
 }
@@ -190,6 +191,7 @@ impl antlir2_compile::CompileFeature for Rpm {
             DriverMode::Run,
             Some(plan.tx.into_inner()),
             &self.internal_only_options,
+            self.versionlock_hard_enforce,
         )
         .map(|_| ())
         .map_err(antlir2_compile::Error::from)
@@ -207,6 +209,7 @@ impl Rpm {
             DriverMode::Resolve,
             None,
             &Default::default(),
+            self.versionlock_hard_enforce,
         )?;
         if events.len() != 1 {
             return Err(Error::msg(
@@ -244,6 +247,7 @@ struct DriverSpec<'a> {
     resolved_transaction: Option<ResolvedTransaction>,
     ignore_scriptlet_errors: bool,
     layer_label: Label,
+    versionlock_hard_enforce: bool,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -505,6 +509,7 @@ fn run_dnf_driver(
     mode: DriverMode,
     resolved_transaction: Option<ResolvedTransaction>,
     internal_only_options: &InternalOnlyOptions,
+    versionlock_hard_enforce: bool,
 ) -> Result<Vec<DriverEvent>> {
     let items = items
         .iter()
@@ -536,6 +541,7 @@ fn run_dnf_driver(
         resolved_transaction,
         ignore_scriptlet_errors: internal_only_options.ignore_scriptlet_errors,
         layer_label: ctx.label().clone(),
+        versionlock_hard_enforce,
     };
 
     let root = match ctx.root_path() {

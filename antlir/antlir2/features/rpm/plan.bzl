@@ -66,7 +66,8 @@ def plan(
         dnf_excluded_rpms: list[str],
         target_arch: str,
         driver_cmd: RunInfo,
-        plan: Dependency) -> struct:
+        plan: Dependency,
+        versionlock_hard_enforce: bool) -> struct:
     tx = ctx.actions.declare_output(identifier, "rpm/transaction.json")
 
     dnf_repodatas = ctx.actions.anon_target(repodata_only_local_repos, {
@@ -92,6 +93,7 @@ def plan(
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(items, format = "--items={}"),
             cmd_args(driver_cmd, format = "--driver-cmd={}"),
+            "--versionlock-hard-enforce" if versionlock_hard_enforce else cmd_args(),
             cmd_args(tx.as_output(), format = "--out={}"),
         ),
         category = "rpm_plan",
@@ -130,7 +132,7 @@ def plan(
         tx_file = tx,
     )
 
-def rpm_planner(*, plan: Dependency, driver_cmd: RunInfo) -> Planner:
+def rpm_planner(*, plan: Dependency, driver_cmd: RunInfo, versionlock_hard_enforce: bool) -> Planner:
     return Planner(
         fn = _plan_fn,
         parent_layer_contents = True,
@@ -142,5 +144,6 @@ def rpm_planner(*, plan: Dependency, driver_cmd: RunInfo) -> Planner:
         kwargs = {
             "driver_cmd": driver_cmd,
             "plan": plan,
+            "versionlock_hard_enforce": versionlock_hard_enforce,
         },
     )
