@@ -73,6 +73,10 @@ impl Rootless {
         }
     }
 
+    pub fn get_if_initialized() -> Option<Self> {
+        INSTANCE.get().cloned()
+    }
+
     pub fn init_with_ids(setuid: Option<Uid>, setgid: Option<Gid>) -> Result<Self> {
         if let Some(i) = INSTANCE.get() {
             return Ok(*i);

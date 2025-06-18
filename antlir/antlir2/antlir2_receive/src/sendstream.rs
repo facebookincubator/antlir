@@ -17,8 +17,7 @@ use tracing::trace;
 
 use crate::Receive;
 
-pub(crate) fn recv_sendstream(args: &Receive, dst: &Path) -> Result<()> {
-    let wv = WorkingVolume::ensure()?;
+pub(crate) fn recv_sendstream(args: &Receive, dst: &Path, wv: &WorkingVolume) -> Result<()> {
     // make sure that working_dir is btrfs before we try to invoke
     // 'btrfs' so that we can fail with a nicely categorized error
     antlir2_btrfs::ensure_path_is_on_btrfs(wv.path())?;

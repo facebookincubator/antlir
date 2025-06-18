@@ -10,14 +10,19 @@
 use std::fmt::Debug;
 use std::fs::OpenOptions;
 use std::io::ErrorKind;
+use std::os::unix::fs::MetadataExt as _;
 use std::os::unix::fs::OpenOptionsExt;
+use std::os::unix::fs::chown;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use antlir2_rootless::Rootless;
 use nix::fcntl::Flock;
 use nix::fcntl::FlockArg;
 use nix::libc;
+use nix::unistd::getegid;
+use nix::unistd::geteuid;
 use tracing::trace;
 use uuid::Uuid;
 
@@ -131,7 +136,47 @@ impl WorkingVolume {
             },
         };
         let s = Self { _priv: () };
-        std::fs::create_dir_all(s.subvols_path()).map_err(Error::CreateWorkingVolume)?;
+        let subvols_dir = s.subvols_path();
+        std::fs::create_dir_all(&subvols_dir).map_err(Error::CreateWorkingVolume)?;
+        // TODO(vmagro): remove this in a couple weeks once all the
+        // currently-incorrect permissions have been fixed
+        let rootless = Rootless::get_if_initialized();
+        let meta = std::fs::metadata(&subvols_dir)?;
+        let expected_uid = rootless
+            .and_then(|r| r.unprivileged_uid())
+            .unwrap_or_else(geteuid)
+            .as_raw();
+        let expected_gid = rootless
+            .and_then(|r| r.unprivileged_gid())
+            .unwrap_or_else(getegid)
+            .as_raw();
+        let mut fix_with_sudo = false;
+        if meta.uid() != expected_uid || meta.gid() != expected_gid {
+            if let Some(rootless) = rootless {
+                if let Err(e) = rootless
+                    .as_root(|| chown(&subvols_dir, Some(expected_uid), Some(expected_gid)))
+                    .map_err(std::io::Error::other)
+                {
+                    fix_with_sudo = true;
+                }
+            } else {
+                fix_with_sudo = true;
+            }
+        }
+        if fix_with_sudo {
+            let out = Command::new("sudo")
+                .arg("chown")
+                .arg(format!("{expected_uid}:{expected_gid}"))
+                .arg(&subvols_dir)
+                .output()?;
+            if !out.status.success() {
+                return Err(std::io::Error::other(format!(
+                    "Failed to chown {subvols_dir:?} to {expected_uid}:{expected_gid}: {}",
+                    String::from_utf8_lossy(&out.stderr)
+                ))
+                .into());
+            }
+        }
         Ok(s)
     }
 
