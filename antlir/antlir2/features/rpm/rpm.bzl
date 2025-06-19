@@ -13,6 +13,7 @@ load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
     "ParseTimeFeature",
+    "Planner",
     "feature_record",
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -28,21 +29,9 @@ def _looks_like_label(s: str) -> bool:
         return True
     return False
 
-__VERSIONLOCK_HARD_ENFORCEMENT_KWARG = select({
-    # TODO(vmagro): there are enough broken Controll's that this needs to be
-    # temporarily turned off again
-    "DEFAULT": False,
-    # TODO(vmagro): come up with a better way to handle this, but for now just
-    # blocklist the small amount of images that use these non-standard
-    # sub-flavo, since there are locked versions that won't exist in these
-    # repos.
-    "antlir//antlir/antlir2/facebook/flavor/centos9:corp": False,
-    "antlir//antlir/antlir2/facebook/flavor/centos9:public-only": False,
-    "antlir//antlir/antlir2/os:rhel8": False,
-    "antlir//antlir/antlir2/os:rhel8.8": False,
-    "antlir//antlir/antlir2/os:rhel9": False,
-    "antlir//antlir/antlir2/os:rhel9.2": False,
-})
+# TODO(vmagro): there are enough broken Controll's that this needs to be
+# temporarily turned off again
+VERSIONLOCK_HARD_ENFORCE_SELECT = False
 
 def _install_common(
         action: str,
@@ -91,7 +80,7 @@ def _install_common(
         kwargs = {
             "action": action,
             "subjects": subjects,
-            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
+            "versionlock_hard_enforce": VERSIONLOCK_HARD_ENFORCE_SELECT,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -166,7 +155,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
         kwargs = {
             "action": "remove_if_exists",
             "subjects": rpms,
-            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
+            "versionlock_hard_enforce": VERSIONLOCK_HARD_ENFORCE_SELECT,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -195,7 +184,7 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
         kwargs = {
             "action": "remove",
             "subjects": rpms,
-            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
+            "versionlock_hard_enforce": VERSIONLOCK_HARD_ENFORCE_SELECT,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -221,7 +210,7 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
                 selects.join(name = name, stream = stream),
                 lambda sels: ":".join([sels.name, sels.stream]),
             )],
-            "versionlock_hard_enforce": __VERSIONLOCK_HARD_ENFORCEMENT_KWARG,
+            "versionlock_hard_enforce": VERSIONLOCK_HARD_ENFORCE_SELECT,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
@@ -311,7 +300,7 @@ rpms_rule = rule(
         "subjects_src": attrs.option(attrs.source(), default = None),
         # TODO: refactor this into a more obvious interface
         "unnamed_deps_or_srcs": attrs.list(attrs.one_of(attrs.dep(), attrs.source()), default = []),
-        "versionlock_hard_enforce": attrs.bool(default = True),
+        "versionlock_hard_enforce": attrs.bool(default = VERSIONLOCK_HARD_ENFORCE_SELECT),
     },
 )
 
@@ -322,5 +311,12 @@ def _reduce_rpm_features(left: feature_record | typing.Any, right: feature_recor
     f["analysis"]["data"]["items"] = f["analysis"]["data"]["items"] + right.analysis.data.items
     f["analysis"]["data"] = structs.from_dict(f["analysis"]["data"])
     f["analysis"]["required_artifacts"] = f["analysis"]["required_artifacts"] + right.analysis.required_artifacts
+    f["analysis"]["planner"] = structs.to_dict(f["analysis"]["planner"])
+    f["analysis"]["planner"]["kwargs"] = dict(f["analysis"]["planner"]["kwargs"])
+    f["analysis"]["planner"]["kwargs"]["versionlock_hard_enforce"] = (
+        f["analysis"]["planner"]["kwargs"]["versionlock_hard_enforce"] and
+        right.analysis.planner.kwargs["versionlock_hard_enforce"]
+    )
+    f["analysis"]["planner"] = Planner(**f["analysis"]["planner"])
     f["analysis"] = FeatureAnalysis(**f["analysis"])
     return feature_record(**f)
