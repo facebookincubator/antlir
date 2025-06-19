@@ -201,7 +201,7 @@ def locked_packages(
         # really should just be fixed by fixing its versionlock information, but
         # blocking it here is faster and easier and gets us safety across all
         # other RPMs.
-        lock.pop("bnxtnvm")
+        lock.pop("bnxtnvm", None)
     else:
         lock = {}
     for pkg in _versionlock_query(sack, versionlock):
