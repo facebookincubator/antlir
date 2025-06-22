@@ -36,7 +36,6 @@ def _single_image_python_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
         PythonToolchainInfo(
             build_standalone_binaries_locally = True,
             compile = ctx.attrs.compile,
-            default_sitecustomize = ctx.attrs.default_sitecustomize,
             fail_with_message = ctx.attrs.fail_with_message[RunInfo],
             host_interpreter = ctx.attrs.host_python[RunInfo],
             generate_static_extension_info = ctx.attrs.generate_static_extension_info,
@@ -59,7 +58,6 @@ _single_image_python_toolchain = rule(
     impl = _single_image_python_toolchain_impl,
     attrs = {
         "compile": attrs.default_only(attrs.source(default = "prelude//python/tools:compile.py")),
-        "default_sitecustomize": attrs.source(default = "prelude//python/tools/make_par:sitecustomize.py"),
         "fail_with_message": attrs.default_only(attrs.dep(providers = [RunInfo], default = "prelude//python/tools:fail_with_message")),
         "generate_static_extension_info": attrs.default_only(attrs.dep(default = "prelude//python/tools:generate_static_extension_info")),
         "host_python": attrs.exec_dep(),
