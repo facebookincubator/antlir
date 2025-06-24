@@ -1,11 +1,25 @@
+load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
 
 rpm_library(
-    name = "freetype",
+    name = "freetype-distro",
     header_glob = [
         ("/usr/include/freetype2", "**/*.h"),
     ],
+    lib = "libfreetype.so",
+    rpm = "freetype-devel",
+    visibility = ["PUBLIC"],
+)
+
+alias(
+    name = "freetype",
+    actual = select({
+        "DEFAULT": ":freetype-distro",
+        "antlir//antlir/antlir2/os:centos10": ":freetype-distro",
+        # TEE needs a newer freetype for FT_Get_Transform (introduced in 2.12), so use that.
+        "antlir//antlir/antlir2/os:centos9": "fbsource//third-party/freetype/2.13.2:freetype",
+    }),
     visibility = ["PUBLIC"],
 )
