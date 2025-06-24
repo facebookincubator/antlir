@@ -1,0 +1,12 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+[
+    rpm_library(
+        name = lib,
+        rpm = "libwebp-devel",
+        visibility = ["PUBLIC"],
+    )
+    for lib in ("webp", "webpmux", "webpdemux")
+]

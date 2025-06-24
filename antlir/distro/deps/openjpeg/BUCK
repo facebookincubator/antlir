@@ -1,0 +1,14 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "openjpeg",
+    header_glob = [
+        ("/usr/include/openjpeg-2.4", "*.h"),
+    ],
+    # Dumb, but doesn't ship with a generic .so
+    lib = "libopenjp2.so.7",
+    rpm = "openjpeg2-devel",
+    visibility = ["PUBLIC"],
+)

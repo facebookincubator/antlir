@@ -1,11 +1,22 @@
-load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
 
-# This exists only because it's an implicit dep added on every cxx target. If it
-# becomes needed by any binaries using the antlir toolchain, someone will need
-# to figure out how to present it.
-prebuilt_cxx_library(
+rpm_library(
+    name = "omp",
+    header_glob = [
+        ("/usr/lib/clang/19/include", "*.h"),
+    ],
+    rpm = "libomp-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
     name = "headers",
+    header_glob = [
+        ("/usr/lib/clang/19/include", "*.h"),
+    ],
+    header_only = True,
+    rpm = "libomp-devel-19.1.7",
     visibility = ["PUBLIC"],
 )

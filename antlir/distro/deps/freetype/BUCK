@@ -1,0 +1,11 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "freetype",
+    header_glob = [
+        ("/usr/include/freetype2", "**/*.h"),
+    ],
+    visibility = ["PUBLIC"],
+)
