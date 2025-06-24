@@ -6,4 +6,11 @@ rpm_library(
     name = "tiff",
     rpm = "libtiff-devel",
     visibility = ["PUBLIC"],
+    deps = [
+        # fbcode libtiff depends on libjpeg-turbo, but the libtiff centos rpm
+        # doesn't declare this dependency, so let's force it.
+        "fbcode//antlir/distro/deps/libjpeg-turbo:jpeg",
+        # Also has a dep on jbigkit.
+        "fbcode//antlir/distro/deps/jbigkit:jbigkit",
+    ],
 )
