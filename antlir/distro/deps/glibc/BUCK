@@ -1,12 +1,15 @@
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
 
 oncall("antlir")
 
 sysroot_dep(
     name = "c",
-    # TODO(T213442795): hardcoding this version is gross but antlir doesn't
-    # understand ld scripts
-    lib = "libc.so.6",
+    extract_soname = False,
+    lib = "libc.so",
+    provided = True,
+    soname = "libc.so.6",
+    supports_shared_library_interface = False,
 )
 
 sysroot_dep(
@@ -15,9 +18,26 @@ sysroot_dep(
 
 sysroot_dep(
     name = "m",
-    # TODO(T213442795): hardcoding this version is gross but antlir doesn't
-    # understand ld scripts
+    extract_soname = False,
+    # This needs to refer to the actual library and not the linker script
+    # because python omnibus linking wants to extract symbols from the library.
     lib = "libm.so.6",
+    link_without_soname = True,
+    soname = "libm.so.6",
+    exported_deps = arch_select(
+        aarch64 = [],
+        x86_64 = [":mvec"],
+    ),
+)
+
+sysroot_dep(
+    name = "mvec",
+    lib = "libmvec.so",
+    soname = "libmvec.so",
+    target_compatible_with = arch_select(
+        aarch64 = ["antlir//antlir/distro:incompatible"],
+        x86_64 = [],
+    ),
 )
 
 sysroot_dep(

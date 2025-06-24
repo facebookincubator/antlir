@@ -13,6 +13,7 @@ def sysroot_dep(
         archive: bool = False,
         lib: str | None = None,
         visibility: list[str] = ["PUBLIC"],
+        extract_soname: bool | None = None,
         **kwargs):
     """
     A cxx_library target that exposes a library that exists in the sysroot.
@@ -25,14 +26,19 @@ def sysroot_dep(
         path = "/usr/lib64/" + lib,
         rootless = True,
         visibility = [],
+        target_compatible_with = kwargs.get("target_compatible_with"),
     )
+
+    do_extract_soname = not archive
+    if extract_soname != None:
+        do_extract_soname = extract_soname
 
     prebuilt_cxx_library(
         name = name + "--actual",
         shared_lib = (":" + lib) if not archive else None,
         static_lib = (":" + lib) if archive else None,
         preferred_linkage = "shared" if not archive else "static",
-        extract_soname = not archive,
+        extract_soname = do_extract_soname,
         labels = ["antlir-distro-dep"],
         visibility = [],
         **kwargs
