@@ -114,6 +114,10 @@ def rpm_library(
         target_compatible_with = target_compatible_with,
     )
 
+    exported_linker_flags = kwargs.pop("exported_linker_flags", [])
+    if support_linker_l:
+        exported_linker_flags.append("-L$(location :{}--outputs[L])".format(name))
+
     prebuilt_cxx_library(
         name = name + "--actual",
         header_dirs = [":{}--outputs[headers]".format(name)],
@@ -121,7 +125,7 @@ def rpm_library(
         static_lib = ":{}--outputs[{}]".format(name, archive_name) if archive else None,
         header_only = header_only,
         extract_soname = kwargs.pop("extract_soname", not archive),
-        exported_linker_flags = ["-L$(location :{}--outputs[L])".format(name)] if support_linker_l else [],
+        exported_linker_flags = exported_linker_flags,
         preferred_linkage = "shared" if not archive else "static",
         target_compatible_with = target_compatible_with,
         labels = [

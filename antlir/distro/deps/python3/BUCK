@@ -10,6 +10,9 @@ any_version_header_glob = [
 
 rpm_library(
     name = "python3",
+    exported_linker_flags = [
+        "-Wl,--dynamic-list=$(location fbsource//third-party/python/3.12:capi-functions-list)",
+    ],
     header_glob = internal_external(
         fb = select({
             "DEFAULT": any_version_header_glob,
@@ -22,6 +25,7 @@ rpm_library(
         }),
         oss = any_version_header_glob,
     ),
+    lib = "/usr/lib64/libpython3.12.so",
     rpm = internal_external(
         fb = select({
             "DEFAULT": "python3-devel",
