@@ -1,22 +1,43 @@
 load("//antlir/bzl:build_defs.bzl", "alias")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
+load(":defs.bzl", "libstdcxx_headers", "select_format_triple")
 
 oncall("antlir")
 
 sysroot_dep(
     name = "stdc++",
-    # Forcibly pass this linker flag as well otherwise some symbols cannot be
-    # found, not sure why. It still comes from the sysroot image though, so
-    # everything is still repo/image-hermetic.
-    exported_linker_flags = ["-lstdc++"],
-    # Copy the library into the symlink tree in dev builds
-    lib = "libstdc++.so.6",
-    # TODO: it would be great to use exported_lang_preprocessor_flags to set
-    # -std=c++20, but the c++ ones seem to always be applied, even when
-    # compiling .c sources, so instead it's attached to the toolchain
-    # preprocessor flags
+    extract_soname = False,
+    header_dirs = internal_external(
+        fb = select({
+            "DEFAULT": [],
+            "antlir//antlir/antlir2/os:centos10": libstdcxx_headers("14"),
+            # Use a newer gcc on centos9 (> 11) to roughly match the fbcode libstdc++ version.
+            "antlir//antlir/antlir2/os:centos9": libstdcxx_headers(
+                "14",
+                prefix = "/opt/rh/gcc-toolset-14/root",
+            ),
+        }),
+        oss = select({
+            "DEFAULT": [],
+            "antlir//antlir/antlir2/os:centos10": libstdcxx_headers("14"),
+            "antlir//antlir/antlir2/os:centos9": libstdcxx_headers("11"),
+        }),
+    ),
+    lib = internal_external(
+        fb = select({
+            "DEFAULT": "libstdc++.so.6",
+            "antlir//antlir/antlir2/os:centos10": "libstdc++.so.6",
+            # Use a newer libstdc++ on centos9 (> 11) to roughly match the fbcode libstdc++ version.
+            "antlir//antlir/antlir2/os:centos9": select_format_triple("/opt/rh/gcc-toolset-14/root/usr/lib/gcc/{triple}/14/libstdc++.so"),
+        }),
+        oss = "libstdc++.so.6",
+    ),
+    provided = True,
+    soname = "libstdc++.so.6",
+    supports_shared_library_interface = False,
     visibility = ["PUBLIC"],
 )
 
@@ -29,22 +50,21 @@ alias(
     visibility = ["PUBLIC"],
 )
 
-prebuilt_cxx_library(
-    name = "stdc++-legacy",
-    exported_preprocessor_flags = ["-I$(location //antlir/distro/deps:sysroot)/usr/include/c++/11/backward"],
-    visibility = ["PUBLIC"],
-)
-
 # This is not needed as a separate library on the versions of clang that we
 # support, but keep it around for the buck2 graph
 prebuilt_cxx_library(
     name = "stdc++fs",
+    soname = "libstdc++.so.6",
     visibility = ["PUBLIC"],
 )
 
 sysroot_dep(
     name = "gcc_s",
+    extract_soname = False,
     lib = "libgcc_s.so.1",
+    link_without_soname = True,
+    provided = True,
+    supports_shared_library_interface = False,
 )
 
 rpm_library(
