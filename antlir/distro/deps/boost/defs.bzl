@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/distro/deps:dep_distance_extender.bzl", "dep_distance_extender")
 load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
@@ -38,3 +39,14 @@ def boost_system_library(
         actual = ":{}--actual".format(name),
         visibility = ["PUBLIC"],
     )
+
+    # These aliases are totally useless since CentOS has nothing to do with
+    # fbcode, Android or Apple platforms, but it breaks some 'buck2 uquery's and
+    # janky macros that append platform suffixes like this
+    # Boost uses xplat suffixed targets since it's used in a variety of ecosystems.
+    for suffix in ["Fbcode", "Apple", "Android"]:
+        alias(
+            name = name + suffix,
+            actual = ":" + name,
+            visibility = ["PUBLIC"],
+        )

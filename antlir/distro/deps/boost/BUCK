@@ -8,15 +8,23 @@ oncall("antlir")
 image.layer(
     name = "layer",
     features = [
-        feature.rpms_install(rpms = ["boost-devel"]),
+        feature.rpms_install(subjects = select({
+            "//antlir/antlir2/os:centos10": ["boost-devel"],
+            "//antlir/antlir2/os:centos9": ["boost1.78-devel"],
+            "DEFAULT": ["boost-devel"],
+        })),
     ],
 )
 
 hoist(
     name = "headers",
+    out = "boost",
     dir = True,
     layer = ":layer",
-    path = "/usr/include/boost",
+    path = select({
+        "//antlir/antlir2/os:centos10": "/usr/include/boost",
+        "DEFAULT": "/usr/include/boost1.78/boost",
+    }),
 )
 
 boost_system_library(
@@ -25,16 +33,12 @@ boost_system_library(
 )
 
 boost_system_library(
-    name = "boost_system",
-)
-
-boost_system_library(
     name = "boost_thread",
     # TODO(T213442795): hardcoding this version is gross but antlir doesn't
     # understand ld scripts
     path = select({
         "//antlir/antlir2/os:centos10": "/usr/lib64/libboost_thread.so.1.83.0",
-        "DEFAULT": "/usr/lib64/libboost_thread.so.1.75.0",
+        "DEFAULT": "/usr/lib64/libboost_thread.so.1.78.0",
     }),
     exported_deps = [":boost_system"],
 )
@@ -42,6 +46,10 @@ boost_system_library(
 [
     boost_system_library(
         name = "boost_" + name,
+        path = select({
+            "//antlir/antlir2/os:centos10": "/usr/lib64/libboost_{}.so.1.83.0".format(name),
+            "DEFAULT": "/usr/lib64/libboost_{}.so.1.78.0".format(name),
+        }),
     )
     for name in [
         "chrono",
@@ -49,6 +57,7 @@ boost_system_library(
         "filesystem",
         "regex",
         "serialization",
+        "system",
     ]
 ]
 
