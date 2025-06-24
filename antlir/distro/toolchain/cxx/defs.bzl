@@ -47,6 +47,15 @@ def _single_image_cxx_toolchain(
             "ovr_config//cpu:x86_64": "x86_64-redhat-linux-gnu",
         }),
         "--sysroot=$(location {})".format(sysroot),
+    ] + select({
+        "DEFAULT": [],
+        # Include arch-specific flags that are set by fbcode cxx toolchains.
+        "ovr_config//cpu:x86_64": [
+            "-march=haswell",
+            "-mtune=skylake",
+        ],
+    }) + [
+        "-fopenmp",
     ]
 
     native.cxx_toolchain(
@@ -65,20 +74,41 @@ def _single_image_cxx_toolchain(
         cxx_preprocessor_flags = [
             # TODO: this may not always be correct, but I cannot get it to work in
             # any permutation of the stdc++ target, so I'm putting the std here
-            "-std=c++20",
+            "-std=gnu++20",
         ],
         exec_compatible_with = [
             "ovr_config//os:linux",
         ],
         link_ordering = "topological",
         linker = _layer_tool(name, "clang", os),
-        linker_flags = ["-fuse-ld=lld"] + _llvm_base_args,
+        linker_flags = [
+            # Allow text relocations in the output.  Text sections (i.e. compiled code)
+            # may require relocations.  As code segments are  marked as read-only,
+            # LLD would not want to modify it (to apply the relocation) by default.
+            # We'll allow that; in fact PIC ELFs require this.  Gold has `notext`
+            # enabled by default, and BFD ld always allows that; match their
+            # behavior.  https://reviews.llvm.org/D30530
+            "-Wl,-z,notext",
+            # Partial relro
+            "-Wl,-z,relro",
+            # Garbage collect sections to control binary size (S184081).
+            # Size reduction in dynamically linked binaries will be less than that of
+            # statically linked binaries, only non-exported symbols could be marked
+            # "live" and be eligible for removal.
+            "-Wl,--gc-sections",
+            # LLD is faster and uses less RAM than GOLD.
+            # A Buck target may opt-out of linking with lld by using '-fuse-ld=gold'.
+            "-fuse-ld=lld",
+            "-nodefaultlibs",
+            "-Wl,-nostdlib",
+        ] + _llvm_base_args,
         linker_type = "gnu",
         generate_linker_maps = False, # @oss-enable
         nm = _layer_tool(name, "llvm-nm", os),
         objcopy_for_shared_library_interface = _layer_tool(name, "objcopy", os),
         requires_archives = True,
         shared_library_interface_type = "disabled",
+        shared_library_interface_producer = "fbcode//tools/shlib_interfaces:mk_elf_shlib_intf.dotslash",
         strip = _layer_tool(name, "strip", os),
         visibility = visibility,
     )

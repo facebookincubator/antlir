@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//decls:python_common.bzl", "python_common")
 load(
     "@prelude//python:toolchain.bzl",
     "PythonPlatformInfo",
@@ -38,6 +39,9 @@ def _single_image_python_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             compile = ctx.attrs.compile,
             host_interpreter = ctx.attrs.host_python[RunInfo],
             interpreter = RunInfo(cmd_args(ctx.attrs.interpreter)),
+            gen_lpar_bootstrap = ctx.attrs.gen_lpar_bootstrap,
+            make_py_package_live = ctx.attrs.make_py_package_live,
+            make_py_package_standalone = ctx.attrs.make_py_package_standalone[RunInfo],
             package_style = "standalone",
             pex_extension = ".pex",
             version = ctx.attrs.python_version,
@@ -49,10 +53,14 @@ _single_image_python_toolchain = rule(
     impl = _single_image_python_toolchain_impl,
     attrs = {
         "compile": attrs.default_only(attrs.source(default = "prelude//python/tools:compile.py")),
+        "gen_lpar_bootstrap": attrs.exec_dep(default = "prelude//python/tools/make_par:gen_lpar_bootstrap"),
         "host_python": attrs.exec_dep(),
         "interpreter": attrs.string(default = "python3"),
+        "make_py_package_live": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = "fbcode//tools/make_par:rust_make_par")),
+        "make_py_package_standalone": attrs.default_only(attrs.dep(providers = [RunInfo], default = "fbcode//tools/make_par:buck_make_par")),
         "platform_name": attrs.string(),
         "python_version": attrs.option(attrs.string(), default = None),
+        "_python_internal_tools": python_common.internal_tools_arg(),
     },
     is_toolchain_rule = True,
 )

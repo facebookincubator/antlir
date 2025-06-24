@@ -9,9 +9,9 @@ image.layer(
     name = "layer",
     features = [
         feature.rpms_install(rpms = [
-            "clang",
-            "lld",
-            "llvm",
+            "clang-19.1.7",
+            "lld-19.1.7",
+            "llvm-19.1.7",
         ]),
         "//antlir/distro:cleanup",
     ],
