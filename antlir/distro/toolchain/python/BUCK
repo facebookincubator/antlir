@@ -38,12 +38,12 @@ python_interpreter(
         # as part of building the PAR (used for py_compile, etc). It will have the
         # runtime:fbcode constraint, which the antlir target platform will not.
         "ovr_config//runtime/constraints:fbcode": select({
-            os.select_key: "$(exe :interpreter--{}--{})".format(
+            os.select_key: "$(location :interpreter--{}--{})".format(
                 os.name,
                 os.python.interpreter,
             )
             for os in _OSES_WITH_PLATFORM_TOOLCHAIN
-        } | {"DEFAULT": "$(exe :interpreter--{}--{})".format(
+        } | {"DEFAULT": "$(location :interpreter--{}--{})".format(
             _OSES_WITH_PLATFORM_TOOLCHAIN[0].name,
             _OSES_WITH_PLATFORM_TOOLCHAIN[0].python.interpreter,
         )}),
