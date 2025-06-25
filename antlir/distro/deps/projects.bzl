@@ -1,4 +1,4 @@
-# @generated SignedSource<<2eda3535e3896ca2fa85fd0776d0082c>>
+# @generated SignedSource<<85047ebec4814f101d4537e0ffb1a49e>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -26,6 +26,7 @@ PROJECTS = [
     ("double_conversion", "double_conversion"),
     ("elfutils", "elf"),
     ("fmt", "fmt"),
+    ("freetype", "freetype"),
     ("freetype", "freetype-distro"),
     ("gflags", "gflags"),
     ("glibc", "c"),
@@ -40,6 +41,7 @@ PROJECTS = [
     ("graphite2", "graphite2"),
     ("gtest", "gtest"),
     ("harfbuzz", "harfbuzz"),
+    ("icu", "common"),
     ("jbigkit", "jbigkit"),
     ("jemalloc", "headers"),
     ("jemalloc", "jemalloc"),

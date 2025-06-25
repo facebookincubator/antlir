@@ -21,5 +21,7 @@ alias(
         # TEE needs a newer freetype for FT_Get_Transform (introduced in 2.12), so use that.
         "antlir//antlir/antlir2/os:centos9": "fbsource//third-party/freetype/2.13.2:freetype",
     }),
+    # Make sure this is generated in projects.bzl.
+    labels = ["antlir-distro-dep"],
     visibility = ["PUBLIC"],
 )
