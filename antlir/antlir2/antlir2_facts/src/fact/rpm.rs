@@ -7,41 +7,34 @@
 
 use std::collections::BTreeSet;
 
+use bon::Builder;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use serde::Serialize;
-use typed_builder::TypedBuilder;
 
 use super::Fact;
 use super::Key;
 use crate::fact_impl;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, TypedBuilder)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Builder)]
+#[builder(on(String, into))]
 pub struct Rpm {
-    #[builder(setter(into))]
     name: String,
     #[serde(default, skip_serializing_if = "skip_epoch")]
     #[builder(default)]
     epoch: u64,
-    #[builder(setter(into))]
     version: String,
-    #[builder(setter(into))]
     release: String,
-    #[builder(setter(into))]
     arch: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[builder(default)]
     changelog: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[builder(default)]
     os: Option<String>,
-    #[builder(default)]
-    size: u64,
-    #[builder(setter(into))]
-    source_rpm: String,
-    #[builder(setter(into))]
-    pkgid: String,
+    #[serde(default)]
+    size: Option<u64>,
+    source_rpm: Option<String>,
+    pkgid: Option<String>,
 }
 
 fn skip_epoch(epoch: &u64) -> bool {
@@ -103,12 +96,12 @@ impl Rpm {
         self.os.as_deref()
     }
 
-    pub fn size(&self) -> u64 {
+    pub fn size(&self) -> Option<u64> {
         self.size
     }
 
-    pub fn source_rpm(&self) -> &str {
-        &self.source_rpm
+    pub fn source_rpm(&self) -> Option<&str> {
+        self.source_rpm.as_deref()
     }
 
     pub fn evra(&self) -> String {
@@ -147,9 +140,8 @@ mod tests {
             .version("1.2.3")
             .release("4")
             .arch("x86_64")
-            .changelog(Some("- CVE-2024-1234".into()))
+            .changelog("- CVE-2024-1234")
             .source_rpm("foo.src.rpm")
-            .pkgid("pkgid")
             .build();
         assert_eq!(rpm.patched_cves(), BTreeSet::from(["CVE-2024-1234"]));
     }

@@ -40,7 +40,7 @@ struct ManifestRpm {
     patched_cves: Vec<String>,
     os: Option<String>,
     size: u64,
-    source_rpm: String,
+    source_rpm: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -70,8 +70,8 @@ impl From<Rpm> for ManifestRpm {
                 .map(|cve| cve.to_owned())
                 .collect(),
             os: rpm.os().map(|os| os.to_owned()),
-            size: rpm.size(),
-            source_rpm: rpm.source_rpm().to_owned(),
+            size: rpm.size().unwrap_or_default(),
+            source_rpm: rpm.source_rpm().map(|s| s.to_owned()),
         }
     }
 }
