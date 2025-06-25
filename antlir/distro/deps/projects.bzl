@@ -1,5 +1,6 @@
-# @generated SignedSource<<08ac434f4cd526afbba4d46f9d9db545>>
+# @generated SignedSource<<2eda3535e3896ca2fa85fd0776d0082c>>
 PROJECTS = [
+    ("abseil", "abseil"),
     ("binutils", "iberty"),
     ("boost", "boost"),
     ("boost", "boost_algorithm"),
@@ -25,12 +26,13 @@ PROJECTS = [
     ("double_conversion", "double_conversion"),
     ("elfutils", "elf"),
     ("fmt", "fmt"),
-    ("freetype", "freetype"),
+    ("freetype", "freetype-distro"),
     ("gflags", "gflags"),
     ("glibc", "c"),
     ("glibc", "crypt"),
     ("glibc", "dl"),
     ("glibc", "m"),
+    ("glibc", "mvec"),
     ("glibc", "pthread"),
     ("glibc", "rt"),
     ("glog", "glog"),
@@ -52,7 +54,6 @@ PROJECTS = [
     ("libgcc", "gcc_s"),
     ("libgcc", "stdc++"),
     ("libgcc", "stdc++-header-unit"),
-    ("libgcc", "stdc++-legacy"),
     ("libgcc", "stdc++fs"),
     ("libjpeg-turbo", "jpeg"),
     ("libmcrypt", "libmcrypt"),
