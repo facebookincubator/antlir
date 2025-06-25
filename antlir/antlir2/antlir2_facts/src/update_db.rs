@@ -5,9 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::ffi::OsStr;
 use std::io::ErrorKind;
-use std::os::unix::ffi::OsStrExt;
+use std::io::Seek;
+use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -33,7 +33,6 @@ use anyhow::ensure;
 use bon::builder;
 use clap::Parser;
 use fxhash::FxHashSet;
-use itertools::Itertools;
 use jwalk::WalkDir;
 use tracing::warn;
 
@@ -134,20 +133,7 @@ fn populate_usergroups(tx: &mut Transaction, root: &Path) -> Result<()> {
     Ok(())
 }
 
-macro_rules! decode_rpm_field {
-    ($id:ident) => {
-        std::str::from_utf8($id).context(stringify!(while decoding $id))
-    };
-    ($id:ident, opt) => {
-        {
-            let s = std::str::from_utf8($id).context(stringify!(while decoding $id))?;
-            match s {
-                "(none)" => Ok::<_, anyhow::Error>(None),
-                _ => Ok(Some(s)),
-            }
-        }
-    };
-}
+const RPM_FACTS_SCRIPT: &str = include_str!("update_db/rpm_facts.py");
 
 fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
     let mut remove: FxHashSet<_> = tx.all_keys::<Rpm>()?.collect();
@@ -156,6 +142,7 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
             let isol = unshare(
                 IsolationContext::builder(build_appliance)
                     .ephemeral(false)
+                    .readonly()
                     .inputs(("/__antlir2__/root", root))
                     .working_directory(Path::new("/"))
                     .build(),
@@ -175,70 +162,47 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
                 warn!("rpm db does not exist in image {}", root.display());
                 return Ok(());
             }
-            let mut cmd = isol.command("rpm")?;
-            cmd.arg("--root").arg("/__antlir2__/root");
+            let mut cmd = isol.command("/usr/libexec/platform-python")?;
+            cmd.arg("-").arg("--installroot").arg("/__antlir2__/root");
             cmd
         }
         None => {
             let isol = unshare(
                 IsolationContext::builder(root)
                     .ephemeral(false)
+                    .readonly()
                     .working_directory(Path::new("/"))
                     .build(),
             )
             .context("while preparing rpm unshare")?;
-            isol.command("rpm")?
+            let mut cmd = isol.command("/usr/libexec/platform-python")?;
+            cmd.arg("-").arg("--installroot").arg("/");
+            cmd
         }
     };
-    let out = list_cmd
-        .arg("-qa")
-        .arg("--queryformat")
-        .arg(OsStr::from_bytes(
-            b"%{NAME}\xff%{EPOCH}\xff%{VERSION}\xff%{RELEASE}\xff%{ARCH}\xff%{CHANGELOGTEXT}\xff%{OS}\xff%{SIZE}\xff%{SOURCERPM}\xff%{PKGID}\xff",
-        ))
-        .output();
-    if matches!(out, Err(ref e) if e.kind() == ErrorKind::NotFound) {
-        return Ok(Default::default());
-    }
-    let out = out.context("while querying installed rpms")?;
+    let mut finder_script_mfd = memfd::MemfdOptions::default()
+        .close_on_exec(false)
+        .create("rpm_facts.py")?
+        .into_file();
+    finder_script_mfd.write_all(RPM_FACTS_SCRIPT.as_bytes())?;
+    finder_script_mfd.rewind()?;
+    list_cmd.stdin(finder_script_mfd);
+    let out = list_cmd.output().context("while running fact-finder")?;
     ensure!(
         out.status.success(),
-        "rpm -qa failed: {}",
+        "rpm fact-finder failed: {}",
         String::from_utf8_lossy(&out.stderr)
     );
-    for (name, epoch, version, release, arch, changelog, os, size, source_rpm, pkgid) in
-        out.stdout.split(|b| *b == 0xff).tuples()
-    {
-        let name = decode_rpm_field!(name)?;
-        let epoch = decode_rpm_field!(epoch, opt)?;
-        let version = decode_rpm_field!(version)?;
-        let release = decode_rpm_field!(release)?;
-        let arch = decode_rpm_field!(arch)?;
-        let changelog = decode_rpm_field!(changelog, opt)?;
-        let os = decode_rpm_field!(os, opt)?;
-        let size = decode_rpm_field!(size, opt)?;
-        let source_rpm = decode_rpm_field!(source_rpm)?;
-        let pkgid = decode_rpm_field!(pkgid)?;
-        let rpm = Rpm::builder()
-            .name(name)
-            .epoch(match epoch {
-                None => 0,
-                Some(e) => e
-                    .parse()
-                    .with_context(|| format!("while parsing epoch '{e}'"))?,
-            })
-            .version(version)
-            .release(release)
-            .arch(arch)
-            .changelog(changelog.map(|s| s.into()))
-            .os(os.map(|s| s.into()))
-            .size(size.map_or(Ok(0), |s| {
-                s.parse()
-                    .with_context(|| format!("while parsing size '{s}'"))
-            })?)
-            .source_rpm(source_rpm)
-            .pkgid(pkgid)
-            .build();
+
+    let facts: Vec<Rpm> = serde_json::from_slice(&out.stdout).with_context(|| {
+        format!(
+            "while parsing rpm facts: {}\n{}",
+            String::from_utf8_lossy(&out.stdout),
+            String::from_utf8_lossy(&out.stderr),
+        )
+    })?;
+
+    for rpm in facts {
         remove.remove(&rpm.key());
         tx.insert(&rpm)
             .with_context(|| format!("while inserting rpm '{rpm}'"))?;

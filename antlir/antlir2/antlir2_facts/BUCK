@@ -4,7 +4,10 @@ oncall("antlir")
 
 rust_library(
     name = "antlir2_facts",
-    srcs = glob(["src/**/*.rs"]),
+    srcs = glob([
+        "src/**/*.rs",
+        "src/update_db/*",
+    ]),
     compatible_with = [
         "ovr_config//os:freebsd",
         "ovr_config//os:linux",
@@ -19,8 +22,8 @@ rust_library(
         "bon",
         "clap",
         "fxhash",
-        "itertools",
         "jwalk",
+        "memfd",
         "once_cell",
         "regex",
         "rusqlite",
@@ -29,7 +32,6 @@ rust_library(
         "static_assertions",
         "thiserror",
         "tracing",
-        "typed-builder",
         "typetag",
         ":antlir2_facts_macro",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
