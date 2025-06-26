@@ -4,6 +4,7 @@ oncall("antlir")
 
 rpm_library(
     name = "common",
-    rpm = "icu",
+    lib = "libicuuc",
+    rpm = "libicu-devel",
     visibility = ["PUBLIC"],
 )
