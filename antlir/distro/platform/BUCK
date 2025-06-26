@@ -19,6 +19,9 @@ platform(
         # python_binary targets are destined for an image that has no fbcode
         # repo or runtime, it must be packaged standalone
         # @oss-disable
+        # There's a lot of assumptions about using custom allocators. These will
+        # be redirected to antlir's jemalloc dep from centos.
+        "ovr_config//build_mode/constraints:fbcode-custom-allocators-enabled",
     ],
     visibility = ["//antlir/..."],
 )
