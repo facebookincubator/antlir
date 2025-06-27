@@ -8,7 +8,8 @@ load("//antlir/bzl:build_defs.bzl", "config")
 def rule_with_default_target_platform(rule_fn):
     def _wrapped(**kwargs):
         for k, v in default_target_platform_kwargs().items():
-            kwargs.setdefault(k, v)
+            if k not in kwargs or kwargs[k] == None:
+                kwargs[k] = v
         return rule_fn(**kwargs)
 
     return _wrapped

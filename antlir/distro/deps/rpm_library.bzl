@@ -170,7 +170,7 @@ def rpm_library(
         srcs = [":{}--test-deps-main.cpp".format(name)],
         default_target_platform = default_image_platform(),
         deps = [
-            ":" + name,
+            ":{}--actual".format(name),
         ],
     )
 
@@ -190,7 +190,6 @@ def rpm_library(
         name = "{}--test-deps".format(name),
         test = "antlir//antlir/distro/deps:test-deps-binary",
         layer = ":{}--test-deps-layer".format(name),
-        # layer = "antlir//antlir/distro/deps:rpm_library_test_layer",
         default_target_platform = default_image_platform(),
         rootless = True,
         labels = ["antlir-distro-dep-test"],

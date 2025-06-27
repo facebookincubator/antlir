@@ -218,6 +218,7 @@ def _implicit_image_test(
         _static_list_wrapper: str | None = None,
         exec_compatible_with: list[str] | Select | None = None,
         target_compatible_with: list[str] | Select | None = None,
+        default_target_platform: str | None = None,
         visibility: list[str] | None = None,
         **kwargs):
     test_rule(
@@ -295,6 +296,7 @@ def _implicit_image_test(
         _static_list_wrapper = _static_list_wrapper,
         exec_compatible_with = exec_compatible_with,
         target_compatible_with = target_compatible_with,
+        default_target_platform = default_target_platform,
         visibility = visibility,
     )
 
