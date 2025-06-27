@@ -20,7 +20,10 @@ RepoInfo = provider(fields = [
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     rpm_infos = [rpm[RpmInfo] for rpm in ctx.attrs.rpms]
 
-    repo_id = ctx.label.name.replace("/", "_")
+    if "//" in ctx.label.name:
+        fail("repo names must not contain consecutive slashes")
+
+    repo_id = ctx.label.name.replace("_", "__").replace("/", "_")
 
     # Construct repodata XML blobs from each individual RPM
     xml_dir = ctx.actions.declare_output("xml", dir = True)

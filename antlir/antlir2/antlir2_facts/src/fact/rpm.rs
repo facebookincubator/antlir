@@ -35,6 +35,7 @@ pub struct Rpm {
     size: Option<u64>,
     source_rpm: Option<String>,
     pkgid: Option<String>,
+    from_repo: Option<String>,
 }
 
 fn skip_epoch(epoch: &u64) -> bool {
@@ -102,6 +103,10 @@ impl Rpm {
 
     pub fn source_rpm(&self) -> Option<&str> {
         self.source_rpm.as_deref()
+    }
+
+    pub fn from_repo(&self) -> Option<&str> {
+        self.from_repo.as_deref()
     }
 
     pub fn evra(&self) -> String {
