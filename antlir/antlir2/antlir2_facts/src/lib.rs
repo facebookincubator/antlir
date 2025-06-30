@@ -36,6 +36,8 @@ pub enum Error {
     Sqlite(#[from] rusqlite::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error("failure to populate facts db from layer: {0}")]
+    Populate(anyhow::Error),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
