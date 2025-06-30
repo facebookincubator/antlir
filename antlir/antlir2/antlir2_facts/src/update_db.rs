@@ -151,8 +151,7 @@ fn populate_rpms(
         Some(build_appliance) => {
             let isol = unshare(
                 IsolationContext::builder(build_appliance)
-                    .ephemeral(false)
-                    .readonly()
+                    .ephemeral(true)
                     .inputs(("/__antlir2__/root", root))
                     .working_directory(Path::new("/"))
                     .build(),
@@ -179,8 +178,7 @@ fn populate_rpms(
         None => {
             let isol = unshare(
                 IsolationContext::builder(root)
-                    .ephemeral(false)
-                    .readonly()
+                    .ephemeral(true)
                     .working_directory(Path::new("/"))
                     .build(),
             )
