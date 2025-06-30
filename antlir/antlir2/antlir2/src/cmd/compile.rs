@@ -186,8 +186,7 @@ impl Compile {
                     .db(&self.facts_db_out)
                     .layer(subvol.path())
                     .maybe_build_appliance(self.build_appliance.as_deref())
-                    .call()
-                    .context("while updating facts db with layer contents")?;
+                    .call()?;
 
                 drop(root_guard);
 

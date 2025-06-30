@@ -31,6 +31,8 @@ pub enum Error {
     Btrfs(#[from] antlir2_btrfs::Error),
     #[error(transparent)]
     Rootless(#[from] antlir2_rootless::Error),
+    #[error(transparent)]
+    Facts(#[from] antlir2_facts::Error),
     #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
 }
@@ -96,7 +98,8 @@ impl Error {
             Error::Depgraph(_) => Some("depgraph"),
             Error::Btrfs(_) => Some("btrfs"),
             Error::Rootless(_) => Some("rootless"),
-            _ => None,
+            Error::Facts(_) => Some("facts"),
+            Error::Uncategorized(_) => None,
         }
     }
 }

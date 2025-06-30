@@ -27,7 +27,6 @@ use antlir2_systemd::UnitFile;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
-use anyhow::Result;
 use anyhow::bail;
 use anyhow::ensure;
 use bon::builder;
@@ -35,6 +34,9 @@ use clap::Parser;
 use fxhash::FxHashSet;
 use jwalk::WalkDir;
 use tracing::warn;
+
+use crate::Error;
+use crate::Result;
 
 #[derive(Parser)]
 struct Args {
@@ -50,7 +52,11 @@ struct Args {
     rootless: bool,
 }
 
-fn populate(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
+fn populate(
+    tx: &mut Transaction,
+    root: &Path,
+    build_appliance: Option<&Path>,
+) -> anyhow::Result<()> {
     let root = root.canonicalize().context("while canonicalizing root")?;
     populate_files(tx, &root)?;
     populate_usergroups(tx, &root)?;
@@ -59,7 +65,7 @@ fn populate(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -
     Ok(())
 }
 
-fn populate_files(tx: &mut Transaction, root: &Path) -> Result<()> {
+fn populate_files(tx: &mut Transaction, root: &Path) -> anyhow::Result<()> {
     let mut remove: FxHashSet<_> = tx.all_keys::<DirEntry>()?.collect();
     for entry in WalkDir::new(root).skip_hidden(false) {
         let entry = entry?;
@@ -95,7 +101,7 @@ fn populate_files(tx: &mut Transaction, root: &Path) -> Result<()> {
     Ok(())
 }
 
-fn populate_usergroups(tx: &mut Transaction, root: &Path) -> Result<()> {
+fn populate_usergroups(tx: &mut Transaction, root: &Path) -> anyhow::Result<()> {
     let mut remove_users: FxHashSet<_> = tx.all_keys::<User>()?.collect();
     let mut remove_groups: FxHashSet<_> = tx.all_keys::<Group>()?.collect();
     let user_db: EtcPasswd = match std::fs::read_to_string(root.join("etc/passwd")) {
@@ -135,7 +141,11 @@ fn populate_usergroups(tx: &mut Transaction, root: &Path) -> Result<()> {
 
 const RPM_FACTS_SCRIPT: &str = include_str!("update_db/rpm_facts.py");
 
-fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
+fn populate_rpms(
+    tx: &mut Transaction,
+    root: &Path,
+    build_appliance: Option<&Path>,
+) -> anyhow::Result<()> {
     let mut remove: FxHashSet<_> = tx.all_keys::<Rpm>()?.collect();
     let mut list_cmd = match build_appliance {
         Some(build_appliance) => {
@@ -213,7 +223,7 @@ fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Pat
     Ok(())
 }
 
-fn populate_systemd_units(tx: &mut Transaction, root: &Path) -> Result<()> {
+fn populate_systemd_units(tx: &mut Transaction, root: &Path) -> anyhow::Result<()> {
     let mut remove: FxHashSet<_> = tx.all_keys::<UnitFile>()?.collect();
     for unit in
         antlir2_systemd::list_unit_files(root).context("while listing systemd unit files")?
@@ -243,16 +253,22 @@ impl Root<'_> {
 
 #[builder]
 pub fn sync_db_with_layer(db: &Path, layer: &Path, build_appliance: Option<&Path>) -> Result<()> {
-    let mut db =
-        RwDatabase::create(db).with_context(|| format!("while preparing db {}", db.display()))?;
+    let mut db = RwDatabase::create(db)
+        .with_context(|| format!("while preparing db {}", db.display()))
+        .map_err(Error::Populate)?;
 
-    let mut tx = db.transaction().context("while preparing tx")?;
+    let mut tx = db
+        .transaction()
+        .context("while preparing tx")
+        .map_err(Error::Populate)?;
 
     let root = Root::Subvol(layer);
 
-    populate(&mut tx, root.path(), build_appliance)?;
+    populate(&mut tx, root.path(), build_appliance).map_err(Error::Populate)?;
 
-    tx.commit().context("while committing tx")?;
+    tx.commit()
+        .context("while committing tx")
+        .map_err(Error::Populate)?;
 
     Ok(())
 }
