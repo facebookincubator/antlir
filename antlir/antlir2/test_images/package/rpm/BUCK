@@ -65,11 +65,18 @@ image.layer(
             dst = "/add.rpm",
         ),
     ],
+    target_compatible_with = select({
+        "DEFAULT": ["ovr_config//:none"],
+        "ovr_config//build_mode:opt": [],
+    # @oss-disable
 )
 
 image_python_test(
     name = "test",
     srcs = ["test.py"],
-    # @oss-disable
     layer = ":test-layer",
+    target_compatible_with = select({
+        "DEFAULT": ["ovr_config//:none"],
+        "ovr_config//build_mode:opt": [],
+    # @oss-disable
 )
