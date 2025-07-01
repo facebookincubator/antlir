@@ -23,5 +23,11 @@ alias(
     }),
     # Make sure this is generated in projects.bzl.
     labels = ["antlir-distro-dep"],
+    target_compatible_with = select({
+        "DEFAULT": ["antlir//antlir/distro:incompatible"],
+        "antlir//antlir/antlir2/os:centos10": [],
+        "antlir//antlir/antlir2/os:centos9": [],
+        "antlir//antlir/distro:build-for-distro": [],
+    }),
     visibility = ["PUBLIC"],
 )

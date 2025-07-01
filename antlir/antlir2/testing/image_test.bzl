@@ -320,6 +320,7 @@ def image_python_test(
         default_os: str | None = None,
         default_rou: str | None = None,
         systemd: str | None = None,
+        target_compatible_with: list[str] | Select | None = None,
         **kwargs):
     if is_facebook:
         with_xarexec = name + "--with-xarexec"
@@ -338,6 +339,7 @@ def image_python_test(
             # explicitly leave it unconfigured and let the parent_layer enforce
             # its own systemd configuration (if any)
             systemd = "unconfigured",
+            target_compatible_with = target_compatible_with,
         )
 
         # In opt modes, we need to use a parent_layer that has fb-xarexec
@@ -357,6 +359,7 @@ def image_python_test(
         default_os = default_os,
         # @oss-disable
         systemd = systemd,
+        target_compatible_with = target_compatible_with,
         _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-py",
         **kwargs
     )
