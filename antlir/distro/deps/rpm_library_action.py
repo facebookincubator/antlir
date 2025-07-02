@@ -6,7 +6,6 @@
 
 import argparse
 import glob
-import json
 import os
 import shutil
 import subprocess
@@ -15,20 +14,35 @@ from pathlib import Path
 INCLUDE_BASE = Path("/usr/include")
 
 
+def reljoin(a: Path, b: Path) -> Path:
+    if b.is_absolute():
+        return a / (b.relative_to("/"))
+    return a / b
+
+
+def pairs(iterable):
+    iterators = [iter(iterable)] * 2
+    return zip(*iterators, strict=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--root", required=True, type=Path)
     parser.add_argument("--rpm-name", required=True)
     parser.add_argument("--lib", required=True)
-    parser.add_argument("--header-glob", type=json.loads)
+    parser.add_argument("--header-glob", action="append")
     parser.add_argument("--out-shared-lib", type=Path)
     parser.add_argument("--out-archive", type=Path)
     parser.add_argument("--out-headers", required=True, type=Path)
+    parser.add_argument("--out-L-dir", type=Path)
+
     args = parser.parse_args()
 
     headers = {}
     if args.header_glob:
-        for subdir, pattern in args.header_glob:
-            if not os.path.exists(subdir):
+        for subdir, pattern in pairs(args.header_glob):
+            subdir = reljoin(args.root, Path(subdir))
+            if not subdir.exists():
                 continue
             old_cwd = os.getcwd()
             os.chdir(subdir)
@@ -36,16 +50,27 @@ def main():
                 relpath = Path(relpath)
                 headers[relpath] = subdir / relpath
             os.chdir(old_cwd)
+
     else:
         try:
-            rpm = subprocess.run(
-                ["rpm", "-q", "--whatprovides", args.rpm_name],
-                check=True,
-                text=True,
-                capture_output=True,
-            ).stdout.strip()
+            try:
+                rpm = subprocess.run(
+                    [
+                        "rpm",
+                        "--root",
+                        str(args.root.resolve()),
+                        "-q",
+                        "--whatprovides",
+                        args.rpm_name,
+                    ],
+                    check=True,
+                    text=True,
+                    capture_output=True,
+                ).stdout.strip()
+            except subprocess.CalledProcessError:
+                rpm = args.rpm_name
             res = subprocess.run(
-                ["rpm", "-q", "-l", rpm],
+                ["rpm", "--root", str(args.root.resolve()), "-q", "-l", rpm],
                 check=True,
                 text=True,
                 capture_output=True,
@@ -56,7 +81,9 @@ def main():
         rpm_headers = {p for p in rpm_files if INCLUDE_BASE in p.parents}
         for h in rpm_headers:
             dst = h.relative_to(INCLUDE_BASE)
-            headers[dst] = h
+            headers[dst] = args.root / h.relative_to("/")
+
+    args.out_headers.mkdir()
 
     for dst, src in headers.items():
         dst = args.out_headers / dst
@@ -67,29 +94,31 @@ def main():
             shutil.copy2(src, dst)
 
     if args.out_shared_lib:
-        if Path(args.lib).exists():
-            libpath = Path(args.lib)
-        else:
+        libpath = reljoin(args.root, Path(args.lib))
+        if not libpath.exists():
             libname = args.lib
             if not libname.startswith("lib"):
                 libname = "lib" + libname
-            libpath = Path("/usr/lib64") / libname
+            libpath = args.root / Path("usr/lib64") / libname
             if not libpath.exists():
                 libpath = libpath.with_suffix(".so")
 
         shutil.copy2(libpath, args.out_shared_lib)
 
     if args.out_archive:
-        if Path(args.lib).exists():
-            libpath = Path(args.lib)
-        else:
+        libpath = reljoin(args.root, Path(args.lib))
+        if not libpath.exists():
             libname = args.lib
             if not libname.startswith("lib"):
                 libname = "lib" + libname
-            libpath = Path("/usr/lib64") / libname
+            libpath = args.root / Path("usr/lib64") / libname
             if not libpath.exists():
                 libpath = libpath.with_suffix(".a")
         shutil.copy2(libpath, args.out_archive)
+
+    if args.out_L_dir:
+        args.out_L_dir.mkdir()
+        shutil.copy2(args.out_shared_lib, args.out_L_dir)
 
 
 if __name__ == "__main__":

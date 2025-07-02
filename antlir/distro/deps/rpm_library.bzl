@@ -3,15 +3,77 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "alias", "cpp_binary", "write_file")
 load("//antlir/distro/platform:defs.bzl", "default_image_platform")
 load(":dep_distance_extender.bzl", "dep_distance_extender")
 load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
+
+def _rpm_library_action_impl(ctx: AnalysisContext) -> list[Provider]:
+    sub_targets = {}
+    headers = ctx.actions.declare_output("headers", dir = True)
+    sub_targets["headers"] = [DefaultInfo(headers)]
+    out_args = [
+        cmd_args(headers.as_output(), format = "--out-headers={}"),
+    ]
+    if ctx.attrs.support_linker_l:
+        L = ctx.actions.declare_output("L", dir = True)
+        sub_targets["L"] = [DefaultInfo(L)]
+        out_args.append(cmd_args(L.as_output(), format = "--out-L={}"))
+
+    if not (ctx.attrs.header_only or ctx.attrs.archive):
+        lib = ctx.actions.declare_output(ctx.attrs.soname)
+        sub_targets[ctx.attrs.soname] = [DefaultInfo(lib)]
+        out_args.append(cmd_args(lib.as_output(), format = "--out-shared-lib={}"))
+    if ctx.attrs.archive:
+        archive = ctx.actions.declare_output(ctx.attrs.archive_name)
+        sub_targets[ctx.attrs.archive_name] = [DefaultInfo(archive)]
+        out_args.append(cmd_args(archive.as_output(), format = "--out-archive={}"))
+    if ctx.attrs.header_glob:
+        header_glob = []
+        for tup in ctx.attrs.header_glob:
+            header_glob.extend(tup)
+        header_glob = cmd_args(header_glob, format = "--header-glob={}")
+    else:
+        header_glob = cmd_args()
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._rpm_library_action[RunInfo],
+            cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--root={}"),
+            cmd_args(ctx.attrs.lib, format = "--lib={}"),
+            cmd_args(ctx.attrs.rpm_name, format = "--rpm-name={}"),
+            header_glob,
+            out_args,
+        ),
+        category = "rpm_library",
+        local_only = True,
+    )
+    return [
+        DefaultInfo(sub_targets = sub_targets),
+    ]
+
+_rpm_library_action = rule(
+    impl = _rpm_library_action_impl,
+    attrs = {
+        "archive": attrs.bool(),
+        "archive_name": attrs.string(),
+        "header_glob": attrs.option(attrs.list(attrs.tuple(attrs.string(), attrs.string())), default = None),
+        "header_only": attrs.bool(),
+        "layer": attrs.dep(providers = [LayerInfo]),
+        "lib": attrs.string(),
+        "rpm_name": attrs.string(),
+        "soname": attrs.string(),
+        "support_linker_l": attrs.bool(),
+        "_rpm_library_action": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/distro/deps:rpm-library-action")),
+    },
+)
+
+_rpm_library_action_macro = rule_with_default_target_platform(_rpm_library_action)
 
 def rpm_library(
         *,
@@ -71,45 +133,16 @@ def rpm_library(
     soname = name + ".so"
     archive_name = name + ".a"
 
-    genrule_in_image(
+    _rpm_library_action_macro(
         name = "{}--outputs".format(name),
-        bash = selects.apply(
-            selects.join(
-                header_glob = header_glob,
-                rpm = rpm,
-            ),
-            lambda sels: """
-            mkdir "$OUT/headers"
-
-            rpm-library-action \
-                --out-headers $OUT/headers \
-                {maybe_shared_lib} \
-                {maybe_archive} \
-                --rpm-name={rpm_name} \
-                --lib={lib} \
-                --header-glob='{header_globs}'
-
-            {cp_L_dir}
-        """.format(
-                header_globs = json.encode(sels.header_glob),
-                lib = lib,
-                rpm_name = sels.rpm,
-                soname = soname,
-                maybe_archive = "--out-archive=$OUT/{}".format(archive_name) if archive else "",
-                maybe_shared_lib = "--out-shared-lib=$OUT/{}".format(soname) if not (header_only or archive) else "",
-                cp_L_dir = "mkdir $OUT/L && cp --reflink=auto $OUT/{soname} $OUT/L/ && cp --reflink=auto $OUT/{soname} $OUT/L/lib{soname}".format(soname = soname) if support_linker_l else "",
-            ),
-        ),
-        outs = {
-            "headers": "headers",
-        } | ({
-            soname: soname,
-        } if not (header_only or archive) else {}) | ({
-            archive_name: archive_name,
-        } if archive else {}) | ({
-            "L": "L",
-        } if support_linker_l else {}),
-        rootless = True,
+        lib = lib,
+        soname = soname,
+        header_only = header_only,
+        archive_name = archive_name,
+        archive = archive,
+        header_glob = header_glob,
+        rpm_name = rpm,
+        support_linker_l = support_linker_l,
         layer = ":{}--layer".format(name),
         target_compatible_with = target_compatible_with,
     )
