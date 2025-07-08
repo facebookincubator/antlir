@@ -70,7 +70,7 @@ def main():
         if Path(args.lib).exists():
             libpath = Path(args.lib)
         else:
-            libname = args.lib
+            libname = os.path.basename(args.lib)
             if not libname.startswith("lib"):
                 libname = "lib" + libname
             libpath = Path("/usr/lib64") / libname
