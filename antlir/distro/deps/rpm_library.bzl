@@ -67,7 +67,7 @@ _rpm_library_action = rule(
         "header_only": attrs.bool(),
         "layer": attrs.dep(providers = [LayerInfo]),
         "lib": attrs.string(),
-        "rpm_name": attrs.string(),
+        "rpm_name": attrs.one_of(attrs.string(), attrs.list(attrs.string())),
         "soname": attrs.string(),
         "support_linker_l": attrs.bool(),
         "_rpm_library_action": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/distro/deps:rpm-library-action")),
@@ -79,7 +79,7 @@ _rpm_library_action_macro = rule_with_default_target_platform(_rpm_library_actio
 def rpm_library(
         *,
         name: str,
-        rpm: str | Select | None = None,
+        rpm: str | Select | list[str] | None = None,
         lib: str | Select | None = None,
         archive: bool = False,
         header_glob = None,
@@ -121,10 +121,14 @@ def rpm_library(
     })
 
     rpm = rpm or (name + "-devel")
+    subjects = selects.apply(
+        rpm,
+        lambda rpm: [rpm] if isinstance(rpm, str) else rpm,
+    )
     image.layer(
         name = "{}--layer".format(name),
         features = [
-            feature.rpms_install(subjects = [rpm]),
+            feature.rpms_install(subjects = subjects),
         ],
         parent_layer = "antlir//antlir/distro/deps:base",
         rootless = True,
@@ -220,6 +224,7 @@ def rpm_library(
             ),
             feature.rpms_install(rpms = ["/bin/sh"]),  # need shell to invoke the test
         ],
+        dnf_additional_repos = dnf_additional_repos,
     )
 
     image_sh_test(

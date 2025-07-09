@@ -25,10 +25,38 @@ def pairs(iterable):
     return zip(*iterators, strict=True)
 
 
+def list_files(rpm: str, root: Path) -> set[Path]:
+    try:
+        rpm_name = subprocess.run(
+            [
+                "rpm",
+                "--root",
+                str(root.resolve()),
+                "-q",
+                "--whatprovides",
+                rpm,
+            ],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout.strip()
+    except subprocess.CalledProcessError:
+        rpm_name = rpm
+
+    res = subprocess.run(
+        ["rpm", "--root", str(root.resolve()), "-q", "-l", rpm_name],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    return {Path(p) for p in (res.stdout.strip().splitlines())}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True, type=Path)
-    parser.add_argument("--rpm-name", required=True)
+    parser.add_argument("--rpm-name", required=True, action="append")
     parser.add_argument("--lib", required=True)
     parser.add_argument("--header-glob", action="append")
     parser.add_argument("--out-shared-lib", type=Path)
@@ -54,31 +82,11 @@ def main():
 
     else:
         try:
-            try:
-                rpm = subprocess.run(
-                    [
-                        "rpm",
-                        "--root",
-                        str(args.root.resolve()),
-                        "-q",
-                        "--whatprovides",
-                        args.rpm_name,
-                    ],
-                    check=True,
-                    text=True,
-                    capture_output=True,
-                ).stdout.strip()
-            except subprocess.CalledProcessError:
-                rpm = args.rpm_name
-            res = subprocess.run(
-                ["rpm", "--root", str(args.root.resolve()), "-q", "-l", rpm],
-                check=True,
-                text=True,
-                capture_output=True,
-            )
+            rpm_files = set()
+            for rpm in args.rpm_name:
+                rpm_files |= list_files(rpm, args.root)
         except subprocess.CalledProcessError as e:
             raise RuntimeError(e.stderr + "\n" + e.stdout) from e
-        rpm_files = {Path(p) for p in (res.stdout.strip().splitlines())}
         rpm_headers = {p for p in rpm_files if INCLUDE_BASE in p.parents}
         for h in rpm_headers:
             dst = h.relative_to(INCLUDE_BASE)

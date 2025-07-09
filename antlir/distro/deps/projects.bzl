@@ -1,4 +1,4 @@
-# @generated SignedSource<<85047ebec4814f101d4537e0ffb1a49e>>
+# @generated SignedSource<<e121f5fdc8fe5b8107913479bf205a6c>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -22,6 +22,17 @@ PROJECTS = [
     ("boost", "boost_variant"),
     ("btrfs-progs", "btrfsutil"),
     ("bzip2", "bz2"),
+    ("cuda", "cublas"),
+    ("cuda", "cublasLt"),
+    ("cuda", "cuda"),
+    ("cuda", "cufft"),
+    ("cuda", "cufile"),
+    ("cuda", "cupti"),
+    ("cuda", "curand"),
+    ("cuda", "cusparse"),
+    ("cuda", "cusparseLt"),
+    ("cuda", "nvJitlink"),
+    ("cudnn", "cudnn"),
     ("curl", "curl"),
     ("double_conversion", "double_conversion"),
     ("elfutils", "elf"),
