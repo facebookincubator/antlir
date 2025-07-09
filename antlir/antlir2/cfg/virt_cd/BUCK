@@ -1,0 +1,14 @@
+load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
+
+oncall("antlir")
+
+constraint_setting(
+    name = "virt-setting",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "virt-cd",
+    constraint_setting = ":virt-setting",
+    visibility = ["PUBLIC"],
+)
