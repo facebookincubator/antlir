@@ -27,8 +27,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use serde::Deserialize;
+use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde::de::Error as _;
+use serde::ser::Serializer;
 
 pub trait DeserializeReader<T> {
     type Error;
@@ -134,6 +136,18 @@ impl<T, D> Serde<T, D> {
     }
 }
 
+impl<T, D> Serialize for Serde<T, D>
+where
+    T: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
 /// Argument that represents a serialized file. The argument provided by the
 /// caller is the path to the file that is deserialized immediately on load.
 /// The original path is preserved and accessible with [SerdeFile::path]
@@ -185,6 +199,18 @@ where
                 deser: PhantomData,
             })
             .map_err(D::Error::custom)
+    }
+}
+
+impl<T, D> SerdeFile<T, D>
+where
+    T: Serialize,
+{
+    pub fn serialize_inline<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.value.serialize(ser)
     }
 }
 
@@ -243,6 +269,13 @@ impl<T, D> SerdeFile<T, D> {
     #[inline]
     pub fn into_inner(self) -> T {
         self.value
+    }
+
+    pub fn serialize_path<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.path.serialize(ser)
     }
 }
 
@@ -402,6 +435,52 @@ mod tests {
                 .example
                 .as_inner(),
             &example
+        );
+    }
+
+    #[test]
+    fn serialize() {
+        let example = Example {
+            foo: "baz".into(),
+            bar: 42,
+        };
+        let example_json: Json<Example> = Serde(example.clone(), PhantomData);
+        assert_eq!(
+            serde_json::json!({
+                "foo": "baz",
+                "bar": 42,
+            }),
+            serde_json::to_value(&example_json).expect("failed to serialize")
+        );
+
+        let mut tmp = NamedTempFile::new().expect("failed to create tmp file");
+        serde_json::to_writer(&mut tmp, &example).expect("failed to serialize");
+        let example: JsonFile<Example> = JsonFile {
+            path: tmp.path().into(),
+            value: example.clone(),
+            deser: PhantomData,
+        };
+
+        #[derive(Serialize)]
+        struct Outer {
+            #[serde(serialize_with = "JsonFile::serialize_inline")]
+            inline: JsonFile<Example>,
+            #[serde(serialize_with = "JsonFile::serialize_path")]
+            path: JsonFile<Example>,
+        }
+        assert_eq!(
+            serde_json::json!({
+                "inline": {
+                    "foo": "baz",
+                    "bar": 42,
+                },
+                "path": tmp.path().to_string_lossy(),
+            }),
+            serde_json::to_value(&Outer {
+                inline: example.clone(),
+                path: example,
+            })
+            .expect("failed to serialize")
         );
     }
 }
