@@ -1,0 +1,21 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+# Only supporting cudnn9 for now.
+
+rpm_library(
+    name = "nccl",
+    dnf_additional_repos = ["nvidia"],
+    header_glob = [
+        ("/usr/include", "nccl.h"),
+    ],
+    lib = "/usr/lib64/libnccl.so",
+    rpm = select({
+        "DEFAULT": "libnccl-devel-2.23.4-1+cuda12.6.x86_64",
+        "ovr_config//third-party/nccl/constraints:2.18.3": "libnccl-devel-2.18.3-1+cuda12.2.x86_64",
+        "ovr_config//third-party/nccl/constraints:2.20.3": "libnccl-devel-2.20.3-1+cuda12.3.x86_64",
+        "ovr_config//third-party/nccl/constraints:2.23.4": "libnccl-devel-2.23.4-1+cuda12.6.x86_64",
+        "ovr_config//third-party/nccl/constraints:2.25.1": "libnccl-devel-2.25.1-1+cuda12.8.x86_64",
+    }),
+)
