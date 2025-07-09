@@ -22,6 +22,25 @@ def _tie_n_impl(objs, pvals):
 def _tie_n(*objs):
     return _tie_n_impl(objs, [])
 
+def _test_any_of_helper(function, inner):
+    if not _prelude_selects.is_select(inner):
+        return function(inner)
+    return _test_any_of(inner, function)
+
+def _test_any_of(obj, function):
+    """
+    If the object is a select, runs `select_test` with `function` and
+    returns true if any value in the select passes.
+    Otherwise, if the object is not a select, invokes `function` on `obj` directly.
+
+    """
+    if not _prelude_selects.is_select(obj):
+        return function(obj)
+    return native.select_test(
+        obj,
+        native.partial(_test_any_of_helper, function),
+    )
+
 # End copied section
 
 def _join(**selects):
@@ -57,4 +76,5 @@ selects = struct(
     apply = _prelude_selects.apply,
     join = _join,
     or_ = _or,
+    test_any_of = _test_any_of,
 )
