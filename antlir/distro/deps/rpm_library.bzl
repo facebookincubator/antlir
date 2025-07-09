@@ -80,7 +80,7 @@ def rpm_library(
         *,
         name: str,
         rpm: str | Select | None = None,
-        lib: str | None = None,
+        lib: str | Select | None = None,
         archive: bool = False,
         header_glob = None,
         header_only: bool = False,
@@ -88,6 +88,7 @@ def rpm_library(
         visibility: list[str] = ["PUBLIC"],
         compatible_with_os: list[str] = [],
         test_include_headers: list[str] | Select = [],
+        dnf_additional_repos: list[str] | None = None,
         **kwargs):
     """
     Define a cxx_library target that can be used in Buck builds to depend on a
@@ -128,6 +129,7 @@ def rpm_library(
         parent_layer = "antlir//antlir/distro/deps:base",
         rootless = True,
         target_compatible_with = target_compatible_with,
+        dnf_additional_repos = dnf_additional_repos,
     )
 
     lib = lib or name

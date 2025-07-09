@@ -1,0 +1,34 @@
+load("@prelude//:paths.bzl", "paths")
+load(":defs.bzl", "cuda_rpm_library")
+
+oncall("antlir")
+
+[
+    cuda_rpm_library(
+        name = name,
+        dnf_additional_repos = ["nvidia"],
+        # exported_linker_flags = [
+        #     "-Wl,-rpath={}".format(paths.join("/usr/local/cuda-{version}/targets/{arch}-linux/lib", lib)),
+        # ],
+        header_glob = [
+            ("/usr/local/cuda-{version}/targets/{arch}-linux/include", "**/*.h"),
+        ],
+        lib = paths.join("/usr/local/cuda-{version}/targets/{arch}-linux/lib", lib),
+        # So this doesn't get put into the PAR (because it's a big library)
+        # provided = True,
+        rpm = rpm,
+        soname = "{}.12".format(lib),
+    )
+    for (name, lib, rpm) in [
+        ("cuda", "libcudart.so", "cuda-cudart-devel-{version}"),
+        ("cusparse", "libcusparse.so", "libcusparse-devel-{version}"),
+        ("cusparseLt", "libcusparseLt.so", "libcusparselt-devel"),
+        ("cufft", "libcufft.so", "libcufft-devel-{version}"),
+        ("cufile", "libcufile.so", "libcufile-devel-{version}"),
+        ("curand", "libcurand.so", "libcurand-devel-{version}"),
+        ("cublas", "libcublas.so", "libcublas-devel-{version}"),
+        ("cublasLt", "libcublasLt.so", "libcublas-devel-{version}"),
+        ("cupti", "libcupti.so", "cuda-cupti-{version}"),
+        ("nvJitlink", "libnvJitLink.so", "libnvjitlink-devel-{version}"),
+    ]
+]
