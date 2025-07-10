@@ -17,7 +17,6 @@ oncall("antlir")
         # So this doesn't get put into the PAR (because it's a big library)
         # provided = True,
         rpm = rpm,
-        soname = "{}.12".format(lib),
     )
     for (name, lib, rpm) in [
         ("cuda", "libcudart.so", "cuda-cudart-devel-{version}"),
