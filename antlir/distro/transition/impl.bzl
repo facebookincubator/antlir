@@ -53,6 +53,11 @@ transition_to_distro_platform = rule(
                 "ovr_config//toolchain/python/constraints:python-version",
                 "ovr_config//build_mode/constraints:build_mode",
                 "ovr_config//build_mode/constraints:core_build_mode",
+                # Preserve CUDA project constraint versions.
+                "ovr_config//third-party/cuda/constraints:cuda-version",
+                "ovr_config//third-party/cudnn/constraints:cudnn-version",
+                "ovr_config//third-party/TensorRT/constraints:TensorRT-version",
+                "ovr_config//third-party/nccl/constraints:nccl-version",
                 # also anything under //antlir gets preserved
             ],
         )),
