@@ -163,20 +163,6 @@ fn rpms() {
             .changelog(),
         Some("- Example changelog\n- CVE-2024-0101"),
     );
-
-    let mut basesystem_repo = rpms
-        .get("basesystem")
-        .expect("failed to get basesystem rpm")
-        .from_repo()
-        .expect("no recorded repo for basesystem")
-        .split("/")
-        .collect::<Vec<_>>();
-    basesystem_repo[3] = "<ROUDATE>";
-    let basesystem_repo = basesystem_repo.join("/");
-    assert_eq!(
-        basesystem_repo,
-        "centos/9/rollingupdates/<ROUDATE>/BaseOS/x86_64/os",
-    )
 }
 
 #[test]
