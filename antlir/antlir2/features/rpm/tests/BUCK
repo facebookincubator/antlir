@@ -40,6 +40,9 @@ feature.new(
             # @oss-disable
         ]),
     ],
+    visibility = [
+        "//antlir/antlir2/features/rpm/tests/...",
+    ],
 )
 
 simple = test_rpms(

@@ -1,0 +1,34 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/features/rpm/tests:defs.bzl", "expected_t", "test_rpms")
+
+oncall("antlir")
+
+# antlir doesn't have any way to create synthetic modularity, so we just use an
+# existing module (which also happens to be the only one that people care about
+# internally)
+
+test_rpms(
+    name = "unconfigured",
+    expected = expected_t(
+        installed = ["nginx-1.20.*"],
+    ),
+    features = [
+        "//antlir/antlir2/features/rpm/tests:test-deps",
+        feature.rpms_install(rpms = ["nginx"]),
+    ],
+)
+
+test_rpms(
+    name = "specific-stream",
+    expected = expected_t(
+        installed = ["nginx-1.22.*"],
+    ),
+    features = [
+        "//antlir/antlir2/features/rpm/tests:test-deps",
+        feature.dnf_module_enable(
+            name = "nginx",
+            stream = "1.22",
+        ),
+        feature.rpms_install(rpms = ["nginx"]),
+    ],
+)
