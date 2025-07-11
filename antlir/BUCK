@@ -49,6 +49,7 @@ python_library(
     name = "fs_utils",
     srcs = ["fs_utils.py"],
     visibility = [
+        "fbsource//xplat/scripts/...",
         "//antlir/...",
         "//fbpkg/caf/...",
         "//kernel/kernels:test_selection_lib",
