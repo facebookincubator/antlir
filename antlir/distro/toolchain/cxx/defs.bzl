@@ -5,24 +5,10 @@
 
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
-load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
 
 prelude = native
-
-def _layer_tool(tcname: str, tool: str, os: str, visibility: list[str] = []) -> str:
-    name = tcname + "--" + tool
-    if not native.rule_exists(name):
-        image_command_alias(
-            name = name,
-            root = ":{}--root".format(tcname),
-            exe = tool,
-            default_os = os,
-            rootless = True,
-            visibility = visibility,
-        )
-    return ":" + name
 
 def _single_image_cxx_toolchain(
         *,
@@ -33,12 +19,18 @@ def _single_image_cxx_toolchain(
         os: str,
         sysroot: str,
         visibility: list[str] = []):
-    package.unprivileged_dir(
-        name = name + "--root",
-        layer = layer,
-        rootless = True,
-        dot_meta = False,
-    )
+    def _layer_tool(tool: str) -> str:
+        tool_name = name + "--" + tool
+        if not native.rule_exists(tool_name):
+            image_command_alias(
+                name = tool_name,
+                layer = layer,
+                exe = tool,
+                default_os = os,
+                rootless = True,
+                visibility = visibility,
+            )
+        return ":" + tool_name
 
     _llvm_base_args = [
         "-target",
@@ -62,14 +54,14 @@ def _single_image_cxx_toolchain(
         name = name,
         platform_name = platform_name,
         platform_deps_aliases = platform_deps_aliases,
-        archiver = _layer_tool(name, "llvm-ar", os),
+        archiver = _layer_tool("llvm-ar"),
         archiver_type = "gnu",
         archiver_flags = _llvm_base_args,
-        assembler = _layer_tool(name, "clang", os),
-        c_compiler = _layer_tool(name, "clang", os),
+        assembler = _layer_tool("clang"),
+        c_compiler = _layer_tool("clang"),
         c_compiler_flags = _llvm_base_args,
         compiler_type = "clang",
-        cxx_compiler = _layer_tool(name, "clang++", os),
+        cxx_compiler = _layer_tool("clang++"),
         cxx_compiler_flags = _llvm_base_args,
         cxx_preprocessor_flags = [
             # TODO: this may not always be correct, but I cannot get it to work in
@@ -80,7 +72,7 @@ def _single_image_cxx_toolchain(
             "ovr_config//os:linux",
         ],
         link_ordering = "topological",
-        linker = _layer_tool(name, "clang", os),
+        linker = _layer_tool("clang"),
         linker_flags = [
             # Allow text relocations in the output.  Text sections (i.e. compiled code)
             # may require relocations.  As code segments are  marked as read-only,
@@ -104,12 +96,12 @@ def _single_image_cxx_toolchain(
         ] + _llvm_base_args,
         linker_type = "gnu",
         generate_linker_maps = False, # @oss-enable
-        nm = _layer_tool(name, "llvm-nm", os),
-        objcopy_for_shared_library_interface = _layer_tool(name, "objcopy", os),
+        nm = _layer_tool("llvm-nm"),
+        objcopy_for_shared_library_interface = _layer_tool("objcopy"),
         requires_archives = True,
         shared_library_interface_type = "disabled",
         shared_library_interface_producer = "fbcode//tools/shlib_interfaces:mk_elf_shlib_intf.dotslash",
-        strip = _layer_tool(name, "strip", os),
+        strip = _layer_tool("strip"),
         visibility = visibility,
     )
 
