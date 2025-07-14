@@ -1,0 +1,36 @@
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load(":defs.bzl", "CUDA_VERSIONS")
+
+oncall("antlir")
+
+[
+    hoist(
+        name = "cuda_path-{}".format(version),
+        dir = True,
+        layer = ":layer-{}".format(version),
+        path = "/usr/local/cuda-{}".format(version),
+        rootless = True,
+        visibility = ["antlir//antlir/distro/toolchain/..."],
+    )
+    for version in CUDA_VERSIONS
+]
+
+[
+    image.layer(
+        name = "layer-{}".format(version),
+        compatible_with_os = ["centos9"],
+        dnf_additional_repos = ["nvidia"],
+        features = [
+            feature.rpms_install(rpms = [
+                "cuda-nvcc-{}".format(version.replace(".", "-")),
+                "cuda-cudart-devel-{}".format(version.replace(".", "-")),
+            ]),
+            "//antlir/distro:cleanup",
+        ],
+        parent_layer = "antlir//antlir/distro/toolchain/cxx:layer",
+        visibility = ["antlir//antlir/distro/toolchain/..."],
+    )
+    for version in CUDA_VERSIONS
+]

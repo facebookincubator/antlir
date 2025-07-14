@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@fbcode//tools/build/buck/wrappers:utils.bzl", "nvcc_wrapper")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
+load("//antlir/distro/toolchain/cuda:defs.bzl", "CUDA_VERSIONS")
 
 prelude = native
 
@@ -19,18 +21,32 @@ def _single_image_cxx_toolchain(
         os: str,
         sysroot: str,
         visibility: list[str] = []):
-    def _layer_tool(tool: str) -> str:
-        tool_name = name + "--" + tool
+    def _layer_tool(tool: str, version: str | None = None, **kwargs) -> str:
+        tool_name = name + "--" + tool + (("-" + version) if version else "")
         if not native.rule_exists(tool_name):
             image_command_alias(
                 name = tool_name,
-                layer = layer,
-                exe = tool,
+                layer = kwargs.pop("layer", None) or layer,
+                exe = kwargs.pop("exe", None) or tool,
                 default_os = os,
                 rootless = True,
                 visibility = visibility,
+                **kwargs
             )
         return ":" + tool_name
+
+    def _cuda_layer_tool(tool: str, version: str, **kwargs) -> str:
+        """
+        CUDA tools have to run in a dedicated layer that have cuda rpms installed.
+        This includes clang! If you run clang from the normal layer it's not going
+        to be able to find cuda runtime headers.
+        """
+        return _layer_tool(
+            tool,
+            version = version,
+            layer = "antlir//antlir/distro/toolchain/cuda:layer-{}".format(version),
+            **kwargs
+        )
 
     _llvm_base_args = [
         "-target",
@@ -49,6 +65,40 @@ def _single_image_cxx_toolchain(
     }) + [
         "-fopenmp",
     ]
+
+    nvcc_wrapper_rule = name + "--nvcc-wrapper"
+    if os == "centos9":
+        for version in CUDA_VERSIONS:
+            nvcc_wrapper(
+                name = nvcc_wrapper_rule + "-" + version,
+                nvcc_target = _cuda_layer_tool(
+                    tool = "nvcc",
+                    version = version,
+                    exe = "/usr/local/cuda-{}/bin/nvcc".format(version),
+                    # wrap_nvcc expects these to be set when it's running in the container.
+                    pass_env = ["TMPDIR", "BUCK_SCRATCH_PATH"],
+                ),
+                gcc_target = _cuda_layer_tool("gcc", version = version),
+                clang_target = _cuda_layer_tool("clang", version = version),
+                cuda_target = "antlir//antlir/distro/toolchain/cuda:cuda_path-{}".format(version),
+                args = [
+                    # libshim.so doesn't make it into the container image where invocations run
+                    # so ignore it for now at the cost of some non-determinism.
+                    "-_OMIT_LIBSHIM_FLAG_",
+                ],
+            )
+
+    cuda_tools = {}
+
+    # Nvidia repo is only available on centos9.
+    if os == "centos9":
+        cuda_tools = {
+            "cuda_compiler": select({
+                "ovr_config//third-party/cuda/constraints:12.4": ":" + nvcc_wrapper_rule + "-12.4",
+                "ovr_config//third-party/cuda/constraints:12.8": ":" + nvcc_wrapper_rule + "-12.8",
+            }),
+            "cuda_compiler_type": "clang",
+        }
 
     native.cxx_toolchain(
         name = name,
@@ -103,6 +153,7 @@ def _single_image_cxx_toolchain(
         shared_library_interface_producer = "fbcode//tools/shlib_interfaces:mk_elf_shlib_intf.dotslash",
         strip = _layer_tool("strip"),
         visibility = visibility,
+        **cuda_tools
     )
 
 def image_cxx_toolchain(
