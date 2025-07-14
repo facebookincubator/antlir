@@ -19,7 +19,7 @@ path = "src/lib.rs"
 [dependencies]
 serde = { version = "1.0.185", features = ["derive", "rc"] }
 serde_json = { version = "1.0.140", features = ["alloc", "float_roundtrip", "unbounded_depth"] }
-toml = "0.8.22"
+toml = { version = "0.8.22", features = ["preserve_order"] }
 
 [dev-dependencies]
 clap = { version = "4.5.38", features = ["derive", "env", "string", "unicode", "wrap_help"] }
