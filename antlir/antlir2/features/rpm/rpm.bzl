@@ -84,6 +84,7 @@ def _install_common(
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
+            "resolve": "antlir//antlir/antlir2/features/rpm:resolve",
         },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
@@ -159,6 +160,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
+            "resolve": "antlir//antlir/antlir2/features/rpm:resolve",
         },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
@@ -188,6 +190,7 @@ def rpms_remove(*, rpms: list[str | Select] | Select):
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
+            "resolve": "antlir//antlir/antlir2/features/rpm:resolve",
         },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
@@ -214,6 +217,7 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/rpm:driver",
+            "resolve": "antlir//antlir/antlir2/features/rpm:resolve",
         },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/rpm:plan",
@@ -278,7 +282,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             reduce_fn = _reduce_rpm_features,
             planner = rpm_planner(
                 plan = ctx.attrs.plan,
-                driver_cmd = ctx.attrs.driver[RunInfo],
+                resolve_cmd = ctx.attrs.resolve[RunInfo],
                 versionlock_hard_enforce = ctx.attrs.versionlock_hard_enforce,
             ),
         ),
@@ -288,14 +292,16 @@ rpms_rule = rule(
     impl = _impl,
     attrs = {
         "action": attrs.enum(["install", "remove", "remove_if_exists", "upgrade", "module_enable"]),
-        # this is annoying because it's really an exec_dep that we want to run,
-        # but it needs to resolve differently depending on the target platform.
-        # This is probably a use case for a toolchain_dep, but shoehorning that
-        # into antlir2 is extremely tricky, so we can just live with slower
-        # aarch64 builds until dnf5 is the only thing we support
+        # this is annoying because 'driver' and 'resolve' are really a exec_deps
+        # that we want to run, but it needs to resolve differently depending on
+        # the target platform.  This is probably a use case for a toolchain_dep,
+        # but shoehorning that into antlir2 is extremely tricky, so we can just
+        # live with slower aarch64 builds until dnf5 is the only thing we
+        # support
         "driver": attrs.dep(providers = [RunInfo]),
         "plan": attrs.exec_dep(providers = [RunInfo]),
         "plugin": attrs.label(),
+        "resolve": attrs.dep(providers = [RunInfo]),
         "subjects": attrs.list(attrs.string()),
         "subjects_src": attrs.option(attrs.source(), default = None),
         # TODO: refactor this into a more obvious interface

@@ -41,5 +41,23 @@ prelude.python_bootstrap_binary(
     name = "driver",
     main = "driver.py",
     visibility = ["PUBLIC"],
-    deps = ["//antlir/antlir2/package_managers/dnf/build_appliance:antlir2_dnf_base"],
+    deps = [
+        ":antlir2_features_rpm_common",
+        "//antlir/antlir2/package_managers/dnf/build_appliance:antlir2_dnf_base",
+    ],
+)
+
+prelude.python_bootstrap_library(
+    name = "antlir2_features_rpm_common",
+    srcs = ["antlir2_features_rpm_common.py"],
+)
+
+prelude.python_bootstrap_binary(
+    name = "resolve",
+    main = "resolve.py",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":antlir2_features_rpm_common",
+        "//antlir/antlir2/package_managers/dnf/build_appliance:antlir2_dnf_base",
+    ],
 )

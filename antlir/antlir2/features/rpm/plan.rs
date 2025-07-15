@@ -44,7 +44,7 @@ struct Args {
     #[clap(long)]
     items: JsonFile<Vec<RpmItem>>,
     #[clap(long)]
-    driver_cmd: Vec<String>,
+    resolve_cmd: Vec<String>,
     #[clap(long)]
     versionlock_hard_enforce: bool,
     #[clap(long)]
@@ -84,7 +84,7 @@ fn main() -> Result<()> {
 
     let rpm = rpm::Rpm {
         items: args.items.into_inner(),
-        driver_cmd: args.driver_cmd,
+        driver_cmd: args.resolve_cmd,
         internal_only_options: Default::default(),
         versionlock_hard_enforce: args.versionlock_hard_enforce,
     };
