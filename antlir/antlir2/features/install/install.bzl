@@ -122,6 +122,7 @@ def install(
         exec_deps["_rpm_plan"] = "antlir//antlir/antlir2/features/rpm:plan"
         distro_platform_deps["_python_pex_deps"] = "antlir//antlir/distro/toolchain/python:pex-deps"
         distro_platform_deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
+        distro_platform_deps["_rpm_resolve"] = "antlir//antlir/antlir2/features/rpm:resolve"
     elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes-without-rpm-deps"):
         distro_platform_deps["src"] = src
     else:
@@ -372,6 +373,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             "driver": ctx.attrs._rpm_driver,
             "plan": ctx.attrs._rpm_plan,
             "plugin": ctx.attrs._rpm_plugin,
+            "resolve": ctx.attrs._rpm_resolve,
             "subjects": [],
             "subjects_src": rpm_subjects,
         },
@@ -432,5 +434,6 @@ install_rule = rule(
         "_rpm_find_requires": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plan": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plugin": attrs.option(attrs.label(), default = None),
+        "_rpm_resolve": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
     },
 )
