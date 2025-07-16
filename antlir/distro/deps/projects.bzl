@@ -1,4 +1,4 @@
-# @generated SignedSource<<727982a2a02f75e5fb8fbea0f23a06e2>>
+# @generated SignedSource<<65bfeda8bdf88fc43d9bcce61ab981be>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -35,6 +35,7 @@ PROJECTS = [
     ("cudnn", "cudnn"),
     ("curl", "curl"),
     ("double_conversion", "double_conversion"),
+    ("eigen", "eigen"),
     ("elfutils", "elf"),
     ("fmt", "fmt"),
     ("freetype", "freetype"),

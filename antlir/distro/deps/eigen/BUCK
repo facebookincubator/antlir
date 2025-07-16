@@ -1,0 +1,13 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "eigen",
+    header_glob = [
+        ("/usr/include/eigen3", "Eigen/**/*"),
+    ],
+    header_only = True,
+    rpm = "eigen3-devel",
+    visibility = ["PUBLIC"],
+)
