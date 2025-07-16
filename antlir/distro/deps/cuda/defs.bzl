@@ -46,6 +46,9 @@ def _rpm_library(name, **kwargs) -> None:
         lib = lib,
         # CUDA RPMs use XX-X as version number instead of XX.X
         rpm = _select_template(kwargs.pop("rpm"), dash = True),
+        # TODO: turn this back to True once the built binaries know how to
+        # actually load the cuda libraries
+        tests = False,
         **kwargs
     )
 

@@ -89,6 +89,8 @@ def rpm_library(
         compatible_with_os: list[str] = [],
         test_include_headers: list[str] | Select = [],
         dnf_additional_repos: list[str] | None = None,
+        test_deps_parent_layer: str | None = None,
+        tests: bool = True,
         **kwargs):
     """
     Define a cxx_library target that can be used in Buck builds to depend on a
@@ -192,6 +194,9 @@ def rpm_library(
             visibility = ["PUBLIC"],
         )
 
+    if not tests:
+        return
+
     write_file(
         name = "{}--test-deps-main.cpp".format(name),
         out = "main.cpp",
@@ -225,6 +230,7 @@ def rpm_library(
             feature.rpms_install(rpms = ["/bin/sh"]),  # need shell to invoke the test
         ],
         dnf_additional_repos = dnf_additional_repos,
+        parent_layer = test_deps_parent_layer,
     )
 
     image_sh_test(

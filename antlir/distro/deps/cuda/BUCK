@@ -1,7 +1,18 @@
 load("@prelude//:paths.bzl", "paths")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load(":defs.bzl", "cuda")
 
 oncall("antlir")
+
+image.layer(
+    name = "with-undeclared-deps",
+    features = [
+        feature.rpms_install(rpms = ["/usr/sbin/useradd"]),
+    ],
+    parent_layer = "antlir//antlir/distro/deps:base",
+    visibility = [],
+)
 
 [
     cuda.rpm_library(
@@ -17,6 +28,7 @@ oncall("antlir")
         # So this doesn't get put into the PAR (because it's a big library)
         # provided = True,
         rpm = rpm,
+        test_deps_parent_layer = ":with-undeclared-deps",
     )
     for (name, lib, rpm) in [
         ("cuda", "libcudart.so", "cuda-cudart-devel-{version}"),
