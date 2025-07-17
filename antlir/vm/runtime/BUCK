@@ -1,7 +1,7 @@
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
@@ -34,6 +34,11 @@ image.layer(
     ],
 )
 
+package.unprivileged_dir(
+    name = "qemu-tools-rc.dir",
+    layer = ":qemu-tools-rc",
+)
+
 alias(
     name = "qemu-tools",
     actual = internal_external(
@@ -43,11 +48,13 @@ alias(
 )
 
 [
-    hoist(
+    buck_genrule(
         name = paths.basename(binary),
+        out = paths.basename(binary),
+        cmd = """
+            cp --reflink=auto $(location :qemu-tools)/{} $OUT
+        """.format(binary),
         executable = True,
-        layer = ":qemu-tools",
-        path = binary,
         visibility = ["PUBLIC"],
     )
     for binary in [
@@ -60,20 +67,12 @@ alias(
     ]
 ]
 
-hoist(
-    name = "share-qemu",
-    dir = True,
-    layer = ":qemu-tools",
-    path = "share/qemu",
-    visibility = ["PUBLIC"],
-)
-
 # Just pull in all the roms
 buck_genrule(
     name = "roms",
     out = ".",
     cmd = """
-        find $(location :share-qemu) \\( -name '*.bin' -o -name '*.rom' \\) -exec cp {} $OUT/ \\;
+        find $(location :qemu-tools)/share \\( -name '*.bin' -o -name '*.rom' \\) -exec cp {} $OUT/ \\;
     """,
     visibility = ["PUBLIC"],
 )
