@@ -63,6 +63,7 @@ def _single_image_cxx_toolchain(
             "-mtune=skylake",
         ],
     }) + [
+        "-Wno-nullability-completeness",
         "-fopenmp",
         # Make sure this is passed in because when compilations run on RE we
         # need to force this dir to get mounted into the container.
