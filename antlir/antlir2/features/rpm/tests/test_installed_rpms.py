@@ -86,7 +86,19 @@ for spec in expected["not_installed"]:
             print(f"unknown rpm failure: {proc.stdout}\n{proc.stderr}")
             sys.exit(2)
 
-for spec in expected["installed_module"]:
+for name in expected["modules_unknown"]:
+    proc = subprocess.run(
+        [dnf, "--disablerepo=*", "module", "info", spec],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode == 0:
+        print(f"dnf should have failed to find module '{name}'")
+        print(proc.stdout)
+        sys.exit(1)
+
+
+for spec in expected["modules_installed"]:
     proc = subprocess.run(
         [dnf, "--disablerepo=*", "module", "info", spec],
         capture_output=True,
