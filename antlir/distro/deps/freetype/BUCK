@@ -27,7 +27,6 @@ alias(
         "DEFAULT": ["antlir//antlir/distro:incompatible"],
         "antlir//antlir/antlir2/os:centos10": [],
         "antlir//antlir/antlir2/os:centos9": [],
-        "antlir//antlir/distro:build-for-distro": [],
     }),
     visibility = ["PUBLIC"],
 )
