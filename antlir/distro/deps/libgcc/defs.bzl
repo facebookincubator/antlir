@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 
@@ -29,15 +28,7 @@ def libstdcxx_headers(version, prefix = None):
     Helper macro to return the typical libstdc++ header paths, selectified based
     on arch.
     """
-    header_paths = [
+    return [
         "/usr/include/c++/{version}".format(version = version),
         "/usr/include/c++/{version}/backward".format(version = version),
     ] + select_format_triple(["/usr/include/c++/{version}/{{triple}}".format(version = version)])
-
-    if prefix != None:
-        return selects.apply(
-            header_paths,
-            # Incoming paths are absolute, so make sure we can join them.
-            lambda ps: [paths.join(prefix, path.lstrip("/")) for path in ps],
-        )
-    return header_paths

@@ -1,40 +1,20 @@
 load("//antlir/bzl:build_defs.bzl", "alias")
-load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
-load(":defs.bzl", "libstdcxx_headers", "select_format_triple")
+load(":defs.bzl", "libstdcxx_headers")
 
 oncall("antlir")
 
 sysroot_dep(
     name = "stdc++",
     extract_soname = False,
-    header_dirs = internal_external(
-        fb = select({
-            "DEFAULT": [],
-            "antlir//antlir/antlir2/os:centos10": libstdcxx_headers("14"),
-            # Use a newer gcc on centos9 (> 11) to roughly match the fbcode libstdc++ version.
-            "antlir//antlir/antlir2/os:centos9": libstdcxx_headers(
-                "14",
-                prefix = "/opt/rh/gcc-toolset-14/root",
-            ),
-        }),
-        oss = select({
-            "DEFAULT": [],
-            "antlir//antlir/antlir2/os:centos10": libstdcxx_headers("14"),
-            "antlir//antlir/antlir2/os:centos9": libstdcxx_headers("11"),
-        }),
-    ),
-    lib = internal_external(
-        fb = select({
-            "DEFAULT": "libstdc++.so.6",
-            "antlir//antlir/antlir2/os:centos10": "libstdc++.so.6",
-            # Use a newer libstdc++ on centos9 (> 11) to roughly match the fbcode libstdc++ version.
-            "antlir//antlir/antlir2/os:centos9": select_format_triple("/opt/rh/gcc-toolset-14/root/usr/lib/gcc/{triple}/14/libstdc++.so"),
-        }),
-        oss = "libstdc++.so.6",
-    ),
+    header_dirs = select({
+        "DEFAULT": [],
+        "antlir//antlir/antlir2/os:centos10": libstdcxx_headers("14"),
+        "antlir//antlir/antlir2/os:centos9": libstdcxx_headers("11"),
+    }),
+    lib = "libstdc++.so.6",
     provided = True,
     soname = "libstdc++.so.6",
     supports_shared_library_interface = False,
