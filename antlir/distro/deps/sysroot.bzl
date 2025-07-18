@@ -9,6 +9,19 @@ load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load(":dep_distance_extender.bzl", "dep_distance_extender")
 load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 
+def export_from_sysroot(name: str, path: str | Select, visibility = ["PUBLIC"], **kwargs):
+    """
+    Export a particular path from the sysroot to refer to it in rules.
+    """
+    hoist(
+        name = name,
+        path = path,
+        layer = "antlir//antlir/distro/deps:sysroot-layer",
+        rootless = True,
+        visibility = visibility,
+        **kwargs
+    )
+
 def sysroot_dep(
         *,
         name: str,

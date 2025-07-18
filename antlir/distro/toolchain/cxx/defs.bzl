@@ -64,6 +64,10 @@ def _single_image_cxx_toolchain(
         ],
     }) + [
         "-fopenmp",
+        # Make sure this is passed in because when compilations run on RE we
+        # need to force this dir to get mounted into the container.
+        "-idirafter",
+        "$(location antlir//antlir/distro/deps/glibc:include)",
     ]
 
     nvcc_wrapper_rule = name + "--nvcc-wrapper"

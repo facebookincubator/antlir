@@ -1,7 +1,13 @@
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
-load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
+load("//antlir/distro/deps:sysroot.bzl", "export_from_sysroot", "sysroot_dep")
 
 oncall("antlir")
+
+export_from_sysroot(
+    name = "include",
+    dir = True,
+    path = "/usr/include",
+)
 
 sysroot_dep(
     name = "c",
