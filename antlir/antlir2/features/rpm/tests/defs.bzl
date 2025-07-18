@@ -18,7 +18,8 @@ expected_t = record(
     userinstalled = field(list[str], default = []),
     installed_not_userinstalled = field(list[str], default = []),
     not_installed = field(list[str], default = []),
-    installed_module = field(list[str], default = []),
+    modules_unknown = field(list[str], default = []),
+    modules_installed = field(list[str], default = []),
 )
 
 def test_rpms(

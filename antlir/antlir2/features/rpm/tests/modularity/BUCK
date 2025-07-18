@@ -1,4 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/features/rpm/tests:defs.bzl", "expected_t", "test_rpms")
 
 oncall("antlir")
@@ -11,6 +12,8 @@ test_rpms(
     name = "unconfigured",
     expected = expected_t(
         installed = ["nginx-1.20.*"],
+        # blindly installing the rpm should not leave any module info around
+        modules_unknown = ["nginx"],
     ),
     features = [
         "//antlir/antlir2/features/rpm/tests:test-deps",
@@ -22,6 +25,7 @@ test_rpms(
     name = "specific-stream",
     expected = expected_t(
         installed = ["nginx-1.22.*"],
+        modules_installed = ["nginx:1.22"],
     ),
     features = [
         "//antlir/antlir2/features/rpm/tests:test-deps",
@@ -31,4 +35,27 @@ test_rpms(
         ),
         feature.rpms_install(rpms = ["nginx"]),
     ],
+)
+
+image.layer(
+    name = "enable-then-install-parent",
+    features = [
+        "//antlir/antlir2/features/rpm/tests:test-deps",
+        feature.dnf_module_enable(
+            name = "nginx",
+            stream = "1.22",
+        ),
+    ],
+)
+
+test_rpms(
+    name = "enable-then-install",
+    expected = expected_t(
+        installed = ["nginx-1.22.*"],
+        modules_installed = ["nginx:1.22"],
+    ),
+    features = [
+        feature.rpms_install(rpms = ["nginx"]),
+    ],
+    parent_layer = ":enable-then-install-parent",
 )
