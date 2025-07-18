@@ -164,7 +164,7 @@ def image_cxx_toolchain(
         *,
         name: str,
         layer: str,
-        sysroot: str = "antlir//antlir/distro/deps:sysroot",
+        sysroot: str = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
         visibility: list[str] = []):
     oses = [os for os in OSES if os.has_platform_toolchain]
 

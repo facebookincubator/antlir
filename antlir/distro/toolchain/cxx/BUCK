@@ -1,12 +1,16 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/distro/deps:dep_distance_extender.bzl", "dep_distance_extender")
 load(":defs.bzl", "image_cxx_toolchain")
 
 oncall("antlir")
 
+# The "main" clang is actually invoked from the layer in
+# toolchains/cxx:layer, but installing it here gives us all the deps
+# that clang will expect to find in `--sysroot`
 image.layer(
-    name = "layer",
+    name = "sysroot-layer",
     features = [
         feature.rpms_install(rpms = [
             "clang-19.1.7",
@@ -15,6 +19,15 @@ image.layer(
         ]),
         "//antlir/distro:cleanup",
     ],
+    rootless = True,
+)
+
+package.unprivileged_dir(
+    name = "sysroot",
+    dot_meta = False,
+    layer = ":sysroot-layer",
+    rootless = True,
+    visibility = ["PUBLIC"],
 )
 
 # This toolchain can build for any antlir2 OS - it just configures 'layer' for
@@ -22,7 +35,7 @@ image.layer(
 # the default, unless the user uses antlir2_configured_alias)
 image_cxx_toolchain(
     name = "toolchain--actual",
-    layer = ":layer",
+    layer = ":sysroot-layer",
     visibility = [],
 )
 

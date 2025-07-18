@@ -16,7 +16,7 @@ def export_from_sysroot(name: str, path: str | Select, visibility = ["PUBLIC"], 
     hoist(
         name = name,
         path = path,
-        layer = "antlir//antlir/distro/deps:sysroot-layer",
+        layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
         rootless = True,
         visibility = visibility,
         **kwargs
@@ -38,7 +38,7 @@ def sysroot_dep(
 
     hoist(
         name = name + "-lib",
-        layer = "antlir//antlir/distro/deps:sysroot-layer",
+        layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
         path = selects.apply(lib, lambda l: l if paths.is_absolute(l) else paths.join("/usr/lib64", l)),
         rootless = True,
         visibility = [],
@@ -46,7 +46,7 @@ def sysroot_dep(
 
     hoist_many(
         name = name + "-headers",
-        layer = "antlir//antlir/distro/deps:sysroot-layer",
+        layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
         paths = selects.apply(
             header_dirs,
             lambda header_dirs: [

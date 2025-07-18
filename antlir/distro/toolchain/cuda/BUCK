@@ -29,7 +29,7 @@ oncall("antlir")
             ]),
             "//antlir/distro:cleanup",
         ],
-        parent_layer = "antlir//antlir/distro/toolchain/cxx:layer",
+        parent_layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
         visibility = ["antlir//antlir/distro/toolchain/..."],
     )
     for version in CUDA_VERSIONS
