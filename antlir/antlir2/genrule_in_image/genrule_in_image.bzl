@@ -148,7 +148,7 @@ def genrule_in_image(
 
     labels = kwargs.pop("labels", [])
     if not rootless:
-        labels = selects.apply(labels, lambda labels: list(labels) + ["uses_sudo"])
+        labels = selects.apply(labels, lambda labels: list(labels or []) + ["uses_sudo"])
 
     _genrule_in_image_macro(
         name = name,
