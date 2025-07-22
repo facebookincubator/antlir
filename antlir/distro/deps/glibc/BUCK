@@ -9,6 +9,12 @@ export_from_sysroot(
     path = "/usr/include",
 )
 
+export_from_sysroot(
+    name = "lib",
+    dir = True,
+    path = "/usr/lib64",
+)
+
 sysroot_dep(
     name = "c",
     extract_soname = False,

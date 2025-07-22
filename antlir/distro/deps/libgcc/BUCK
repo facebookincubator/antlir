@@ -1,7 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
-load("//antlir/distro/deps:sysroot.bzl", "sysroot_dep")
+load("//antlir/distro/deps:sysroot.bzl", "export_from_sysroot", "sysroot_dep")
 load(":defs.bzl", "libstdcxx_headers")
 
 oncall("antlir")
@@ -63,3 +63,16 @@ alias(
     }),
     visibility = ["PUBLIC"],
 )
+
+[
+    export_from_sysroot(
+        name = "lib/gcc/{arch}-redhat-linux/11".format(arch = arch),
+        dir = True,
+        path = "/usr/lib/gcc/{arch}-redhat-linux/11".format(arch = arch),
+        target_compatible_with = {
+            "aarch64": ["ovr_config//cpu:arm64"],
+            "x86_64": ["ovr_config//cpu:x86_64"],
+        }[arch],
+    )
+    for arch in ("x86_64", "aarch64")
+]

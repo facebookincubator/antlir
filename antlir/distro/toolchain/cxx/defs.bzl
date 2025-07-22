@@ -5,6 +5,7 @@
 
 load("@fbcode//tools/build/buck/wrappers:utils.bzl", "nvcc_wrapper")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
@@ -49,6 +50,8 @@ def _single_image_cxx_toolchain(
         )
 
     _llvm_base_args = [
+        # Make sure clang doesn't use its default configs and pick the wrong gcc.
+        "--no-default-config",
         "-target",
         select({
             "ovr_config//cpu:arm64": "aarch64-unknown-linux-gnu",
@@ -64,6 +67,7 @@ def _single_image_cxx_toolchain(
         ],
     }) + [
         "-Wno-nullability-completeness",
+        "-Wno-unused-command-line-argument",
         "-fopenmp",
         "-nostdinc",
         "-nostdinc++",
@@ -154,6 +158,11 @@ def _single_image_cxx_toolchain(
             "-fuse-ld=lld",
             "-nodefaultlibs",
             "-Wl,-nostdlib",
+            selects.apply(
+                arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
+                lambda arch: "-L$(location antlir//antlir/distro/deps/libgcc:lib/gcc/{arch}-redhat-linux/11)".format(arch = arch),
+            ),
+            "-B$(location antlir//antlir/distro/deps/glibc:lib)",
         ] + _llvm_base_args,
         linker_type = "gnu",
         generate_linker_maps = False, # @oss-enable
