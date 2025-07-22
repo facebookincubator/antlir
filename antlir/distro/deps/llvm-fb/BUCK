@@ -1,44 +1,28 @@
-load("//antlir/antlir2/bzl:selects.bzl", "selects")
-load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
-load("//antlir/distro/deps:dep_distance_extender.bzl", "dep_distance_extender")
-load(":defs.bzl", "clang_rt_library", "libs")
+load("//antlir/distro/deps:defs.bzl", "select_triple")
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
 
-image.layer(
-    name = "layer",
-    features = [
-        feature.rpms_install(rpms = ["compiler-rt"]),
-    ],
-)
-
-genrule_in_image(
-    name = "libs--actual",
-    outs = {lib: "lib{}.a".format(lib) for lib in libs},
-    bash = selects.apply(
-        select({
-            "ovr_config//cpu:arm64": "aarch64-redhat-linux-gnu",
-            "ovr_config//cpu:x86_64": "x86_64-redhat-linux-gnu",
-        }),
-        lambda triple: """
-            cp -R /usr/lib/clang/*/lib/{}/* $OUT/
-        """.format(triple),
-    ),
-    layer = ":layer",
-    visibility = [],
-)
-
-dep_distance_extender(
-    name = "libs",
-    actual = ":libs--actual",
-    visibility = [],
-)
-
 [
-    clang_rt_library(
-        name = lib,
+    rpm_library(
+        name = name,
+        lib = select_triple("/usr/lib/clang/19/lib/{{triple}}-gnu/lib{}.a".format(name)),
+        link_whole = True,
+        rpm = "compiler-rt-19.1.7",
+        # These fail for some reason because of how we turn static libs into shared libs.
+        tests = False,
     )
-    for lib in libs
+    for name in (
+        "clang_rt.asan",
+        "clang_rt.asan_cxx",
+        "clang_rt.dfsan",
+        "clang_rt.hwasan",
+        "clang_rt.hwasan_cxx",
+        "clang_rt.msan",
+        "clang_rt.msan_cxx",
+        "clang_rt.tsan",
+        "clang_rt.tsan_cxx",
+        "clang_rt.ubsan_standalone",
+        "clang_rt.ubsan_standalone_cxx",
+    )
 ]
