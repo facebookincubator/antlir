@@ -1,4 +1,4 @@
-# @generated SignedSource<<65bfeda8bdf88fc43d9bcce61ab981be>>
+# @generated SignedSource<<ed78194df4f57d500516cdb906e64c3d>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -112,6 +112,7 @@ PROJECTS = [
     ("sqlite", "sqlite"),
     ("systemd", "systemd"),
     ("tbb", "tbb"),
+    ("utf8proc", "utf8proc"),
     ("util-linux", "uuid"),
     ("xxHash", "xxhash"),
     ("xz", "lzma"),
