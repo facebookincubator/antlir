@@ -256,6 +256,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     if "aziot-identity-service" not in dnf_excluded_rpms:
         dnf_excluded_rpms.append("aziot-identity-service")
 
+    # https://fb.workplace.com/groups/upstreampackaging/posts/2218930438568048
+    if "mft" not in dnf_excluded_rpms:
+        dnf_excluded_rpms.append("mft")
+
     # The image build is split into phases based on features' `build_phase`
     # property.
     # This gets us some caching benefits (for example, if a feature in a layer
