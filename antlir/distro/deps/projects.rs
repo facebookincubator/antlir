@@ -58,8 +58,9 @@ fn gen_bzl(deps: &[Dep]) -> String {
 
 fn get_deps() -> Result<Vec<Dep>> {
     let out = Command::new("buck2")
+        .arg("--isolation-dir")
+        .arg("antlir_distro_deps_projects")
         .arg("bxl")
-        .arg("--reuse-current-config")
         .arg("antlir//antlir/distro/deps/projects.bxl:query")
         .output()
         .context("while running bxl")?;
