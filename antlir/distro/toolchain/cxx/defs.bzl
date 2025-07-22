@@ -65,8 +65,14 @@ def _single_image_cxx_toolchain(
     }) + [
         "-Wno-nullability-completeness",
         "-fopenmp",
-        # Make sure this is passed in because when compilations run on RE we
+        "-nostdinc",
+        "-nostdinc++",
+        # Make sure these are passed in because when compilations run on RE we
         # need to force this dir to get mounted into the container.
+        "-resource-dir",
+        "$(location antlir//antlir/distro/deps/llvm-fb:resource-dir)",
+        "-idirafter",
+        "$(location antlir//antlir/distro/deps/llvm-fb:include)",
         "-idirafter",
         "$(location antlir//antlir/distro/deps/glibc:include)",
     ]

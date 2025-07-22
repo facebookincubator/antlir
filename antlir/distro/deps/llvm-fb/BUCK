@@ -1,5 +1,6 @@
 load("//antlir/distro/deps:defs.bzl", "select_triple")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+load("//antlir/distro/deps:sysroot.bzl", "export_from_sysroot")
 
 oncall("antlir")
 
@@ -26,3 +27,15 @@ oncall("antlir")
         "clang_rt.ubsan_standalone_cxx",
     )
 ]
+
+export_from_sysroot(
+    name = "resource-dir",
+    dir = True,
+    path = "/usr/lib/clang/19",
+)
+
+export_from_sysroot(
+    name = "include",
+    dir = True,
+    path = "/usr/lib/clang/19/include",
+)
