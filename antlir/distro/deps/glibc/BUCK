@@ -25,10 +25,9 @@ sysroot_dep(
 sysroot_dep(
     name = "m",
     extract_soname = False,
-    # This needs to refer to the actual library and not the linker script
-    # because python omnibus linking wants to extract symbols from the library.
-    lib = "libm.so.6",
+    lib = "libm.so",
     link_without_soname = True,
+    provided = True,
     soname = "libm.so.6",
     exported_deps = arch_select(
         aarch64 = [],
