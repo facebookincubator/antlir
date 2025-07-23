@@ -32,7 +32,6 @@ import rpm as librpm
 from antlir2_features_rpm_common import (
     AntlirError,
     compute_explicitly_installed_package_names,
-    enable_modules,
     LockedOutput,
     package_struct,
 )
