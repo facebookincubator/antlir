@@ -14,23 +14,9 @@
 # /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
 # ensure that we're using the same python that dnf itself is using
 
-import copy
-import json
-import os
-import re
-import subprocess
-import sys
 import threading
-from collections import defaultdict
-from urllib.parse import urlparse
-
-import antlir2_dnf_base
 
 import dnf
-import hawkey
-import libdnf
-import rpm as librpm
-from dnf.i18n import ucd
 from dnf.module.module_base import ModuleBase
 
 
