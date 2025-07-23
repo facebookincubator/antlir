@@ -1,4 +1,4 @@
-# @generated SignedSource<<ed78194df4f57d500516cdb906e64c3d>>
+# @generated SignedSource<<72e001f13e2005a5dda1afff3ec408fb>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -19,6 +19,7 @@ PROJECTS = [
     ("boost", "boost_spirit"),
     ("boost", "boost_system"),
     ("boost", "boost_thread"),
+    ("boost", "boost_uuid"),
     ("boost", "boost_variant"),
     ("btrfs-progs", "btrfsutil"),
     ("bzip2", "bz2"),

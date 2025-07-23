@@ -75,6 +75,7 @@ boost_system_library(
         "preprocessor",
         "random",
         "range",
+        "uuid",
         "spirit",
         "variant",
     ]
