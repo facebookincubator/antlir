@@ -518,6 +518,7 @@ fn run_dnf_driver(
             Source::SubjectsSource(subjects_src) => Ok(std::fs::read_to_string(&subjects_src)
                 .with_context(|| format!("while reading {}", subjects_src.display()))?
                 .lines()
+                .filter(|s| !s.is_empty())
                 .map(|subject| RpmItem {
                     action: item.action,
                     rpm: Source::Subject(subject.to_owned()),
