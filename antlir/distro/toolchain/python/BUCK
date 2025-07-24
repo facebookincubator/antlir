@@ -77,6 +77,7 @@ feature.new(
         feature.rpms_install(
             subjects = [
                 "unzip",
+                "libstdc++",
                 # we might not always want whatever "floating" python is used by
                 # the distro, so if it is set, make sure to request the specific
                 # version we want
