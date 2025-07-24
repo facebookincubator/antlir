@@ -1,3 +1,5 @@
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/distro/deps:prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
 load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
@@ -64,15 +66,27 @@ alias(
     visibility = ["PUBLIC"],
 )
 
-[
-    export_from_sysroot(
-        name = "lib/gcc/{arch}-redhat-linux/11".format(arch = arch),
-        dir = True,
-        path = "/usr/lib/gcc/{arch}-redhat-linux/11".format(arch = arch),
-        target_compatible_with = {
-            "aarch64": ["ovr_config//cpu:arm64"],
-            "x86_64": ["ovr_config//cpu:x86_64"],
-        }[arch],
-    )
-    for arch in ("x86_64", "aarch64")
-]
+export_from_sysroot(
+    name = "gcc-redhat-linux",
+    compatible_with = [
+        "antlir//antlir/antlir2/os:centos10",
+        "antlir//antlir/antlir2/os:centos9",
+    ],
+    dir = True,
+    path = selects.apply(
+        selects.join(
+            arch = arch_select(
+                aarch64 = "aarch64",
+                x86_64 = "x86_64",
+            ),
+            version = select({
+                "antlir//antlir/antlir2/os:centos10": "14",
+                "antlir//antlir/antlir2/os:centos9": "11",
+            }),
+        ),
+        lambda sels: "/usr/lib/gcc/{arch}-redhat-linux/{version}".format(
+            arch = sels.arch,
+            version = sels.version,
+        ),
+    ),
+)
