@@ -31,7 +31,6 @@ LayerInfo = provider(fields = [
     "facts_db",  # Database managed by antlir2_facts
     "features",  # List of all feature analyses
     "flavor",  # dep on the flavor this layer was built with
-    "flavor_info",  # The FlavorInfo this layer was built with
     "label",  # Label that originally created this layer
     "mounts",  # List of mount features
     "parent",  # Dependency for the parent of the layer, if one exists
