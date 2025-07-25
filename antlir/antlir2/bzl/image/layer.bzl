@@ -484,7 +484,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         LayerInfo(
             facts_db = facts_db,
             flavor = flavor,
-            flavor_info = flavor_info,
             label = ctx.label,
             mounts = mounts,
             parent = ctx.attrs.parent_layer,
