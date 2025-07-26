@@ -3,6 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/bzl/image:mount_types.bzl", "mount_record")
+load("//antlir/antlir2/features:feature_info.bzl", "feature_record")
+
 FeatureInfo = provider(fields = [
     # Transitive set of feature records deserializable by Antlir tools
     "features",
@@ -27,16 +31,26 @@ LayerContents = record(
     subvol_symlink = field(Artifact),  # symlink pointing to the built subvol
 )
 
-LayerInfo = provider(fields = [
-    "facts_db",  # Database managed by antlir2_facts
-    "features",  # List of all feature analyses
-    "flavor",  # dep on the flavor this layer was built with
-    "label",  # Label that originally created this layer
-    "mounts",  # List of mount features
-    "parent",  # Dependency for the parent of the layer, if one exists
-    "contents",  # LayerContents record
-    "phase_contents",  # LayerContents broken out by all the internal phases
-])
+LayerInfo = provider(
+    fields = {
+        "contents": LayerContents,
+        # Database managed by antlir2_facts
+        "facts_db": Artifact,
+        # List of all feature analyses
+        "features": list[feature_record | typing.Any],
+        # dep on the flavor this layer was built with
+        "flavor": Dependency,
+        # Label that originally created this layer
+        "label": Label,
+        # List of mount features
+        "mounts": list[mount_record | typing.Any],
+        # Dependency for the parent of the layer, if one exists
+        "parent": Dependency | None,
+        # LayerContents broken out by all the internal phases (for packages that
+        # support incremental outputs)
+        "phase_contents": list[(BuildPhase | typing.Any, LayerContents | typing.Any)],
+    },
+)
 
 BuildApplianceInfo = provider(fields = {
     # For Build Appliance images, exact ownership and other fs metadata (aside

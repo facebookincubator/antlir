@@ -115,7 +115,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             label = ctx.label,
             facts_db = facts_db,
             contents = contents,
+            features = [],
             mounts = [],
+            parent = None,
             flavor = ctx.attrs.flavor,
             phase_contents = [(
                 BuildPhase("compile"),
