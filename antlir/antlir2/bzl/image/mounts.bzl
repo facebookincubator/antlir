@@ -5,7 +5,6 @@
 
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/feature:feature.bzl", "verify_feature_records")
 load("//antlir/antlir2/features:feature_info.bzl", "feature_record")
 load("//antlir/bzl:types.bzl", "types")
 load(":mount_types.bzl", "host_mount_record", "layer_mount_record", "mount_record")
@@ -27,7 +26,6 @@ def all_mounts(
     """
     if not features:
         return []
-    verify_feature_records(features)
     mounts = list(parent_layer.mounts) if parent_layer else []
     for feat in features:
         if feat.feature_type == "mount":
