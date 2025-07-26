@@ -82,21 +82,6 @@ load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:types.bzl", "types")
 load(":cfg.bzl", "feature_cfg")
 
-_ANTLIR_STRICT_TYPE_CHECKS = native.read_config("antlir", "strict-type-checks")
-_ANTLIR_STRICT_BUILD_PHASE_TYPE_CHECKS = native.read_config("antlir", "strict-build-phase-type-checks")
-
-def verify_feature_records(features: list[feature_record | typing.Any]) -> None:
-    if (
-        _ANTLIR_STRICT_TYPE_CHECKS == None and
-        _ANTLIR_STRICT_BUILD_PHASE_TYPE_CHECKS == None
-    ):
-        return
-
-    def _assert_feature_record(_: feature_record):
-        pass
-
-    [_assert_feature_record(i) for i in features]  # buildifier: disable=no-effect
-
 _anon_rules = {
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
@@ -371,7 +356,6 @@ def reduce_features(features: list[feature_record | typing.Any]) -> list[feature
     any future package managers as well.
     """
     output = []
-    verify_feature_records(features)
 
     reducing = {}
 

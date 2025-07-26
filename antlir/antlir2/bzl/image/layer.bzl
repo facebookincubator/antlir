@@ -8,7 +8,7 @@ load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless_config_set", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
-load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerContents", "LayerInfo")
@@ -291,11 +291,11 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         identifier = phase.value
 
-        # Cross-cell enum type comparisons can fail, so compare .value
-        verify_build_phases([i.analysis.build_phase for i in all_features])
         features = [
             feat
             for feat in all_features
+            # Cross-cell enum type comparisons with bare == can fail, so compare
+            # .value explicitly
             if feat.analysis.build_phase.value == phase.value
         ]
 
