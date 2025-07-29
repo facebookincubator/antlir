@@ -11,7 +11,6 @@ feature.new(
     features = [
         feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/cache"),
         feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/repos"),
-        feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/plugins"),
         feature.install(
             src = "dnf.antlir.conf",
             dst = "/__antlir2__/dnf/dnf.conf",
@@ -19,14 +18,6 @@ feature.new(
         feature.ensure_file_symlink(
             link = "/etc/dnf/dnf.conf",
             target = "/__antlir2__/dnf/dnf.conf",
-        ),
-        feature.install(
-            src = "antlir2_dnf_base.py",
-            dst = "/__antlir2__/dnf/base.py",
-        ),
-        feature.install(
-            src = "plugin.py",
-            dst = "/__antlir2__/dnf/plugins/antlir.py",
         ),
         feature.install(
             src = "empty-versionlock.json",
