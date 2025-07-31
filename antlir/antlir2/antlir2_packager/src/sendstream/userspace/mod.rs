@@ -21,6 +21,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::time::UNIX_EPOCH;
 
+use antlir2_btrfs::Subvolume;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -94,34 +95,39 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
         trace!("processing dir entry");
         let meta = entry.metadata()?;
 
-        match inodes.entry(entry.ino()) {
-            std::collections::hash_map::Entry::Occupied(e) => {
-                if let Some(parent) = &spec.incremental_parent {
-                    let parent_path = parent.join(relpath);
-                    match parent_path.symlink_metadata() {
-                        Ok(parent_meta) => {
-                            // hardlink already exists in child, skip
-                            if parent_meta.ino() == meta.ino() {
-                                continue;
+        // subvolumes all report the ino as 256, so don't track those for
+        // hardlink candidates
+        let is_subvol = Subvolume::open(entry.path()).is_ok();
+        if !is_subvol {
+            match inodes.entry(entry.ino()) {
+                std::collections::hash_map::Entry::Occupied(e) => {
+                    if let Some(parent) = &spec.incremental_parent {
+                        let parent_path = parent.join(relpath);
+                        match parent_path.symlink_metadata() {
+                            Ok(parent_meta) => {
+                                // hardlink already exists in child, skip
+                                if parent_meta.ino() == meta.ino() {
+                                    continue;
+                                }
+                                // otherwise, continue on to create it below
                             }
-                            // otherwise, continue on to create it below
-                        }
-                        // new file in child, fallthrough to non-incremental path
-                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                        Err(e) => {
-                            return Err(
-                                Error::from(e).context("while getting parent file metadata")
-                            );
+                            // new file in child, fallthrough to non-incremental path
+                            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                            Err(e) => {
+                                return Err(
+                                    Error::from(e).context("while getting parent file metadata")
+                                );
+                            }
                         }
                     }
+                    let tmp = Uuid::new_v4().to_string();
+                    f.write_all(&command::hardlink(e.get(), &tmp))?;
+                    f.write_all(&command::rename(tmp, relpath))?;
+                    continue;
                 }
-                let tmp = Uuid::new_v4().to_string();
-                f.write_all(&command::hardlink(e.get(), &tmp))?;
-                f.write_all(&command::rename(tmp, relpath))?;
-                continue;
-            }
-            std::collections::hash_map::Entry::Vacant(e) => {
-                e.insert(relpath.to_owned());
+                std::collections::hash_map::Entry::Vacant(e) => {
+                    e.insert(relpath.to_owned());
+                }
             }
         }
 
