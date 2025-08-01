@@ -24,6 +24,7 @@ platform(
         "ovr_config//build_mode/constraints:fbcode-custom-allocators-enabled",
         # configured_alias() calls seem to require this constraint in the base layer
         "ovr_config//third-party/cuda/constraints:12.8",
+        "ovr_config//cpp/constraints:libstdc++",
     ],
     visibility = ["//antlir/..."],
 )
