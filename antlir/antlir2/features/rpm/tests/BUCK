@@ -447,7 +447,9 @@ image_sh_test(
 
 test_rpms(
     name = "allowlisted-failing-postscripts",
-    also_eln_dnf5 = True,
+    # the newer version of dnf4 in eln fails the entire transaction if
+    # scriptlets fail
+    also_eln_dnf5 = False,
     expected = expected_t(installed = [
         "antlir2-failing-postscripts",
     ]),

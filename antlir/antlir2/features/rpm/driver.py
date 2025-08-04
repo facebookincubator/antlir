@@ -70,11 +70,15 @@ _RPMS_THAT_CAN_FAIL_SCRIPTS = {
 }
 
 
+_SCRIPTLET_ERROR_RE = re.compile(r"^Error in (?:.*) scriptlet in rpm package (.*)$")
+
+
 class TransactionProgress(dnf.callback.TransactionProgress):
     def __init__(self, out, ignore_scriptlet_errors: bool = False):
         self.out = out
         self._sent = defaultdict(set)
         self._ignore_scriptlet_errors = ignore_scriptlet_errors
+        self.rpms_with_scriptlet_errors = set()
 
     def scriptout(self, msgs):
         """Hook for reporting an rpm scriptlet output.
@@ -92,15 +96,14 @@ class TransactionProgress(dnf.callback.TransactionProgress):
     def error(self, message):
         with self.out as out:
             key = "tx_error"
-            match = re.match(
-                r"^Error in (?:.*) scriptlet in rpm package (.*)$", message
-            )
+            match = _SCRIPTLET_ERROR_RE.match(message)
             if match:
                 if self._ignore_scriptlet_errors:
                     key = "tx_warning"
                 rpm_name = match.group(1)
                 if rpm_name in _RPMS_THAT_CAN_FAIL_SCRIPTS:
                     key = "tx_warning"
+                self.rpms_with_scriptlet_errors.add(rpm_name)
             json.dump({key: message}, out)
             out.write("\n")
 
@@ -382,12 +385,27 @@ def driver(spec) -> None:
     ]
 
     # dnf go brrr
-    base.do_transaction(
-        TransactionProgress(
-            out, ignore_scriptlet_errors=spec["ignore_scriptlet_errors"]
-        )
+    cb = TransactionProgress(
+        out, ignore_scriptlet_errors=spec["ignore_scriptlet_errors"]
     )
-    base.close()
+    try:
+        base.do_transaction(cb)
+    except dnf.exceptions.Error as e:
+        with out as out:
+            message = str(e)
+            if cb.rpms_with_scriptlet_errors:
+                # If we encounter RPMs that must be allowed to have failing
+                # scriptlets while using a version of DNF that forcibly fails
+                # the transaction if that happens, we can swallow the error here
+                # and hope the rest of the installation worked...
+                message += " There were scriptlet errors in the following rpms. "
+                message += "Newer versions of dnf can consider this a hard failure. "
+                message += str(cb.rpms_with_scriptlet_errors)
+            json.dump({"tx_error": message}, out)
+            out.write("\n")
+        sys.exit(1)
+    finally:
+        base.close()
 
     # After doing the transaction, ensure that all the package history entries
     # match the actual reason for installation.
