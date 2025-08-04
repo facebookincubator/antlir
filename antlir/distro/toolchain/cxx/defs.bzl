@@ -80,6 +80,10 @@ def _single_image_cxx_toolchain(
         "$(location antlir//antlir/distro/deps/glibc:include)",
     ]
 
+    tee_compile_flags = [
+        "-DTEE_BUILD",
+    ]
+
     nvcc_wrapper_rule = name + "--nvcc-wrapper"
     if os == "centos9":
         for version in CUDA_VERSIONS:
@@ -126,15 +130,15 @@ def _single_image_cxx_toolchain(
         asm_compiler_type = "clang",
         assembler = _layer_tool("clang"),
         c_compiler = _layer_tool("clang"),
-        c_compiler_flags = _llvm_base_args,
+        c_compiler_flags = _llvm_base_args + tee_compile_flags,
         compiler_type = "clang",
         cxx_compiler = _layer_tool("clang++"),
-        cxx_compiler_flags = _llvm_base_args,
+        cxx_compiler_flags = _llvm_base_args + tee_compile_flags,
         cxx_preprocessor_flags = [
             # TODO: this may not always be correct, but I cannot get it to work in
             # any permutation of the stdc++ target, so I'm putting the std here
             "-std=gnu++20",
-        ],
+        ] + tee_compile_flags,
         exec_compatible_with = [
             "ovr_config//os:linux",
         ],
