@@ -11,8 +11,8 @@
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs::OpenOptions;
+use std::os::fd::AsFd;
 use std::os::fd::AsRawFd;
-use std::os::fd::BorrowedFd;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
@@ -79,9 +79,7 @@ fn name_bytes<const L: usize>(name: &OsStr) -> [u8; L] {
     buf
 }
 
-fn ensure_is_btrfs(fd: &impl AsRawFd) -> Result<()> {
-    // SAFETY: Fix when https://github.com/nix-rust/nix/issues/2546 is
-    let fd = unsafe { BorrowedFd::borrow_raw(fd.as_raw_fd()) };
+fn ensure_is_btrfs(fd: &impl AsFd) -> Result<()> {
     let statfs = fstatfs(fd).map_err(std::io::Error::from)?;
     if statfs.filesystem_type() != BTRFS_SUPER_MAGIC {
         return Err(Error::NotBtrfs);
@@ -111,7 +109,7 @@ impl Subvolume {
 
         ensure_is_btrfs(&fd)?;
 
-        let stat = fstat(fd.as_raw_fd()).map_err(std::io::Error::from)?;
+        let stat = fstat(&fd).map_err(std::io::Error::from)?;
         if stat.st_ino != INO_SUBVOL {
             return Err(Error::NotSubvol);
         }
