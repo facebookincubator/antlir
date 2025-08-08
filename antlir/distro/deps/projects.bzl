@@ -1,4 +1,4 @@
-# @generated SignedSource<<203a4eb12cf335558a6b77c28b94b571>>
+# @generated SignedSource<<0bbdb978b6398679e1f42ffe4e28d923>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -26,13 +26,18 @@ PROJECTS = [
     ("cuda", "cublas"),
     ("cuda", "cublasLt"),
     ("cuda", "cuda"),
+    ("cuda", "cuda_driver_api"),
     ("cuda", "cufft"),
     ("cuda", "cufile"),
     ("cuda", "cupti"),
     ("cuda", "curand"),
+    ("cuda", "cusolver"),
     ("cuda", "cusparse"),
     ("cuda", "cusparseLt"),
     ("cuda", "nvJitlink"),
+    ("cuda", "nvToolsExt"),
+    ("cuda", "nvrtc"),
+    ("cuda", "nvrtc-builtins"),
     ("cudnn", "cudnn"),
     ("curl", "curl"),
     ("double_conversion", "double_conversion"),

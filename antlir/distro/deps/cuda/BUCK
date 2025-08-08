@@ -5,6 +5,8 @@ load(":defs.bzl", "cuda")
 
 oncall("antlir")
 
+# CUDA rpms have a POSTIN action of running useradd for some reason, but this is
+# an undeclared dependency.
 image.layer(
     name = "with-undeclared-deps",
     features = [
@@ -18,9 +20,6 @@ image.layer(
     cuda.rpm_library(
         name = name,
         dnf_additional_repos = ["nvidia"],
-        # exported_linker_flags = [
-        #     "-Wl,-rpath={}".format(paths.join("/usr/local/cuda-{version}/targets/{arch}-linux/lib", lib)),
-        # ],
         header_glob = [
             ("/usr/local/cuda-{version}/targets/{arch}-linux/include", "**/*.h"),
         ],
@@ -32,6 +31,7 @@ image.layer(
     )
     for (name, lib, rpm) in [
         ("cuda", "libcudart.so", "cuda-cudart-devel-{version}"),
+        ("cuda_driver_api", "stubs/libcuda.so", "cuda-driver-devel-{version}"),
         ("cusparse", "libcusparse.so", "libcusparse-devel-{version}"),
         ("cusparseLt", "libcusparseLt.so", "libcusparselt-devel"),
         ("cufft", "libcufft.so", "libcufft-devel-{version}"),
@@ -40,6 +40,10 @@ image.layer(
         ("cublas", "libcublas.so", "libcublas-devel-{version}"),
         ("cublasLt", "libcublasLt.so", "libcublas-devel-{version}"),
         ("cupti", "libcupti.so", "cuda-cupti-{version}"),
+        ("cusolver", "libcusolver.so", "libcusolver-devel-{version}"),
         ("nvJitlink", "libnvJitLink.so", "libnvjitlink-devel-{version}"),
+        ("nvrtc", "libnvrtc.so", "cuda-nvrtc-devel-{version}"),
+        ("nvrtc-builtins", "libnvrtc-builtins.so", "cuda-nvrtc-devel-{version}"),
+        ("nvToolsExt", "libnvToolsExt.so", "cuda-nvtx-{version}"),
     ]
 ]
