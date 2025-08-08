@@ -1,4 +1,4 @@
-# @generated SignedSource<<0bbdb978b6398679e1f42ffe4e28d923>>
+# @generated SignedSource<<339112a425f021d207d19681cda8dd04>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -66,6 +66,7 @@ PROJECTS = [
     ("jsoncpp", "jsoncpp"),
     ("kernel-headers", "kernel-headers"),
     ("lcms2", "lcms2"),
+    ("leveldb", "leveldb"),
     ("libcap", "cap"),
     ("libevent", "libevent"),
     ("libffi", "ffi"),
@@ -123,6 +124,7 @@ PROJECTS = [
     ("util-linux", "uuid"),
     ("xxHash", "xxhash"),
     ("xz", "lzma"),
+    ("zeromq", "zeromq"),
     ("zlib", "z"),
     ("zstd", "zstd"),
 ]
