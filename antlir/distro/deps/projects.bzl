@@ -1,4 +1,4 @@
-# @generated SignedSource<<72e001f13e2005a5dda1afff3ec408fb>>
+# @generated SignedSource<<203a4eb12cf335558a6b77c28b94b571>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -97,6 +97,7 @@ PROJECTS = [
     ("nccl", "nccl"),
     ("ncurses", "ncursesw"),
     ("ncurses", "panelw"),
+    ("numa", "numa"),
     ("openjpeg", "openjpeg"),
     ("openmp", "headers"),
     ("openmp", "omp"),

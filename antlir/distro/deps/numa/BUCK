@@ -1,7 +1,9 @@
-load("//antlir/distro/deps:unavailable.bzl", "unavailable")
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 
 oncall("antlir")
 
-unavailable(
+rpm_library(
     name = "numa",
+    rpm = "numactl-devel",
+    visibility = ["PUBLIC"],
 )
