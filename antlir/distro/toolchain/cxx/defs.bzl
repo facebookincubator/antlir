@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbcode//tools/build/buck/wrappers:utils.bzl", "nvcc_wrapper")
+load("@fbcode//tools/build/buck/wrappers:utils.bzl", "asm_wrapper", "nvcc_wrapper")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
@@ -118,6 +118,14 @@ def _single_image_cxx_toolchain(
             "cuda_compiler_type": "clang",
         }
 
+    asm_wrapper_rule = name + "--nasm-wrapper"
+    asm_wrapper(
+        name = asm_wrapper_rule,
+        asm_target = _layer_tool("nasm"),
+    )
+
+    asm_flags = ["-f", "elf64"]
+
     native.cxx_toolchain(
         name = name,
         platform_name = platform_name,
@@ -125,9 +133,12 @@ def _single_image_cxx_toolchain(
         archiver = _layer_tool("llvm-ar"),
         archiver_type = "gnu",
         archiver_flags = _llvm_base_args,
-        asm_compiler = _layer_tool("clang"),
-        asm_compiler_flags = _llvm_base_args,
-        asm_compiler_type = "clang",
+        asm_compiler = ":" + asm_wrapper_rule,
+        asm_compiler_flags = asm_flags,
+        asm_compiler_type = "gcc",
+        asm_preprocessor = ":" + asm_wrapper_rule,
+        asm_preprocessor_flags = asm_flags,
+        asm_preprocessor_type = "gcc",
         assembler = _layer_tool("clang"),
         c_compiler = _layer_tool("clang"),
         c_compiler_flags = _llvm_base_args + tee_compile_flags,

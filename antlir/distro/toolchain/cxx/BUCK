@@ -16,6 +16,7 @@ image.layer(
             "clang-19.1.7",
             "lld-19.1.7",
             "llvm-19.1.7",
+            "nasm",
         ]),
         "//antlir/distro:cleanup",
     ],
