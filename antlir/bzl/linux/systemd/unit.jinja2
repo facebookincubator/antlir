@@ -9,5 +9,11 @@ After={{ unit.after|join(" ") }}
 {% if unit.before %}
 Before={{ unit.before|join(" ") }}
 {% endif %}
+{% if unit.start_limit_interval_sec %}
+StartLimitIntervalSec={{ unit.start_limit_interval_sec }}
+{% endif %}
+{% if unit.start_limit_burst %}
+StartLimitBurst={{ unit.start_limit_burst }}
+{% endif %}
 
 {% block settings %}{% endblock %}
