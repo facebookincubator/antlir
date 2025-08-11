@@ -5,7 +5,7 @@ oncall("antlir")
 rpm_library(
     name = "eigen",
     header_glob = [
-        ("/usr/include/eigen3", "Eigen/**/*"),
+        ("/usr/include/eigen3", "**/*"),
     ],
     header_only = True,
     rpm = "eigen3-devel",
