@@ -17,6 +17,9 @@ export_from_sysroot(
 
 sysroot_dep(
     name = "c",
+    exported_preprocessor_flags = [
+        "-D_GNU_SOURCE",
+    ],
     extract_soname = False,
     lib = "libc.so",
     provided = True,
