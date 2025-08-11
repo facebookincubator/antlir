@@ -12,6 +12,16 @@ load("//antlir/distro/toolchain/cuda:defs.bzl", "CUDA_VERSIONS")
 
 prelude = native
 
+def _prefix_flag(prefix_flag: str, flags: list[str | Select]) -> list[str | Select]:
+    """
+    Add the prefix flag before all flags in `flags`.
+    """
+    out_flags = []
+    for flag in flags:
+        out_flags.append(prefix_flag)
+        out_flags.append(flag)
+    return out_flags
+
 def _single_image_cxx_toolchain(
         *,
         name: str,
@@ -103,7 +113,10 @@ def _single_image_cxx_toolchain(
                     # libshim.so doesn't make it into the container image where invocations run
                     # so ignore it for now at the cost of some non-determinism.
                     "-_OMIT_LIBSHIM_FLAG_",
-                ],
+                ] + selects.apply(
+                    _llvm_base_args + tee_compile_flags,
+                    native.partial(_prefix_flag, "-_NVCC_CLANG_FLAG_"),
+                ),
             )
 
     cuda_tools = {}
