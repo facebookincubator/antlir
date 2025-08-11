@@ -25,6 +25,10 @@ platform(
         # configured_alias() calls seem to require this constraint in the base layer
         "ovr_config//third-party/cuda/constraints:12.8",
         "ovr_config//cpp/constraints:libstdc++",
+        # Don't pull in kineto for pytorch.
+        "fbcode//caffe2/fb/fbcode:disable_kineto",
+        # Don't use JK for pytorch.
+        "ovr_config//torch/constraints:no_knobs",
     ],
     visibility = ["//antlir/..."],
 )
