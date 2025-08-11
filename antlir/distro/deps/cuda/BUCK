@@ -21,29 +21,106 @@ image.layer(
         name = name,
         dnf_additional_repos = ["nvidia"],
         header_glob = [
-            ("/usr/local/cuda-{version}/targets/{arch}-linux/include", "**/*.h"),
+            ("/usr/local/cuda-{version}/targets/{arch}-linux/include", "**/*"),
         ],
         lib = paths.join("/usr/local/cuda-{version}/targets/{arch}-linux/lib", lib),
         # So this doesn't get put into the PAR (because it's a big library)
         # provided = True,
         rpm = rpm,
         test_deps_parent_layer = ":with-undeclared-deps",
+        exported_deps = ["{}--actual".format(dep) for dep in exported_deps],
     )
-    for (name, lib, rpm) in [
-        ("cuda", "libcudart.so", "cuda-cudart-devel-{version}"),
-        ("cuda_driver_api", "stubs/libcuda.so", "cuda-driver-devel-{version}"),
-        ("cusparse", "libcusparse.so", "libcusparse-devel-{version}"),
-        ("cusparseLt", "libcusparseLt.so", "libcusparselt-devel"),
-        ("cufft", "libcufft.so", "libcufft-devel-{version}"),
-        ("cufile", "libcufile.so", "libcufile-devel-{version}"),
-        ("curand", "libcurand.so", "libcurand-devel-{version}"),
-        ("cublas", "libcublas.so", "libcublas-devel-{version}"),
-        ("cublasLt", "libcublasLt.so", "libcublas-devel-{version}"),
-        ("cupti", "libcupti.so", "cuda-cupti-{version}"),
-        ("cusolver", "libcusolver.so", "libcusolver-devel-{version}"),
-        ("nvJitlink", "libnvJitLink.so", "libnvjitlink-devel-{version}"),
-        ("nvrtc", "libnvrtc.so", "cuda-nvrtc-devel-{version}"),
-        ("nvrtc-builtins", "libnvrtc-builtins.so", "cuda-nvrtc-devel-{version}"),
-        ("nvToolsExt", "libnvToolsExt.so", "cuda-nvtx-{version}"),
+    for (name, lib, rpm, exported_deps) in [
+        (
+            "cuda",
+            "libcudart.so",
+            [
+                "cuda-cudart-devel-{version}",
+                "cuda-crt-{version}",
+                "cuda-nvml-devel-{version}",
+                "cuda-profiler-api-{version}",
+            ],
+            [],
+        ),
+        ("cuda_driver_api", "stubs/libcuda.so", "cuda-driver-devel-{version}", []),
+        (
+            "cusparse",
+            "libcusparse.so",
+            "libcusparse-devel-{version}",
+            [":cuda"],
+        ),
+        (
+            "cusparseLt",
+            "libcusparseLt.so",
+            "libcusparselt-devel",
+            [":cuda"],
+        ),
+        (
+            "cufft",
+            "libcufft.so",
+            "libcufft-devel-{version}",
+            [":cuda"],
+        ),
+        (
+            "cufile",
+            "libcufile.so",
+            "libcufile-devel-{version}",
+            [":cuda"],
+        ),
+        (
+            "curand",
+            "libcurand.so",
+            "libcurand-devel-{version}",
+            [":cuda"],
+        ),
+        (
+            "cublas",
+            "libcublas.so",
+            "libcublas-devel-{version}",
+            [
+                ":cuda",
+                ":cublasLt",
+            ],
+        ),
+        (
+            "cublasLt",
+            "libcublasLt.so",
+            "libcublas-devel-{version}",
+            [":cuda"],
+        ),
+        (
+            "cupti",
+            "libcupti.so",
+            "cuda-cupti-{version}",
+            [":cuda"],
+        ),
+        (
+            "cusolver",
+            "libcusolver.so",
+            "libcusolver-devel-{version}",
+            [":cuda"],
+        ),
+        ("nvJitlink", "libnvJitLink.so", "libnvjitlink-devel-{version}", []),
+        (
+            "nvrtc",
+            "libnvrtc.so",
+            "cuda-nvrtc-devel-{version}",
+            [
+                ":cuda",
+                ":nvrtc-builtins",
+            ],
+        ),
+        (
+            "nvrtc-builtins",
+            "libnvrtc-builtins.so",
+            "cuda-nvrtc-devel-{version}",
+            [":cuda"],
+        ),
+        (
+            "nvToolsExt",
+            "libnvToolsExt.so",
+            "cuda-nvtx-{version}",
+            [":cuda"],
+        ),
     ]
 ]
