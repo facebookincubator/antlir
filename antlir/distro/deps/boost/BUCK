@@ -1,53 +1,34 @@
-load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
-load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load(":defs.bzl", "boost_system_library")
+load(":defs.bzl", "boost_rpm_library")
 
 oncall("antlir")
 
-image.layer(
-    name = "layer",
-    features = [
-        feature.rpms_install(subjects = select({
-            "//antlir/antlir2/os:centos10": ["boost-devel"],
-            "//antlir/antlir2/os:centos9": ["boost1.78-devel"],
-            "DEFAULT": ["boost-devel"],
-        })),
+header_globs = select({
+    "//antlir/antlir2/os:centos10": [
+        ("/usr/include", "boost/**/*"),
     ],
-)
+    "//antlir/antlir2/os:centos9": [
+        ("/usr/include/boost1.78", "boost/**/*"),
+    ],
+    "DEFAULT": [
+        ("/usr/include", "boost/**/*"),
+    ],
+})
 
-hoist(
-    name = "headers",
-    out = "boost",
-    dir = True,
-    layer = ":layer",
-    path = select({
-        "//antlir/antlir2/os:centos10": "/usr/include/boost",
-        "DEFAULT": "/usr/include/boost1.78/boost",
-    }),
-)
-
-boost_system_library(
+boost_rpm_library(
     name = "boost",
+    header_namespace = "boost",
+    header_glob = header_globs,
     header_only = True,
 )
 
-boost_system_library(
-    name = "boost_thread",
-    # TODO(T213442795): hardcoding this version is gross but antlir doesn't
-    # understand ld scripts
-    path = select({
-        "//antlir/antlir2/os:centos10": "/usr/lib64/libboost_thread.so.1.83.0",
-        "DEFAULT": "/usr/lib64/libboost_thread.so.1.78.0",
-    }),
-    exported_deps = [":boost_system"],
-)
-
 [
-    boost_system_library(
+    boost_rpm_library(
         name = "boost_" + name,
-        path = select({
+        header_namespace = "boost",
+        header_glob = header_globs,
+        lib = select({
             "//antlir/antlir2/os:centos10": "/usr/lib64/libboost_{}.so.1.83.0".format(name),
+            "//antlir/antlir2/os:centos9": "/usr/lib64/libboost_{}.so.1.78.0".format(name),
             "DEFAULT": "/usr/lib64/libboost_{}.so.1.78.0".format(name),
         }),
     )
@@ -58,12 +39,15 @@ boost_system_library(
         "regex",
         "serialization",
         "system",
+        "thread",
     ]
 ]
 
 [
-    boost_system_library(
+    boost_rpm_library(
         name = "boost_" + name,
+        header_namespace = "boost",
+        header_glob = header_globs,
         header_only = True,
     )
     for name in [
