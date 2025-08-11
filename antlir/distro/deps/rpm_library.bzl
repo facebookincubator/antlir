@@ -91,6 +91,7 @@ def rpm_library(
         dnf_additional_repos: list[str] | None = None,
         test_deps_parent_layer: str | None = None,
         tests: bool = True,
+        layer: Select | str | None = None,
         **kwargs):
     """
     Define a cxx_library target that can be used in Buck builds to depend on a
@@ -127,16 +128,20 @@ def rpm_library(
         rpm,
         lambda rpm: [rpm] if isinstance(rpm, str) else rpm,
     )
-    image.layer(
-        name = "{}--layer".format(name),
-        features = [
-            feature.rpms_install(subjects = subjects),
-        ],
-        parent_layer = "antlir//antlir/distro/deps:base",
-        rootless = True,
-        target_compatible_with = target_compatible_with,
-        dnf_additional_repos = dnf_additional_repos,
-    )
+
+    if not layer:
+        layer = "{}--layer".format(name)
+        image.layer(
+            name = layer,
+            features = [
+                feature.rpms_install(subjects = subjects),
+            ],
+            parent_layer = "antlir//antlir/distro/deps:base",
+            rootless = True,
+            target_compatible_with = target_compatible_with,
+            dnf_additional_repos = dnf_additional_repos,
+        )
+        layer = ":" + layer
 
     lib = lib or name
     soname = name + ".so"
@@ -152,7 +157,7 @@ def rpm_library(
         header_glob = header_glob,
         rpm_name = rpm,
         support_linker_l = support_linker_l,
-        layer = ":{}--layer".format(name),
+        layer = layer,
         target_compatible_with = target_compatible_with,
     )
 
