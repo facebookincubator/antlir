@@ -78,6 +78,7 @@ def _single_image_cxx_toolchain(
         "-Wno-nullability-completeness",
         "-Wno-unused-command-line-argument",
         "-fopenmp",
+        "-fclang-abi-compat=17",
         "-nostdinc",
         "-nostdinc++",
         # Make sure these are passed in because when compilations run on RE we
@@ -190,6 +191,7 @@ def _single_image_cxx_toolchain(
             "-Wl,-nostdlib",
             "-L$(location antlir//antlir/distro/deps/libgcc:gcc-redhat-linux)",
             "-B$(location antlir//antlir/distro/deps/glibc:lib)",
+            "-L$(location antlir//antlir/distro/deps/glibc:lib)",
         ] + _llvm_base_args,
         linker_type = "gnu",
         generate_linker_maps = False, # @oss-enable
