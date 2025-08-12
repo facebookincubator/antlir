@@ -151,7 +151,7 @@ impl<S: Share> VM<S> {
             }
         }
         let tpm = match machine.use_tpm {
-            true => Some(TPMDevice::new(&state_dir)?),
+            true => Some(TPMDevice::new(&state_dir, machine.arch)?),
             false => None,
         };
         let identifier = Uuid::new_v4().to_string();

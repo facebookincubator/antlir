@@ -16,6 +16,7 @@ use thiserror::Error;
 use tracing::Level;
 use tracing_subscriber::filter::LevelFilter;
 
+use crate::types::CpuIsa;
 use crate::types::QemuDevice;
 
 /// TPM 2.0 device
@@ -23,6 +24,7 @@ use crate::types::QemuDevice;
 pub(crate) struct TPMDevice {
     /// State directory for swtpm
     state_dir: PathBuf,
+    arch: CpuIsa,
 }
 
 #[derive(Debug, Error)]
@@ -37,11 +39,11 @@ type Result<T> = std::result::Result<T, TPMError>;
 
 impl TPMDevice {
     /// Create a new TPM device and start the process
-    pub(crate) fn new(parent_state_dir: &Path) -> Result<Self> {
+    pub(crate) fn new(parent_state_dir: &Path, arch: CpuIsa) -> Result<Self> {
         let state_dir = parent_state_dir.join("tpm");
         fs::create_dir(&state_dir).map_err(TPMError::StateDirectoryError)?;
         Self::start_tpm(state_dir.as_path())?;
-        Ok(Self { state_dir })
+        Ok(Self { state_dir, arch })
     }
 
     fn socket_path(&self) -> PathBuf {
@@ -90,7 +92,10 @@ impl QemuDevice for TPMDevice {
             "-tpmdev",
             "emulator,id=tpm0,chardev=chrtpm",
             "-device",
-            "tpm-tis,tpmdev=tpm0",
+            match self.arch {
+                CpuIsa::AARCH64 => "tpm-tis-device,tpmdev=tpm0",
+                CpuIsa::X86_64 => "tpm-tis,tpmdev=tpm0",
+            },
         ]
         .iter()
         .map(|x| x.into())
@@ -109,6 +114,7 @@ mod test {
         let tmp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
         let tpm = TPMDevice {
             state_dir: tmp_dir.path().to_owned(),
+            arch: CpuIsa::X86_64,
         };
         assert_eq!(
             tpm.qemu_args().join(OsStr::new(" ")),

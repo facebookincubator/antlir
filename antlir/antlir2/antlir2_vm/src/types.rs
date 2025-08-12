@@ -195,7 +195,7 @@ impl VMArgs {
     }
 }
 
-#[derive(Debug, Clone, Default, Deserialize, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, Deserialize, PartialEq)]
 pub(crate) enum CpuIsa {
     #[serde(rename = "aarch64")]
     AARCH64,
