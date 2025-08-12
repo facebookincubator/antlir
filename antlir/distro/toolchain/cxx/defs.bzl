@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@fbcode//buck2/platform/cxx_toolchains:gen_modes.bzl", "DEV", "OPT", "get_cxx_tool_mode_flags", "get_mode_ldflags")
 load("@fbcode//tools/build/buck/wrappers:utils.bzl", "asm_wrapper", "nvcc_wrapper")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
@@ -11,6 +12,22 @@ load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/distro/toolchain/cuda:defs.bzl", "CUDA_VERSIONS")
 
 prelude = native
+
+# C preprocessor flags that get passed to every compiler invocation.
+_base_pp_flags = [
+    # Denotes this is a TEE build (used in C / C++ to gate out specific code).
+    "-DTEE_BUILD",
+]
+
+# Linker flags passed to every linker instance
+# These are set in buck tool wrappers which we don't use, so define them here.
+_base_ldflags = [
+    "-nodefaultlibs",
+    "-Wl,-nostdlib",
+    "-L$(location antlir//antlir/distro/deps/libgcc:gcc-redhat-linux)",
+    "-B$(location antlir//antlir/distro/deps/glibc:lib)",
+    "-L$(location antlir//antlir/distro/deps/glibc:lib)",
+]
 
 def _prefix_flag(prefix_flag: str, flags: list[str | Select]) -> list[str | Select]:
     """
@@ -21,6 +38,20 @@ def _prefix_flag(prefix_flag: str, flags: list[str | Select]) -> list[str | Sele
         out_flags.append(prefix_flag)
         out_flags.append(flag)
     return out_flags
+
+def _get_mode_ldflags_select() -> Select:
+    """
+    Returns a selectified list of ldflags derived from fbcode toolchains to pass to the linker.
+    """
+    return selects.apply(
+        _base_ldflags + select({
+            "DEFAULT": get_mode_ldflags(platform = "platform010", cxx_mode = DEV.cxx),
+            "ovr_config//build_mode/constraints:opt": get_mode_ldflags(platform = "platform010", cxx_mode = OPT.cxx),
+        }),
+        # --discard-section is an fb-specific linker flag that antlir's ld.lld
+        # doesn't understand.
+        lambda flags: [f for f in flags if not "--discard-section" in f],
+    )
 
 def _single_image_cxx_toolchain(
         *,
@@ -58,7 +89,8 @@ def _single_image_cxx_toolchain(
             **kwargs
         )
 
-    _llvm_base_args = [
+    # These are set in the buck tool wrappers which the distro toolchain doesn't use
+    base_compiler_flags = [
         # Make sure clang doesn't use its default configs and pick the wrong gcc.
         "--no-default-config",
         "-target",
@@ -67,18 +99,8 @@ def _single_image_cxx_toolchain(
             "ovr_config//cpu:x86_64": "x86_64-redhat-linux-gnu",
         }),
         "--sysroot=$(location {})".format(sysroot),
-    ] + select({
-        "DEFAULT": [],
-        # Include arch-specific flags that are set by fbcode cxx toolchains.
-        "ovr_config//cpu:x86_64": [
-            "-march=haswell",
-            "-mtune=skylake",
-        ],
-    }) + [
-        "-Wno-nullability-completeness",
+        # These come from buck wrappers which we don't use, so keep these.
         "-Wno-unused-command-line-argument",
-        "-fopenmp",
-        "-fclang-abi-compat=17",
         "-nostdinc",
         "-nostdinc++",
         # Make sure these are passed in because when compilations run on RE we
@@ -91,9 +113,29 @@ def _single_image_cxx_toolchain(
         "$(location antlir//antlir/distro/deps/glibc:include)",
     ]
 
-    tee_compile_flags = [
-        "-DTEE_BUILD",
-    ]
+    def _get_cxx_tool_mode_flags_select(**kwargs) -> Select:
+        """
+        Calls get_cxx_tool_mode_flags() with appropriate arguments to yield commonly-used
+        fbcode toolchain flags we pass along to the toolchain.
+
+        This selects between dev / opt mode so we can enable both of those build modes for TEE.
+        """
+        kwargs = {
+            # We only support x86_64 for distro toolchain right now.
+            "arch": "x86_64",
+            # We only support clang as a compiler in distro toolchain.
+            "compiler": "clang",
+            # get_cxx_tool_mode_flags mostly just sets gcc-specific flags, but we use clang as the host compiler
+            # so ignore this.
+            "is_nvcc": False,
+            # Default to platform010 for distro builds, used for resolving platform-specific flags.
+            "platform": "platform010",
+        } | kwargs
+
+        return base_compiler_flags + select({
+            "DEFAULT": get_cxx_tool_mode_flags(cxx_mode = DEV.cxx, **kwargs),
+            "ovr_config//build_mode/constraints:opt": get_cxx_tool_mode_flags(cxx_mode = OPT.cxx, **kwargs),
+        })
 
     nvcc_wrapper_rule = name + "--nvcc-wrapper"
     if os == "centos9":
@@ -115,7 +157,7 @@ def _single_image_cxx_toolchain(
                     # so ignore it for now at the cost of some non-determinism.
                     "-_OMIT_LIBSHIM_FLAG_",
                 ] + selects.apply(
-                    _llvm_base_args + tee_compile_flags,
+                    base_compiler_flags + _base_pp_flags,
                     native.partial(_prefix_flag, "-_NVCC_CLANG_FLAG_"),
                 ),
             )
@@ -146,7 +188,7 @@ def _single_image_cxx_toolchain(
         platform_deps_aliases = platform_deps_aliases,
         archiver = _layer_tool("llvm-ar"),
         archiver_type = "gnu",
-        archiver_flags = _llvm_base_args,
+        archiver_flags = base_compiler_flags,
         asm_compiler = ":" + asm_wrapper_rule,
         asm_compiler_flags = asm_flags,
         asm_compiler_type = "gcc",
@@ -155,44 +197,18 @@ def _single_image_cxx_toolchain(
         asm_preprocessor_type = "gcc",
         assembler = _layer_tool("clang"),
         c_compiler = _layer_tool("clang"),
-        c_compiler_flags = _llvm_base_args + tee_compile_flags,
+        c_compiler_flags = _get_cxx_tool_mode_flags_select(pp = False, is_cxx = False),
+        c_preprocessor_flags = _base_pp_flags + _get_cxx_tool_mode_flags_select(pp = True, is_cxx = False),
         compiler_type = "clang",
         cxx_compiler = _layer_tool("clang++"),
-        cxx_compiler_flags = _llvm_base_args + tee_compile_flags,
-        cxx_preprocessor_flags = [
-            # TODO: this may not always be correct, but I cannot get it to work in
-            # any permutation of the stdc++ target, so I'm putting the std here
-            "-std=gnu++20",
-        ] + tee_compile_flags,
+        cxx_compiler_flags = _get_cxx_tool_mode_flags_select(pp = False, is_cxx = True),
+        cxx_preprocessor_flags = _base_pp_flags + _get_cxx_tool_mode_flags_select(pp = True, is_cxx = True),
         exec_compatible_with = [
             "ovr_config//os:linux",
         ],
         link_ordering = "topological",
         linker = _layer_tool("clang"),
-        linker_flags = [
-            # Allow text relocations in the output.  Text sections (i.e. compiled code)
-            # may require relocations.  As code segments are  marked as read-only,
-            # LLD would not want to modify it (to apply the relocation) by default.
-            # We'll allow that; in fact PIC ELFs require this.  Gold has `notext`
-            # enabled by default, and BFD ld always allows that; match their
-            # behavior.  https://reviews.llvm.org/D30530
-            "-Wl,-z,notext",
-            # Partial relro
-            "-Wl,-z,relro",
-            # Garbage collect sections to control binary size (S184081).
-            # Size reduction in dynamically linked binaries will be less than that of
-            # statically linked binaries, only non-exported symbols could be marked
-            # "live" and be eligible for removal.
-            "-Wl,--gc-sections",
-            # LLD is faster and uses less RAM than GOLD.
-            # A Buck target may opt-out of linking with lld by using '-fuse-ld=gold'.
-            "-fuse-ld=lld",
-            "-nodefaultlibs",
-            "-Wl,-nostdlib",
-            "-L$(location antlir//antlir/distro/deps/libgcc:gcc-redhat-linux)",
-            "-B$(location antlir//antlir/distro/deps/glibc:lib)",
-            "-L$(location antlir//antlir/distro/deps/glibc:lib)",
-        ] + _llvm_base_args,
+        linker_flags = _get_mode_ldflags_select(),
         linker_type = "gnu",
         generate_linker_maps = False, # @oss-enable
         nm = _layer_tool("llvm-nm"),
