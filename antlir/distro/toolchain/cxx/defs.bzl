@@ -64,6 +64,13 @@ def _single_image_cxx_toolchain(
         visibility: list[str] = []):
     def _layer_tool(tool: str, version: str | None = None, **kwargs) -> str:
         tool_name = name + "--" + tool + (("-" + version) if version else "")
+        pass_env = kwargs.pop("pass_env", [])
+
+        # buck-out is bind-mounted into the container for tool execution, but
+        # make sure this buck-provided scratch dir is visible in the container.
+        if "BUCK_SCRATCH_PATH" not in pass_env:
+            pass_env.append("BUCK_SCRATCH_PATH")
+
         if not native.rule_exists(tool_name):
             image_command_alias(
                 name = tool_name,
@@ -72,6 +79,7 @@ def _single_image_cxx_toolchain(
                 default_os = os,
                 rootless = True,
                 visibility = visibility,
+                pass_env = pass_env,
                 **kwargs
             )
         return ":" + tool_name
