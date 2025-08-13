@@ -1,4 +1,4 @@
-# @generated SignedSource<<d6055fc5c365dda3423e56fd3ebd5c05>>
+# @generated SignedSource<<ba6ef14046f73d426368ed2066b7b0a5>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -8,10 +8,12 @@ PROJECTS = [
     ("boost", "boost_container"),
     ("boost", "boost_context"),
     ("boost", "boost_date_time"),
+    ("boost", "boost_dll"),
     ("boost", "boost_filesystem"),
     ("boost", "boost_lexical_cast"),
     ("boost", "boost_multi_index"),
     ("boost", "boost_preprocessor"),
+    ("boost", "boost_program_options"),
     ("boost", "boost_random"),
     ("boost", "boost_range"),
     ("boost", "boost_regex"),
