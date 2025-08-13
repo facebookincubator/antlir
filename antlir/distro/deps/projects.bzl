@@ -1,4 +1,4 @@
-# @generated SignedSource<<3dd597c9465c83b8dd7c6d96c92d17a3>>
+# @generated SignedSource<<d6055fc5c365dda3423e56fd3ebd5c05>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -70,6 +70,7 @@ PROJECTS = [
     ("libcap", "cap"),
     ("libevent", "libevent"),
     ("libffi", "ffi"),
+    ("libflac", "flac"),
     ("libgcc", "atomic"),
     ("libgcc", "atomic-header-unit"),
     ("libgcc", "gcc_s"),
@@ -78,6 +79,7 @@ PROJECTS = [
     ("libgcc", "stdc++fs"),
     ("libjpeg-turbo", "jpeg"),
     ("libmcrypt", "libmcrypt"),
+    ("libogg", "ogg"),
     ("libpng", "png"),
     ("libsodium", "sodium"),
     ("libtiff", "tiff"),
@@ -238,6 +240,7 @@ PROJECTS = [
     ("openmp", "omp"),
     ("openssl", "crypto"),
     ("openssl", "ssl"),
+    ("opus", "opus"),
     ("pcre", "pcre"),
     ("pcre", "pcrecpp"),
     ("protobuf", "protobuf"),
