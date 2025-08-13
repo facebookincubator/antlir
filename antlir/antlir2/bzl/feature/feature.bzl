@@ -64,6 +64,7 @@ load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary_rule"
 # @oss-disable
 # @oss-disable
 # @oss-disable
+# @oss-disable
 load("//antlir/antlir2/features/genrule:genrule.bzl", "genrule_rule")
 load("//antlir/antlir2/features/group:group.bzl", "group_rule")
 load("//antlir/antlir2/features/hardlink:hardlink.bzl", "hardlink_rule")
@@ -90,6 +91,7 @@ _anon_rules = {
     "ensure_file_symlink": ensure_file_symlink_rule,
     "extract_buck_binary": extract_buck_binary_rule,
     "extract_from_layer": extract_from_layer_rule,
+    # @oss-disable
     # @oss-disable
     # @oss-disable
     # @oss-disable
@@ -245,6 +247,7 @@ _nested_feature_type = attrs.option(
                 attrs.string(),
                 attrs.one_of(
                     attrs.dep(),
+                    attrs.list(attrs.dep()),
                     # @oss-disable
                 ),
                 doc = "ParseTimeFeature.deps",
