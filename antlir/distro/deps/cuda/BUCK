@@ -122,5 +122,11 @@ image.layer(
             "cuda-nvtx-{version}",
             [":cuda"],
         ),
+        (
+            "nvml",
+            "libnvidia-ml.so",
+            "cuda-nvml-devel-{version}",
+            [],
+        ),
     ]
 ]
