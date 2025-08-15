@@ -121,6 +121,16 @@ def _single_image_cxx_toolchain(
         "$(location antlir//antlir/distro/deps/glibc:include)",
     ]
 
+    # These are antlir toolchain-specific flags which fbocde does _not_ usually set.
+    antlir_compiler_flags = [
+        # glog uses an old-style static assert that trips this warning. We get
+        # glog from a distro RPM so it's hard to change. This warning doesn't catch
+        # much for us anyway, so let's just disable it.
+        "-Wno-error=unused-local-typedef",
+    ]
+
+    compiler_flags = base_compiler_flags + antlir_compiler_flags
+
     def _get_cxx_tool_mode_flags_select(**kwargs) -> Select:
         """
         Calls get_cxx_tool_mode_flags() with appropriate arguments to yield commonly-used
@@ -140,7 +150,7 @@ def _single_image_cxx_toolchain(
             "platform": "platform010",
         } | kwargs
 
-        return base_compiler_flags + select({
+        return compiler_flags + select({
             "DEFAULT": get_cxx_tool_mode_flags(cxx_mode = DEV.cxx, **kwargs),
             "ovr_config//build_mode/constraints:opt": get_cxx_tool_mode_flags(cxx_mode = OPT.cxx, **kwargs),
         })
@@ -165,7 +175,7 @@ def _single_image_cxx_toolchain(
                     # so ignore it for now at the cost of some non-determinism.
                     "-_OMIT_LIBSHIM_FLAG_",
                 ] + selects.apply(
-                    base_compiler_flags + _base_pp_flags,
+                    compiler_flags + _base_pp_flags,
                     native.partial(_prefix_flag, "-_NVCC_CLANG_FLAG_"),
                 ),
             )
@@ -196,7 +206,7 @@ def _single_image_cxx_toolchain(
         platform_deps_aliases = platform_deps_aliases,
         archiver = _layer_tool("llvm-ar"),
         archiver_type = "gnu",
-        archiver_flags = base_compiler_flags,
+        archiver_flags = compiler_flags,
         asm_compiler = ":" + asm_wrapper_rule,
         asm_compiler_flags = asm_flags,
         asm_compiler_type = "gcc",

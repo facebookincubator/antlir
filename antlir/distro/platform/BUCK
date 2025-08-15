@@ -14,6 +14,9 @@ platform(
         # @oss-disable
         # Basic configuration info about the platform
         "ovr_config//os/constraints:linux",
+        # Compiler information; we always use clang.
+        "ovr_config//compiler/constraints:clang",
+        "ovr_config//compiler/constraints:gcc-or-clang",
         # TODO: figure out how to build sanitized binaries?
         # @oss-disable
         # python_binary targets are destined for an image that has no fbcode
