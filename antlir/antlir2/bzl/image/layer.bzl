@@ -64,6 +64,7 @@ def _compile(
         out_arg = cmd_args(subvol_symlink.as_output(), format = "--output={}")
         contents = LayerContents(
             subvol_symlink = subvol_symlink,
+            subvol_symlink_rootless = rootless,
         )
     else:
         fail("unknown working format '{}'".format(ctx.attrs._working_format))

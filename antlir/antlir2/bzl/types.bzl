@@ -29,6 +29,8 @@ FlavorDnfInfo = provider(fields = [
 # local subvolumes are supported
 LayerContents = record(
     subvol_symlink = field(Artifact),  # symlink pointing to the built subvol
+    # was the subvol built in rootless mode or not?
+    subvol_symlink_rootless = field(bool),
 )
 
 LayerInfo = provider(

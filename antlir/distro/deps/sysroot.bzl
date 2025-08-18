@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
-load("//antlir/antlir2/bzl:hoist.bzl", "hoist", "hoist_many")
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load(":dep_distance_extender.bzl", "dep_distance_extender")
 load(":prebuilt_cxx_library.bzl", "prebuilt_cxx_library")
@@ -17,7 +17,6 @@ def export_from_sysroot(name: str, path: str | Select, visibility = ["PUBLIC"], 
         name = name,
         path = path,
         layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
-        rootless = True,
         visibility = visibility,
         **kwargs
     )
@@ -40,11 +39,10 @@ def sysroot_dep(
         name = name + "-lib",
         layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
         path = selects.apply(lib, lambda l: l if paths.is_absolute(l) else paths.join("/usr/lib64", l)),
-        rootless = True,
         visibility = [],
     )
 
-    hoist_many(
+    hoist(
         name = name + "-headers",
         layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
         paths = selects.apply(
@@ -54,8 +52,6 @@ def sysroot_dep(
                 for header_dir in header_dirs
             ],
         ),
-        dirs = True,
-        rootless = True,
         visibility = [],
         target_compatible_with = kwargs.get("target_compatible_with"),
     )
