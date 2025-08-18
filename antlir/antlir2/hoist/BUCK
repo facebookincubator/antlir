@@ -1,0 +1,21 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "hoist",
+    srcs = ["hoist.rs"],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "cap-std",
+        "clap",
+        "nix",
+        "tracing",
+        "tracing-subscriber",
+        "walkdir",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+    ],
+)

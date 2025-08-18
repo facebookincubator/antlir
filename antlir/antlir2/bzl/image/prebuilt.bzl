@@ -108,7 +108,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         error_handler = antlir2_error_handler,
     )
 
-    contents = LayerContents(subvol_symlink = subvol_symlink)
+    contents = LayerContents(
+        subvol_symlink = subvol_symlink,
+        subvol_symlink_rootless = ctx.attrs._rootless,
+    )
 
     return [
         LayerInfo(
