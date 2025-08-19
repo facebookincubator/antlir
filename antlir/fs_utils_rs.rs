@@ -48,8 +48,12 @@ impl AsRef<Path> for AntlirPath {
     }
 }
 
-impl IntoPy<PyObject> for AntlirPath {
-    fn into_py(self, py: Python) -> PyObject {
+impl<'py> IntoPyObject<'py> for AntlirPath {
+    type Target = pyo3::PyAny;
+    type Output = pyo3::Bound<'py, Self::Target>;
+    type Error = std::convert::Infallible;
+
+    fn into_pyobject(self, py: pyo3::Python<'py>) -> Result<Self::Output, Self::Error> {
         // This is breaking our unwritten golden rule of never go
         // Python->Rust->Python, but it's a necessary indirection evil
         // until/unless we replace antlir.fs_utils.Path with a Rust
@@ -58,12 +62,11 @@ impl IntoPy<PyObject> for AntlirPath {
             PyModule::import(py, "antlir.fs_utils").expect("antlir.fs_utils must be available");
         let bytes = PyBytes::new(py, self.0.as_os_str().as_bytes());
         // finally, create a fs_utils.Path from the bytes object
-        fs_utils
+        Ok(fs_utils
             .getattr("Path")
             .expect("antlir.fs_utils always has Path")
             .call1((bytes,))
-            .expect("antlir.fs_utils.Path failed to take a byte string")
-            .into()
+            .expect("antlir.fs_utils.Path failed to take a byte string"))
     }
 }
 
