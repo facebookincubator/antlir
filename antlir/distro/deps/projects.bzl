@@ -1,4 +1,4 @@
-# @generated SignedSource<<50bd06e92597a4c84ca82ad183560ac4>>
+# @generated SignedSource<<07036df4bd3ed9d56c6f6c8db0fe0adf>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -264,6 +264,7 @@ PROJECTS = [
     ("llvm-fb", "clang_rt.tsan_cxx"),
     ("llvm-fb", "clang_rt.ubsan_standalone"),
     ("llvm-fb", "clang_rt.ubsan_standalone_cxx"),
+    ("lz4", "lz4"),
     ("lzo", "lzo2"),
     ("nccl", "nccl"),
     ("ncurses", "ncursesw"),

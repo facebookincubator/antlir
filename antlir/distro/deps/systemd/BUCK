@@ -5,4 +5,10 @@ oncall("antlir")
 rpm_library(
     name = "systemd",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        "fbcode//antlir/distro/deps/libcap:cap",
+        "fbcode//antlir/distro/deps/lz4:lz4",
+        "fbcode//antlir/distro/deps/xz:lzma",
+        "fbcode//antlir/distro/deps/zstd:zstd",
+    ],
 )
