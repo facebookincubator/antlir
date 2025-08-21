@@ -170,6 +170,7 @@ def _single_image_cxx_toolchain(
                 gcc_target = _cuda_layer_tool("gcc", version = version),
                 clang_target = _cuda_layer_tool("clang", version = version),
                 cuda_target = "antlir//antlir/distro/toolchain/cuda:cuda_path-{}".format(version),
+                cuda_version = version,
                 args = [
                     # libshim.so doesn't make it into the container image where invocations run
                     # so ignore it for now at the cost of some non-determinism.
