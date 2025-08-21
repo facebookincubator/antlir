@@ -95,10 +95,13 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
         trace!("processing dir entry");
         let meta = entry.metadata()?;
 
-        // subvolumes all report the ino as 256, so don't track those for
-        // hardlink candidates
-        let is_subvol = Subvolume::open(entry.path()).is_ok();
-        if !is_subvol {
+        // Recursive subvolumes are tricky for antlir to manage - snapshots are
+        // not recursive for example and the traces of the recursive subvolumes
+        // are left as directories that appear to all have ino=2.
+        // But rather than handle subvolumes specially, just skip all
+        // directories when doing this can-be-hardlinked check, since
+        // directories cannot be hardlinked
+        if !meta.is_dir() {
             match inodes.entry((meta.dev(), meta.ino())) {
                 std::collections::hash_map::Entry::Occupied(e) => {
                     if let Some(parent) = &spec.incremental_parent {
@@ -106,6 +109,10 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
                         match parent_path.symlink_metadata() {
                             Ok(parent_meta) => {
                                 // hardlink already exists in child, skip
+                                // NOTE: the 'st_dev' is intentionally not
+                                // checked here, as subvolumes have artificially
+                                // different 'st_dev' values, even when
+                                // snapshotted
                                 if parent_meta.ino() == meta.ino() {
                                     continue;
                                 }
