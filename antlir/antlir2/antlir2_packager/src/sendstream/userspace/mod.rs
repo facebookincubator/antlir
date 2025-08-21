@@ -81,7 +81,7 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
     }
 
     // map ino -> relpath so that hardlinks can be detected
-    let mut inodes: HashMap<u64, PathBuf> = HashMap::new();
+    let mut inodes: HashMap<(u64, u64), PathBuf> = HashMap::new();
     // keep track of relpaths which are seen in this subvol in case they
     // need to be deleted from the parent
     let mut present_relpaths: HashSet<PathBuf> = HashSet::new();
@@ -99,7 +99,7 @@ pub(super) fn build(spec: &Sendstream, out: &Path, layer: &Path) -> Result<()> {
         // hardlink candidates
         let is_subvol = Subvolume::open(entry.path()).is_ok();
         if !is_subvol {
-            match inodes.entry(entry.ino()) {
+            match inodes.entry((meta.dev(), meta.ino())) {
                 std::collections::hash_map::Entry::Occupied(e) => {
                     if let Some(parent) = &spec.incremental_parent {
                         let parent_path = parent.join(relpath);
