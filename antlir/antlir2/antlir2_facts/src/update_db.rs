@@ -8,6 +8,7 @@
 use std::io::ErrorKind;
 use std::io::Seek;
 use std::io::Write as _;
+use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -32,11 +33,12 @@ use anyhow::ensure;
 use bon::builder;
 use clap::Parser;
 use fxhash::FxHashSet;
-use jwalk::WalkDir;
 use tracing::warn;
+use walkdir::WalkDir;
 
 use crate::Error;
 use crate::Result;
+use crate::fact::subvolume::Subvolume;
 
 #[derive(Parser)]
 struct Args {
@@ -66,8 +68,11 @@ fn populate(
 }
 
 fn populate_files(tx: &mut Transaction, root: &Path) -> anyhow::Result<()> {
-    let mut remove: FxHashSet<_> = tx.all_keys::<DirEntry>()?.collect();
-    for entry in WalkDir::new(root).skip_hidden(false) {
+    let mut remove: FxHashSet<_> = tx
+        .all_keys::<DirEntry>()?
+        .chain(tx.all_keys::<Subvolume>()?)
+        .collect();
+    for entry in WalkDir::new(root) {
         let entry = entry?;
         let full_path = entry.path();
         let relpath = full_path
@@ -94,9 +99,16 @@ fn populate_files(tx: &mut Transaction, root: &Path) -> anyhow::Result<()> {
         };
         remove.remove(&fact.key());
         tx.insert(&fact)?;
+        // if this is a subvolume, log it so that antlir is aware that it's not just a directory
+        if meta.ino() == antlir2_btrfs::INO_SUBVOL
+            && antlir2_btrfs::Subvolume::open(full_path).is_ok()
+        {
+            tx.insert(&Subvolume::new(path))?;
+        }
     }
     for remove in &remove {
         tx.delete::<DirEntry>(remove)?;
+        tx.delete::<Subvolume>(remove)?;
     }
     Ok(())
 }
@@ -250,7 +262,11 @@ impl Root<'_> {
 }
 
 #[builder]
-pub fn sync_db_with_layer(db: &Path, layer: &Path, build_appliance: Option<&Path>) -> Result<()> {
+pub fn sync_db_with_layer(
+    db: &Path,
+    layer: &Path,
+    build_appliance: Option<&Path>,
+) -> Result<RwDatabase> {
     let mut db = RwDatabase::create(db)
         .with_context(|| format!("while preparing db {}", db.display()))
         .map_err(Error::Populate)?;
@@ -268,5 +284,5 @@ pub fn sync_db_with_layer(db: &Path, layer: &Path, build_appliance: Option<&Path
         .context("while committing tx")
         .map_err(Error::Populate)?;
 
-    Ok(())
+    Ok(db)
 }

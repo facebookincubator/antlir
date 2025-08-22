@@ -33,6 +33,11 @@ pub enum Error {
     Rootless(#[from] antlir2_rootless::Error),
     #[error(transparent)]
     Facts(#[from] antlir2_facts::Error),
+    #[error(
+        "Image contained a nested subvolume '{0:?}' that was not empty. \
+        This is unsafe as contents cannot be preserved across snapshots."
+    )]
+    NestedSubvolume(PathBuf),
     #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
 }
@@ -99,6 +104,7 @@ impl Error {
             Error::Btrfs(_) => Some("btrfs"),
             Error::Rootless(_) => Some("rootless"),
             Error::Facts(_) => Some("facts"),
+            Error::NestedSubvolume(_) => Some("nested_subvolume"),
             Error::Uncategorized(_) => None,
         }
     }

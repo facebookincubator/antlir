@@ -30,7 +30,7 @@ use tracing::trace;
 use tracing::trace_span;
 use uuid::Uuid;
 
-const INO_SUBVOL: u64 = 256;
+pub const INO_SUBVOL: u64 = 256;
 
 mod ioctl;
 
