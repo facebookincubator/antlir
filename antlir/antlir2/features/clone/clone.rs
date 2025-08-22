@@ -136,7 +136,7 @@ impl antlir2_depgraph_if::RequiresProvides for Clone {
             for entry in src_facts
                 .iter_prefix::<DirEntry>(&DirEntry::key(&self.src_path))
                 .map_err(|e| format!("failed to iterate directory entries: {e:#?}"))?
-                .take_while(|entry| entry.path().starts_with(&self.src_path))
+                .filter(|entry| entry.path().starts_with(&self.src_path))
             {
                 if let Some(name) = all_user_names.remove(&entry.uid()) {
                     need_users.insert(name);
@@ -187,7 +187,7 @@ impl antlir2_depgraph_if::RequiresProvides for Clone {
         for (relpath, entry) in src_facts
             .iter_prefix::<DirEntry>(&DirEntry::key(&self.src_path))
             .map_err(|e| format!("failed to iterate directory entries: {e:#?}"))?
-            .map_while(|entry| {
+            .filter_map(|entry| {
                 entry
                     .path()
                     .strip_prefix(&self.src_path)
