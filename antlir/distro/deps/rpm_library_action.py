@@ -9,6 +9,7 @@ import glob
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 INCLUDE_BASE = Path("/usr/include")
@@ -89,7 +90,6 @@ def main():
                 dst, src = header, header
             if not Path(src).is_absolute():
                 src = INCLUDE_BASE / src
-            print(f"{dst=} {src=}")
             headers[Path(dst)] = reljoin(args.root, Path(src))
 
     else:
@@ -106,12 +106,24 @@ def main():
 
     args.out_headers.mkdir()
 
+    # Partition headers to copy into directories (copied recursively) and files and
+    # symlinks (copied only if not copied as part of directories)
+    dirs, files = {}, {}
     for dst, src in headers.items():
+        if src.is_dir():
+            dirs[dst] = src
+        else:
+            files[dst] = src
+
+    for dst, src in dirs.items():
         dst = args.out_headers / dst
         dst.parent.mkdir(parents=True, exist_ok=True)
-        if src.is_dir():
-            shutil.copytree(src, dst, dirs_exist_ok=True)
-        else:
+        shutil.copytree(src, dst, symlinks=True, dirs_exist_ok=True)
+
+    for dst, src in files.items():
+        dst = args.out_headers / dst
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if not dst.exists():
             shutil.copy2(src, dst)
 
     if args.out_shared_lib:
