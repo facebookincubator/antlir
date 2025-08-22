@@ -59,6 +59,7 @@ def main():
     parser.add_argument("--rpm-name", required=True, action="append")
     parser.add_argument("--lib", required=True)
     parser.add_argument("--header-glob", action="append")
+    parser.add_argument("--header", action="append")
     parser.add_argument("--out-shared-lib", type=Path)
     parser.add_argument("--out-archive", type=Path)
     parser.add_argument("--out-headers", required=True, type=Path)
@@ -79,6 +80,17 @@ def main():
                 relpath = Path(relpath)
                 headers[relpath] = subdir / relpath
             os.chdir(old_cwd)
+
+    elif args.header:
+        for header in args.header:
+            if "=" in header:
+                dst, src = header.split("=", 1)
+            else:
+                dst, src = header, header
+            if not Path(src).is_absolute():
+                src = INCLUDE_BASE / src
+            print(f"{dst=} {src=}")
+            headers[Path(dst)] = reljoin(args.root, Path(src))
 
     else:
         try:

@@ -1,4 +1,4 @@
-# @generated SignedSource<<07036df4bd3ed9d56c6f6c8db0fe0adf>>
+# @generated SignedSource<<aac6bd922703e5496549b1593bc774f0>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -88,6 +88,7 @@ PROJECTS = [
     ("glibc", "mvec"),
     ("glibc", "pthread"),
     ("glibc", "rt"),
+    ("glog", "_glog"),
     ("glog", "glog"),
     ("google-perftools", "profiler"),
     ("graphite2", "graphite2"),

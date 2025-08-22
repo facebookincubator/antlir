@@ -18,42 +18,45 @@ def _rpm_library_action_impl(ctx: AnalysisContext) -> list[Provider]:
     sub_targets = {}
     headers = ctx.actions.declare_output("headers", dir = True)
     sub_targets["headers"] = [DefaultInfo(headers)]
-    out_args = [
+
+    cmd = cmd_args(
+        ctx.attrs._rpm_library_action[RunInfo],
+        cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--root={}"),
+        cmd_args(ctx.attrs.lib, format = "--lib={}"),
+        cmd_args(ctx.attrs.rpm_name, format = "--rpm-name={}"),
+        cmd_args(ctx.attrs.soname, format = "--soname={}"),
         cmd_args(headers.as_output(), format = "--out-headers={}"),
-    ]
+    )
+
     if ctx.attrs.support_linker_l:
         L = ctx.actions.declare_output("L", dir = True)
         sub_targets["L"] = [DefaultInfo(L)]
-        out_args.append(cmd_args(L.as_output(), format = "--out-L={}"))
+        cmd.add(cmd_args(L.as_output(), format = "--out-L={}"))
 
     if not (ctx.attrs.header_only or ctx.attrs.archive):
         lib = ctx.actions.declare_output(ctx.attrs.soname)
         sub_targets[ctx.attrs.soname] = [DefaultInfo(lib)]
-        out_args.append(cmd_args(lib.as_output(), format = "--out-shared-lib={}"))
+        cmd.add(cmd_args(lib.as_output(), format = "--out-shared-lib={}"))
+
     if ctx.attrs.archive:
         archive = ctx.actions.declare_output(ctx.attrs.archive_name)
         sub_targets[ctx.attrs.archive_name] = [DefaultInfo(archive)]
-        out_args.append(cmd_args(archive.as_output(), format = "--out-archive={}"))
+        cmd.add(cmd_args(archive.as_output(), format = "--out-archive={}"))
+
     if ctx.attrs.header_glob:
         header_glob = []
         for tup in ctx.attrs.header_glob:
             header_glob.extend(tup)
-        header_glob = cmd_args(header_glob, format = "--header-glob={}")
-    else:
-        header_glob = cmd_args()
-    ctx.actions.run(
-        cmd_args(
-            ctx.attrs._rpm_library_action[RunInfo],
-            cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--root={}"),
-            cmd_args(ctx.attrs.lib, format = "--lib={}"),
-            cmd_args(ctx.attrs.rpm_name, format = "--rpm-name={}"),
-            cmd_args(ctx.attrs.soname, format = "--soname={}"),
-            header_glob,
-            out_args,
-        ),
-        category = "rpm_library",
-        local_only = True,
-    )
+        cmd.add(cmd_args(header_glob, format = "--header-glob={}"))
+
+    if ctx.attrs.headers:
+        if isinstance(ctx.attrs.headers, dict):
+            extract_headers = ["{}={}".format(h, f) for h, f in ctx.attrs.headers.items()]
+        else:
+            extract_headers = ctx.attrs.headers
+        cmd.add(cmd_args(extract_headers, format = "--header={}"))
+
+    ctx.actions.run(cmd, category = "rpm_library", local_only = True)
     return [
         DefaultInfo(sub_targets = sub_targets),
     ]
@@ -65,6 +68,13 @@ _rpm_library_action = rule(
         "archive_name": attrs.string(),
         "header_glob": attrs.option(attrs.list(attrs.tuple(attrs.string(), attrs.string())), default = None),
         "header_only": attrs.bool(),
+        "headers": attrs.option(
+            attrs.one_of(
+                attrs.list(attrs.string()),
+                attrs.dict(attrs.string(), attrs.string()),
+            ),
+            default = None,
+        ),
         "layer": attrs.dep(providers = [LayerInfo]),
         "lib": attrs.string(),
         "rpm_name": attrs.one_of(attrs.string(), attrs.list(attrs.string())),
@@ -82,6 +92,7 @@ def rpm_library(
         rpm: str | Select | list[str] | None = None,
         lib: str | Select | None = None,
         archive: bool = False,
+        headers: list[str] | dict[str, str] | None = None,
         header_glob = None,
         header_only: bool = False,
         support_linker_l: bool = False,
@@ -92,6 +103,7 @@ def rpm_library(
         test_deps_parent_layer: str | None = None,
         tests: bool = True,
         layer: Select | str | None = None,
+        labels: list[str] | None = None,
         **kwargs):
     """
     Define a cxx_library target that can be used in Buck builds to depend on a
@@ -155,6 +167,7 @@ def rpm_library(
         archive_name = archive_name,
         archive = archive,
         header_glob = header_glob,
+        headers = headers,
         rpm_name = rpm,
         support_linker_l = support_linker_l,
         layer = layer,
@@ -175,7 +188,7 @@ def rpm_library(
         exported_linker_flags = exported_linker_flags,
         preferred_linkage = "shared" if not archive else "static",
         target_compatible_with = target_compatible_with,
-        labels = [
+        labels = labels or [
             "antlir-distro-rpm-library",
         ],
         visibility = [],
