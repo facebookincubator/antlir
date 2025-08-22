@@ -42,19 +42,24 @@ def sysroot_dep(
         visibility = [],
     )
 
-    hoist(
-        name = name + "-headers",
-        layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
-        paths = selects.apply(
+    if header_dirs:
+        hoist(
+            name = name + "-headers",
+            layer = "antlir//antlir/distro/toolchain/cxx:sysroot-layer",
+            paths = selects.apply(
+                header_dirs,
+                lambda header_dirs: [
+                    header_dir if paths.is_absolute(header_dir) else paths.join("/usr", header_dir)
+                    for header_dir in header_dirs
+                ],
+            ),
+            visibility = [],
+            target_compatible_with = kwargs.get("target_compatible_with"),
+        )
+        kwargs["header_dirs"] = selects.apply(
             header_dirs,
-            lambda header_dirs: [
-                header_dir if paths.is_absolute(header_dir) else paths.join("/usr", header_dir)
-                for header_dir in header_dirs
-            ],
-        ),
-        visibility = [],
-        target_compatible_with = kwargs.get("target_compatible_with"),
-    )
+            lambda header_dirs: [":{}-headers[{}]".format(name, header_dir) for header_dir in header_dirs],
+        )
 
     do_extract_soname = not archive
     if extract_soname != None:
@@ -62,10 +67,6 @@ def sysroot_dep(
 
     prebuilt_cxx_library(
         name = name + "--actual",
-        header_dirs = selects.apply(
-            header_dirs,
-            lambda header_dirs: [":{}-headers[{}]".format(name, header_dir) for header_dir in header_dirs],
-        ),
         shared_lib = (":{}-lib".format(name)) if not archive else None,
         static_lib = (":{}-lib".format(name)) if archive else None,
         preferred_linkage = "shared" if not archive else "static",

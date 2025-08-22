@@ -16,3 +16,9 @@ rpm_library(
     rpm = "ncurses-devel",
     visibility = ["PUBLIC"],
 )
+
+rpm_library(
+    name = "tinfo",
+    rpm = "ncurses-devel",
+    visibility = ["PUBLIC"],
+)

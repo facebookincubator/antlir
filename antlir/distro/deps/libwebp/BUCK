@@ -7,6 +7,12 @@ oncall("antlir")
         name = lib,
         rpm = "libwebp-devel",
         visibility = ["PUBLIC"],
+        exported_deps = [
+            "//antlir/distro/deps/glibc:m",
+            "//antlir/distro/deps/libjpeg-turbo:jpeg",
+            "//antlir/distro/deps/libpng:png",
+            "//antlir/distro/deps/libtiff:tiff",
+        ],
     )
     for lib in ("webp", "webpmux", "webpdemux")
 ]

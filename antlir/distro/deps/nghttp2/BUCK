@@ -3,7 +3,7 @@ load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
 oncall("antlir")
 
 rpm_library(
-    name = "lcms2",
+    name = "nghttp2",
+    rpm = "libnghttp2-devel",
     visibility = ["PUBLIC"],
-    exported_deps = ["//antlir/distro/deps/glibc:m"],
 )

@@ -6,4 +6,8 @@ rpm_library(
     name = "png",
     rpm = "libpng-devel",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        "//antlir/distro/deps/glibc:c",
+        "//antlir/distro/deps/zlib:z",
+    ],
 )

@@ -12,6 +12,8 @@ rpm_library(
     rpm = "gperftools-devel",
     visibility = ["PUBLIC"],
     exported_deps = [
+        "//antlir/distro/deps/glibc:pthread",
+        "//antlir/distro/deps/glibc:rt",
         "//antlir/distro/deps/libunwind:unwind",
     ],
 )

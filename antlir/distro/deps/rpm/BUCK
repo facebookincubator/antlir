@@ -8,4 +8,13 @@ rpm_library(
     name = "librpm",
     rpm = "rpm-devel",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        "//antlir/distro/deps/db:db",
+        "//antlir/distro/deps/file:magic",
+        "//antlir/distro/deps/libarchive:libarchive",
+        "//antlir/distro/deps/openssl:crypto",
+        "//antlir/distro/deps/openssl:ssl",
+        "//antlir/distro/deps/popt:popt",
+        "//antlir/distro/deps/sqlite:sqlite",
+    ],
 )

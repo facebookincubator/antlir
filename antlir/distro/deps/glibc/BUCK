@@ -55,6 +55,12 @@ sysroot_dep(
 )
 
 sysroot_dep(
+    name = "resolv",
+    lib = "libresolv.so",
+    soname = "libresolv.so.2",
+)
+
+sysroot_dep(
     name = "dl",
     archive = True,
 )

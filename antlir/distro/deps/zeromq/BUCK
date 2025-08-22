@@ -6,4 +6,5 @@ rpm_library(
     name = "zeromq",
     lib = "libzmq.so",
     visibility = ["PUBLIC"],
+    exported_deps = ["//antlir/distro/deps/libsodium:sodium"],
 )

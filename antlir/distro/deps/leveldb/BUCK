@@ -5,4 +5,5 @@ oncall("antlir")
 rpm_library(
     name = "leveldb",
     visibility = ["PUBLIC"],
+    exported_deps = ["//antlir/distro/deps/snappy:snappy"],
 )

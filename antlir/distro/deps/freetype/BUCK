@@ -11,6 +11,12 @@ rpm_library(
     lib = "libfreetype.so",
     rpm = "freetype-devel",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        "//antlir/distro/deps/bzip2:bz2",
+        "//antlir/distro/deps/glibc:c",
+        "//antlir/distro/deps/libpng:png",
+        "//antlir/distro/deps/zlib:z",
+    ],
 )
 
 alias(

@@ -1,0 +1,33 @@
+load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
+
+oncall("antlir")
+
+rpm_library(
+    name = "com_err",
+    rpm = "krb5-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
+    name = "gssapi_krb5",
+    rpm = "krb5-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
+    name = "k5crypto",
+    rpm = "krb5-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
+    name = "krb5",
+    rpm = "krb5-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
+    name = "krb5support",
+    rpm = "krb5-devel",
+    visibility = ["PUBLIC"],
+)

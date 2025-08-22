@@ -6,4 +6,5 @@ rpm_library(
     name = "btrfsutil",
     rpm = "btrfs-progs-devel",
     visibility = ["PUBLIC"],
+    exported_deps = ["//antlir/distro/deps/glibc:c"],
 )

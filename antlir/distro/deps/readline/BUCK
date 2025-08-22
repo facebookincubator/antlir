@@ -5,4 +5,5 @@ oncall("antlir")
 rpm_library(
     name = "readline",
     visibility = ["PUBLIC"],
+    exported_deps = ["//antlir/distro/deps/ncurses:tinfo"],
 )

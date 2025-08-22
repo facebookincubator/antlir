@@ -8,3 +8,15 @@ rpm_library(
     rpm = "libicu-devel",
     visibility = ["PUBLIC"],
 )
+
+rpm_library(
+    name = "icudata",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+)
+
+rpm_library(
+    name = "icuuc",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+)

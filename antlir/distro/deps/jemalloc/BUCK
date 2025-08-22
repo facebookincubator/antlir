@@ -6,6 +6,13 @@ oncall("antlir")
 rpm_library(
     name = "jemalloc",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        "//antlir/distro/deps/glibc:dl",
+        "//antlir/distro/deps/glibc:m",
+        "//antlir/distro/deps/glibc:pthread",
+        "//antlir/distro/deps/libgcc:stdc++",
+        "//antlir/distro/deps/libunwind:unwind",
+    ],
 )
 
 alias(

@@ -6,4 +6,5 @@ rpm_library(
     name = "elf",
     rpm = "elfutils-libelf-devel",
     visibility = ["PUBLIC"],
+    exported_deps = ["//antlir/distro/deps/zlib:z"],
 )

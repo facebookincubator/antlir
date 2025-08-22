@@ -6,6 +6,11 @@ rpm_library(
     name = "harfbuzz",
     visibility = ["PUBLIC"],
     exported_deps = [
+        "//antlir/distro/deps/freetype:freetype",
+        "//antlir/distro/deps/glib:glib",
+        "//antlir/distro/deps/glib:gobject",
         "//antlir/distro/deps/graphite2:graphite2",
+        "//antlir/distro/deps/icu:icudata",
+        "//antlir/distro/deps/icu:icuuc",
     ],
 )

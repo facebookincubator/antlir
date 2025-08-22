@@ -6,4 +6,5 @@ rpm_library(
     name = "unwind",
     rpm = "libunwind-devel",
     visibility = ["PUBLIC"],
+    exported_deps = ["//antlir/distro/deps/glibc:c"],
 )

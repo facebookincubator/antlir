@@ -5,4 +5,10 @@ oncall("antlir")
 rpm_library(
     name = "libevent",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        "//antlir/distro/deps/glibc:c",
+        "//antlir/distro/deps/glibc:dl",
+        "//antlir/distro/deps/glibc:resolv",
+        "//antlir/distro/deps/glibc:rt",
+    ],
 )
