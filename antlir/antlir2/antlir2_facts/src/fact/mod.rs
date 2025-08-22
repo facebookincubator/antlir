@@ -9,6 +9,7 @@ use std::any::Any;
 
 pub mod dir_entry;
 pub mod rpm;
+pub mod subvolume;
 pub mod systemd_unit;
 pub mod user;
 

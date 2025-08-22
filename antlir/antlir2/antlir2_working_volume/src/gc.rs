@@ -28,7 +28,7 @@ impl WorkingVolume {
         {
             let entry = entry.map_err(Error::GarbageCollect)?;
             let meta = entry.metadata().map_err(Error::GarbageCollect)?;
-            if meta.ino() != 256 {
+            if meta.ino() != antlir2_btrfs::INO_SUBVOL {
                 // not a subvol
                 continue;
             }

@@ -13,11 +13,14 @@ use antlir2_btrfs::Subvolume;
 use antlir2_compile::Arch;
 use antlir2_compile::CompileFeature;
 use antlir2_compile::CompilerContext;
+use antlir2_facts::fact::dir_entry::DirEntry as DirEntryFact;
+use antlir2_facts::fact::subvolume::Subvolume as SubvolumeFact;
 use antlir2_features::Feature;
 use antlir2_features::plugin::Plugin;
 use antlir2_rootless::Rootless;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
+use anyhow::anyhow;
 use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;
@@ -182,13 +185,31 @@ impl Compile {
                     .set_readonly(true)
                     .context("while making subvol r/o")?;
 
-                antlir2_facts::update_db::sync_db_with_layer()
+                let facts_db = antlir2_facts::update_db::sync_db_with_layer()
                     .db(&self.facts_db_out)
                     .layer(subvol.path())
                     .maybe_build_appliance(self.build_appliance.as_deref())
                     .call()?;
-
+                // drop privs immediately after inspecting the entire image
                 drop(root_guard);
+
+                // if there are any nested subvolumes that are not empty, fail
+                // the build - their contents *will* be lost as soon as they are
+                // snapshotted, so this is deemed very unsafe and surprising to
+                // image authors
+                for subvol in facts_db.iter::<SubvolumeFact>()? {
+                    if subvol.path() == Path::new("/") {
+                        continue;
+                    }
+                    let empty = facts_db
+                        .iter_prefix::<DirEntryFact>(&DirEntryFact::key(subvol.path()))?
+                        .filter(|de| de.path().starts_with(subvol.path()))
+                        .count()
+                        == 1;
+                    if !empty {
+                        return Err(Error::NestedSubvolume(subvol.path().to_owned()));
+                    }
+                }
 
                 debug!(
                     "linking {} -> {}",
