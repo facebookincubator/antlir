@@ -16,7 +16,75 @@ rpm_library(
 )
 
 rpm_library(
+    name = "icui18n",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+    exported_deps = [
+        ":icudata",
+        ":icuuc",
+    ],
+)
+
+rpm_library(
+    name = "icuio",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+    exported_deps = [
+        ":icudata",
+        ":icui18n",
+        ":icuuc",
+    ],
+)
+
+rpm_library(
+    name = "icule",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+    exported_deps = [
+        ":icudata",
+        ":icuuc",
+    ],
+)
+
+rpm_library(
+    name = "iculx",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+    exported_deps = [
+        ":icudata",
+        ":icule",
+        ":icuuc",
+    ],
+)
+
+rpm_library(
+    name = "icutest",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+    exported_deps = [
+        ":icudata",
+        ":icui18n",
+        ":icutu",
+        ":icuuc",
+    ],
+)
+
+rpm_library(
+    name = "icutu",
+    rpm = "libicu-devel",
+    visibility = ["PUBLIC"],
+    exported_deps = [
+        ":icudata",
+        ":icui18n",
+        ":icuuc",
+    ],
+)
+
+rpm_library(
     name = "icuuc",
     rpm = "libicu-devel",
     visibility = ["PUBLIC"],
+    exported_deps = [
+        ":icudata",
+    ],
 )

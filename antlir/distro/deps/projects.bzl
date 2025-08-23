@@ -1,4 +1,4 @@
-# @generated SignedSource<<52eea4e5fdc60352d732fc13a9acd9ce>>
+# @generated SignedSource<<c6abb95618ca3261066b2e58c5ffdadd>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -102,6 +102,12 @@ PROJECTS = [
     ("harfbuzz", "harfbuzz"),
     ("icu", "common"),
     ("icu", "icudata"),
+    ("icu", "icui18n"),
+    ("icu", "icuio"),
+    ("icu", "icule"),
+    ("icu", "iculx"),
+    ("icu", "icutest"),
+    ("icu", "icutu"),
     ("icu", "icuuc"),
     ("jbigkit", "jbigkit"),
     ("jemalloc", "headers"),
