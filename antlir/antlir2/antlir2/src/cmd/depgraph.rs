@@ -14,6 +14,7 @@ use std::path::PathBuf;
 use antlir2_depgraph::Graph;
 use antlir2_depgraph_if::AnalyzedFeature;
 use antlir2_facts::RwDatabase;
+use antlir2_facts::fact::Generic;
 use anyhow::Context;
 use clap::Parser;
 use json_arg::JsonFile;
@@ -32,6 +33,8 @@ pub(crate) struct Depgraph {
     db_out: PathBuf,
     #[clap(long)]
     topo_features_out: PathBuf,
+    #[clap(long)]
+    extend_facts: Vec<JsonFile<Vec<Generic>>>,
 }
 
 impl Depgraph {
@@ -61,6 +64,13 @@ impl Depgraph {
         );
         serde_json::to_writer(&mut out, &features)
             .context("while writing out topologically-sorted features")?;
+
+        let mut db = depgraph.into_database().to_readwrite()?;
+        let mut tx = db.transaction()?;
+        for fact in self.extend_facts.iter().flat_map(JsonFile::as_inner) {
+            tx.insert_generic(fact)?;
+        }
+        tx.commit()?;
 
         Ok(())
     }

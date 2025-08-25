@@ -7,6 +7,9 @@
 
 use std::any::Any;
 
+use serde::Deserialize;
+use serde::Serialize;
+
 pub mod dir_entry;
 pub mod rpm;
 pub mod subvolume;
@@ -24,4 +27,26 @@ static_assertions::assert_obj_safe!(Fact);
 
 pub trait FactKind {
     const KIND: &'static str;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Generic {
+    #[serde(rename = "type")]
+    ty: String,
+    key: String,
+    value: serde_json::Value,
+}
+
+impl Generic {
+    pub fn ty(&self) -> &str {
+        &self.ty
+    }
+
+    pub fn key(&self) -> Key {
+        self.key.clone().into()
+    }
+
+    pub fn value(&self) -> &serde_json::Value {
+        &self.value
+    }
 }

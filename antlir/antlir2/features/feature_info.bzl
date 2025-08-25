@@ -91,6 +91,8 @@ FeatureAnalysis = provider(fields = {
     # Arbitrary feature record type (the antlir2 compiler must be able to
     # deserialize this)
     "data": provider_field(typing.Any),
+    # Arbitrary JSON files that will be inserted into the facts db
+    "extend_facts_json": provider_field(list[Artifact], default = []),
     "feature_type": provider_field(str),
     # This feature requires running some logic within the feature's plugin
     # implementation to inform buck of dynamic dependencies.
@@ -117,6 +119,7 @@ MultiFeatureAnalysis = provider(fields = {
 })
 
 PlanInfo = provider(fields = {
+    "extend_facts_json": provider_field(list[Artifact], default = []),
     "hidden": provider_field(ArgLike),
     # Unique string identifying this plan artifact for retrieval by the feature
     # that produced it

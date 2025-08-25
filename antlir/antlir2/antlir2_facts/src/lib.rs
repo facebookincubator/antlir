@@ -28,6 +28,7 @@ pub use fact::Fact;
 pub mod update_db;
 
 use crate::fact::FactKind;
+use crate::fact::Generic;
 extern crate self as antlir2_facts;
 
 #[derive(Debug, thiserror::Error)]
@@ -133,6 +134,11 @@ impl RoDatabase {
 
     pub fn from_connection(connection: Connection) -> Self {
         Self { db: connection }
+    }
+
+    pub fn to_readwrite(self) -> Result<RwDatabase> {
+        self.db.pragma_update(None, "query_only", "0")?;
+        Ok(RwDatabase { db: self.db })
     }
 }
 
@@ -252,6 +258,15 @@ impl<'db> Transaction<'db> {
         self.tx.execute(
             "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (json_extract(?2, '$.type'), ?1, ?2)",
             (fact.key().as_ref(), val),
+        )?;
+        Ok(())
+    }
+
+    pub fn insert_generic<'f>(&mut self, fact: &'f Generic) -> Result<()> {
+        let val = serde_json::to_string(fact)?;
+        self.tx.execute(
+            "INSERT OR REPLACE INTO facts (kind, key, value) VALUES (?1, ?2, ?3)",
+            (fact.ty(), fact.key().as_ref(), val),
         )?;
         Ok(())
     }

@@ -320,18 +320,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 fail("{}: '{}' was not found in the list of plugins ({}), but it was used - this should be impossible".format(ctx.label, plugin, all_plugins.keys()))
             phase_plugins[plugin] = all_plugins[plugin]
 
-        # facts_db also holds the depgraph
-        facts_db, topo_features = build_depgraph(
-            ctx = ctx,
-            plugins = phase_plugins,
-            features = features,
-            identifier = identifier,
-            parent = facts_db,
-            phase = phase,
-        )
-        phase_sub_targets["depgraph"] = [DefaultInfo(facts_db)]
-        phase_sub_targets["topo_features.json"] = [DefaultInfo(topo_features)]
-
         target_arch = ctx.attrs._selected_target_arch
 
         # All deps that are needed for *compiling* the features (but not
@@ -353,9 +341,12 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             ),
         )
 
+        extend_facts = []
+
         plans = {}
         plan_sub_targets = {}
         for feature in features:
+            extend_facts.extend(feature.analysis.extend_facts_json)
             planner = feature.analysis.planner
             if planner:
                 kwargs = {}
@@ -401,6 +392,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                                 for key, artifact in pi.sub_artifacts.items()
                             },
                         )]
+                    extend_facts.extend(pi.extend_facts_json)
         previous_phase_plans = plans
 
         phase_sub_targets["plan"] = [DefaultInfo(sub_targets = plan_sub_targets)]
@@ -410,6 +402,19 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             {id: pi.output for id, pi in plans.items()},
             with_inputs = True,
         )
+
+        # facts_db also holds the depgraph
+        facts_db, topo_features = build_depgraph(
+            ctx = ctx,
+            plugins = phase_plugins,
+            features = features,
+            extend_facts = extend_facts,
+            identifier = identifier,
+            parent = facts_db,
+            phase = phase,
+        )
+        phase_sub_targets["depgraph"] = [DefaultInfo(facts_db)]
+        phase_sub_targets["topo_features.json"] = [DefaultInfo(topo_features)]
 
         logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
         layer, facts_db = _compile(

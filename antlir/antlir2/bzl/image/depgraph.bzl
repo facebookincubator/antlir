@@ -76,6 +76,7 @@ def build_depgraph(
         plugins: dict[str, FeaturePluginInfo | typing.Any],
         parent: Artifact | None,
         features: list[feature_record | typing.Any],
+        extend_facts: list[Artifact],
         identifier: str,
         phase: BuildPhase) -> (Artifact, Artifact):
     db_output = ctx.actions.declare_output(identifier, "depgraph")
@@ -95,6 +96,7 @@ def build_depgraph(
             "depgraph",
             cmd_args(analyzed_features, format = "--feature={}"),
             cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
+            cmd_args(extend_facts, format = "--extend-facts={}"),
             cmd_args(db_output.as_output(), format = "--db-out={}"),
             cmd_args(topo_features.as_output(), format = "--topo-features-out={}"),
         ),
