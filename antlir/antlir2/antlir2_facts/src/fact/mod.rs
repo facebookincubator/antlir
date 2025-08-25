@@ -11,6 +11,8 @@ use serde::Deserialize;
 use serde::Serialize;
 
 pub mod dir_entry;
+#[cfg(facebook)]
+pub mod facebook;
 pub mod rpm;
 pub mod subvolume;
 pub mod systemd_unit;
