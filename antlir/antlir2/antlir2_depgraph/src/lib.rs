@@ -529,6 +529,10 @@ impl Graph {
         let features = toposort::toposort(self.db.as_ref())?;
         Ok(features.into_iter())
     }
+
+    pub fn into_database(self) -> RoDatabase {
+        self.db
+    }
 }
 
 #[cfg(test)]
