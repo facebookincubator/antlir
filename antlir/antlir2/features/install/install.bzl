@@ -3,11 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @oss-disable
+# @oss-disable
+load("@prelude//:paths.bzl", "paths")
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
-load("//antlir/antlir2/bzl:python_helpers.bzl", "is_python_target")
+load("//antlir/antlir2/bzl:python_helpers.bzl", "PYTHON_OUTPLACE_PAR_ROLLOUT", "is_python_target")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -20,6 +23,7 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:types.bzl", "types")
+load("//antlir/bzl:oss_shim.bzl", "rollout", read_bool = "ret_false") # @oss-enable
 
 default_permissions = record(
     binary = field(int | None, default = None),
@@ -106,7 +110,10 @@ def install(
     deps = {}
     deps_or_srcs = {}
     distro_platform_deps = {}
-    uses_plugins = {}
+    uses_plugins = {
+        "_ensure_dir_exists_plugin": "antlir//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists",
+        "_symlink_plugin": "antlir//antlir/antlir2/features/symlink:symlink",
+    }
 
     if types.is_bool(transition_to_distro_platform):
         transition_to_distro_platform = _transition_to_distro_platform_enum("yes" if transition_to_distro_platform else "no")
@@ -202,6 +209,88 @@ shared_libraries_record = record(
     dir_name = field(str),
 )
 
+def _python_outplace_features(
+        ctx: AnalysisContext,
+        mode: int,
+        binary_info: binary_record | None,
+        shared_libraries: shared_libraries_record | None,
+        required_artifacts: list[Artifact],
+        required_run_infos: list[RunInfo]):
+    # "outplace" is like "inplace" but generates a PAR with copied files instead of linked.
+    # antlir needs this because otherwise the chroot ends up with a bunch of broken symlinks.
+    par = ctx.attrs.src[DefaultInfo].sub_targets["outplace"]
+    link_tree = par[DefaultInfo].sub_targets["link-tree"]
+
+    outplace_package_base = paths.join(
+        "/usr/lib/python_outplace",
+        ctx.attrs.src.label.package.replace("/", "_"),
+    )
+    outplace_base = paths.join(
+        outplace_package_base,
+        ctx.attrs.src.label.name,
+    )
+
+    # This will fail analysis if src does not have an outplace subtarget
+    srcs = {"link-tree": link_tree, "par": par}
+    features = [
+        FeatureAnalysis(
+            buck_only_data = struct(
+                original_source = ctx.attrs.src,
+            ),
+            feature_type = "install",
+            build_phase = BuildPhase(ctx.attrs.build_phase),
+            data = struct(
+                src = ensure_single_output(src),
+                dst = outplace_base + "-outplace#" + what,
+                mode = mode,
+                user = ctx.attrs.user,
+                group = ctx.attrs.group,
+                binary_info = binary_info,
+                xattrs = ctx.attrs.xattrs,
+                setcap = ctx.attrs.setcap,
+                always_use_gnu_debuglink = ctx.attrs.always_use_gnu_debuglink,
+                shared_libraries = shared_libraries,
+            ),
+            required_artifacts = required_artifacts,
+            required_run_infos = required_run_infos,
+            plugin = ctx.attrs.plugin,
+        )
+        for what, src in srcs.items()
+    ]
+    features.extend(
+        [
+            FeatureAnalysis(
+                feature_type = "ensure_dir_exists",
+                data = struct(
+                    dir = dir,
+                    mode = 0o755,
+                    user = "root",
+                    group = "root",
+                ),
+                build_phase = BuildPhase(ctx.attrs.build_phase),
+                plugin = ctx.attrs._ensure_dir_exists_plugin,
+            )
+            for dir in [
+                outplace_base,
+                outplace_package_base,
+                "/usr/lib/python_outplace",
+            ]
+        ] + [
+            FeatureAnalysis(
+                feature_type = "ensure_file_symlink",
+                data = struct(
+                    link = ctx.attrs.dst,
+                    target = outplace_base + "-outplace#par",
+                    is_directory = False,
+                    unsafe_dangling_symlink = False,
+                ),
+                build_phase = BuildPhase(ctx.attrs.build_phase),
+                plugin = ctx.attrs._symlink_plugin,
+            ),
+        ],
+    )
+    return [MultiFeatureAnalysis(features = features)]
+
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     binary_info = None
     required_run_infos = []
@@ -218,6 +307,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     # '/' in `dst` because there is otherwise no way to tell
     dst_is_dir = ctx.attrs.dst.endswith("/")
 
+    src_is_python = False
     if isinstance(src, Dependency):
         is_executable = RunInfo in src
         expect(LayerInfo not in src, "Layers ({}) cannot be used as install `src`, consider using feature.mount instead".format(src.label))
@@ -306,6 +396,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                     binary_info = None
             elif ctx.attrs.setcap:
                 fail("install src {} is not a binary, setcap should not be used".format(ctx.attrs.src))
+
+        if is_python_target(ctx.attrs.src):
+            src_is_python = True
     elif isinstance(src, Artifact):
         # If the source is an artifact, that means it was given as an
         # `attrs.source()`, and is thus not a dependency.
@@ -314,47 +407,55 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         if mode == None:
             mode = 0o444
 
-    install_feature = FeatureAnalysis(
-        buck_only_data = struct(
-            original_source = ctx.attrs.src,
-        ),
-        feature_type = "install",
-        build_phase = BuildPhase(ctx.attrs.build_phase),
-        data = struct(
-            src = src,
-            dst = ctx.attrs.dst,
-            mode = mode,
-            user = ctx.attrs.user,
-            group = ctx.attrs.group,
-            binary_info = binary_info,
-            xattrs = ctx.attrs.xattrs,
-            setcap = ctx.attrs.setcap,
-            always_use_gnu_debuglink = ctx.attrs.always_use_gnu_debuglink,
-            shared_libraries = shared_libraries,
-        ),
-        required_artifacts = [src] + required_artifacts,
-        required_run_infos = required_run_infos,
-        plugin = ctx.attrs.plugin,
-    )
-
-    if ctx.attrs.transition_to_distro_platform != "yes":
-        return [
-            DefaultInfo(),
-            install_feature,
+    features = None
+    if src_is_python:
+        python_outplace_par = (
+            ctx.attrs._python_outplace_par_override or
+            rollout.check_base_path(PYTHON_OUTPLACE_PAR_ROLLOUT, ctx.attrs.src.label.package)
+        )
+        if python_outplace_par:
+            features = _python_outplace_features(
+                ctx,
+                mode,
+                binary_info,
+                shared_libraries,
+                required_artifacts,
+                required_run_infos,
+            )
+    if features == None:
+        features = [
+            FeatureAnalysis(
+                buck_only_data = struct(
+                    original_source = ctx.attrs.src,
+                ),
+                feature_type = "install",
+                build_phase = BuildPhase(ctx.attrs.build_phase),
+                data = struct(
+                    src = src,
+                    dst = ctx.attrs.dst,
+                    mode = mode,
+                    user = ctx.attrs.user,
+                    group = ctx.attrs.group,
+                    binary_info = binary_info,
+                    xattrs = ctx.attrs.xattrs,
+                    setcap = ctx.attrs.setcap,
+                    always_use_gnu_debuglink = ctx.attrs.always_use_gnu_debuglink,
+                    shared_libraries = shared_libraries,
+                ),
+                required_artifacts = [src] + required_artifacts,
+                required_run_infos = required_run_infos,
+                plugin = ctx.attrs.plugin,
+            ),
         ]
 
-    features = [
-        install_feature,
-    ]
+    if ctx.attrs.transition_to_distro_platform != "yes":
+        return [DefaultInfo()] + features
 
     # the rpm dependency finder can only find native dependencies, it doesn't
     # understand things like PEX "binaries", so we must include another feature
     # if that's what we're installing
-    if isinstance(ctx.attrs.src, Dependency):
-        # this is just an easy way to guess if 'src' is a python_binary based on
-        # the limited information we have at this point
-        if is_python_target(ctx.attrs.src):
-            features.extend([f.analysis for f in ctx.attrs._python_pex_deps[FeatureInfo].features])
+    if src_is_python:
+        features.extend([f.analysis for f in ctx.attrs._python_pex_deps[FeatureInfo].features])
 
     # otherwise we need to produce an rpm feature too
     rpm_subjects = ctx.actions.declare_output("rpm_requires.txt")
@@ -428,12 +529,15 @@ install_rule = rule(
         ),
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
         "_binaries_require_repo": binaries_require_repo.optional_attr,
+        "_ensure_dir_exists_plugin": attrs.option(attrs.label(), default = None),
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
+        "_python_outplace_par_override": attrs.bool(default = read_bool("antlir", "python_outplace_par", default = False)),
         "_python_pex_deps": attrs.option(attrs.dep(providers = [FeatureInfo]), default = None),
         "_rpm_driver": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
         "_rpm_find_requires": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plan": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plugin": attrs.option(attrs.label(), default = None),
         "_rpm_resolve": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
+        "_symlink_plugin": attrs.option(attrs.label(), default = None),
     },
 )

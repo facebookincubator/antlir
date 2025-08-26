@@ -16,6 +16,9 @@ def ret_none(*_args, **_kwargs):
 def ret_empty_list(*_args, **_kwargs):
     return []
 
+def ret_false(*_args, **_kwargs):
+    return False
+
 empty_dict = {}
 empty_list = []
 
@@ -33,3 +36,7 @@ fully_qualified_test_name_rollout = struct(
 )
 
 NAMING_ROLLOUT_LABEL = "OSS_NO_OP"
+
+rollout = struct(
+    check_base_path = ret_false,
+)
