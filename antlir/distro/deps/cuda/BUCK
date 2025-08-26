@@ -128,5 +128,11 @@ image.layer(
             "cuda-nvml-devel-{version}",
             [],
         ),
+        (
+            "nvjpeg",
+            "libnvjpeg.so",
+            "libnvjpeg-devel-{version}",
+            [":cuda"],
+        ),
     ]
 ]
