@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//python:python.bzl", "PythonLibraryInfo")
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
+load("//antlir/antlir2/bzl:python_helpers.bzl", "is_python_target")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -353,7 +353,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     if isinstance(ctx.attrs.src, Dependency):
         # this is just an easy way to guess if 'src' is a python_binary based on
         # the limited information we have at this point
-        if "library-info" in ctx.attrs.src[DefaultInfo].sub_targets and PythonLibraryInfo in ctx.attrs.src.sub_target("library-info"):
+        if is_python_target(ctx.attrs.src):
             features.extend([f.analysis for f in ctx.attrs._python_pex_deps[FeatureInfo].features])
 
     # otherwise we need to produce an rpm feature too
