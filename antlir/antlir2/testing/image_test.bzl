@@ -98,6 +98,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(
             "#!/bin/bash",
             cmd_args(*env_args),
+            cmd_args(ctx.label.project_root, format = "cd {}"),
             cmd_args(
                 "exec",
                 test_cmd,
@@ -106,6 +107,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             "\n",
         ),
+        absolute = True,
         is_executable = True,
         allow_args = True,
         with_inputs = True,
@@ -116,11 +118,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(
             "#!/bin/bash",
             cmd_args(*env_args),
+            cmd_args(ctx.label.project_root, format = "cd {}"),
             cmd_args(
                 "exec",
                 ctx.attrs.image_test[RunInfo],
                 "container",
-                cmd_args(ctx.label.project_root, format = "--chdir-project-root={}"),
                 cmd_args(spec, format = "--spec={}"),
                 ctx.attrs.test[ExternalRunnerTestInfo].test_type,
                 ctx.attrs.test[ExternalRunnerTestInfo].command,
@@ -129,6 +131,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             "\n",
         ),
+        absolute = True,
         allow_args = True,
         is_executable = True,
         with_inputs = True,
