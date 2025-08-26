@@ -102,6 +102,7 @@ def install(
         fail("always_use_gnu_debuglink requires split_debuginfo=True")
 
     exec_deps = {
+        "_mac_signer": "fbcode//python/runtime/tools:recursive_mac_signer",
         "_objcopy": internal_external(
             fb = "fbsource//third-party/binutils:objcopy",
             oss = "toolchains//:objcopy",
@@ -220,6 +221,17 @@ def _python_outplace_features(
     # antlir needs this because otherwise the chroot ends up with a bunch of broken symlinks.
     par = ctx.attrs.src[DefaultInfo].sub_targets["outplace"]
     link_tree = par[DefaultInfo].sub_targets["link-tree"]
+    signed_link_tree = ctx.actions.declare_output("signed_link_tree")
+    ctx.actions.run(
+        cmd_args([
+            ctx.attrs._mac_signer[RunInfo],
+            ensure_single_output(link_tree),
+            signed_link_tree.as_output(),
+            cmd_args(["--sign-key", native.read_config("builder", "macsignkey", "fbios-debug")]),
+            cmd_args(["--disable-library-validation"]),
+        ]),
+        category = "sign",
+    )
 
     outplace_package_base = paths.join(
         "/usr/lib/python_outplace",
@@ -231,7 +243,7 @@ def _python_outplace_features(
     )
 
     # This will fail analysis if src does not have an outplace subtarget
-    srcs = {"link-tree": link_tree, "par": par}
+    srcs = {"link-tree": signed_link_tree, "par": par}
     features = [
         FeatureAnalysis(
             buck_only_data = struct(
@@ -530,6 +542,7 @@ install_rule = rule(
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
         "_binaries_require_repo": binaries_require_repo.optional_attr,
         "_ensure_dir_exists_plugin": attrs.option(attrs.label(), default = None),
+        "_mac_signer": attrs.option(attrs.exec_dep(), default = None),
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
         "_python_outplace_par_override": attrs.bool(default = read_bool("antlir", "python_outplace_par", default = False)),
         "_python_pex_deps": attrs.option(attrs.dep(providers = [FeatureInfo]), default = None),
