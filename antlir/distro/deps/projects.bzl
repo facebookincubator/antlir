@@ -1,4 +1,4 @@
-# @generated SignedSource<<c6abb95618ca3261066b2e58c5ffdadd>>
+# @generated SignedSource<<f7b12a39d7599566eaaaa6781da6db00>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -79,6 +79,14 @@ PROJECTS = [
     ("double_conversion", "double_conversion"),
     ("eigen", "eigen"),
     ("elfutils", "elf"),
+    ("ffmpeg-ref", "avcodec"),
+    ("ffmpeg-ref", "avdevice"),
+    ("ffmpeg-ref", "avfilter"),
+    ("ffmpeg-ref", "avformat"),
+    ("ffmpeg-ref", "avutil"),
+    ("ffmpeg-ref", "postproc"),
+    ("ffmpeg-ref", "swresample"),
+    ("ffmpeg-ref", "swscale"),
     ("file", "magic"),
     ("fmt", "fmt"),
     ("freetype", "freetype"),
