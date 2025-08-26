@@ -109,7 +109,7 @@ impl CommandType {
 }
 
 macro_rules! parse_subtypes {
-    ($hdr: expr_2021, $cmd_data:expr_2021, $($t:ident),+) => {
+    ($hdr: expr, $cmd_data:expr, $($t:ident),+) => {
         match $hdr.ty {
             $(CommandType::$t => {
                 let (remaining, cmd) = crate::$t::parse($cmd_data)?;
