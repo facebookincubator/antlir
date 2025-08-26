@@ -124,7 +124,7 @@ image.layer(
         ),
         (
             "nvml",
-            "libnvidia-ml.so",
+            "stubs/libnvidia-ml.so",
             "cuda-nvml-devel-{version}",
             [],
         ),
