@@ -52,6 +52,7 @@ def test_variants(
             env = {
                 "ANTLIR2_TEST": "1",
                 "BOOT": str(boot),
+                "FILE_FOR_ENV_LOCATION": "$(location :file-for-env-location)",
                 "JSON_ENV": '{"foo": "bar"}',
                 "TEST_USER": user,
             },
