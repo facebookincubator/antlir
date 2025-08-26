@@ -108,6 +108,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         is_executable = True,
         allow_args = True,
+        with_inputs = True,
     )
 
     container_script, _ = ctx.actions.write(
