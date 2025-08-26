@@ -46,3 +46,16 @@ class TestInstalledBinary(unittest.TestCase):
         stripped_size = os.path.getsize("/usr/bin/true-rs")
         unstripped_size = os.path.getsize("/usr/bin/true-rs.unstripped")
         self.assertLess(stripped_size, unstripped_size)
+
+    @skip_in_dev
+    def test_outplace_par(self) -> None:
+        self.assertTrue(
+            os.path.isdir(
+                "/usr/lib/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#link-tree"
+            )
+        )
+        self.assertTrue(os.path.islink("/usr/bin/true-py"))
+        self.assertEqual(
+            os.path.realpath("/usr/bin/true-py"),
+            "/usr/lib/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#par",
+        )
