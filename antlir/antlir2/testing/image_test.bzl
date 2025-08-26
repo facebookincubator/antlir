@@ -72,6 +72,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         with_inputs = True,
     )
 
+    env_args = [
+        cmd_args("export ", k, "=", cmd_args(v, quote = "shell"), delimiter = "")
+        for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()
+    ]
+
     test_cmd = cmd_args(
         ctx.attrs.image_test[RunInfo],
         "spawn",
@@ -88,10 +93,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     for label in HIDE_TEST_LABELS:
         inner_labels.remove(label)
 
-    script, _ = ctx.actions.write(
+    test_script, _ = ctx.actions.write(
         "test.sh",
         cmd_args(
             "#!/bin/bash",
+            cmd_args(*env_args),
             cmd_args(
                 "exec",
                 test_cmd,
@@ -102,6 +108,29 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         is_executable = True,
         allow_args = True,
+    )
+
+    container_script, _ = ctx.actions.write(
+        "container.sh",
+        cmd_args(
+            "#!/bin/bash",
+            cmd_args(*env_args),
+            cmd_args(
+                "exec",
+                ctx.attrs.image_test[RunInfo],
+                "container",
+                cmd_args(ctx.label.project_root, format = "--chdir-project-root={}"),
+                cmd_args(spec, format = "--spec={}"),
+                ctx.attrs.test[ExternalRunnerTestInfo].test_type,
+                ctx.attrs.test[ExternalRunnerTestInfo].command,
+                '"$@"',
+                delimiter = " \\\n  ",
+            ),
+            "\n",
+        ),
+        allow_args = True,
+        is_executable = True,
+        with_inputs = True,
     )
 
     env = env_from_wrapped_test(ctx.attrs.test)
@@ -127,20 +156,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 remote_enabled = False,
             ),
         ),
-        RunInfo(test_cmd),
+        RunInfo(test_script),
         DefaultInfo(
-            script,
+            test_script,
             sub_targets = {
                 "container": [
-                    RunInfo(cmd_args(
-                        ctx.attrs.image_test[RunInfo],
-                        "container",
-                        cmd_args(ctx.label.project_root, format = "--chdir-project-root={}"),
-                        cmd_args(spec, format = "--spec={}"),
-                        ctx.attrs.test[ExternalRunnerTestInfo].test_type,
-                        ctx.attrs.test[ExternalRunnerTestInfo].command,
-                    )),
-                    DefaultInfo(),
+                    RunInfo(container_script),
+                    DefaultInfo(container_script),
                 ],
                 "inner_test": ctx.attrs.test.providers,
                 "layer": ctx.attrs.layer.providers,
