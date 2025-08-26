@@ -90,7 +90,7 @@ where
 }
 
 macro_rules! tlv_impl {
-    ($lt: lifetime, $ty: ty, $default_attr: ident, $parse: expr_2021) => {
+    ($lt: lifetime, $ty: ty, $default_attr: ident, $parse: expr) => {
         impl<$lt> Tlv<$lt, 0> for $ty {
             type Attr = attr_types::$default_attr;
 
@@ -102,11 +102,11 @@ macro_rules! tlv_impl {
 
         impl<$lt> ParsesFromAttr<attr_types::$default_attr> for $ty {}
     };
-    ($lt: lifetime, $ty: ty, $default_attr: ident, $parse:expr_2021, $($attr:ident),+) => {
+    ($lt: lifetime, $ty: ty, $default_attr: ident, $parse:expr, $($attr:ident),+) => {
         tlv_impl!($lt, $ty, $default_attr, $parse);
         $(impl<$lt> ParsesFromAttr<attr_types::$attr> for $ty {})+
     };
-    ($ty: ty, $len: literal, $default_attr: ident, $parse: expr_2021) => {
+    ($ty: ty, $len: literal, $default_attr: ident, $parse: expr) => {
         impl<'i> Tlv<'i, $len> for $ty {
             type Attr = attr_types::$default_attr;
 
@@ -118,7 +118,7 @@ macro_rules! tlv_impl {
 
         impl ParsesFromAttr<attr_types::$default_attr> for $ty {}
     };
-    ($ty: ty, $len: literal, $default_attr: ident, $parse:expr_2021, $($attr:ident),+) => {
+    ($ty: ty, $len: literal, $default_attr: ident, $parse:expr, $($attr:ident),+) => {
         tlv_impl!($ty, $len, $default_attr, $parse);
         $(impl ParsesFromAttr<attr_types::$attr> for $ty {})+
     };
