@@ -30,6 +30,15 @@ fn env_propagated() {
 }
 
 #[test]
+fn env_file_accessible() {
+    assert_eq!(
+        "file for env location\n",
+        std::fs::read_to_string(std::env::var("FILE_FOR_ENV_LOCATION").expect("env var missing"))
+            .expect("failed to read file")
+    );
+}
+
+#[test]
 fn json_env_quoting() {
     assert_eq!(
         serde_json::json!({
