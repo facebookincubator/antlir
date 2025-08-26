@@ -22,3 +22,19 @@ def select_triple(to_format):
         arch_select(aarch64 = "aarch64-redhat-linux", x86_64 = "x86_64-redhat-linux"),
         _format_helper,
     )
+
+def format_select(to_format: typing.Any, **kwargs) -> Select:
+    """
+    Formats `to_format` according to selects in `kwargs`.
+    """
+
+    def _format_helper(*args, **kwargs):
+        if isinstance(to_format, list):
+            return [s.format(*args, **kwargs) for s in to_format]
+        else:
+            return to_format.format(*args, **kwargs)
+
+    return selects.apply(
+        selects.join(**kwargs),
+        lambda sels: _format_helper(**{a: getattr(sels, a) for a in dir(sels)}),
+    )

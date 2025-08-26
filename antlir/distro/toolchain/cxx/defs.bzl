@@ -29,6 +29,53 @@ _base_ldflags = [
     "-L$(location antlir//antlir/distro/deps/glibc:lib)",
 ]
 
+# gcc-only flags
+# gcc only used for CUDA host compilation on some targets.
+_base_gcc_flags = [
+    "-idirafter",
+    "$(location fbcode//antlir/distro/deps/gcc:include)",
+    # glog uses an old-style static assert that trips this warning. We get
+    # glog from a distro RPM so it's hard to change. This warning doesn't catch
+    # much for us anyway, so let's just disable it.
+    "-Wno-unused-local-typedefs",
+]
+
+# Clang-only flags
+# These are set in the buck tool wrappers which the distro toolchain doesn't use
+_base_clang_flags = lambda sysroot: [
+    # Make sure clang doesn't use its default configs and pick the wrong gcc.
+    "--no-default-config",
+    "-target",
+    select({
+        "ovr_config//cpu:arm64": "aarch64-unknown-linux-gnu",
+        "ovr_config//cpu:x86_64": "x86_64-redhat-linux-gnu",
+    }),
+    "--sysroot=$(location {})".format(sysroot),
+    # Make sure these are passed in because when compilations run on RE we
+    # need to force this dir to get mounted into the container.
+    "-resource-dir",
+    "$(location antlir//antlir/distro/deps/llvm-fb:resource-dir)",
+    "-idirafter",
+    "$(location antlir//antlir/distro/deps/llvm-fb:include)",
+    # glog uses an old-style static assert that trips this warning. We get
+    # glog from a distro RPM so it's hard to change. This warning doesn't catch
+    # much for us anyway, so let's just disable it.
+    "-Wno-error=unused-local-typedef",
+]
+
+# Flags applicable to both gcc and clang.
+_base_compiler_flags = [
+    # These come from buck wrappers which we don't use, so keep these.
+    "-Wno-unused-command-line-argument",
+    "-nostdinc",
+    "-nostdinc++",
+    "-idirafter",
+    "$(location antlir//antlir/distro/deps/glibc:include)",
+]
+
+# These are antlir toolchain-specific flags which fbocde does _not_ usually set.
+_antlir_compiler_flags = []
+
 def _prefix_flag(prefix_flag: str, flags: list[str | Select]) -> list[str | Select]:
     """
     Add the prefix flag before all flags in `flags`.
@@ -97,39 +144,9 @@ def _single_image_cxx_toolchain(
             **kwargs
         )
 
-    # These are set in the buck tool wrappers which the distro toolchain doesn't use
-    base_compiler_flags = [
-        # Make sure clang doesn't use its default configs and pick the wrong gcc.
-        "--no-default-config",
-        "-target",
-        select({
-            "ovr_config//cpu:arm64": "aarch64-unknown-linux-gnu",
-            "ovr_config//cpu:x86_64": "x86_64-redhat-linux-gnu",
-        }),
-        "--sysroot=$(location {})".format(sysroot),
-        # These come from buck wrappers which we don't use, so keep these.
-        "-Wno-unused-command-line-argument",
-        "-nostdinc",
-        "-nostdinc++",
-        # Make sure these are passed in because when compilations run on RE we
-        # need to force this dir to get mounted into the container.
-        "-resource-dir",
-        "$(location antlir//antlir/distro/deps/llvm-fb:resource-dir)",
-        "-idirafter",
-        "$(location antlir//antlir/distro/deps/llvm-fb:include)",
-        "-idirafter",
-        "$(location antlir//antlir/distro/deps/glibc:include)",
-    ]
-
-    # These are antlir toolchain-specific flags which fbocde does _not_ usually set.
-    antlir_compiler_flags = [
-        # glog uses an old-style static assert that trips this warning. We get
-        # glog from a distro RPM so it's hard to change. This warning doesn't catch
-        # much for us anyway, so let's just disable it.
-        "-Wno-error=unused-local-typedef",
-    ]
-
-    compiler_flags = base_compiler_flags + antlir_compiler_flags
+    generic_compiler_flags = _base_compiler_flags + _antlir_compiler_flags
+    clang_compiler_flags = _base_clang_flags(sysroot) + generic_compiler_flags
+    gcc_compiler_flags = _base_gcc_flags + generic_compiler_flags
 
     def _get_cxx_tool_mode_flags_select(**kwargs) -> Select:
         """
@@ -150,7 +167,8 @@ def _single_image_cxx_toolchain(
             "platform": "platform010",
         } | kwargs
 
-        return compiler_flags + select({
+        # Only support compilation with clang
+        return clang_compiler_flags + select({
             "DEFAULT": get_cxx_tool_mode_flags(cxx_mode = DEV.cxx, **kwargs),
             "ovr_config//build_mode/constraints:opt": get_cxx_tool_mode_flags(cxx_mode = OPT.cxx, **kwargs),
         })
@@ -176,8 +194,11 @@ def _single_image_cxx_toolchain(
                     # so ignore it for now at the cost of some non-determinism.
                     "-_OMIT_LIBSHIM_FLAG_",
                 ] + selects.apply(
-                    compiler_flags + _base_pp_flags,
+                    clang_compiler_flags + _base_pp_flags,
                     native.partial(_prefix_flag, "-_NVCC_CLANG_FLAG_"),
+                ) + selects.apply(
+                    gcc_compiler_flags + _base_pp_flags,
+                    native.partial(_prefix_flag, "-_NVCC_GCC_FLAG_"),
                 ),
             )
 
@@ -207,7 +228,7 @@ def _single_image_cxx_toolchain(
         platform_deps_aliases = platform_deps_aliases,
         archiver = _layer_tool("llvm-ar"),
         archiver_type = "gnu",
-        archiver_flags = compiler_flags,
+        archiver_flags = clang_compiler_flags,
         asm_compiler = ":" + asm_wrapper_rule,
         asm_compiler_flags = asm_flags,
         asm_compiler_type = "gcc",
