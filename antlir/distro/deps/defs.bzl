@@ -28,13 +28,18 @@ def format_select(to_format: typing.Any, **kwargs) -> Select:
     Formats `to_format` according to selects in `kwargs`.
     """
 
-    def _format_helper(*args, **kwargs):
-        if isinstance(to_format, list):
-            return [s.format(*args, **kwargs) for s in to_format]
+    def _format_helper(fmt: typing.Any, *args, **kwargs):
+        if isinstance(fmt, list):
+            return [_format_helper(e, *args, **kwargs) for e in fmt]
+        elif isinstance(fmt, tuple):
+            return tuple([_format_helper(e, *args, **kwargs) for e in fmt])
         else:
-            return to_format.format(*args, **kwargs)
+            return fmt.format(*args, **kwargs)
 
     return selects.apply(
         selects.join(**kwargs),
-        lambda sels: _format_helper(**{a: getattr(sels, a) for a in dir(sels)}),
+        lambda sels: _format_helper(
+            to_format,
+            **{a: getattr(sels, a) for a in dir(sels)}
+        ),
     )
