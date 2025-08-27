@@ -17,6 +17,7 @@ use tracing::debug;
 use crate::isolation::IsolationError;
 use crate::isolation::Platform;
 use crate::pci::PCIBridges;
+use crate::types::QCow2DiskCommonOpts;
 use crate::types::QCow2DiskOpts;
 use crate::types::QemuDevice;
 use crate::utils::run_command_capture_output;
@@ -73,12 +74,12 @@ impl QCow2Disk {
             .arg(self.disk_file_name().as_os_str())
             .arg("-F")
             .arg("raw");
-        if let Some(image) = &self.opts.base_image {
+        if let Some(image) = &self.opts().base_image {
             cmd.arg("-b").arg(self.format_image_path(image)?);
         }
         run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskCreationError)?;
 
-        if let Some(size) = self.opts.free_mib {
+        if let Some(size) = self.opts().free_mib {
             if size != 0 {
                 let mut cmd = Command::new("qemu-img");
                 cmd.arg("resize")
@@ -105,7 +106,7 @@ impl QCow2Disk {
     }
 
     fn serial(&self) -> String {
-        match &self.opts.serial {
+        match &self.opts().serial {
             Some(serial) => serial.clone(),
             None => self.name(),
         }
@@ -123,36 +124,94 @@ impl QCow2Disk {
             Ok(path.clone())
         }
     }
+
+    fn opts(&self) -> &QCow2DiskCommonOpts {
+        match &self.opts {
+            QCow2DiskOpts::IdeHd(opts) | QCow2DiskOpts::VirtioBlk(opts) => opts,
+            QCow2DiskOpts::Nvme(nvme) => &nvme.common,
+        }
+    }
+
+    fn interface(&self) -> &str {
+        match &self.opts {
+            QCow2DiskOpts::IdeHd(_) => "ide-hd",
+            QCow2DiskOpts::VirtioBlk(_) => "virtio-blk",
+            QCow2DiskOpts::Nvme(_) => "nvme",
+        }
+    }
 }
 
 impl QemuDevice for QCow2Disk {
     fn qemu_args(&self) -> Vec<OsString> {
-        let mut args = vec![
-            "-blockdev".into(),
-            format!(
-                "driver=qcow2,node-name={},file.driver=file,file.filename={}",
-                self.name(),
-                self.disk_file_name().to_str().expect("Invalid filename"),
-            )
-            .into(),
-        ];
-        let mut bus = self.bus.clone();
-        // Create AHCI controller for SATA drives
-        if self.opts.interface == "ide-hd" {
-            args.push("-device".into());
-            args.push(format!("ahci,id=ahci-{},bus={}", self.name(), bus).into());
-            bus = format!("ahci-{}.0", self.name());
+        let mut args = Vec::new();
+        match &self.opts {
+            QCow2DiskOpts::VirtioBlk(_) => {
+                args.push("-blockdev".into());
+                args.push(
+                    format!(
+                        "driver=qcow2,node-name={},file.driver=file,file.filename={}",
+                        self.name(),
+                        self.disk_file_name().to_str().expect("Invalid filename"),
+                    )
+                    .into(),
+                );
+                args.push("-device".into());
+                args.push(format!(
+                    "{driver},bus={bus},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
+                    driver = self.interface(),
+                    bus = self.bus,
+                    name = self.name(),
+                    serial = self.serial(),
+                    pbs = self.opts().physical_block_size,
+                    lbs = self.opts().logical_block_size,
+                ).into());
+            }
+            QCow2DiskOpts::IdeHd(_) => {
+                // Create AHCI controller for SATA drives
+                let bus = format!("ahci-{}.0", self.name());
+                args.push("-device".into());
+                args.push(format!("ahci,id=ahci-{},bus={}", self.name(), self.bus).into());
+
+                args.push("-blockdev".into());
+                args.push(
+                    format!(
+                        "driver=qcow2,node-name={},file.driver=file,file.filename={}",
+                        self.name(),
+                        self.disk_file_name().to_str().expect("Invalid filename"),
+                    )
+                    .into(),
+                );
+                args.push("-device".into());
+                args.push(format!(
+                    "{driver},bus={bus},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
+                    driver = self.interface(),
+                    name = self.name(),
+                    serial = self.serial(),
+                    pbs = self.opts().physical_block_size,
+                    lbs = self.opts().logical_block_size,
+                ).into());
+            }
+            QCow2DiskOpts::Nvme(_) => {
+                args.push("-blockdev".into());
+                args.push(
+                    format!(
+                        "driver=qcow2,node-name={},file.driver=file,file.filename={}",
+                        self.name(),
+                        self.disk_file_name().to_str().expect("Invalid filename"),
+                    )
+                    .into(),
+                );
+                args.push("-device".into());
+                args.push(format!(
+                    "nvme,bus={bus},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
+                    name = self.name(),
+                    bus = &self.bus,
+                    serial = self.serial(),
+                    pbs = self.opts().physical_block_size,
+                    lbs = self.opts().logical_block_size,
+                ).into());
+            }
         }
-        args.push("-device".into());
-        args.push(format!(
-            "{driver},bus={bus},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
-            driver = self.opts.interface,
-            bus = bus,
-            name = self.name(),
-            serial = self.serial(),
-            pbs = self.opts.physical_block_size,
-            lbs = self.opts.logical_block_size,
-        ).into());
         args
     }
 }
@@ -193,14 +252,14 @@ mod test {
     use std::ffi::OsStr;
 
     use super::*;
+    use crate::types::QCow2DiskNvmeOpts;
 
     fn build_test_qcow2disk(id: usize) -> QCow2Disk {
-        let opts = QCow2DiskOpts {
-            interface: "virtio-blk".to_string(),
+        let opts = QCow2DiskOpts::VirtioBlk(QCow2DiskCommonOpts {
             physical_block_size: 512,
             logical_block_size: 512,
             ..Default::default()
-        };
+        });
 
         let mut builder = QCow2DiskBuilder::default();
         builder
@@ -231,7 +290,10 @@ mod test {
         );
 
         // Test serial override
-        disk.opts.serial = Some("serial".to_string());
+        match &mut disk.opts {
+            QCow2DiskOpts::VirtioBlk(opts) => opts.serial = Some("serial".to_string()),
+            _ => panic!("Unexpected disk opts"),
+        }
         assert_eq!(disk.serial(), "serial");
         assert_eq!(
             &disk.qemu_args().join(OsStr::new(" ")),
@@ -242,12 +304,15 @@ mod test {
         );
 
         // Test SATA drive
-        disk.opts.interface = "ide-hd".into();
+        disk.opts = match disk.opts {
+            QCow2DiskOpts::VirtioBlk(o) => QCow2DiskOpts::IdeHd(o),
+            _ => panic!("Unexpected disk opts"),
+        };
         assert_eq!(
             &disk.qemu_args().join(OsStr::new(" ")),
-            "-blockdev \
+            "-device ahci,id=ahci-test-device3,bus=pci0 \
+            -blockdev \
             driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
-            -device ahci,id=ahci-test-device3,bus=pci0 \
             -device ide-hd,bus=ahci-test-device3.0,drive=test-device3,serial=serial,\
             physical_block_size=512,logical_block_size=512"
         );
@@ -257,7 +322,10 @@ mod test {
     fn test_qcow2disks() {
         let disk1 = build_test_qcow2disk(0);
         let mut disk2 = build_test_qcow2disk(1);
-        disk2.opts.interface = "nvme".into();
+        disk2.opts = match disk2.opts {
+            QCow2DiskOpts::VirtioBlk(common) => QCow2DiskOpts::Nvme(QCow2DiskNvmeOpts { common }),
+            _ => panic!("Unexpected disk opts"),
+        };
         let disks = QCow2Disks(vec![disk1, disk2]);
         assert_eq!(
             &disks.qemu_args().join(OsStr::new(" ")),

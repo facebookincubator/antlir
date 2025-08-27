@@ -35,22 +35,34 @@ pub(crate) trait QemuDevice {
 }
 
 /// Captures property of the disk specified by user to describe a writable disk
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "interface", rename_all = "kebab-case")]
+pub(crate) enum QCow2DiskOpts {
+    IdeHd(QCow2DiskCommonOpts),
+    VirtioBlk(QCow2DiskCommonOpts),
+    Nvme(QCow2DiskNvmeOpts),
+}
+
+/// Captures property of the disk specified by user to describe a writable disk
 #[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct QCow2DiskOpts {
+pub(crate) struct QCow2DiskCommonOpts {
     /// Path to the base image file
     pub(crate) base_image: Option<PathBuf>,
     /// Resize the disk to provide additional space. This will also be size of entire
     /// disk if `base_image` was not given.
     pub(crate) free_mib: Option<usize>,
-    /// Corresponds to driver for -device qemu arg. For disks, this is the interface.
-    /// Examples: virtio-blk, nvme
-    pub(crate) interface: String,
     /// Physical block size of the disk
     pub(crate) physical_block_size: usize,
     /// Logical block size of the disk
     pub(crate) logical_block_size: usize,
     /// Device serial override. By default it's automatically assigned.
     pub(crate) serial: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub(crate) struct QCow2DiskNvmeOpts {
+    #[serde(flatten)]
+    pub(crate) common: QCow2DiskCommonOpts,
 }
 
 /// Required data if not booting from disk
