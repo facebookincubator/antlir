@@ -63,6 +63,8 @@ pub(crate) struct QCow2DiskCommonOpts {
 pub(crate) struct QCow2DiskNvmeOpts {
     #[serde(flatten)]
     pub(crate) common: QCow2DiskCommonOpts,
+    #[serde(rename = "nvme_num_namespaces")]
+    pub(crate) num_namespaces: usize,
 }
 
 /// Required data if not booting from disk
