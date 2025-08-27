@@ -12,6 +12,12 @@ def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
             "Either base_image or free_mib must be set. \
             An empty disk of zero size is invalid.",
         )
+    if ctx.attrs.interface == "nvme":
+        nvme_num_namespaces = ctx.attrs.nvme_num_namespaces if ctx.attrs.nvme_num_namespaces != None else 1
+        if nvme_num_namespaces <= 0:
+            fail("nvme_num_namespaces must be greater than 0")
+    else:
+        nvme_num_namespaces = None
     return [
         DiskInfo(
             base_image = ctx.attrs.base_image,
@@ -21,6 +27,7 @@ def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
             physical_block_size = ctx.attrs.physical_block_size,
             bootable = ctx.attrs.bootable,
             serial = ctx.attrs.serial,
+            nvme_num_namespaces = nvme_num_namespaces,
         ),
         DefaultInfo(),
     ]
@@ -46,6 +53,7 @@ _vm_disk = rule(
         # buck target labels
         "labels": attrs.list(attrs.string(), default = []),
         "logical_block_size": attrs.int(default = 512),
+        "nvme_num_namespaces": attrs.option(attrs.int(), default = None),
         "physical_block_size": attrs.int(default = 512),
         "serial": attrs.option(
             attrs.string(),

@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use derive_builder::Builder;
+use nonempty::NonEmpty;
 use thiserror::Error;
 use tracing::debug;
 
@@ -67,33 +68,30 @@ impl QCow2DiskBuilder {
 impl QCow2Disk {
     /// Create a temporary disk with qemu-img inside state directory.
     fn create_temp_disk(&mut self) -> Result<()> {
-        let mut cmd = Command::new("qemu-img");
-        cmd.arg("create")
-            .arg("-f")
-            .arg("qcow2")
-            .arg(self.disk_file_name().as_os_str())
-            .arg("-F")
-            .arg("raw");
-        if let Some(image) = &self.opts().base_image {
-            cmd.arg("-b").arg(self.format_image_path(image)?);
-        }
-        run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskCreationError)?;
-
-        if let Some(size) = self.opts().free_mib {
-            if size != 0 {
-                let mut cmd = Command::new("qemu-img");
-                cmd.arg("resize")
-                    .arg(self.disk_file_name().as_os_str())
-                    .arg(format!("+{}M", size));
-                run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskUpsizeError)?;
+        for filename in self.disk_file_names() {
+            let mut cmd = Command::new("qemu-img");
+            cmd.arg("create")
+                .arg("-f")
+                .arg("qcow2")
+                .arg(&filename)
+                .arg("-F")
+                .arg("raw");
+            if let Some(image) = &self.opts().base_image {
+                cmd.arg("-b").arg(self.format_image_path(image)?);
             }
-        }
+            run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskCreationError)?;
 
-        debug!(
-            "Created {} for {}",
-            self.disk_file_name().display(),
-            self.name()
-        );
+            if let Some(size) = self.opts().free_mib {
+                if size != 0 {
+                    let mut cmd = Command::new("qemu-img");
+                    cmd.arg("resize").arg(&filename).arg(format!("+{}M", size));
+                    run_command_capture_output(&mut cmd)
+                        .map_err(QCow2DiskError::DiskUpsizeError)?;
+                }
+            }
+
+            debug!("Created {} for {}", filename.display(), self.name())
+        }
         Ok(())
     }
 
@@ -101,8 +99,15 @@ impl QCow2Disk {
         format!("{}{}", self.prefix, self.id)
     }
 
-    fn disk_file_name(&self) -> PathBuf {
-        self.state_dir.join(format!("{}.qcow2", self.name()))
+    fn disk_file_names(&self) -> NonEmpty<PathBuf> {
+        let num = match &self.opts {
+            QCow2DiskOpts::Nvme(nvme) => nvme.num_namespaces,
+            _ => 1,
+        };
+        let names = (0..num)
+            .map(|num| self.state_dir.join(format!("{}_{num}.qcow2", self.name())))
+            .collect::<Vec<_>>();
+        NonEmpty::from_vec(names).expect("there is always at least one disk file for a disk")
     }
 
     fn serial(&self) -> String {
@@ -151,7 +156,10 @@ impl QemuDevice for QCow2Disk {
                     format!(
                         "driver=qcow2,node-name={},file.driver=file,file.filename={}",
                         self.name(),
-                        self.disk_file_name().to_str().expect("Invalid filename"),
+                        self.disk_file_names()
+                            .first()
+                            .to_str()
+                            .expect("Invalid filename"),
                     )
                     .into(),
                 );
@@ -177,7 +185,10 @@ impl QemuDevice for QCow2Disk {
                     format!(
                         "driver=qcow2,node-name={},file.driver=file,file.filename={}",
                         self.name(),
-                        self.disk_file_name().to_str().expect("Invalid filename"),
+                        self.disk_file_names()
+                            .first()
+                            .to_str()
+                            .expect("Invalid filename"),
                     )
                     .into(),
                 );
@@ -192,24 +203,33 @@ impl QemuDevice for QCow2Disk {
                 ).into());
             }
             QCow2DiskOpts::Nvme(_) => {
-                args.push("-blockdev".into());
-                args.push(
-                    format!(
-                        "driver=qcow2,node-name={},file.driver=file,file.filename={}",
-                        self.name(),
-                        self.disk_file_name().to_str().expect("Invalid filename"),
-                    )
-                    .into(),
-                );
                 args.push("-device".into());
                 args.push(format!(
-                    "nvme,bus={bus},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
+                    "nvme,id={name},bus={bus},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
                     name = self.name(),
                     bus = &self.bus,
                     serial = self.serial(),
                     pbs = self.opts().physical_block_size,
                     lbs = self.opts().logical_block_size,
                 ).into());
+                for (i, disk_file_name) in self.disk_file_names().into_iter().enumerate() {
+                    let drive_id = format!("{}-{}", self.name(), i);
+                    args.push("-blockdev".into());
+                    args.push(
+                        format!(
+                            "driver=qcow2,node-name={drive_id},file.driver=file,file.filename={}",
+                            disk_file_name.to_str().expect("Invalid filename"),
+                        )
+                        .into(),
+                    );
+                    args.push("-device".into());
+                    args.push(format!(
+                        "nvme-ns,bus={controller},drive={drive_id},physical_block_size={pbs},logical_block_size={lbs}",
+                        controller = self.name(),
+                        pbs = self.opts().physical_block_size,
+                        lbs = self.opts().logical_block_size,
+                    ).into());
+                }
             }
         }
         args
@@ -277,14 +297,14 @@ mod test {
     fn test_qcow2disk() {
         let mut disk = build_test_qcow2disk(3);
         assert_eq!(
-            disk.disk_file_name(),
-            PathBuf::from("/tmp/test/test-device3.qcow2")
+            disk.disk_file_names().first(),
+            Path::new("/tmp/test/test-device3_0.qcow2")
         );
         assert_eq!(disk.serial(), "test-device3");
         assert_eq!(
             &disk.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
-            driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
+            driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3_0.qcow2 \
             -device virtio-blk,bus=pci0,drive=test-device3,serial=test-device3,\
             physical_block_size=512,logical_block_size=512"
         );
@@ -298,7 +318,7 @@ mod test {
         assert_eq!(
             &disk.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
-            driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
+            driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3_0.qcow2 \
             -device virtio-blk,bus=pci0,drive=test-device3,serial=serial,\
             physical_block_size=512,logical_block_size=512"
         );
@@ -312,7 +332,7 @@ mod test {
             &disk.qemu_args().join(OsStr::new(" ")),
             "-device ahci,id=ahci-test-device3,bus=pci0 \
             -blockdev \
-            driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
+            driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3_0.qcow2 \
             -device ide-hd,bus=ahci-test-device3.0,drive=test-device3,serial=serial,\
             physical_block_size=512,logical_block_size=512"
         );
@@ -323,20 +343,21 @@ mod test {
         let disk1 = build_test_qcow2disk(0);
         let mut disk2 = build_test_qcow2disk(1);
         disk2.opts = match disk2.opts {
-            QCow2DiskOpts::VirtioBlk(common) => QCow2DiskOpts::Nvme(QCow2DiskNvmeOpts { common }),
+            QCow2DiskOpts::VirtioBlk(common) => QCow2DiskOpts::Nvme(QCow2DiskNvmeOpts {
+                common,
+                num_namespaces: 1,
+            }),
             _ => panic!("Unexpected disk opts"),
         };
         let disks = QCow2Disks(vec![disk1, disk2]);
         assert_eq!(
             &disks.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
-            driver=qcow2,node-name=test-device0,file.driver=file,file.filename=/tmp/test/test-device0.qcow2 \
-            -device virtio-blk,bus=pci0,drive=test-device0,serial=test-device0,\
-            physical_block_size=512,logical_block_size=512 \
-            -blockdev \
-            driver=qcow2,node-name=test-device1,file.driver=file,file.filename=/tmp/test/test-device1.qcow2 \
-            -device nvme,bus=pci0,drive=test-device1,serial=test-device1,\
-            physical_block_size=512,logical_block_size=512"
+            driver=qcow2,node-name=test-device0,file.driver=file,file.filename=/tmp/test/test-device0_0.qcow2 \
+            -device virtio-blk,bus=pci0,drive=test-device0,serial=test-device0,physical_block_size=512,logical_block_size=512 \
+            -device nvme,id=test-device1,bus=pci0,serial=test-device1,physical_block_size=512,logical_block_size=512 \
+            -blockdev driver=qcow2,node-name=test-device1-0,file.driver=file,file.filename=/tmp/test/test-device1_0.qcow2 \
+            -device nvme-ns,bus=test-device1,drive=test-device1-0,physical_block_size=512,logical_block_size=512"
         );
     }
 }

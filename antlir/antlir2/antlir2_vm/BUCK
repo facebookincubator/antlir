@@ -17,6 +17,7 @@ rust_binary(
         "clap",
         "derive_builder",
         "maplit",
+        "nonempty",
         "once_cell",
         "serde",
         "serde_json",
