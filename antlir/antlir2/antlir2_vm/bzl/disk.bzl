@@ -14,7 +14,7 @@ def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
         )
     return [
         DiskInfo(
-            base_image = ctx.attrs.base_image[DefaultInfo].default_outputs[0],
+            base_image = ctx.attrs.base_image,
             free_mib = ctx.attrs.free_mib,
             interface = ctx.attrs.interface,
             logical_block_size = ctx.attrs.logical_block_size,
@@ -30,10 +30,10 @@ _vm_disk = rule(
     impl = _disk_impl,
     attrs = {
         "base_image": attrs.option(
-            attrs.dep(doc = "Target to raw disk image file"),
+            attrs.source(doc = "Target to raw disk image file"),
             default = None,
         ),
-        "bootable": attrs.bool(),
+        "bootable": attrs.bool(default = False),
         "free_mib": attrs.int(
             default = 0,
             doc = "Additional free disk space in MiB",
@@ -57,15 +57,9 @@ _vm_disk = rule(
 vm_disk = rule_with_default_target_platform(_vm_disk)
 
 def _create_disk_from_package(
+        *,
         name: str,
         image: str,
-        free_mib: int = 0,
-        bootable: bool = False,
-        interface: str = "virtio-blk",
-        logical_block_size: int = 512,
-        physical_block_size: int = 512,
-        serial: str | None = None,
-        visibility: list[str] | None = None,
         **kwargs):
     """This functions take image targets and wrap them with desired properties
     to create a VM disk target that can be used by VM. `image` is expected to
@@ -76,36 +70,22 @@ def _create_disk_from_package(
     vm_disk(
         name = name,
         base_image = image,
-        bootable = bootable,
-        free_mib = free_mib,
-        interface = interface,
-        logical_block_size = logical_block_size,
-        physical_block_size = physical_block_size,
-        serial = serial,
-        visibility = visibility,
         **kwargs
     )
     return ":" + name
 
 def _create_empty_disk(
+        *,
         name: str,
         size_mib: int,
-        interface: str = "virtio-blk",
-        logical_block_size: int = 512,
-        physical_block_size: int = 512,
-        serial: str | None = None,
-        visibility: list[str] | None = None):
+        **kwargs):
     """Create an empty disk of `size` MiB"""
     _create_disk_from_package(
         name = name,
         image = "antlir//antlir:empty",
         free_mib = size_mib,
         bootable = False,
-        interface = interface,
-        logical_block_size = logical_block_size,
-        physical_block_size = physical_block_size,
-        serial = serial,
-        visibility = visibility,
+        **kwargs
     )
     return ":" + name
 
