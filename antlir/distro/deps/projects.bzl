@@ -1,4 +1,4 @@
-# @generated SignedSource<<b65971375a2e94932382ad1cac92a38a>>
+# @generated SignedSource<<e2ca19c4da1db4dd4e958ba0f6a30fc2>>
 PROJECTS = [
     ("abseil", "abseil"),
     ("binutils", "iberty"),
@@ -68,6 +68,7 @@ PROJECTS = [
     ("cuda", "cusolver"),
     ("cuda", "cusparse"),
     ("cuda", "cusparseLt"),
+    ("cuda", "nvJitLink"),
     ("cuda", "nvJitlink"),
     ("cuda", "nvToolsExt"),
     ("cuda", "nvjpeg"),

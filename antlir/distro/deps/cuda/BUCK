@@ -47,7 +47,10 @@ image.layer(
             "cusparse",
             "libcusparse.so",
             "libcusparse-devel-{version}",
-            [":cuda"],
+            [
+                ":cuda",
+                ":nvJitLink",
+            ],
         ),
         (
             "cusparseLt",
@@ -132,6 +135,12 @@ image.layer(
             "nvjpeg",
             "libnvjpeg.so",
             "libnvjpeg-devel-{version}",
+            [":cuda"],
+        ),
+        (
+            "nvJitLink",
+            "libnvJitLink.so",
+            "libnvjitlink-devel-{version}",
             [":cuda"],
         ),
     ]
