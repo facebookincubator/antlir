@@ -91,6 +91,79 @@ def _prefix_flag(prefix_flag: str, flags: list[str | Select]) -> list[str | Sele
         out_flags.append(flag)
     return out_flags
 
+def _prefix_flags(prefix: str, flags: list[str] | Select) -> list[str | Select] | Select:
+    """
+    Prefixes all compiler flags `flags` with prefix, optionally handling selects.
+    """
+    return selects.apply(flags, native.partial(_prefix_flag, prefix))
+
+def _get_cxx_tool_mode_flags_select(**kwargs) -> Select:
+    """
+    Calls get_cxx_tool_mode_flags() with appropriate arguments to yield commonly-used
+    fbcode toolchain flags we pass along to the toolchain.
+
+    This selects between dev / opt mode so we can enable both of those build modes for TEE.
+    """
+    kwargs = {
+        # We only support x86_64 for distro toolchain right now.
+        "arch": "x86_64",
+        # We only support clang as a compiler in distro toolchain.
+        "compiler": "clang",
+        # Whether this is a cxx tool.
+        "is_cxx": False,
+        # get_cxx_tool_mode_flags mostly just sets gcc-specific flags, but we use clang as the host compiler
+        # so ignore this.
+        "is_nvcc": False,
+        # Default to platform010 for distro builds, used for resolving platform-specific flags.
+        "platform": "platform010",
+        # Whether this is a preprocessor tool.
+        "pp": False,
+    } | kwargs
+
+    # Only support compilation with clang
+    return select({
+        "DEFAULT": get_cxx_tool_mode_flags(cxx_mode = DEV.cxx, **kwargs),
+        "ovr_config//build_mode/constraints:opt": get_cxx_tool_mode_flags(cxx_mode = OPT.cxx, **kwargs),
+    })
+
+def _prefixed_cuda_flags(pp: bool = False) -> Select:
+    """
+    Creates CUDA flags prefixed with appropriate sentinel compiler flag.
+    """
+
+    def _filter_flags_with_callables(flags: list[str], *filters) -> list[str]:
+        out_flags = []
+        for flag in flags:
+            filter_flag = False
+            for f in filters:
+                if f(flag):
+                    filter_flag = True
+
+            if not filter_flag:
+                out_flags.append(flag)
+
+        return out_flags
+
+    _filter_flags = lambda flags: _filter_flags_with_callables(
+        flags,
+        # Antlir glibc seems to trigger CUDA 12.8 to define __GNUC__ which trips this warning.
+        lambda flag: flag == "-Wdeprecated-dynamic-exception-spec",
+    )
+
+    return _prefix_flags(
+        "-_NVCC_CLANG_FLAG_",
+        selects.apply(
+            _get_cxx_tool_mode_flags_select(is_cxx = True, is_nvcc = True, compiler = "clang", pp = pp),
+            _filter_flags,
+        ),
+    ) + _prefix_flags(
+        "-_NVCC_GCC_FLAG_",
+        selects.apply(
+            _get_cxx_tool_mode_flags_select(is_cxx = True, is_nvcc = True, compiler = "gcc", pp = pp),
+            _filter_flags,
+        ),
+    )
+
 def _get_mode_ldflags_select() -> Select:
     """
     Returns a selectified list of ldflags derived from fbcode toolchains to pass to the linker.
@@ -153,31 +226,6 @@ def _single_image_cxx_toolchain(
     clang_compiler_flags = _base_clang_flags(sysroot) + generic_compiler_flags
     gcc_compiler_flags = _base_gcc_flags + generic_compiler_flags
 
-    def _get_cxx_tool_mode_flags_select(**kwargs) -> Select:
-        """
-        Calls get_cxx_tool_mode_flags() with appropriate arguments to yield commonly-used
-        fbcode toolchain flags we pass along to the toolchain.
-
-        This selects between dev / opt mode so we can enable both of those build modes for TEE.
-        """
-        kwargs = {
-            # We only support x86_64 for distro toolchain right now.
-            "arch": "x86_64",
-            # We only support clang as a compiler in distro toolchain.
-            "compiler": "clang",
-            # get_cxx_tool_mode_flags mostly just sets gcc-specific flags, but we use clang as the host compiler
-            # so ignore this.
-            "is_nvcc": False,
-            # Default to platform010 for distro builds, used for resolving platform-specific flags.
-            "platform": "platform010",
-        } | kwargs
-
-        # Only support compilation with clang
-        return clang_compiler_flags + select({
-            "DEFAULT": get_cxx_tool_mode_flags(cxx_mode = DEV.cxx, **kwargs),
-            "ovr_config//build_mode/constraints:opt": get_cxx_tool_mode_flags(cxx_mode = OPT.cxx, **kwargs),
-        })
-
     nvcc_wrapper_rule = name + "--nvcc-wrapper"
     if os == "centos9":
         for version in CUDA_VERSIONS:
@@ -194,16 +242,14 @@ def _single_image_cxx_toolchain(
                 clang_target = _cuda_layer_tool("clang", version = version),
                 cuda_target = "antlir//antlir/distro/toolchain/cuda:cuda_path-{}".format(version),
                 cuda_version = version,
-                args = [
-                    # libshim.so doesn't make it into the container image where invocations run
-                    # so ignore it for now at the cost of some non-determinism.
-                    "-_OMIT_LIBSHIM_FLAG_",
-                ] + selects.apply(
-                    clang_compiler_flags + _base_pp_flags,
-                    native.partial(_prefix_flag, "-_NVCC_CLANG_FLAG_"),
-                ) + selects.apply(
-                    gcc_compiler_flags + _base_pp_flags,
-                    native.partial(_prefix_flag, "-_NVCC_GCC_FLAG_"),
+                args = (
+                    [
+                        # libshim.so doesn't make it into the container image where invocations run
+                        # so ignore it for now at the cost of some non-determinism.
+                        "-_OMIT_LIBSHIM_FLAG_",
+                    ] +
+                    _prefix_flags("-_NVCC_CLANG_FLAG_", clang_compiler_flags + _base_pp_flags) +
+                    _prefix_flags("-_NVCC_GCC_FLAG_", gcc_compiler_flags + _base_pp_flags)
                 ),
             )
 
@@ -216,7 +262,9 @@ def _single_image_cxx_toolchain(
                 "ovr_config//third-party/cuda/constraints:12.4": ":" + nvcc_wrapper_rule + "-12.4",
                 "ovr_config//third-party/cuda/constraints:12.8": ":" + nvcc_wrapper_rule + "-12.8",
             }),
+            "cuda_compiler_flags": _prefixed_cuda_flags(),
             "cuda_compiler_type": "clang",
+            "cuda_preprocessor_flags": _prefixed_cuda_flags(pp = True),
         }
 
     asm_wrapper_rule = name + "--nasm-wrapper"
@@ -242,12 +290,26 @@ def _single_image_cxx_toolchain(
         asm_preprocessor_type = "gcc",
         assembler = _layer_tool("clang"),
         c_compiler = _layer_tool("clang"),
-        c_compiler_flags = _get_cxx_tool_mode_flags_select(pp = False, is_cxx = False),
-        c_preprocessor_flags = _base_pp_flags + _get_cxx_tool_mode_flags_select(pp = True, is_cxx = False),
+        c_compiler_flags = (
+            clang_compiler_flags +
+            _get_cxx_tool_mode_flags_select()
+        ),
+        c_preprocessor_flags = (
+            _base_pp_flags +
+            clang_compiler_flags +
+            _get_cxx_tool_mode_flags_select(pp = True)
+        ),
         compiler_type = "clang",
         cxx_compiler = _layer_tool("clang++"),
-        cxx_compiler_flags = _get_cxx_tool_mode_flags_select(pp = False, is_cxx = True),
-        cxx_preprocessor_flags = _base_pp_flags + _get_cxx_tool_mode_flags_select(pp = True, is_cxx = True),
+        cxx_compiler_flags = (
+            clang_compiler_flags +
+            _get_cxx_tool_mode_flags_select(is_cxx = True)
+        ),
+        cxx_preprocessor_flags = (
+            _base_pp_flags +
+            clang_compiler_flags +
+            _get_cxx_tool_mode_flags_select(pp = True, is_cxx = True)
+        ),
         exec_compatible_with = [
             "ovr_config//os:linux",
         ],
