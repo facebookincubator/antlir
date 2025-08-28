@@ -9,9 +9,6 @@ oncall("antlir")
 
 sysroot_dep(
     name = "stdc++",
-    exported_preprocessor_flags = [
-        "-D_GNU_SOURCE",
-    ],
     extract_soname = False,
     header_dirs = select({
         "DEFAULT": [],
