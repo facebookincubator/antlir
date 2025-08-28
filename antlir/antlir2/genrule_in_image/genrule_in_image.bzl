@@ -80,7 +80,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     if int(bool(ctx.attrs.layer)) + int(bool(ctx.attrs.exec_layer)) != 1:
         fail("exactly one of layer or exec_layer must be specified")
 
-    if ctx.attrs.layer:
+    if ctx.attrs.exec_layer:
+        return _with_anon_layer(ctx.attrs.exec_layer)
+    elif ctx.attrs.layer_is_prepped:
+        return _with_anon_layer(ctx.attrs.layer)
+    else:
         return ctx.actions.anon_target(layer_rule, {
             "antlir2": ctx.attrs._layer_antlir2,
             "build_appliance": ctx.attrs.build_appliance,
@@ -96,8 +100,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             "_selected_target_arch": ctx.attrs._target_arch,
             "_working_format": ctx.attrs._working_format,
         }).promise.map(_with_anon_layer)
-    else:
-        return _with_anon_layer(ctx.attrs.exec_layer)
 
 _genrule_in_image = rule(
     impl = _impl,
@@ -118,6 +120,7 @@ _genrule_in_image = rule(
         ),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+        "layer_is_prepped": attrs.bool(default = False),
         "out": attrs.option(attrs.string(), default = None),
         "outs": attrs.option(attrs.dict(attrs.string(), attrs.string()), default = None),
         "_genrule_in_image": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/genrule_in_image:genrule_in_image")),
