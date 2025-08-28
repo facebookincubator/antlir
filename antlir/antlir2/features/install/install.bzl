@@ -420,7 +420,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             mode = 0o444
 
     features = None
-    if src_is_python:
+    if src_is_python and ctx.attrs._mac_signer:
         python_outplace_par = (
             ctx.attrs._python_outplace_par_override or
             rollout.check_base_path(PYTHON_OUTPLACE_PAR_ROLLOUT, ctx.attrs.src.label.package)
