@@ -61,7 +61,12 @@ _base_clang_flags = lambda sysroot: [
     # glog from a distro RPM so it's hard to change. This warning doesn't catch
     # much for us anyway, so let's just disable it.
     "-Wno-error=unused-local-typedef",
-]
+] + select({
+    "DEFAULT": [],
+    # std::enable_if name mangling is different between 17 and 19, use this to
+    # restore it: https://github.com/llvm/llvm-project/issues/85656
+    "ovr_config//toolchain/clang/constraints:19": ["-fclang-abi-compat=17"],
+})
 
 # Flags applicable to both gcc and clang.
 _base_compiler_flags = [
