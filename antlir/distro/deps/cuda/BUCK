@@ -25,7 +25,7 @@ image.layer(
         ],
         lib = paths.join("/usr/local/cuda-{version}/targets/{arch}-linux/lib", lib),
         # So this doesn't get put into the PAR (because it's a big library)
-        # provided = True,
+        provided = name in ("cuda_driver_api", "nvml"),
         rpm = rpm,
         test_deps_parent_layer = ":with-undeclared-deps",
         exported_deps = ["{}--actual".format(dep) for dep in exported_deps],
