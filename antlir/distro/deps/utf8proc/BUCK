@@ -1,8 +1,0 @@
-load("//antlir/distro/deps:rpm_library.bzl", "rpm_library")
-
-oncall("antlir")
-
-rpm_library(
-    name = "utf8proc",
-    visibility = ["PUBLIC"],
-)
