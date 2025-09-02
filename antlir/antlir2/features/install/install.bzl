@@ -234,7 +234,7 @@ def _python_outplace_features(
     )
 
     outplace_package_base = paths.join(
-        "/usr/lib/python_outplace",
+        "/usr/local/libexec/python_outplace",
         ctx.attrs.src.label.package.replace("/", "_"),
     )
     outplace_base = paths.join(
@@ -285,7 +285,8 @@ def _python_outplace_features(
             for dir in [
                 outplace_base,
                 outplace_package_base,
-                "/usr/lib/python_outplace",
+                "/usr/local/libexec",
+                "/usr/local/libexec/python_outplace",
             ]
         ] + [
             FeatureAnalysis(

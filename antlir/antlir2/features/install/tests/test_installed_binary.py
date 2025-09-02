@@ -51,11 +51,11 @@ class TestInstalledBinary(unittest.TestCase):
     def test_outplace_par(self) -> None:
         self.assertTrue(
             os.path.isdir(
-                "/usr/lib/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#link-tree"
+                "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#link-tree"
             )
         )
         self.assertTrue(os.path.islink("/usr/bin/true-py"))
         self.assertEqual(
             os.path.realpath("/usr/bin/true-py"),
-            "/usr/lib/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#par",
+            "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#par",
         )
