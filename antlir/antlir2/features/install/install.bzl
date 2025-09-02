@@ -212,6 +212,7 @@ shared_libraries_record = record(
 
 def _python_outplace_features(
         ctx: AnalysisContext,
+        installed_name: str,
         mode: int,
         binary_info: binary_record | None,
         shared_libraries: shared_libraries_record | None,
@@ -237,10 +238,7 @@ def _python_outplace_features(
         "/usr/local/libexec/python_outplace",
         ctx.attrs.src.label.package.replace("/", "_"),
     )
-    outplace_base = paths.join(
-        outplace_package_base,
-        ctx.attrs.src.label.name,
-    )
+    outplace_base = paths.join(outplace_package_base, installed_name)
 
     # This will fail analysis if src does not have an outplace subtarget
     srcs = {"link-tree": signed_link_tree, "par": par}
@@ -429,6 +427,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         if python_outplace_par:
             features = _python_outplace_features(
                 ctx,
+                paths.basename(ctx.attrs.dst),
                 mode,
                 binary_info,
                 shared_libraries,
