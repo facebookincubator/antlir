@@ -91,7 +91,8 @@ OSES = [
             "DEFAULT": "antlir//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
             "antlir//antlir/antlir2/facebook/flavor/centos9:corp": "antlir//antlir/antlir2/facebook/images/build_appliance/centos9_corp:build-appliance",
         }),
-        python = new_python_t(interpreter = "python3.12")
+        # This points to the Meta-built third-party/python interpreter.
+        python = new_python_t(interpreter = "/usr/local/bin/python3.12")
     ),
     _new_os(
         name = "centos10",
