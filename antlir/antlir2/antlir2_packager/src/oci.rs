@@ -165,6 +165,7 @@ impl Oci {
         let image_configuration = ImageConfigurationBuilder::default()
             .architecture(self.target_arch.clone())
             .os("linux")
+            .created(chrono::Utc::now().to_rfc3339())
             .config(
                 ConfigBuilder::default()
                     .entrypoint(self.entrypoint.clone())
