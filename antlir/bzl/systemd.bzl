@@ -476,6 +476,25 @@ def _skip_unit(unit, force = False):
 def _unskip_unit(unit):
     return _remove_dropin(unit, "99-skip-unit.conf")
 
+def _kernel_modules_load(*modules):
+    return [
+        [
+            # remove it first as an easy way to avoid depgraph conflicts
+            feature.remove(path = dst, must_exist = False),
+            feature.install_text(
+                text = module + "\n",
+                dst = dst,
+            ),
+        ]
+        for module in modules
+        for dst in [paths.join("/usr/lib/modules-load.d", "{}.conf".format(module))]
+    ] + [
+        feature.ensure_subdirs_exist(
+            into_dir = "/usr/lib",
+            subdirs_to_create = "modules-load.d",
+        ),
+    ]
+
 systemd = struct(
     alias = _alias,
     enable_unit = _enable_unit,
@@ -498,6 +517,7 @@ systemd = struct(
     ),
     unmask_units = _unmask_units,
     unskip_unit = _unskip_unit,
+    kernel_modules_load = _kernel_modules_load,
 )
 
 # verified with `systemd-escape`

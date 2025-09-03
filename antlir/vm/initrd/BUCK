@@ -3,11 +3,6 @@ load("//antlir/bzl:build_defs.bzl", "export_file")
 oncall("antlir")
 
 export_file(
-    name = "modules.conf",
-    visibility = ["PUBLIC"],
-)
-
-export_file(
     name = "reboot-on-fail.conf",
     visibility = ["PUBLIC"],
 )
