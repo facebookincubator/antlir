@@ -71,8 +71,12 @@ impl Btrfs {
 
         let mut mkfs = unshare(isol_context.clone())?.command("mkfs.btrfs")?;
 
-        mkfs.arg("--compress")
-            .arg(format!("zstd:{}", self.compression_level));
+        if self.compression_level != 0 {
+            mkfs.arg("--compress")
+                .arg(format!("zstd:{}", self.compression_level));
+        } else {
+            mkfs.arg("--reflink");
+        }
         if let Some(label) = &self.label {
             mkfs.arg("--label").arg(label);
         }
