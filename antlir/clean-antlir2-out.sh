@@ -17,6 +17,10 @@ fi
 
 pushd "antlir2-out"
 
+# Quick pass to just delete all the top-level subvolumes. Some of these might
+# fail if there are nested subvols but that's ok
+sudo find . -maxdepth 2 -type d -inum 256 -exec btrfs subvolume delete {} \; || true
+
 # all top-level subvolumes must be made read-write in case any nested
 # subvolume needs to be deleted (the compiler will now loudly fail if these are
 # found, but we still want to clean them up)
