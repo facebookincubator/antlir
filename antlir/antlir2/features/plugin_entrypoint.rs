@@ -14,17 +14,8 @@ pub extern "Rust" fn init_tracing(dispatch: tracing::Dispatch) {
 }
 
 static_assertions::assert_impl_all!(
-    Feature: antlir2_depgraph_if::RequiresProvides, antlir2_compile::CompileFeature,
+    Feature: antlir2_compile::CompileFeature
 );
-
-#[unsafe(no_mangle)]
-pub extern "Rust" fn as_requires_provides(
-    feature: &antlir2_features::Feature,
-) -> antlir2_features::Result<Box<dyn antlir2_depgraph_if::RequiresProvides>> {
-    let feature: Box<Feature> = serde_json::from_value(feature.data.clone())
-        .map_err(antlir2_features::Error::Deserialize)?;
-    Ok(feature)
-}
 
 #[unsafe(no_mangle)]
 pub extern "Rust" fn as_compile_feature(

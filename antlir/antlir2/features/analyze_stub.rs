@@ -11,39 +11,43 @@ use std::path::PathBuf;
 
 use antlir2_depgraph_if::AnalyzedFeature;
 use antlir2_depgraph_if::RequiresProvides;
-use antlir2_features::Feature;
-use antlir2_features::plugin::Plugin;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use clap::Parser;
+use r#impl::Feature;
 use json_arg::JsonFile;
 
-mod plugin;
-use plugin::FeatureWrapper;
+static_assertions::assert_impl_all!(
+    Feature: antlir2_depgraph_if::RequiresProvides
+);
 
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
-    plugin: Plugin,
-    #[clap(long)]
-    feature: JsonFile<Feature>,
+    feature: JsonFile<antlir2_features::Feature>,
     #[clap(long)]
     out: PathBuf,
 }
 
 fn main() -> Result<()> {
+    tracing_subscriber::fmt::init();
     let args = Args::parse();
-    let feature = FeatureWrapper(&args.feature);
-    let requires = feature
+
+    let generic_feature = args.feature.into_inner();
+
+    let this_feature: Feature = serde_json::from_value(generic_feature.data.clone())
+        .context("while parsing as specific feature")?;
+    let requires = this_feature
         .requires()
         .map_err(Error::msg)
         .context("while determining feature requires")?;
-    let provides = feature
+    let provides = this_feature
         .provides()
         .map_err(Error::msg)
         .context("while determining feature provides")?;
-    let analyzed_feature = AnalyzedFeature::new(args.feature.into_inner(), requires, provides);
+
+    let analyzed_feature = AnalyzedFeature::new(generic_feature, requires, provides);
     let mut out = BufWriter::new(File::create(&args.out).context("while opening output file")?);
     serde_json::to_writer(&mut out, &analyzed_feature).context("while serializing analysis")?;
     Ok(())

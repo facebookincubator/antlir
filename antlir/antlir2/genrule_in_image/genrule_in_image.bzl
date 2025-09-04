@@ -92,7 +92,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             "name": "genrule_layer//{}:{}".format(ctx.label.package, ctx.label.name),
             "parent_layer": ctx.attrs.layer,
             "rootless": ctx.attrs._rootless,
-            "_analyze_feature": ctx.attrs._layer_analyze_feature,
             "_feature_features": [ctx.attrs._prep_feature],
             "_plugins": ctx.plugins[FeaturePluginPluginKind],
             "_rootless": ctx.attrs._rootless,
@@ -124,7 +123,6 @@ _genrule_in_image = rule(
         "out": attrs.option(attrs.string(), default = None),
         "outs": attrs.option(attrs.dict(attrs.string(), attrs.string()), default = None),
         "_genrule_in_image": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/genrule_in_image:genrule_in_image")),
-        "_layer_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
         "_layer_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
         "_prep_feature": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/genrule_in_image:prep", pulls_plugins = [FeaturePluginPluginKind])),
         "_target_arch": attrs.default_only(attrs.string(

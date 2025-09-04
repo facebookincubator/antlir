@@ -47,7 +47,6 @@ _bad_depgraph_test_runner = rule(
             default = None,
         ),
         "test_depgraph": attrs.default_only(attrs.dep(default = "//antlir/antlir2/antlir2_depgraph/tests/test_depgraph:test-depgraph")),
-        "_analyze_feature": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_depgraph_if:analyze")),
     },
     uses_plugins = [FeaturePluginPluginKind],
 )
