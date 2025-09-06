@@ -558,6 +558,7 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
+    "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
     "_binaries_require_repo": binaries_require_repo.optional_attr,
     "_dnf_auto_additional_repos": attrs.list(
         attrs.one_of(

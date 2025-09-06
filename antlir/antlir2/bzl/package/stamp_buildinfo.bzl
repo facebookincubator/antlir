@@ -17,6 +17,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "flavor": ctx.attrs.flavor,
         "name": str(ctx.label.raw_target()),
         "parent_layer": ctx.attrs.layer,
+        "_analyze_feature": ctx.attrs._analyze_feature,
         "_feature_features": [ctx.attrs._dot_meta_feature],
         "_plugins": ctx.attrs._plugins,
         "_rootless": ctx.attrs._rootless,
@@ -29,6 +30,7 @@ stamp_buildinfo_rule = rule(
     impl = _impl,
     attrs = {
                 "layer": attrs.dep(providers = [LayerInfo]),
+                "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
                 "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
                 "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
                 "_plugins": attrs.list(

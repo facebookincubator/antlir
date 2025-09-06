@@ -3,5 +3,3 @@ load("//antlir/bzl:build_defs.bzl", "export_file")
 oncall("antlir")
 
 export_file(name = "plugin_entrypoint.rs")
-
-export_file(name = "analyze_stub.rs")

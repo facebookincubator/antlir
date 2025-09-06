@@ -58,7 +58,8 @@ def analyze_features(
 
         ctx.actions.run(
             cmd_args(
-                plugin.analyze,
+                ctx.attrs._analyze_feature[RunInfo],
+                cmd_args(plugin.plugin, format = "--plugin={}", hidden = [plugin.libs]),
                 cmd_args(input, format = "--feature={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
             ),
