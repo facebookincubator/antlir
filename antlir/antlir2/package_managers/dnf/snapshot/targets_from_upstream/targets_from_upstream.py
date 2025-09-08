@@ -18,7 +18,6 @@ import tempfile
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 from urllib.parse import ParseResult, urljoin, urlparse, urlunparse
 
 import createrepo_c as cr
@@ -26,7 +25,7 @@ import requests
 
 
 @dataclass
-class rpm(object):
+class rpm:
     name: str
     rpm_name: str
     epoch: int
@@ -35,9 +34,9 @@ class rpm(object):
     arch: str
     url: str
     xml: str
-    sha1: Optional[str] = None
-    sha256: Optional[str] = None
-    visibility: Optional[List[str]] = None
+    sha1: str | None = None
+    sha256: str | None = None
+    visibility: list[str] | None = None
 
     @property
     def pkgid(self) -> str:
@@ -47,7 +46,7 @@ class rpm(object):
 
 
 @dataclass
-class xml(object):
+class xml:
     name: str
     primary: str
     filelists: str
@@ -55,23 +54,23 @@ class xml(object):
 
 
 @dataclass
-class repo(object):
+class repo:
     name: str
-    rpms: List[str]
-    visibility: List[str]
+    rpms: list[str]
+    visibility: list[str]
 
 
 @dataclass
-class repo_set(object):
+class repo_set:
     name: str
-    repos: List[str]
-    visibility: List[str]
+    repos: list[str]
+    visibility: list[str]
 
 
 @dataclass
-class SnapshottedRepo(object):
+class SnapshottedRepo:
     repo: repo
-    rpms: Dict[str, List[Tuple[rpm, xml]]]
+    rpms: dict[str, list[tuple[rpm, xml]]]
 
 
 def snapshot_repo(args, base_url: ParseResult) -> SnapshottedRepo:
