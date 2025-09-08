@@ -10,6 +10,7 @@ PYTHON_OUTPLACE_PAR_ROLLOUT = rollout.create_feature(
     {
         # "example_opt_in": True,
         "antlir/antlir2/features/install/tests": True,
+        "fblite/devx/fixmydevenv": True,
         "python/pylot": True,
         "registry/builder/rpm/bzl/mac_sign/tests": True,
     },
