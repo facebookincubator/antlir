@@ -12,8 +12,9 @@ import os
 import platform
 import sys
 import time
+from collections.abc import Callable, Iterable
 from functools import wraps
-from typing import Callable, Iterable, Optional, TypeVar
+from typing import TypeVar
 
 
 T = TypeVar("T")
@@ -82,7 +83,7 @@ def get_logger():
 log = get_logger()
 
 
-def not_none(var: Optional[T], var_name: str = "", detail: Optional[str] = None) -> T:
+def not_none(var: T | None, var_name: str = "", detail: str | None = None) -> T:
     """Used for type-refinement with `Optional`s."""
     if var is not None:
         return var
@@ -93,7 +94,7 @@ def not_none(var: Optional[T], var_name: str = "", detail: Optional[str] = None)
 
 def retry_fn(
     retryable_fn: Callable[[], T],
-    is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
+    is_exception_retryable: Callable[[Exception], bool] | None = None,
     *,
     delays: Iterable[float],
     what: str,
@@ -130,7 +131,7 @@ def retryable(
     format_msg: str,
     delays: Iterable[float],
     *,
-    is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
+    is_exception_retryable: Callable[[Exception], bool] | None = None,
     log_exception: bool = True,
 ):
     """Decorator used to retry a function if exceptions are thrown. `format_msg`
@@ -162,7 +163,7 @@ def retryable(
 
 async def async_retry_fn(
     retryable_fn: Callable[[], T],
-    is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
+    is_exception_retryable: Callable[[Exception], bool] | None = None,
     *,
     delays: Iterable[float],
     what: str,
@@ -197,7 +198,7 @@ def async_retryable(
     format_msg: str,
     delays: Iterable[float],
     *,
-    is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
+    is_exception_retryable: Callable[[Exception], bool] | None = None,
     log_exception: bool = True,
 ):
     """Decorator used to retry an asynchronous function if exceptions are

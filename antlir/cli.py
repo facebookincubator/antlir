@@ -9,8 +9,8 @@
 import argparse
 import os
 import sys
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional
 
 from antlir.common import init_logging
 from antlir.fs_utils import MehStr, Path
@@ -34,9 +34,7 @@ class CLI:
 
 # Future: This should get some tests if it gets any more elaborate.
 @contextmanager
-def init_cli(
-    description: str, argv: Optional[Iterable[MehStr]] = None
-) -> Iterator[CLI]:
+def init_cli(description: str, argv: Iterable[MehStr] | None = None) -> Iterator[CLI]:
     cli = CLI()
     cli.parser = argparse.ArgumentParser(
         description=description,

@@ -11,8 +11,9 @@ import importlib.resources
 import os
 import shlex
 import tempfile
+from collections.abc import Generator, Iterable, Iterator
 from contextlib import contextmanager
-from typing import AnyStr, Generator, IO, Iterable, Iterator, List, Union
+from typing import AnyStr, IO, Union
 
 
 # We need this for lists that can contain a combination of `str` and `bytes`,
@@ -121,7 +122,7 @@ class Path(bytes):
     #   (1) `listdir` is clearly analogous to the standard `os` module
     #   (2) `gen_dir_paths` has just 1 use-case in `test_parse_repodata.py`
     #   (3) `listdir` is shorter, and the cost of a spurious list is low
-    def listdir(self) -> List["Path"]:
+    def listdir(self) -> list["Path"]:
         """
         Prefer over `os.listdir` for conciseness, and because downstream
         code might want a `Path` (for example, to use in f-strings).
