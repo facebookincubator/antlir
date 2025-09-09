@@ -178,9 +178,9 @@ def _release_file_macro(
 
 def _install(
         *,
-        path,
         layer,
         variant,
+        path: str = "/etc/os-release",
         vcs_rev: str | None = None,
         vcs_rev_time: int | None = None,
         **kwargs):
