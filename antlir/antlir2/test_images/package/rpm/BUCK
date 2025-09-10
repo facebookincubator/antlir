@@ -3,6 +3,7 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 load("//antlir/bzl:build_defs.bzl", "cpp_binary", "cpp_library")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 
@@ -56,6 +57,16 @@ package.rpm(
     rpm_name = "add",
 )
 
+tcw = select(internal_external(
+    fb = {
+        "DEFAULT": ["ovr_config//:none"],
+        "ovr_config//build_mode:opt": [],
+    },
+    oss = {
+        "DEFAULT": ["ovr_config//:none"],
+    },
+))
+
 image.layer(
     name = "test-layer",
     features = [
@@ -65,18 +76,12 @@ image.layer(
             dst = "/add.rpm",
         ),
     ],
-    target_compatible_with = select({
-        "DEFAULT": ["ovr_config//:none"],
-        "ovr_config//build_mode:opt": [],
-    # @oss-disable
+    target_compatible_with = tcw,
 )
 
 image_python_test(
     name = "test",
     srcs = ["test.py"],
     layer = ":test-layer",
-    target_compatible_with = select({
-        "DEFAULT": ["ovr_config//:none"],
-        "ovr_config//build_mode:opt": [],
-    # @oss-disable
+    target_compatible_with = tcw,
 )
