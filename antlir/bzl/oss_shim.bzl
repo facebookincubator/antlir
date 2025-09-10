@@ -39,4 +39,5 @@ NAMING_ROLLOUT_LABEL = "OSS_NO_OP"
 
 rollout = struct(
     check_base_path = ret_false,
+    create_feature = ret_false,
 )

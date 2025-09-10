@@ -3,16 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbsource//tools/build_defs:feature_rollout_utils.bzl", "rollout")
+# @oss-disable
 load("@prelude//python:python.bzl", "PythonLibraryInfo")
+load("//antlir/bzl:oss_shim.bzl", "rollout", read_bool = "ret_false") # @oss-enable
 
 PYTHON_OUTPLACE_PAR_ROLLOUT = rollout.create_feature(
     {
         # "example_opt_in": True,
         "antlir/antlir2/features/install/tests": True,
-        "fblite/devx/fixmydevenv": True,
-        "python/pylot": True,
-        "registry/builder/rpm/bzl/mac_sign/tests": True,
+        # @oss-disable
+        # @oss-disable
+        # @oss-disable
     },
 )
 
