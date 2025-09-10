@@ -101,6 +101,8 @@ pub(crate) fn isolated(
         .devtmpfs(Path::new("/dev"))
         .tmpfs(Path::new("/mnt/xarfuse"))
         .outputs(outputs);
+    #[cfg(facebook)]
+    builder.inputs(Path::new("/var/facebook/x509_identities/server.pem"));
     builder.setenv(
         envs.into_iter()
             .map(|p| (p.key, p.value))
