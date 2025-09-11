@@ -96,6 +96,10 @@ OSES = [
     ),
     _new_os(
         name = "centos10",
+        build_appliance = select({
+            "DEFAULT": "antlir//antlir/antlir2/facebook/images/build_appliance/centos10:build-appliance",
+            "antlir//antlir/antlir2/facebook/flavor/centos10:corp": "antlir//antlir/antlir2/facebook/images/build_appliance/centos10_corp:build-appliance",
+        }),
     ),
 ]
 
