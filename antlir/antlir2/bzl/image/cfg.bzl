@@ -83,7 +83,7 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     constraints = systemd_cfg.transition(constraints = constraints, refs = refs, attrs = attrs, overwrite = False)
 
     if is_facebook:
-        constraints = fb_transition(refs, attrs, constraints, overwrite = False)
+        constraints = fb_transition(refs, attrs, constraints)
 
     working_format_setting = refs.working_format[ConstraintSettingInfo]
     if attrs.working_format and working_format_setting.label not in constraints:

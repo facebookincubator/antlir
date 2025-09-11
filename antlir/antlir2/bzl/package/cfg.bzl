@@ -45,6 +45,7 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
             refs,
             attrs,
             constraints,
+            set_rou_if_missing = False,
         )
 
     label = platform.label

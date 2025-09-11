@@ -10,6 +10,7 @@ load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
+# @oss-disable
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
 
 def package_macro(
@@ -20,6 +21,7 @@ def package_macro(
     def _inner(
             default_os: str | None = None,
             rootless: bool | None = None,
+            # @oss-disable
             **kwargs):
         visibility = get_visibility(kwargs.pop("visibility", []))
 
@@ -50,6 +52,7 @@ def package_macro(
 
         buck_rule(
             default_os = default_os,
+            # @oss-disable
             rootless = rootless,
             labels = labels,
             visibility = visibility,

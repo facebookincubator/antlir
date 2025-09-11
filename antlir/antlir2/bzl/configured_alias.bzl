@@ -44,7 +44,6 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
             refs = refs,
             attrs = attrs,
             constraints = constraints,
-            overwrite = True,
         )
 
     return PlatformInfo(
