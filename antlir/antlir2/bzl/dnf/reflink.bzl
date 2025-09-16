@@ -6,7 +6,6 @@
 REFLINK_FLAVORS = {
     # @oss-disable
     # @oss-disable
-    # @oss-disable
 }
 
 def rpm2extents(
