@@ -100,6 +100,8 @@ OSES = [
             "DEFAULT": "antlir//antlir/antlir2/facebook/images/build_appliance/centos10:build-appliance",
             "antlir//antlir/antlir2/facebook/flavor/centos10:corp": "antlir//antlir/antlir2/facebook/images/build_appliance/centos10_corp:build-appliance",
         }),
+        # TODO(T238134086): This should point to the third-party/python interpreter when we've verified this correctness.
+        python = new_python_t(interpreter = "/usr/bin/python3.12")
     ),
 ]
 
