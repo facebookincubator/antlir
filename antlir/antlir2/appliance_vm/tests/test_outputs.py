@@ -19,3 +19,14 @@ class TestUname(unittest.TestCase):
             text = f.read().strip()
 
         self.assertEqual(text, "bar")
+
+    def test_multiple_outputs(self) -> None:
+        with self.subTest("foo"):
+            with open(os.environ["MULTIPLE_FOO"]) as f:
+                text = f.read().strip()
+            self.assertEqual(text, "foo")
+
+        with self.subTest("baz"):
+            with open(os.environ["MULTIPLE_BAZ"]) as f:
+                text = f.read().strip()
+            self.assertEqual(text, "baz")

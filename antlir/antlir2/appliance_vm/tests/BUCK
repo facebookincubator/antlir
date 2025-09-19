@@ -1,7 +1,7 @@
+load("//antlir/antlir2/appliance_vm:genrule_in_appliance_vm.bzl", "genrule_in_appliance_vm")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "python_unittest")
-load(":genrule_in_appliance_vm.bzl", "genrule_in_appliance_vm")
 
 oncall("antlir")
 
@@ -32,11 +32,28 @@ genrule_in_appliance_vm(
     rootfs = ":alt-rootfs-layer",
 )
 
+genrule_in_appliance_vm(
+    name = "named-outputs",
+    outs = {
+        "baz": "bar/baz",
+        "foo": "foo",
+    },
+    bash = """
+        mkdir -p $OUT
+        echo foo > $OUT/foo
+        mkdir $OUT/bar
+        echo baz > $OUT/bar/baz
+    """,
+    vm = "//antlir/antlir2/appliance_vm:appliance_vm",
+)
+
 python_unittest(
     name = "test-outputs",
     srcs = ["test_outputs.py"],
     env = {
         "ALT_ROOTFS": "$(location :alt-rootfs)",
+        "MULTIPLE_BAZ": "$(location :named-outputs[baz])",
+        "MULTIPLE_FOO": "$(location :named-outputs[foo])",
         "UNAME": "$(location :uname)",
     },
 )
