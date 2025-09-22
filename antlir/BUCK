@@ -51,6 +51,7 @@ python_library(
     visibility = [
         "fbsource//xplat/scripts/...",
         "//antlir/...",
+        "//chef/tools:chef-lib",
         "//fbpkg/caf/...",
         "//kernel/kernels:test_selection_lib",
         "//metalos/initrd/facebook/...",
