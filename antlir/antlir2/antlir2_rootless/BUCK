@@ -1,5 +1,5 @@
 load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("antlir")
 
@@ -19,6 +19,15 @@ rust_library(
         "tracing",
         "//antlir/antlir2/antlir2_rootless/unshare_userns:unshare_userns",
         "//antlir/antlir2/antlir2_userns:antlir2_userns",
+    ],
+)
+
+rust_binary(
+    name = "unshare-userns",
+    srcs = ["bin/unshare_userns.rs"],
+    deps = [
+        "anyhow",
+        ":antlir2_rootless",
     ],
 )
 
