@@ -10,7 +10,7 @@ load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
-load("//antlir/antlir2/bzl:python_helpers.bzl", "PYTHON_OUTPLACE_PAR_ROLLOUT", "is_python_target")
+load("//antlir/antlir2/bzl:python_helpers.bzl", "PYTHON_OUTPLACE_PAR_ROLLOUT", "extract_par_elfs", "is_python_target")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -126,6 +126,7 @@ def install(
     elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes"):
         distro_platform_deps["src"] = src
         exec_deps["_rpm_find_requires"] = "antlir//antlir/distro/rpm:find-requires"
+        exec_deps["_rpm_find_requires_py"] = "antlir//antlir/distro/rpm:find-requires.py"
         uses_plugins["_rpm_plugin"] = "antlir//antlir/antlir2/features/rpm:rpm"
         exec_deps["_rpm_plan"] = "antlir//antlir/antlir2/features/rpm:plan"
         distro_platform_deps["_python_pex_deps"] = "antlir//antlir/distro/toolchain/python:pex-deps"
@@ -463,22 +464,29 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     if ctx.attrs.transition_to_distro_platform != "yes":
         return [DefaultInfo()] + features
 
-    # the rpm dependency finder can only find native dependencies, it doesn't
-    # understand things like PEX "binaries", so we must include another feature
-    # if that's what we're installing
+    # RPM find-requires only understands singular ELF files, so we need to find
+    # the bits in a python executable we want to run find-requires on. That is:
+    # * The executable itself
+    # * The shared libraries coming from the distro
+    #
+    # We should ignore any first-party shared libs since they'll be bundled with
+    # the PAR.
+    rpm_subjects = ctx.actions.declare_output("rpm_requires.txt")
     if src_is_python:
         features.extend([f.analysis for f in ctx.attrs._python_pex_deps[FeatureInfo].features])
-
-    # otherwise we need to produce an rpm feature too
-    rpm_subjects = ctx.actions.declare_output("rpm_requires.txt")
-    ctx.actions.run(
-        cmd_args(
+        requires_cmd = cmd_args(
+            ctx.attrs._rpm_find_requires_py[RunInfo],
+            rpm_subjects.as_output(),
+            extract_par_elfs(ctx.attrs.src),
+        )
+    else:
+        requires_cmd = cmd_args(
             ctx.attrs._rpm_find_requires[RunInfo],
             rpm_subjects.as_output(),
             src,
-        ),
-        category = "rpm_find_requires",
-    )
+        )
+    ctx.actions.run(requires_cmd, category = "rpm_find_requires")
+
     anon_rpm_target = ctx.actions.anon_target(
         rpms_rule,
         {
@@ -548,6 +556,7 @@ install_rule = rule(
         "_python_pex_deps": attrs.option(attrs.dep(providers = [FeatureInfo]), default = None),
         "_rpm_driver": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
         "_rpm_find_requires": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
+        "_rpm_find_requires_py": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plan": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_rpm_plugin": attrs.option(attrs.label(), default = None),
         "_rpm_resolve": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
