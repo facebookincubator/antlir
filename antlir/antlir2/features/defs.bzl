@@ -37,7 +37,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     # but when building in @mode/opt and on RE, the dependencies get dropped and
     # we get left with only the plugin .so and none of its dependencies
     shlib_info = ctx.attrs.lib[SharedLibraryInfo]
-    shared_libs = traverse_shared_library_info(shlib_info)
+    shared_libs = traverse_shared_library_info(shlib_info, transformation_provider = None)
     lib_dir = create_shlib_symlink_tree(
         actions = ctx.actions,
         out = "lib",

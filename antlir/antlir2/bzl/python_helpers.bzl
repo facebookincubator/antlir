@@ -56,8 +56,8 @@ def extract_par_elfs(target) -> list[Artifact]:
         elfs.extend([
             shlib.lib.output
             for shlib in (
-                traverse_shared_library_info(python_info.shared_libraries) +
-                traverse_shared_library_info(python_info.extension_shared_libraries)
+                traverse_shared_library_info(python_info.shared_libraries, transformation_provider = None) +
+                traverse_shared_library_info(python_info.extension_shared_libraries, transformation_provider = None)
             )
             if isinstance(shlib.lib.output, Artifact)
         ])
