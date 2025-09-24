@@ -165,6 +165,7 @@ fn populate_rpms(
                 IsolationContext::builder(build_appliance)
                     .ephemeral(true)
                     .inputs(("/__antlir2__/root", root))
+                    .tmpfs_overlay(Path::new("/__antlir2__/root"))
                     .working_directory(Path::new("/"))
                     .build(),
             )
