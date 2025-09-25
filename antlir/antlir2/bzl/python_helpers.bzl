@@ -31,12 +31,25 @@ def _extract_python_library_info(target) -> PythonLibraryInfo | None:
         return library_info.get(PythonLibraryInfo)
     return None
 
-def _extract_par_executable_info(target) -> DefaultInfo | None:
+def _extract_native_python_executable(target) -> DefaultInfo | None:
     """
     Extracts the par executable from a target. For native python this is the actual
     native executable that doubles as the interpreter.
     """
-    return target[DefaultInfo].sub_targets.get("native-executable", {}).get(DefaultInfo)
+    native_executable = target[DefaultInfo].sub_targets.get("native-executable")
+    if native_executable:
+        return native_executable[DefaultInfo]
+    return None
+
+def _extract_omnibus(target) -> DefaultInfo | None:
+    """
+    Extracts libomnibus output (if present) from a target. Only relevant if the python
+    binary was linked with omnibus linking.
+    """
+    omnibus = target[DefaultInfo].sub_targets.get("omnibus")
+    if omnibus:
+        return omnibus[DefaultInfo]
+    return None
 
 def extract_par_elfs(target) -> list[Artifact]:
     """
@@ -62,10 +75,8 @@ def extract_par_elfs(target) -> list[Artifact]:
             if isinstance(shlib.lib.output, Artifact)
         ])
 
-    par_executable_info = _extract_par_executable_info(target)
-    if par_executable_info:
-        exe = par_executable_info.default_outputs
-        if exe:
-            elfs.append(exe[0])
+    for info in (_extract_native_python_executable(target), _extract_omnibus(target)):
+        if info and info.default_outputs:
+            elfs.append(info.default_outputs[0])
 
     return elfs
