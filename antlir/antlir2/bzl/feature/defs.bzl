@@ -43,6 +43,7 @@ feature = struct(
     rpms_remove = rpms_remove,
     rpms_remove_if_exists = rpms_remove_if_exists,
     rpms_upgrade = rpms_upgrade,
+    run = genrule,
     dnf_module_enable = dnf_module_enable,
     ensure_file_symlink = ensure_file_symlink,
     ensure_dir_symlink = ensure_dir_symlink,
