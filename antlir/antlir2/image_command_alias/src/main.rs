@@ -20,6 +20,8 @@ use anyhow::Result;
 use anyhow::ensure;
 use clap::Parser;
 use json_arg::JsonFile;
+use nix::unistd::Gid;
+use nix::unistd::Uid;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -31,6 +33,11 @@ struct Args {
     env: Option<JsonFile<BTreeMap<String, Vec<String>>>>,
     #[clap(required(true), trailing_var_arg(true), allow_hyphen_values(true))]
     command: Vec<String>,
+    #[clap(long)]
+    /// If set, don't unshare into a fully remapped antlir userns, just unshare
+    /// and map the current (ug)id to root and hope that it's good enough for
+    /// what we're going to do (it usually is)
+    single_user_userns: bool,
 }
 
 fn main() -> Result<()> {
@@ -40,7 +47,21 @@ fn main() -> Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+    if !args.single_user_userns {
+        antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+    } else {
+        let uid = Uid::current();
+        let gid = Gid::current();
+        nix::sched::unshare(nix::sched::CloneFlags::CLONE_NEWUSER)
+            .context("while unsharing into new userns")?;
+        std::fs::write("/proc/self/uid_map", format!("0 {uid} 1\n"))
+            .context("while writing uid_map")?;
+        nix::unistd::setuid(Uid::from_raw(0)).context("while setting uid to 0")?;
+        std::fs::write("/proc/self/setgroups", "deny\n").context("while writing setgroups")?;
+        std::fs::write("/proc/self/gid_map", format!("0 {gid} 1\n"))
+            .context("while writing gid_map")?;
+        nix::unistd::setgid(Gid::from_raw(0)).context("while setting gid to 0")?;
+    }
 
     let mut builder = IsolationContext::builder(&args.root);
     builder.ephemeral(true);

@@ -20,6 +20,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         cmd_args(root, format = "--root={}"),
         cmd_args(env_json, format = "--env={}") if env_json else cmd_args(),
         cmd_args(ctx.attrs.pass_env, format = "--pass-env={}"),
+        "--single-user-userns" if ctx.attrs.single_user_userns else cmd_args(),
         "--",
         ctx.attrs.exe,
         cmd_args(ctx.attrs.args),
@@ -57,6 +58,14 @@ _image_command_alias = rule(
         "labels": attrs.list(attrs.string(), default = []),
         "pass_env": attrs.list(attrs.string(), default = []),
         "root": attrs.source(allow_directory = True),
+        "single_user_userns": attrs.bool(
+            default = False,
+            doc = """
+                If set, don't unshare into a fully remapped antlir userns, just
+                unshare and map the current (ug)id to root and hope that it's
+                good enough for what we're going to do (it usually is)
+            """,
+        ),
         "_command_alias": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/image_command_alias:command_alias")),
     } | cfg_attrs(),
     cfg = layer_cfg,
