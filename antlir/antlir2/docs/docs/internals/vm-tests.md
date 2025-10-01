@@ -166,33 +166,6 @@ Such issues can happen if the VM setup changes (bootloader, initrd, kernel,
 rootfs, etc). This is either owned by the test owner for custom setup, or if
 using common image artifacts, the image owner.
 
-### Debugging initrd failures
-
-By default, initrd failure results in shutdown of the VM to terminate the test.
-If you need a shell inside initrd for debugging in `[console]` mode, remove the
-two lines of `//antlir/vm/initrd:reboot-on-fail.conf` and you will get the
-emergency shell. Like below, but subject to change in the future.
-
-```
-diff --git a/fbcode/metalos/vm/initrd/defs.bzl b/fbcode/metalos/vm/initrd/defs.bzl
---- a/fbcode/metalos/vm/initrd/defs.bzl
-+++ b/fbcode/metalos/vm/initrd/defs.bzl
-@@ -43,8 +43,6 @@
-                 src = kernel.disk_boot_modules,
-                 dst = paths.join("/usr/lib/modules", kernel.uname) + "/",
-             ),
--            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "default.target"),
--            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "metalos-init.service"),
-             # vm has no network
-             systemd.skip_unit("systemd-networkd-wait-online.service"),
-         ] + (features or []),
-```
-
-Note that the tools in the emergency shell are very limited. You might also want
-to use antlir2 feature to install additional tools, but be aware of the overall
-size. If you create your own initrd using this function, you can also pass them
-through `features` so your vm initrd will always have them.
-
 ### Putting it Together: An Investigation Example
 
 Let's say one of your VM test failed and you have no idea why and want to
