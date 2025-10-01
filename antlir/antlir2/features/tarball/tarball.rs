@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(let_chains)]
-
 use std::fs::File;
 use std::io::BufReader;
 use std::os::unix::ffi::OsStrExt;
