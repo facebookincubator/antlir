@@ -26,10 +26,10 @@ jobs:
         with:
           node-version: 18
           cache: yarn
-          cache-dependency-path: 'antlir/antlir2/docs/yarn.lock'
+          cache-dependency-path: 'antlir/antlir2/docs/package.json'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Disable watchman
         run: |
