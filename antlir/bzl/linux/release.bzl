@@ -6,6 +6,7 @@
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
 def _release_file_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -56,6 +57,7 @@ IMAGE_ID="{image_id}"
 IMAGE_LAYER="{target}"
 IMAGE_VCS_REV="{rev}"
 IMAGE_VCS_REV_TIME="{rev_time}"
+{IMAGE_PACKAGE_KEY}="{image_package}"
 VARIANT="{variant}"
 VARIANT_ID="{lower_variant}"
 ANSI_COLOR="{ansi_color}"
@@ -73,6 +75,8 @@ ANSI_COLOR="{ansi_color}"
             rev = ctx.attrs.vcs_rev or "local",
             rev_time = rev_time,
             api_vers = "\n".join(api_vers),
+            IMAGE_PACKAGE_KEY = internal_external(fb = "IMAGE_FBPKG", oss = "IMAGE_PACKAGE"),
+            image_package = ctx.attrs.package_name + ":" + ctx.attrs.package_version,
         ).strip() + "\n"
 
         ctx.actions.write(outputs[contents_out], contents)
@@ -119,6 +123,8 @@ _release_file = rule(
         "os_name": attrs.string(),
         "os_version": attrs.string(),
         "os_version_id": attrs.string(),
+        "package_name": attrs.string(),
+        "package_version": attrs.string(),
         "variant": attrs.string(),
         "vcs_rev": attrs.option(
             attrs.string(doc = "SCM revision this is being built on"),
@@ -151,6 +157,8 @@ _release_file = rule(
 def _release_file_macro(
         name: str,
         **kwargs):
+    kwargs.setdefault("ansi_color", "0;34")
+
     kwargs.setdefault("os_id", selects.or_({
         ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "centos",
         "antlir//antlir/antlir2/os:eln": "fedora",
@@ -171,6 +179,11 @@ def _release_file_macro(
         "antlir//antlir/antlir2/os:eln": eln_version,
     }))
 
+    kwargs.setdefault("vcs_rev", native.read_config("build_info", "revision", "local"))
+    kwargs.setdefault("vcs_rev_time", int(native.read_config("build_info", "revision_epochtime", 0)))
+    kwargs.setdefault("package_name", native.read_config("build_info", "package_name", "<none>"))
+    kwargs.setdefault("package_version", native.read_config("build_info", "package_version", "local"))
+
     _release_file(
         name = name,
         **(default_target_platform_kwargs() | kwargs)
@@ -181,8 +194,6 @@ def _install(
         layer,
         variant,
         path: str = "/etc/os-release",
-        vcs_rev: str | None = None,
-        vcs_rev_time: int | None = None,
         **kwargs):
     """
     Build an `os-release` file and install it at the provided `path` location.
@@ -229,14 +240,10 @@ def _install(
 
     name = layer[1:] + "__os-release"
 
-    kwargs.setdefault("ansi_color", "0;34")
-
     _release_file_macro(
         name = name,
         layer = layer,
         variant = variant,
-        vcs_rev = vcs_rev or native.read_config("build_info", "revision", "local"),
-        vcs_rev_time = vcs_rev_time or int(native.read_config("build_info", "revision_epochtime", 0)),
         compatible_with = [
             "antlir//antlir/antlir2/os:centos10",
             "antlir//antlir/antlir2/os:centos9",
