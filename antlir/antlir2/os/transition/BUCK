@@ -1,0 +1,8 @@
+load("//antlir/antlir2/os:cfg.bzl", "set_default_os_if_unconfigured")
+
+oncall("antlir")
+
+set_default_os_if_unconfigured(
+    name = "default-to-none",
+    default_os = "//antlir/antlir2/os:none",
+)

@@ -60,3 +60,42 @@ remove_os_transition = transition(
     impl = _remove_os_transition_impl,
     refs = _OS_REFS,
 )
+
+def _set_default_os_if_unconfigured(ctx: AnalysisContext) -> list[Provider]:
+    default_os = ctx.attrs.default_os
+
+    def _transition_impl_with_refs(platform: PlatformInfo) -> PlatformInfo:
+        os = default_os[OsVersionInfo]
+        os_constraint = os.constraint[ConstraintValueInfo]
+        family = os.family[ConstraintValueInfo]
+        package_manager = os.package_manager[ConstraintValueInfo]
+
+        constraints = platform.configuration.constraints
+
+        if os_constraint.setting.label not in constraints:
+            constraints[os_constraint.setting.label] = os_constraint
+            constraints[family.setting.label] = family
+            constraints[package_manager.setting.label] = package_manager
+
+        return PlatformInfo(
+            label = platform.label,
+            configuration = ConfigurationInfo(
+                constraints = constraints,
+                values = platform.configuration.values,
+            ),
+        )
+
+    return [
+        DefaultInfo(),
+        TransitionInfo(
+            impl = _transition_impl_with_refs,
+        ),
+    ]
+
+set_default_os_if_unconfigured = rule(
+    impl = _set_default_os_if_unconfigured,
+    attrs = {
+        "default_os": attrs.dep(),
+    },
+    is_configuration_rule = True,
+)

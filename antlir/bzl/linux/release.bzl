@@ -152,6 +152,7 @@ _release_file = rule(
         The PRETTY_NAME key is formatted as:
         {os_name} {variant} ({revision})
     """,
+    supports_incoming_transition = True,
 )
 
 def _release_file_macro(
@@ -162,21 +163,25 @@ def _release_file_macro(
     kwargs.setdefault("os_id", selects.or_({
         ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "centos",
         "antlir//antlir/antlir2/os:eln": "fedora",
+        "antlir//antlir/antlir2/os:none": "none",
     }))
     kwargs.setdefault("os_name", selects.or_({
         ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "CentOS Stream",
         "antlir//antlir/antlir2/os:eln": "Fedora Linux",
+        "antlir//antlir/antlir2/os:none": "None",
     }))
     eln_version = "40"
     kwargs.setdefault("os_version", select({
         "antlir//antlir/antlir2/os:centos10": "10",
         "antlir//antlir/antlir2/os:centos9": "9",
         "antlir//antlir/antlir2/os:eln": eln_version,
+        "antlir//antlir/antlir2/os:none": "0",
     }))
     kwargs.setdefault("os_version_id", select({
         "antlir//antlir/antlir2/os:centos10": "10",
         "antlir//antlir/antlir2/os:centos9": "9",
         "antlir//antlir/antlir2/os:eln": eln_version,
+        "antlir//antlir/antlir2/os:none": "0",
     }))
 
     kwargs.setdefault("vcs_rev", native.read_config("build_info", "revision", "local"))
@@ -248,7 +253,9 @@ def _install(
             "antlir//antlir/antlir2/os:centos10",
             "antlir//antlir/antlir2/os:centos9",
             "antlir//antlir/antlir2/os:eln",
+            "antlir//antlir/antlir2/os:none",
         ],
+        incoming_transition = "antlir//antlir/antlir2/os/transition:default-to-none",
         visibility = ["PUBLIC"],
         **kwargs
     )
