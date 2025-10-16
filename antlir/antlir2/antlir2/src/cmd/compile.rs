@@ -20,7 +20,6 @@ use antlir2_features::plugin::Plugin;
 use antlir2_rootless::Rootless;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
-use anyhow::anyhow;
 use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;

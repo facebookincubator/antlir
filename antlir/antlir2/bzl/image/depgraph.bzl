@@ -90,11 +90,18 @@ def build_depgraph(
         phase = phase,
     )
 
+    analyzed_features_json = ctx.actions.declare_output(identifier, "analyzed_features.json")
+    analyzed_features_json = ctx.actions.write_json(
+        analyzed_features_json,
+        analyzed_features,
+        with_inputs = True,
+    )
+
     ctx.actions.run(
         cmd_args(
             ctx.attrs.antlir2[RunInfo],
             "depgraph",
-            cmd_args(analyzed_features, format = "--feature={}"),
+            cmd_args(analyzed_features_json, format = "--features={}"),
             cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
             cmd_args(extend_facts, format = "--extend-facts={}"),
             cmd_args(db_output.as_output(), format = "--db-out={}"),

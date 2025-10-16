@@ -24,8 +24,8 @@ use crate::Result;
 #[derive(Parser, Debug)]
 /// Process an image's dependency graph without building it
 pub(crate) struct Depgraph {
-    #[clap(long = "feature")]
-    features: Vec<JsonFile<AnalyzedFeature>>,
+    #[clap(long)]
+    features: JsonFile<Vec<JsonFile<AnalyzedFeature>>>,
     #[clap(long = "parent")]
     /// Path to depgraph for the parent layer
     parent: Option<PathBuf>,
@@ -52,7 +52,12 @@ impl Depgraph {
                 .with_context(|| format!("while creating db '{}'", self.db_out.display()))?,
         };
         let mut depgraph = Graph::builder(db)?;
-        for f in self.features.into_iter().map(JsonFile::into_inner) {
+        for f in self
+            .features
+            .into_inner()
+            .into_iter()
+            .map(JsonFile::into_inner)
+        {
             depgraph.add_feature(f)?;
         }
         let depgraph = depgraph.build()?;
