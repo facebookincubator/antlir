@@ -56,7 +56,7 @@ def package_macro(
             rootless = rootless,
             labels = labels,
             visibility = visibility,
-            **(kwargs | default_target_platform_kwargs())
+            **(default_target_platform_kwargs() | kwargs)
         )
 
     return _inner
