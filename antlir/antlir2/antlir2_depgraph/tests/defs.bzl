@@ -64,7 +64,7 @@ def bad_depgraph(
     _bad_depgraph_test_runner(
         name = name + "--test",
         features = ":" + name + "--features",
-        **(kwargs | default_target_platform_kwargs())
+        **(default_target_platform_kwargs() | kwargs)
     )
     buck_sh_test(
         name = name,
