@@ -9,6 +9,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "jwalk",
         # @oss-disable
         # @oss-disable
         "tar",

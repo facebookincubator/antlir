@@ -81,6 +81,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 prefer_local = True,
             )
 
+    if ctx.attrs.force_root_ownership and format not in ["caf", "tar"]:
+        fail("force_root_ownership is not supported for format={}".format(format))
+
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     facts_db = ctx.actions.declare_output("facts")
     ctx.actions.run(
@@ -93,6 +96,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
             cmd_args("--rootless") if ctx.attrs._rootless else cmd_args(),
+            "--force-root-ownership" if ctx.attrs.force_root_ownership else cmd_args(),
             cmd_args(facts_db.as_output(), format = "--facts-db-out={}"),
             cmd_args(ctx.attrs.build_appliance[BuildApplianceInfo].dir, format = "--build-appliance={}"),
         ),
@@ -140,6 +144,7 @@ _prebuilt = rule(
         "antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_receive:antlir2-receive")),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
+        "force_root_ownership": attrs.bool(default = False),
         "format": attrs.enum(["sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),

@@ -37,6 +37,9 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// Use an unprivileged usernamespace
     rootless: bool,
+    #[clap(long)]
+    /// Force all files to be owned by root:root
+    force_root_ownership: bool,
     #[clap(long, default_value = "btrfs")]
     /// path to 'btrfs' command
     btrfs: PathBuf,
@@ -64,6 +67,8 @@ enum Error {
     Rootless(#[from] antlir2_rootless::Error),
     #[error("{0:#?}")]
     IO(#[from] std::io::Error),
+    #[error("cannot force root ownership with this format")]
+    CannotForceRootOwnership,
     #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
 }
@@ -117,6 +122,9 @@ impl Receive {
 
         match self.format {
             Format::Sendstream => {
+                if self.force_root_ownership {
+                    return Err(Error::CannotForceRootOwnership);
+                }
                 sendstream::recv_sendstream(&self, &dst, &working_volume)?;
             }
             Format::Tar => {
@@ -125,13 +133,15 @@ impl Receive {
                     tar::Archive::new(BufReader::new(File::open(&self.source).with_context(
                         || format!("while opening source file {}", self.source.display()),
                     )?));
+                archive.set_preserve_ownerships(true);
                 archive
                     .unpack(subvol.path())
                     .context("while unpacking tar")?;
             }
             #[cfg(facebook)]
             Format::Caf => {
-                facebook::caf::recv_caf(&self.source, &dst).context("while receiving caf")?;
+                facebook::caf::recv_caf(&self.source, &dst, self.force_root_ownership)
+                    .context("while receiving caf")?;
             }
         };
         let mut subvol = Subvolume::open(&dst).context("while opening subvol")?;
