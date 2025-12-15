@@ -25,7 +25,7 @@ use test_shape::union_old;
 use test_shape::with_default_trait;
 use test_shape::with_optional_int;
 
-// @oss-disable
+// @oss-disable: const TARGET_PREFIX: &str = "fbcode//antlir/bzl/tests/shapes";
 const TARGET_PREFIX: &str = "antlir//antlir/bzl/tests/shapes"; // @oss-enable
 
 #[test]

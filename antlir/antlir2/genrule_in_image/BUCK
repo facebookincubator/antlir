@@ -46,7 +46,7 @@ feature.new(
             src = "//antlir:empty",
             dst = "/__genrule_in_image__/out/single_file",
         ),
-        # @oss-disable
+        # @oss-disable[end= ]: "//antlir/antlir2/genrule_in_image/facebook:prep",
     ],
     visibility = ["PUBLIC"],
 )

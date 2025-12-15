@@ -9,10 +9,10 @@ _select_value = select({
     # For unknown build modes, we don't know if the repo is
     # required, so err on the side of caution and include it.
     "DEFAULT": True,
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
+    # @oss-disable[end= ]: "ovr_config//build_mode:dbg": True,
+    # @oss-disable[end= ]: "ovr_config//build_mode:dbgo": False,
+    # @oss-disable[end= ]: "ovr_config//build_mode:dev": True,
+    # @oss-disable[end= ]: "ovr_config//build_mode:opt": False,
 })
 
 def _binary_is_standalone(dep: Dependency) -> bool:

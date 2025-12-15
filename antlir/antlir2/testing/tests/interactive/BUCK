@@ -1,4 +1,4 @@
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
@@ -34,7 +34,7 @@ image_sh_test(
 rust_unittest(
     name = "test",
     srcs = ["test.rs"],
-    # @oss-disable
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     run_env = {
         "ECHO_ROOTED": "$(exe :echo-rooted[container])",
         "ECHO_ROOTLESS": "$(exe :echo-rootless[container])",

@@ -1,4 +1,4 @@
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -177,7 +177,7 @@ image.layer(
                 "bash",
                 "coreutils",
                 "gdb",
-                # @oss-disable
+                # @oss-disable[end= ]: "fb-xarexec",
                 "python3",
             ],
         ),
@@ -211,7 +211,7 @@ image.layer(
             rpms = [
                 "bash",
                 "binutils",
-                # @oss-disable
+                # @oss-disable[end= ]: "fb-xarexec",
                 "python3",
             ],
         ),
@@ -228,7 +228,7 @@ image.layer(
 image_python_test(
     name = "test-installed-gnu-debuglink",
     srcs = ["test_installed_gnu_debuglink.py"],
-    # @oss-disable
+    # @oss-disable[end= ]: labels = [ci.mode("fbcode//mode/opt")],
     layer = ":installed-binary-with-gnu-debuglink",
     supports_static_listing = False,
 )

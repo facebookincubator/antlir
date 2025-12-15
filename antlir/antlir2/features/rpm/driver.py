@@ -159,7 +159,7 @@ def base_init(spec):
     # since the .solv{x} files are copied into the cache dir immediately before
     # this. `fill_sack_from_repos_in_cache` will force dnf to use the cached
     # solv files.
-    # @oss-disable
+    # @oss-disable[end= ]: base.fill_sack_from_repos_in_cache()
     base.fill_sack() # @oss-enable
 
     # Local rpm files must be added before anything is added to the transaction goal
@@ -417,7 +417,7 @@ def driver(spec) -> None:
     # 2) installation of a dependency in a pre-resolved transaction will be
     #    marked as "user" installed rather than "dependency"
     base = dnf_base(spec)
-    # @oss-disable
+    # @oss-disable[end= ]: base.fill_sack_from_repos_in_cache()
     base.fill_sack() # @oss-enable
 
     set_reasons = []

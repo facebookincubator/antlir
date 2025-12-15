@@ -59,12 +59,12 @@ load("//antlir/antlir2/features/clone:clone.bzl", "clone_rule")
 load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta_rule")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_dir_exists_rule")
 load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary_rule", "extract_from_layer_rule")
-# @oss-disable
-# @oss-disable
-# @oss-disable
-# @oss-disable
-# @oss-disable
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/features/facebook/chef_solo:chef_solo.bzl", "chef_solo_rule")
+# @oss-disable[end= ]: load("//antlir/antlir2/features/facebook/chef_solo/json_recipes:json_recipes.bzl", "json_recipes_rule")
+# @oss-disable[end= ]: load("//antlir/antlir2/features/facebook/container:rules.bzl", "tw_container_anon_rules")
+# @oss-disable[end= ]: load("//antlir/antlir2/features/facebook/fbpkg_builder:fbpkg_builder.bzl", "fbpkg_builder_rule", "path_actions_attrs_t")
+# @oss-disable[end= ]: load("//antlir/antlir2/features/facebook/fbpkg_install:fbpkg_install.bzl", "fbpkg_install_rule")
+# @oss-disable[end= ]: load("//antlir/antlir2/features/facebook/fetch_fbpkg_mount:fetch_fbpkg_mount.bzl", "fetch_fbpkg_mount_rule")
 load("//antlir/antlir2/features/genrule:genrule.bzl", "genrule_rule")
 load("//antlir/antlir2/features/group:group.bzl", "group_rule")
 load("//antlir/antlir2/features/hardlink:hardlink.bzl", "hardlink_rule")
@@ -92,11 +92,11 @@ _anon_rules = {
     "ensure_file_symlink": ensure_file_symlink_rule,
     "extract_buck_binary": extract_buck_binary_rule,
     "extract_from_layer": extract_from_layer_rule,
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
+    # @oss-disable[end= ]: "facebook/chef_solo": chef_solo_rule,
+    # @oss-disable[end= ]: "facebook/chef_solo/json_recipes": json_recipes_rule,
+    # @oss-disable[end= ]: "facebook/fbpkg_builder": fbpkg_builder_rule,
+    # @oss-disable[end= ]: "facebook/fbpkg_install": fbpkg_install_rule,
+    # @oss-disable[end= ]: "facebook/fetch_fbpkg_mount": fetch_fbpkg_mount_rule,
     "genrule": genrule_rule,
     "group": group_rule,
     "hardlink": hardlink_rule,
@@ -111,7 +111,7 @@ _anon_rules = {
     "user": user_rule,
     "user_mod": usermod_rule,
 }
-# @oss-disable
+# @oss-disable[end= ]: _anon_rules.update(tw_container_anon_rules)
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     # Merge inline features into a single JSON file
@@ -250,7 +250,7 @@ _nested_feature_type = attrs.option(
                 attrs.one_of(
                     attrs.dep(),
                     attrs.list(attrs.dep()),
-                    # @oss-disable
+                    # @oss-disable[end= ]: path_actions_attrs_t,
                 ),
                 doc = "ParseTimeFeature.deps",
             ),

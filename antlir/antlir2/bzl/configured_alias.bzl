@@ -8,7 +8,7 @@ load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/bzl/image/facebook:fb_cfg.bzl", "fb_refs", "fb_transition")
 load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
@@ -60,7 +60,7 @@ _transition = transition(
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
     } | (
-        # @oss-disable
+        # @oss-disable[end= ]: fb_refs
         {} # @oss-enable
     ) | os_transition_refs() | rootless_cfg.refs | systemd_cfg.refs,
     attrs = cfg_attrs().keys(),

@@ -12,7 +12,7 @@ load(
 load("@prelude//rust:link_info.bzl", "RustLinkInfo")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/facebook:deps_test.bzl", "blocklist_deps_test")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "rust_library")
 load("//antlir/bzl:oss_shim.bzl", blocklist_deps_test = "ret_none") # @oss-enable

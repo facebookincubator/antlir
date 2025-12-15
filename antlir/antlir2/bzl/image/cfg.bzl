@@ -13,7 +13,7 @@ load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo")
 
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/bzl/image/facebook:fb_cfg.bzl", "fb_cfg_attrs", "fb_refs", "fb_transition")
 load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
@@ -34,7 +34,7 @@ def cfg_attrs():
             doc = "Underlying on-disk format for the layer build",
         ),
     } | (
-        # @oss-disable
+        # @oss-disable[end= ]: fb_cfg_attrs
         {} # @oss-enable
     ) | rootless_cfg.attrs | systemd_cfg.attrs
 
@@ -111,7 +111,7 @@ layer_cfg = transition(
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
         "working_format.btrfs": "antlir//antlir/antlir2/cfg:btrfs",
     } | (
-        # @oss-disable
+        # @oss-disable[end= ]: fb_refs
         {} # @oss-enable
     ) | os_transition_refs() | rootless_cfg.refs | systemd_cfg.refs,
     attrs = cfg_attrs().keys(),

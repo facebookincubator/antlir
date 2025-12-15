@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
-# @oss-disable
+# @oss-disable[end= ]: load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "special_tags")
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
@@ -77,8 +77,8 @@ def test_that_should_fail(
     )
     labels = list(labels) if labels else []
 
-    # @oss-disable
-        # @oss-disable
+    # @oss-disable[end= ]: if fully_qualified_test_name_rollout.use_fully_qualified_name():
+        # @oss-disable[end= ]: labels = labels + [NAMING_ROLLOUT_LABEL]
 
     _test_that_should_fail(
         name = name,

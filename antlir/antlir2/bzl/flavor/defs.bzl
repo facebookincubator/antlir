@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorDnfInfo", "FlavorInfo")
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/bzl/flavor/facebook:rou.bzl", fb_extract_rou = "extract_rou")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoSetInfo")
 
 _flavor_attrs = {
@@ -40,7 +40,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(sub_targets = {
             "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
         }),
-    # @oss-disable
+    # @oss-disable[end= ]: ] + fb_extract_rou(ctx.attrs.default_dnf_repo_set[RepoSetInfo])
     ] # @oss-enable
 
 _flavor = rule(

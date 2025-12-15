@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
-# @oss-disable
-# @oss-disable
+# @oss-disable[end= ]: load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "special_tags")
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
@@ -237,7 +237,7 @@ def _implicit_image_test(
         hostname: str | None = None,
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
-        # @oss-disable
+        # @oss-disable[end= ]: default_rou: str | None = None,
         systemd: str | None = None,
         mount_platform: bool | None = None,
         rootless: bool | None = None,
@@ -251,7 +251,7 @@ def _implicit_image_test(
         name = name + "_image_test_inner",
         labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test") + [
             # never schedule any CI on this inner target
-            # @oss-disable
+            # @oss-disable[end= ]: ci.skip_target(),
         ],
         **kwargs
     )
@@ -261,8 +261,8 @@ def _implicit_image_test(
         lambda labels: labels + _add_outer_labels,
     )
 
-    # @oss-disable
-        # @oss-disable
+    # @oss-disable[end= ]: if fully_qualified_test_name_rollout.use_fully_qualified_name():
+        # @oss-disable[end= ]: labels = labels + [NAMING_ROLLOUT_LABEL]
 
     if rootless == None:
         rootless = get_antlir2_rootless()
@@ -315,7 +315,7 @@ def _implicit_image_test(
         boot_wants_units = boot_wants_units,
         hostname = hostname,
         default_os = default_os,
-        # @oss-disable
+        # @oss-disable[end= ]: default_rou = default_rou,
         systemd = systemd or "unconfigured",
         mount_platform = mount_platform,
         rootless = rootless,
@@ -384,7 +384,7 @@ def image_python_test(
         name = name,
         layer = test_layer,
         default_os = default_os,
-        # @oss-disable
+        # @oss-disable[end= ]: default_rou = default_rou,
         systemd = systemd,
         target_compatible_with = target_compatible_with,
         _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-py",

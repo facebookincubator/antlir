@@ -46,7 +46,7 @@ def _rust_common(rule, **kwargs):
     rustc_flags = kwargs.pop("rustc_flags", [])
     append = [
         "--warn=clippy::unwrap_used",
-        # @oss-disable
+        # @oss-disable[end= ]: "--cfg=facebook",
     ]
     if not kwargs.pop("allow_unused_crate_dependencies", False):
         append.append("--forbid=unused_crate_dependencies")

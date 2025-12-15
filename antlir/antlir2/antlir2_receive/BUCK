@@ -10,8 +10,8 @@ rust_binary(
         "anyhow",
         "clap",
         "jwalk",
-        # @oss-disable
-        # @oss-disable
+        # @oss-disable[end= ]: "serde",
+        # @oss-disable[end= ]: "serde_json",
         "tar",
         "tempfile",
         "thiserror",

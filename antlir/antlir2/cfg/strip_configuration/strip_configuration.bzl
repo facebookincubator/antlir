@@ -38,7 +38,7 @@ strip_configuration = rule(
 def _strip_configuration_alias_impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.label.package not in [
         "antlir/antlir2/cfg/strip_configuration/tests",
-        # @oss-disable
+        # @oss-disable[end= ]: "ti/platform/edgeos/base_image/rootfs/features/root_password",
     ]:
         fail("""
             target is in {} which is not an allowed package.

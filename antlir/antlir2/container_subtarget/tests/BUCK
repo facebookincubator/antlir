@@ -1,4 +1,4 @@
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -30,7 +30,7 @@ antlir2_configured_alias(
 rust_unittest(
     name = "test",
     srcs = ["test.rs"],
-    # @oss-disable
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     run_env = {
         "ROOTED": "$(exe :rooted[container])",
         "ROOTLESS": "$(exe :rootless[container])",

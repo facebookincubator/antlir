@@ -321,7 +321,7 @@ def _impl(
     if not name.endswith(".shape"):
         fail("shape.impl target must be named with a .shape suffix")
 
-    # @oss-disable
+    # @oss-disable[end= ]: bzl2ir = "antlir//antlir/bzl/shape2/facebook:bzl2ir"
 
     bzl2ir = "antlir//antlir/bzl/shape2:bzl2ir" # @oss-enable
     if test_only_rc_bzl2_ir:

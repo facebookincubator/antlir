@@ -37,7 +37,7 @@ feature.new(
             "dnf",
             "python3",
             "rpm",
-            # @oss-disable
+            # @oss-disable[end= ]: "fb-xarexec",
         ]),
     ],
     visibility = [

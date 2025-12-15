@@ -1,7 +1,7 @@
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/bzl:build_defs.bzl", "alias", "export_file")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/uidmaps/facebook:metalos.bzl", "gen_metalos")
 
 oncall("antlir")
 
@@ -23,4 +23,4 @@ alias(
     for f in glob(["**/*.json"])
 ]
 
-# @oss-disable
+# @oss-disable[end= ]: gen_metalos()

@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs:buckconfig.bzl", "read_bool")
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs:feature_rollout_utils.bzl", "rollout")
 load("@prelude//:paths.bzl", "paths")
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")

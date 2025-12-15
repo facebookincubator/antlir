@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handler")
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless_config_set", "get_antlir2_rootless")
@@ -15,17 +15,17 @@ load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "Fla
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
 
 load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-enable
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/bzl/image/facebook:fbpkg_mount_utils.bzl", "all_fbpkg_mounts")
 
 load("//antlir/bzl:oss_shim.bzl", fb_defaults = "empty_dict") # @oss-enable
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/bzl/image/facebook:layer.bzl", "fb_defaults")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
 load(
     "//antlir/antlir2/features/mount:mount.bzl",
     "DefaultMountpointInfo",
 )
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
-# @oss-disable
+# @oss-disable[end= ]: load("//antlir/antlir2/os/facebook:package.bzl", "get_default_rou_for_package")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "config", "get_visibility")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
@@ -464,7 +464,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     parent_layer_info = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None
     mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
-    # @oss-disable
+    # @oss-disable[end= ]: mounts += all_fbpkg_mounts(features = all_features, parent_layer = parent_layer_info)
 
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
@@ -679,7 +679,7 @@ def layer(
         rootless = get_antlir2_rootless()
 
     additional_labels = []
-    # @oss-disable
+    # @oss-disable[end= ]: additional_labels += ci.labels(ci.remove(ci.windows()))
     if not rootless:
         additional_labels += ["uses_sudo"]
     kwargs["labels"] = selects.apply(
@@ -718,7 +718,7 @@ def layer(
         name = name,
         parent_layer = parent_layer,
         default_os = default_os,
-        # @oss-disable
+        # @oss-disable[end= ]: default_rou = default_rou or get_default_rou_for_package(),
         rootless = rootless,
         visibility = get_visibility(visibility),
         target_compatible_with = target_compatible_with,

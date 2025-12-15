@@ -1,4 +1,4 @@
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/bzl:build_defs.bzl", "export_file", "python_library", "rust_binary", "rust_python_extension", "write_file")
 load(":modules.bzl", "extension_modules", "extension_rust_targets")
 
@@ -57,7 +57,7 @@ rust_binary(
         "pretty_assertions",
     ],
     # Test relies on the repo which is not present on aarch64 RE
-    # @oss-disable
+    # @oss-disable[end= ]: test_labels = ci.labels(ci.remove(ci.aarch64())),
     deps = [
         "anyhow",
         "serde",

@@ -1,4 +1,4 @@
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:docker_archive.bzl", "docker_archive")
@@ -58,7 +58,7 @@ image_python_test(
         "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
         "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
     }),
-    # @oss-disable
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
 )
 
@@ -131,6 +131,6 @@ image_python_test(
         "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
         "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
     }),
-    # @oss-disable
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
 )

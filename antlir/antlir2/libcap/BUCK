@@ -1,4 +1,4 @@
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs:fbsource_utils.bzl", "is_arvr_mode")
 load("//antlir/bzl:build_defs.bzl", "alias", "rust_bindgen_library", "rust_library")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
@@ -10,7 +10,7 @@ oncall("antlir")
 # https://fb.workplace.com/groups/asktp/posts/3317571605206390
 alias(
     name = "available",
-    # @oss-disable
+    # @oss-disable[end= ]: actual = "ovr_config//os:linux" if not is_arvr_mode() else "ovr_config//:none",
     actual = "ovr_config//os:linux", # @oss-enable
     visibility = ["//antlir/..."],
 )

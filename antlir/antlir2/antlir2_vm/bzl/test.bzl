@@ -3,15 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable
-# @oss-disable
-# @oss-disable
+# @oss-disable[end= ]: load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "special_tags")
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS", "env_from_wrapped_test")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
-# @oss-disable
+# @oss-disable[end= ]: load(":disable_dev_mode.bzl", "disable_dev_mode")
 
 load("//antlir/bzl:oss_shim.bzl", "NAMING_ROLLOUT_LABEL", "special_tags", "fully_qualified_test_name_rollout") # @oss-enable
 load(":types.bzl", "VMHostInfo")
@@ -24,8 +24,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     ]
 
     # Extend tpx timeout to 100 minutes if we exceed the default 10 min plus buffer
-    # @oss-disable
-        # @oss-disable
+    # @oss-disable[end= ]: if ctx.attrs.timeout_secs + 60 > 600:
+        # @oss-disable[end= ]: inner_labels.append("long_running")
 
     common_args = cmd_args(
         cmd_args(ensure_single_output(ctx.attrs.vm_host[VMHostInfo].image), format = "--image={}"),
@@ -214,11 +214,11 @@ def _get_internal_labels(test_rule, run_as_bundle: bool) -> (list[str], list[str
         wrapper_labels = add_test_framework_label(wrapper_labels, "test-framework=8:vmtest")
 
     # never schedule any CI on this inner target
-    # @oss-disable
+    # @oss-disable[end= ]: inner_labels += [ci.skip_target()]
 
     # don't run dev mode for vmtests
     ci_labels = []
-    # @oss-disable
+    # @oss-disable[end= ]: ci_labels += disable_dev_mode(wrapper_labels)
 
     ## "tpx:supports_coverage" label is required to Citadel to discover
     ## test that produce coverage
@@ -238,7 +238,7 @@ def _implicit_vm_test(
         expect_failure: bool = False,
         postmortem: bool = False,
         labels: list[str] | None = None,
-        # @oss-disable
+        # @oss-disable[end= ]: vm_test_labels: list[str] | None = None,
         output_dirs: list[str] | None = None,
         systemd_credentials: dict[str, str] | None = None,
         _add_outer_labels: list[str] = [],
@@ -270,12 +270,12 @@ def _implicit_vm_test(
     wrapper_labels.extend(_add_outer_labels)
     inner_labels = []
 
-    # @oss-disable
-    # @oss-disable
-    # @oss-disable
+    # @oss-disable[end= ]: inner, wrapper, ci_labels = _get_internal_labels(test_rule, run_as_bundle)
+    # @oss-disable[end= ]: wrapper_labels.extend(wrapper)
+    # @oss-disable[end= ]: inner_labels.extend(inner)
     labels = ["uses_sudo"]
-    # @oss-disable
-    # @oss-disable
+    # @oss-disable[end= ]: labels += ci_labels
+    # @oss-disable[end= ]: labels += vm_test_labels or []
 
     inner_test_name = name + "_vm_test_inner"
     test_rule(
@@ -306,7 +306,7 @@ vm_cpp_test = partial(
     _implicit_vm_test,
     cpp_unittest,
     _static_list_wrapper = "antlir//antlir/antlir2/antlir2_vm:static-list-cpp",
-    # @oss-disable
+    # @oss-disable[end= ]: _add_outer_labels = ["tpx:optout-test-result-output-spec", "tpx:supports_coverage"],
 )
 vm_python_test = partial(
     _implicit_vm_test,

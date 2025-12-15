@@ -1,4 +1,4 @@
-# @oss-disable
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
@@ -77,7 +77,7 @@ image_rust_test(
         "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
         "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
     }),
-    # @oss-disable
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
     # execute the test with isolate_unshare not systemd-nspawn
     rootless = True,

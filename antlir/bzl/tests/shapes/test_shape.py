@@ -28,7 +28,7 @@ from antlir.shape import Shape
 lightsaber_t = character_t.types.weapon.__args__[0]
 characters = character_collection_t.from_env("characters").characters
 
-# @oss-disable
+# @oss-disable[end= ]: TARGET_PATH = "fbcode//antlir/bzl/tests/shapes"
 TARGET_PATH = "antlir//antlir/bzl/tests/shapes" # @oss-enable
 
 

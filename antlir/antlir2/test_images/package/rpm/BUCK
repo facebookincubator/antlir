@@ -49,7 +49,7 @@ image.layer(
 
 package.rpm(
     name = "add.rpm",
-    # @oss-disable
+    # @oss-disable[end= ]: compatible_with = ["ovr_config//build_mode:opt"],
     dirs = ["/dir/with space"],
     disable_ldconfig = True,
     layer = ":layer",

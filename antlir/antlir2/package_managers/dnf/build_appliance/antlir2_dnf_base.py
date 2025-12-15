@@ -162,7 +162,7 @@ def add_repos(*, base: dnf.Base, repos_dir: Path) -> None:
             )
             # Forcibly crash internally since this is such a huge performance
             # regression - if it stops working we need to know immediately
-            # @oss-disable
+            # @oss-disable[end= ]: raise e
 
 
 def _versionlock_query(

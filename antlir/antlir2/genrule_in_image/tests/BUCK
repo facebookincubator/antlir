@@ -98,7 +98,7 @@ python_binary(
 image.layer(
     name = "with-xarexec",
     features = [
-        # @oss-disable
+        # @oss-disable[end= ]: feature.rpms_install(rpms = ["fb-xarexec"]),
     ],
     parent_layer = ":layer",
 )

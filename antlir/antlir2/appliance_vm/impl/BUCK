@@ -11,9 +11,9 @@ git_fetch(
     name = "kernel.git",
     rev = "a38297e3fb012ddfa7ce0321a7e5a8daeb1872b6", # @oss-enable
     exec_compatible_with = ["prelude//platforms:may_run_local"],
-    # @oss-disable
+    # @oss-disable[end= ]: repo = "ssh://git-ro.vip.facebook.com/data/gitrepos/kernel/linux.git",
     repo = "https://github.com/torvalds/linux.git", # @oss-enable
-    # @oss-disable
+    # @oss-disable[end= ]: rev = "3198590e9b51abc5886e0163d886fe2b9d0b77f7",
 )
 
 export_file(

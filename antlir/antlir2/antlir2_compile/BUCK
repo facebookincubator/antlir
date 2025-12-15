@@ -6,7 +6,7 @@ rust_library(
     name = "antlir2_compile",
     srcs = glob([
         "src/**/*.rs",
-        # @oss-disable
+        # @oss-disable[end= ]: "src/facebook/chef_solo/*",
     ]),
     deps = [
         "anyhow",
