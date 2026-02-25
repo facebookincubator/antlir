@@ -14,6 +14,7 @@ use tracing_subscriber::prelude::*;
 
 mod checksums;
 mod decompress;
+mod generate;
 mod parse;
 
 #[derive(Debug, Parser)]
@@ -27,6 +28,7 @@ struct Args {
 #[derive(Debug, Parser)]
 enum Sub {
     Decompress(decompress::Decompress),
+    Generate(generate::Generate),
     Parse(parse::Parse),
 }
 
@@ -55,6 +57,7 @@ fn do_main() -> Result<()> {
 
     match args.sub {
         Sub::Decompress(sub) => sub.run(),
+        Sub::Generate(sub) => sub.run(),
         Sub::Parse(sub) => sub.run(),
     }
 }

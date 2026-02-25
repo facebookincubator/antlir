@@ -1,6 +1,12 @@
+load("@fbcode_macros//build_defs:export_files.bzl", "export_file")
 load(":suite.bzl", "suite")
 
 oncall("antlir")
+
+export_file(
+    name = "dummy_signing_key",
+    src = "keys/dummy.secret.pgp",
+)
 
 suite(
     name = "trixie",

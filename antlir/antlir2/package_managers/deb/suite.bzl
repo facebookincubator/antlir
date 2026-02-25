@@ -14,6 +14,7 @@ ComponentInfo = provider(fields = {
 })
 
 DebSuiteInfo = provider(fields = {
+    "archive_dir": Artifact,
     "archive_url": str,
     "components": list[ComponentInfo],
     "distribution": str,
@@ -62,20 +63,55 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         ComponentInfo(name = c, packages_json = p.json, packages_txt = p.txt)
         for c, p in components_package_indexes.items()
     ]
+    components_json = ctx.actions.write_json("components.json", components, with_inputs = True)
 
     components_subtargets = {}
     for cname, c in components_package_indexes.items():
         components_subtargets[cname] = [DefaultInfo(sub_targets = {"packages.json": [DefaultInfo(c.json)]})]
 
+    # Generate a custom InRelease that only lists the components we care
+    # about, signed with a dummy key so apt can verify it.
+    generated_inrelease = ctx.actions.declare_output(
+        "generated-InRelease",
+        has_content_based_path = True,
+    )
+    generate_cmd = cmd_args(
+        ctx.attrs._snapshot_bin[RunInfo],
+        "generate",
+        "deb",
+        "inrelease",
+        cmd_args(release_json, format = "--release-json={}"),
+        cmd_args(ctx.attrs._arch, format = "--arch={}"),
+        cmd_args(ctx.attrs._signing_key, format = "--signing-key={}"),
+        cmd_args(components_json, format = "--components-json={}"),
+        generated_inrelease.as_output(),
+    )
+    ctx.actions.run(
+        generate_cmd,
+        category = "generate",
+        identifier = "InRelease",
+    )
+
+    dist_prefix = "dists/" + distribution + "/"
+    archive_dir_srcs = {
+        dist_prefix + "InRelease": generated_inrelease,
+    }
+    for cname, c in components_package_indexes.items():
+        archive_dir_srcs[dist_prefix + cname + "/binary-" + ctx.attrs._arch + "/Packages"] = c.txt
+
+    archive_dir = ctx.actions.symlinked_dir("archive", archive_dir_srcs)
+
     return [
         DefaultInfo(sub_targets = {
             # TODO: remove all subtargets when I'm done using them for debugging
             "debug_only": [DefaultInfo(sub_targets = {
+                "archive": [DefaultInfo(archive_dir)],
                 "components": [DefaultInfo(sub_targets = components_subtargets)],
                 "release.json": [DefaultInfo(release_json)],
             })],
         }),
         DebSuiteInfo(
+            archive_dir = archive_dir,
             archive_url = archive_url,
             distribution = distribution,
             components = components,
@@ -94,6 +130,11 @@ _suite = rule(
             "ovr_config//cpu:arm64": "arm64",
             "ovr_config//cpu:x86_64": "amd64",
         }))),
+        "_signing_key": attrs.default_only(
+            attrs.source(
+                default = "//antlir/antlir2/package_managers/deb:dummy_signing_key",
+            ),
+        ),
         "_snapshot_bin": attrs.default_only(
             attrs.exec_dep(
                 providers = [RunInfo],
