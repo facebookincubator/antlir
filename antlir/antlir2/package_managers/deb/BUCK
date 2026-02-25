@@ -5,6 +5,10 @@ oncall("antlir")
 suite(
     name = "trixie",
     archive_url = "https://mirror.facebook.net/debian",
+    components = [
+        "main",
+        "contrib",
+    ],
     # TODO: these are temporarily hardcoded to get moving faster with CI builds
     # (download_file works where curl does not). The minimum "snapshot" process
     # would just be updating these hashes, but a proper deterministic/persistent
