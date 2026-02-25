@@ -74,6 +74,7 @@ def _or(branches):
 
 selects = struct(
     apply = _prelude_selects.apply,
+    apply_n = _prelude_selects.apply_n,
     join = _join,
     or_ = _or,
     test_any_of = _test_any_of,
