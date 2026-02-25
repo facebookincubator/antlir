@@ -1,0 +1,21 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "snapshot",
+    srcs = glob(["src/**/*.rs"]),
+    test_srcs = glob(["testdata/**"]),
+    deps = [
+        "anyhow",
+        "bon",
+        "clap",
+        "flate2",
+        "liblzma",
+        "serde",
+        "serde_json",
+        "tracing",
+        "tracing-subscriber",
+        "//antlir/filesystem/stdio_path:stdio_path",
+    ],
+)

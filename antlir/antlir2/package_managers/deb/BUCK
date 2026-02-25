@@ -1,0 +1,17 @@
+load(":suite.bzl", "suite")
+
+oncall("antlir")
+
+suite(
+    name = "trixie",
+    archive_url = "https://mirror.facebook.net/debian",
+    # TODO: these are temporarily hardcoded to get moving faster with CI builds
+    # (download_file works where curl does not). The minimum "snapshot" process
+    # would just be updating these hashes, but a proper deterministic/persistent
+    # snapshot is a P0 for this effort so we can deal with a few diffs in this
+    # stack that keep it hardcoded
+    inrelease_checksums = {
+        "sha1": "dfb946d1ea6f26a92a523b652dc4b3ccd6fc5a62",
+        "sha256": "59bcb7bc2e221c6e7d2361adf8f82dfbd28ad8d755f2fe42f56d3be42fd25a4c",
+    },
+)
