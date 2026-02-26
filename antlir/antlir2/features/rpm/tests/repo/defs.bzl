@@ -25,6 +25,8 @@ def test_rpm(
         features = [],
         parent_layer: str | None = None,
         post_install_script: str | None = None,
+        transfiletriggerpostun_script: str | None = None,
+        transfiletriggerpostun_paths: list[str] = [],
         changelog: str | None = None) -> str:
     target_name = name + "-" + version + "-" + release + "." + arch
     image.layer(
@@ -48,6 +50,8 @@ def test_rpm(
         provides = provides,
         recommends = recommends,
         post_install_script = post_install_script,
+        transfiletriggerpostun_script = transfiletriggerpostun_script,
+        transfiletriggerpostun_paths = transfiletriggerpostun_paths,
         changelog = changelog,
         visibility = [":" + target_name],
     )

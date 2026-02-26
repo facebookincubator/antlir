@@ -313,6 +313,8 @@ _rpm, _rpm_anon = _new_package_rule(
         "sign_with_private_key": attrs.option(attrs.source(), default = None),
         "summary": attrs.option(attrs.string(), default = None),
         "supplements": attrs.list(attrs.string(), default = []),
+        "transfiletriggerpostun_paths": attrs.list(attrs.string(), default = []),
+        "transfiletriggerpostun_script": attrs.option(attrs.string(), default = None),
         "version": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime HHMMSS"),
         "_strip": internal_external(
             fb = attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:strip")),

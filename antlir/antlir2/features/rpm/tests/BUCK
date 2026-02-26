@@ -541,3 +541,47 @@ test_rpms(
         ":test-deps",
     ],
 )
+
+# Install both the trigger-owning RPM and a package with files under /foo.
+# The transfiletriggerpostun in antlir2-fail-on-file-trigger watches /foo and
+# will fire (and fail) when foo is upgraded in the child layer below.
+fail_on_file_trigger_parent = test_rpms(
+    name = "fail-on-file-trigger-parent",
+    # the newer version of dnf4 in eln fails the entire transaction if
+    # scriptlets fail
+    also_eln_dnf5 = False,
+    expected = expected_t(installed = [
+        "antlir2-fail-on-file-trigger",
+        "foo-2",
+    ]),
+    features = [
+        feature.rpms_install(rpms = [
+            "antlir2-fail-on-file-trigger",
+            "foo-2",
+        ]),
+        ":test-deps",
+    ],
+)
+
+# Upgrade foo from 2 to 3.  Removing foo-2 (which owns files under /foo)
+# fires the %transfiletriggerpostun from antlir2-fail-on-file-trigger.
+# RPM will blame foo for the failure, but driver.py should attribute the
+# error to antlir2-fail-on-file-trigger (the trigger owner) and, because
+# that name is in the allowlist, downgrade it to a warning.
+test_rpms(
+    name = "fail-on-file-trigger",
+    # the newer version of dnf4 in eln fails the entire transaction if
+    # scriptlets fail
+    also_eln_dnf5 = False,
+    expected = expected_t(
+        installed = [
+            "antlir2-fail-on-file-trigger",
+            "foo-3",
+        ],
+        not_installed = ["foo-2"],
+    ),
+    features = [
+        feature.rpms_install(rpms = ["foo-3"]),
+    ],
+    parent_layer = fail_on_file_trigger_parent,
+)

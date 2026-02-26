@@ -160,6 +160,18 @@ all_rpms.append(
     ),
 )
 
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-fail-on-file-trigger",
+        epoch = 0,
+        release = "1",
+        requires_post = ["/bin/sh"],
+        transfiletriggerpostun_paths = ["/foo"],
+        transfiletriggerpostun_script = "echo antlir2-fail-on-file-trigger && exit 1",
+        version = "1",
+    ),
+)
+
 buck_genrule(
     name = "fake-executable",
     out = "exe",

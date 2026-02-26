@@ -66,6 +66,9 @@ pub struct Rpm {
     post_install_script: Option<String>,
     pre_uninstall_script: Option<String>,
     post_uninstall_script: Option<String>,
+    transfiletriggerpostun_script: Option<String>,
+    #[serde(default)]
+    transfiletriggerpostun_paths: Vec<String>,
     sign_with_private_key: Option<PathBuf>,
     sign_digest_algo: Option<String>,
     changelog: Option<String>,
@@ -185,6 +188,7 @@ AutoProv: {autoprov}
 {post_install_script}
 {pre_uninstall_script}
 {post_uninstall_script}
+{transfiletriggerpostun_script}
 "#,
             autoreq = if self.autoreq { "yes" } else { "no" },
             autoprov = if self.autoprov { "yes" } else { "no" },
@@ -225,6 +229,16 @@ AutoProv: {autoprov}
                 .as_ref()
                 .map(|s| format!("%postun\n{s}\n"))
                 .unwrap_or_default(),
+            transfiletriggerpostun_script = match (
+                &self.transfiletriggerpostun_script,
+                &self.transfiletriggerpostun_paths
+            ) {
+                (Some(s), paths) => {
+                    let path_args = paths.join(" ");
+                    format!("%transfiletriggerpostun -- {path_args}\n{s}\n")
+                }
+                _ => String::new(),
+            },
             changelog = self
                 .changelog
                 .as_ref()

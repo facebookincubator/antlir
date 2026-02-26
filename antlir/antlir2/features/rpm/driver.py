@@ -62,16 +62,38 @@ _TX_ACTION_TO_JSON = {
 # removed when the task is fixed.
 _RPMS_THAT_CAN_FAIL_SCRIPTS = {
     "antlir2-failing-postscripts": "TODO(T166162108)",
+    "antlir2-fail-on-file-trigger": "TODO(T166162108)",
     "git-lfs": "TODO(T170621965)",
     "nsight-compute-2019.4.0": "TODO(T166170831)",
     "coreutils-common": "TODO(T182347179)",
     "mono-core": "TODO(T206575712)",
     "digilent.waveforms": "TODO(T248331993)",
     "digilent.adept.runtime": "TODO(T248331993)",
+    "info": "TODO(Txxxx)",
 }
 
 
-_SCRIPTLET_ERROR_RE = re.compile(r"^Error in (?:.*) scriptlet in rpm package (.*)$")
+_SCRIPTLET_ERROR_RE = re.compile(r"^Error in (\S+) scriptlet in rpm package (.*)$")
+
+# File trigger scriptlet failures show up in scriptout() as a warning before
+# the error() callback fires with the (possibly wrong) package name. This regex
+# captures the NEVRA of the package that actually owns the failing trigger.
+# Example: "warning: %transfiletriggerpostun(info-7.1-6.el10.x86_64) scriptlet failed, exit status 1"
+_FILETRIGGER_FAIL_RE = re.compile(
+    r"^warning: %\w+\((\S+)\) scriptlet failed, exit status \d+$",
+    re.MULTILINE,
+)
+
+# Map dnf/rpm scriptlet type names (as they appear in error messages) to the
+# corresponding RPMTAG for the script body.
+_SCRIPTLET_TYPE_TO_TAG = {
+    "PREIN": librpm.RPMTAG_PREIN,
+    "POSTIN": librpm.RPMTAG_POSTIN,
+    "PREUN": librpm.RPMTAG_PREUN,
+    "POSTUN": librpm.RPMTAG_POSTUN,
+    "PRETRANS": librpm.RPMTAG_PRETRANS,
+    "POSTTRANS": librpm.RPMTAG_POSTTRANS,
+}
 
 
 class TransactionProgress(dnf.callback.TransactionProgress):
@@ -80,6 +102,10 @@ class TransactionProgress(dnf.callback.TransactionProgress):
         self._sent = defaultdict(set)
         self._ignore_scriptlet_errors = ignore_scriptlet_errors
         self.rpms_with_scriptlet_errors = set()
+        self._current_scriptlet_package = None
+        # Track the NEVRA of the last file trigger failure seen in scriptout(),
+        # so that error() can attribute the failure to the correct package.
+        self._last_filetrigger_nevra = None
 
     def scriptout(self, msgs):
         """Hook for reporting an rpm scriptlet output.
@@ -87,9 +113,15 @@ class TransactionProgress(dnf.callback.TransactionProgress):
         :param msgs: the scriptlet output
         """
         if msgs:
+            msg = ucd(msgs)
+            # Detect file trigger failures so we can attribute the error to the
+            # correct package in the subsequent error() callback.
+            m = _FILETRIGGER_FAIL_RE.search(msg)
+            if m:
+                self._last_filetrigger_nevra = m.group(1)
             with self.out as out:
                 json.dump(
-                    {"scriptlet_output": ucd(msgs)},
+                    {"scriptlet_output": msg},
                     out,
                 )
                 out.write("\n")
@@ -101,14 +133,61 @@ class TransactionProgress(dnf.callback.TransactionProgress):
             if match:
                 if self._ignore_scriptlet_errors:
                     key = "tx_warning"
-                rpm_name = match.group(1)
+                scriptlet_type = match.group(1)
+                rpm_name = match.group(2)
                 if rpm_name in _RPMS_THAT_CAN_FAIL_SCRIPTS:
                     key = "tx_warning"
+                # For file trigger errors, rpm blames the package being
+                # processed (e.g. libgomp) rather than the package that owns
+                # the trigger (e.g. info). Check the real owner too.
+                trigger_nevra = self._last_filetrigger_nevra
+                if trigger_nevra is not None:
+                    trigger_name = trigger_nevra.rsplit("-", 2)[0]
+                    if trigger_name in _RPMS_THAT_CAN_FAIL_SCRIPTS:
+                        key = "tx_warning"
+                    # Rewrite the message so the error is attributed to the
+                    # package that owns the failing trigger, not the innocent
+                    # package that rpm happened to be processing.
+                    message = f"Error in {scriptlet_type} scriptlet in rpm package {trigger_nevra} (triggered by {rpm_name})"
+                    rpm_name = trigger_nevra
+                    self._last_filetrigger_nevra = None
                 self.rpms_with_scriptlet_errors.add(rpm_name)
+                self._emit_scriptlet_source(out, scriptlet_type)
             json.dump({key: message}, out)
             out.write("\n")
 
+    def _emit_scriptlet_source(self, out, scriptlet_type):
+        """Emit the actual scriptlet source so the user can see what failed."""
+        pkg = self._current_scriptlet_package
+        if pkg is None:
+            return
+        tag = _SCRIPTLET_TYPE_TO_TAG.get(scriptlet_type)
+        if tag is None:
+            return
+        try:
+            local_pkg = pkg.localPkg()
+            ts = librpm.TransactionSet()
+            ts.setVSFlags(librpm._RPMVSF_NOSIGNATURES | librpm._RPMVSF_NODIGESTS)
+            with open(local_pkg, "rb") as f:
+                hdr = ts.hdrFromFdno(f.fileno())
+            script = hdr[tag]
+            if script:
+                json.dump(
+                    {
+                        "scriptlet_output": "failing %s scriptlet of %s:\n%s"
+                        % (scriptlet_type, pkg, script)
+                    },
+                    out,
+                )
+                out.write("\n")
+        except Exception:
+            # Best-effort: if we can't read the scriptlet, don't block the
+            # error from being reported.
+            pass
+
     def progress(self, package, action, ti_done, ti_total, ts_done, ts_total):
+        if action == dnf.callback.PKG_SCRIPTLET:
+            self._current_scriptlet_package = package
         if action in self._sent[package]:
             return
         with self.out as out:
