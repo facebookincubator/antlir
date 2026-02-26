@@ -9,6 +9,7 @@ constraint(
         "none",
         "dnf",
         "dnf5",
+        "apt",
     ],
     visibility = ["PUBLIC"],
 )

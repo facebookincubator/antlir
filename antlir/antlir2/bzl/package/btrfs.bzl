@@ -84,7 +84,7 @@ _btrfs = rule(
             default = None,
         ),
         "_rootless": rootless_cfg.is_rootless_attr,
-    } | attrs_selected_by_cfg() | cfg_attrs(),
+    } | attrs_selected_by_cfg | cfg_attrs(),
     cfg = package_cfg,
 )
 

@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "os_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginPluginKind")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
@@ -83,18 +84,16 @@ def _generic_impl(
         uses_build_appliance: bool):
     if ctx.attrs.dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
-            "build_appliance": ctx.attrs.build_appliance,
-            "flavor": ctx.attrs.flavor,
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
             "_analyze_feature": ctx.attrs._analyze_feature,
             "_antlir2": ctx.attrs._antlir2,
             "_dot_meta_feature": ctx.attrs._dot_meta_feature,
             "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
-            "_rootless": ctx.attrs._rootless,
             "_run_container": ctx.attrs._run_container,
-            "_target_arch": ctx.attrs._target_arch,
-            "_working_format": ctx.attrs._working_format,
+        } | {
+            k: getattr(ctx.attrs, k)
+            for k in attrs_selected_by_cfg
         }).promise.map(partial(
             _generic_impl_with_layer,
             ctx = ctx,

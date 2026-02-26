@@ -9,7 +9,6 @@ load("//antlir/antlir2/antlir2_error_handler:handler.bzl", "antlir2_error_handle
 load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless_config_set", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
@@ -82,6 +81,7 @@ def _compile(
             out_arg,
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd_args(target_arch, format = "--target-arch={}"),
+            cmd_args(ctx.attrs._package_manager, format = "--package-manager={}"),
             [
                 cmd_args(plugin.plugin, format = "--plugin={}", hidden = [plugin.libs])
                 for plugin in plugins
@@ -585,20 +585,10 @@ _layer_attrs = {
         doc = "Used as a way to pass plugins to anon layer targets",
     ),
     "_run_container": attrs.option(attrs.exec_dep(), default = None),
-    "_selected_target_arch": attrs.default_only(attrs.string(
-        default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
-        doc = "CPU arch that this layer is being built for.",
-    )),
-    "_working_format": attrs.default_only(attrs.string(
-        default = select({
-            "DEFAULT": "btrfs",
-            "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
-        }),
-    )),
 }
 
 _layer_attrs.update(cfg_attrs())
-_layer_attrs.update(attrs_selected_by_cfg())
+_layer_attrs.update(attrs_selected_by_cfg)
 
 _layer_attrs.update(
     {

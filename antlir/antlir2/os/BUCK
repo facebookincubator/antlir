@@ -61,3 +61,9 @@ os_version(
     family = "//antlir/antlir2/os/family:family[rhel]",
     package_manager = "//antlir/antlir2/os/package_manager:package_manager[dnf]",
 )
+
+os_version(
+    name = "debian-trixie",
+    family = "//antlir/antlir2/os/family:family[debian]",
+    package_manager = "//antlir/antlir2/os/package_manager:package_manager[apt]",
+)

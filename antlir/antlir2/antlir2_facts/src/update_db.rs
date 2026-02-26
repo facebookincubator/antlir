@@ -58,11 +58,14 @@ fn populate(
     tx: &mut Transaction,
     root: &Path,
     build_appliance: Option<&Path>,
+    package_manager: &str,
 ) -> anyhow::Result<()> {
     let root = root.canonicalize().context("while canonicalizing root")?;
     populate_files(tx, &root)?;
     populate_usergroups(tx, &root)?;
-    populate_rpms(tx, &root, build_appliance)?;
+    if matches!(package_manager, "dnf" | "dnf5") {
+        populate_rpms(tx, &root, build_appliance)?;
+    }
     populate_systemd_units(tx, &root)?;
     Ok(())
 }
@@ -267,6 +270,7 @@ pub fn sync_db_with_layer(
     db: &Path,
     layer: &Path,
     build_appliance: Option<&Path>,
+    package_manager: &str,
 ) -> Result<RwDatabase> {
     let mut db = RwDatabase::create(db)
         .with_context(|| format!("while preparing db {}", db.display()))
@@ -279,7 +283,7 @@ pub fn sync_db_with_layer(
 
     let root = Root::Subvol(layer);
 
-    populate(&mut tx, root.path(), build_appliance).map_err(Error::Populate)?;
+    populate(&mut tx, root.path(), build_appliance, package_manager).map_err(Error::Populate)?;
 
     tx.commit()
         .context("while committing tx")

@@ -71,6 +71,10 @@ pub(crate) struct Compile {
     build_appliance: Option<PathBuf>,
 
     #[clap(long)]
+    /// Package manager used by the image OS
+    package_manager: String,
+
+    #[clap(long)]
     /// Pre-computed plans for this compilation phase
     plans: JsonFile<HashMap<String, PathBuf>>,
 }
@@ -188,6 +192,7 @@ impl Compile {
                     .db(&self.facts_db_out)
                     .layer(subvol.path())
                     .maybe_build_appliance(self.build_appliance.as_deref())
+                    .package_manager(&self.package_manager)
                     .call()?;
                 // drop privs immediately after inspecting the entire image
                 drop(root_guard);

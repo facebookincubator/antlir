@@ -47,6 +47,9 @@ pub(crate) struct Receive {
     facts_db_out: PathBuf,
     #[clap(long)]
     build_appliance: Option<PathBuf>,
+    #[clap(long)]
+    /// Package manager used by the image OS
+    package_manager: String,
 }
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
@@ -154,6 +157,7 @@ impl Receive {
             .db(&self.facts_db_out)
             .layer(subvol.path())
             .maybe_build_appliance(self.build_appliance.as_deref())
+            .package_manager(&self.package_manager)
             .call()
             .context("while updating facts db with layer contents")?;
 

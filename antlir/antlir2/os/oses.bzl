@@ -103,6 +103,11 @@ OSES = [
         # TODO(T238134086): This should point to the third-party/python interpreter when we've verified this correctness.
         python = new_python_t(interpreter = "/usr/bin/python3")
     ),
+    _new_os(
+        name = "debian-trixie",
+        flavor = "antlir//antlir/antlir2/flavor/debian-trixie:debian-trixie",
+        has_platform_toolchain = False, # yikes, this will be a whole can of worms, hope we never need it...
+    ),
 ]
 
 if is_facebook:

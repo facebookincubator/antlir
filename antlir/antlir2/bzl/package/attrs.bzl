@@ -29,4 +29,4 @@ default_attrs = {
     "_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),
-} | attrs_selected_by_cfg()
+} | attrs_selected_by_cfg

@@ -10,6 +10,7 @@ constraint(
         "centos",
         "fedora",
         "rhel",
+        "debian",
     ],
     visibility = ["PUBLIC"],
 )

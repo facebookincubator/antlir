@@ -99,6 +99,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "--force-root-ownership" if ctx.attrs.force_root_ownership else cmd_args(),
             cmd_args(facts_db.as_output(), format = "--facts-db-out={}"),
             cmd_args(ctx.attrs.build_appliance[BuildApplianceInfo].dir, format = "--build-appliance={}"),
+            cmd_args(ctx.attrs._package_manager, format = "--package-manager={}"),
         ),
         category = "antlir2_prebuilt_layer",
         identifier = format,
@@ -151,7 +152,7 @@ _prebuilt = rule(
         "src": attrs.source(doc = "source file of the image"),
         "_btrfs": attrs.option(attrs.exec_dep(), default = None),
         "_rootless": rootless_cfg.is_rootless_attr,
-    } | cfg_attrs() | attrs_selected_by_cfg(),
+    } | cfg_attrs() | attrs_selected_by_cfg,
     cfg = layer_cfg,
 )
 

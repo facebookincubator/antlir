@@ -10,15 +10,16 @@ distinct from the default target platform used by the `buck2 build`.
 """
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo")
-
-load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable[end= ]: load("//antlir/antlir2/bzl/image/facebook:fb_cfg.bzl", "fb_cfg_attrs", "fb_refs", "fb_transition")
 load("//antlir/antlir2/cfg/llvm:defs.bzl", "llvm_cfg")
 load("//antlir/antlir2/cfg/systemd:defs.bzl", "systemd_cfg")
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
+load("//antlir/antlir2/os/package_manager:defs.bzl", "package_manager_selected_attr")
 load("//antlir/bzl:internal_external.bzl", "is_facebook")
+load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 
 def cfg_attrs():
     return {
@@ -39,24 +40,27 @@ def cfg_attrs():
         {} # @oss-enable
     ) | rootless_cfg.attrs | systemd_cfg.attrs | llvm_cfg.attrs
 
-def attrs_selected_by_cfg():
-    return {
-        "build_appliance": attrs.exec_dep(
-            providers = [BuildApplianceInfo],
-            default = select({os.select_key: os.build_appliance for os in OSES}),
-        ),
-        "flavor": attrs.dep(
-            providers = [FlavorInfo],
-            default = select({os.select_key: os.flavor for os in OSES}),
-        ),
-        "_rootless": rootless_cfg.is_rootless_attr,
-        "_working_format": attrs.default_only(attrs.string(
-            default = select({
-                "DEFAULT": "btrfs",
-                "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
-            }),
-        )),
-    }
+attrs_selected_by_cfg = {
+    "build_appliance": attrs.exec_dep(
+        providers = [BuildApplianceInfo],
+        default = select({os.select_key: os.build_appliance for os in OSES}),
+    ),
+    "flavor": attrs.dep(
+        providers = [FlavorInfo],
+        default = select({os.select_key: os.flavor for os in OSES}),
+    ),
+    "_package_manager": package_manager_selected_attr,
+    "_rootless": rootless_cfg.is_rootless_attr,
+    "_selected_target_arch": attrs.default_only(attrs.string(
+        default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
+    )),
+    "_working_format": attrs.default_only(attrs.string(
+        default = select({
+            "DEFAULT": "btrfs",
+            "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
+        }),
+    )),
+}
 
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     constraints = platform.configuration.constraints

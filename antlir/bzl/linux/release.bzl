@@ -6,6 +6,7 @@
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
@@ -211,11 +212,13 @@ def _release_file_macro(
 
     kwargs.setdefault("os_id", selects.or_({
         ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "centos",
+        "antlir//antlir/antlir2/os/family:family[debian]": "debian",
         "antlir//antlir/antlir2/os:eln": "fedora",
         "antlir//antlir/antlir2/os:none": "none",
     }))
     kwargs.setdefault("os_name", selects.or_({
         ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "CentOS Stream",
+        "antlir//antlir/antlir2/os/family:family[debian]": "Debian GNU/Linux",
         "antlir//antlir/antlir2/os:eln": "Fedora Linux",
         "antlir//antlir/antlir2/os:none": "None",
     }))
@@ -223,12 +226,14 @@ def _release_file_macro(
     kwargs.setdefault("os_version", select({
         "antlir//antlir/antlir2/os:centos10": "10",
         "antlir//antlir/antlir2/os:centos9": "9",
+        "antlir//antlir/antlir2/os:debian-trixie": "13 (Trixie)",
         "antlir//antlir/antlir2/os:eln": eln_version,
         "antlir//antlir/antlir2/os:none": "0",
     }))
     kwargs.setdefault("os_version_id", select({
         "antlir//antlir/antlir2/os:centos10": "10",
         "antlir//antlir/antlir2/os:centos9": "9",
+        "antlir//antlir/antlir2/os:debian-trixie": "13",
         "antlir//antlir/antlir2/os:eln": eln_version,
         "antlir//antlir/antlir2/os:none": "0",
     }))
@@ -298,12 +303,7 @@ def _install(
         name = name,
         layer = layer,
         variant = variant,
-        compatible_with = [
-            "antlir//antlir/antlir2/os:centos10",
-            "antlir//antlir/antlir2/os:centos9",
-            "antlir//antlir/antlir2/os:eln",
-            "antlir//antlir/antlir2/os:none",
-        ],
+        compatible_with = [os.select_key for os in OSES],
         incoming_transition = "antlir//antlir/antlir2/os/transition:default-to-none",
         visibility = ["PUBLIC"],
         **kwargs
