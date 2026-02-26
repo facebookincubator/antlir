@@ -61,15 +61,15 @@ _TX_ACTION_TO_JSON = {
 # Use TODO(Txxxx) so that this entry can be easily tracked in the tasks tool and
 # removed when the task is fixed.
 _RPMS_THAT_CAN_FAIL_SCRIPTS = {
-    "antlir2-failing-postscripts": "TODO(T166162108)",
     "antlir2-fail-on-file-trigger": "TODO(T166162108)",
-    "git-lfs": "TODO(T170621965)",
-    "nsight-compute-2019.4.0": "TODO(T166170831)",
+    "antlir2-failing-postscripts": "TODO(T166162108)",
     "coreutils-common": "TODO(T182347179)",
-    "mono-core": "TODO(T206575712)",
-    "digilent.waveforms": "TODO(T248331993)",
     "digilent.adept.runtime": "TODO(T248331993)",
-    "info": "TODO(Txxxx)",
+    "digilent.waveforms": "TODO(T248331993)",
+    "git-lfs": "TODO(T170621965)",
+    "info": "TODO(T257201508)",
+    "mono-core": "TODO(T206575712)",
+    "nsight-compute-2019.4.0": "TODO(T166170831)",
 }
 
 
