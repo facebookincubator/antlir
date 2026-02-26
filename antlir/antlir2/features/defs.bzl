@@ -76,6 +76,7 @@ def feature_impl(
         test_deps: list[str] | Select | None = []):
     lib_visibility = lib_visibility or visibility or [
         "//antlir/antlir2/...",
+        "//metalos/os/facebook/classic/flavor/...",
         "//tupperware/cm/antlir2/...",
     ]
     rust_library(
