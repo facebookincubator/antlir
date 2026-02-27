@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
+
 def download(
         *,
         actions: AnalysisActions,
@@ -12,6 +14,8 @@ def download(
         out: OutputArtifact | None = None,
         checksums: dict[str, str] = {},
         allow_nondeterministic_downloads: bool = False) -> Artifact:
+    # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
+
     if not allow_nondeterministic_downloads and not checksums:
         fail("when allow_nondeterministic_downloads=False, at least one checksum must be provided")
 
