@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use antlir2_facts::RwDatabase;
 use antlir2_facts::Transaction;
 use antlir2_facts::fact::Fact;
+use antlir2_facts::fact::deb::Deb;
 use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::dir_entry::FileCommon;
 use antlir2_facts::fact::dir_entry::Symlink;
@@ -65,6 +66,8 @@ fn populate(
     populate_usergroups(tx, &root)?;
     if matches!(package_manager, "dnf" | "dnf5") {
         populate_rpms(tx, &root, build_appliance)?;
+    } else if package_manager == "apt" {
+        populate_debs(tx, &root)?;
     }
     populate_systemd_units(tx, &root)?;
     Ok(())
@@ -233,6 +236,87 @@ fn populate_rpms(
     }
     for remove in &remove {
         tx.delete::<Rpm>(remove)?;
+    }
+    Ok(())
+}
+
+fn populate_debs(tx: &mut Transaction, root: &Path) -> anyhow::Result<()> {
+    let mut remove: FxHashSet<_> = tx.all_keys::<Deb>()?.collect();
+    let status_path = root.join("var/lib/dpkg/status");
+    let contents = match std::fs::read_to_string(&status_path) {
+        Ok(c) => c,
+        Err(e) if e.kind() == ErrorKind::NotFound => {
+            warn!(
+                "dpkg status file does not exist in image {}",
+                root.display()
+            );
+            return Ok(());
+        }
+        Err(e) => {
+            return Err(anyhow::Error::from(e).context("while reading dpkg status file"));
+        }
+    };
+
+    // Parse the dpkg status file. Stanzas are separated by blank lines.
+    // Each field is "Key: Value", with continuation lines starting with a space.
+    for stanza in contents.split("\n\n") {
+        let stanza = stanza.trim();
+        if stanza.is_empty() {
+            continue;
+        }
+
+        let mut name = None;
+        let mut version = None;
+        let mut arch = None;
+        let mut source = None;
+        let mut installed_size = None;
+        let mut status = None;
+
+        for line in stanza.lines() {
+            // Skip continuation lines (start with space/tab)
+            if line.starts_with(' ') || line.starts_with('\t') {
+                continue;
+            }
+            if let Some((key, value)) = line.split_once(": ") {
+                match key {
+                    "Package" => name = Some(value.to_owned()),
+                    "Version" => version = Some(value.to_owned()),
+                    "Architecture" => arch = Some(value.to_owned()),
+                    "Source" => source = Some(value.to_owned()),
+                    "Installed-Size" => installed_size = value.parse::<u64>().ok(),
+                    "Status" => status = Some(value.to_owned()),
+                    _ => {}
+                }
+            }
+        }
+
+        // Only include packages that are actually installed
+        let is_installed = status
+            .as_deref()
+            .map(|s| s.contains("installed"))
+            .unwrap_or(false);
+        if !is_installed {
+            continue;
+        }
+
+        let (Some(name), Some(version), Some(arch)) = (name, version, arch) else {
+            continue;
+        };
+
+        let fact = Deb::builder()
+            .name(name)
+            .version(version)
+            .arch(arch)
+            .maybe_source(source)
+            .maybe_installed_size(installed_size)
+            .build();
+        remove.remove(&fact.key());
+        tx.insert(&fact)
+            .with_context(|| format!("while inserting deb '{fact}'"))?;
+    }
+
+    for remove in &remove {
+        tx.delete::<Deb>(remove)?;
     }
     Ok(())
 }

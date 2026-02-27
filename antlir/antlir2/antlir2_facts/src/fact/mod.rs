@@ -10,6 +10,7 @@ use std::any::Any;
 use serde::Deserialize;
 use serde::Serialize;
 
+pub mod deb;
 pub mod dir_entry;
 #[cfg(facebook)]
 pub mod facebook;
