@@ -1,0 +1,49 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+feature_impl(
+    name = "apt",
+    deps = [
+        "anyhow",
+        "memfd",
+        "serde_json",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/buck2/buck_label:buck_label",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
+
+rust_binary(
+    name = "plan",
+    srcs = ["plan.rs"],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "serde_json",
+        "tracing",
+        "tracing-subscriber",
+        ":apt.lib",
+        "//antlir/antlir2/antlir2_compile:antlir2_compile",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/buck2/buck_label:buck_label",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
+
+prelude = native
+
+prelude.python_bootstrap_binary(
+    name = "driver",
+    main = "driver.py",
+    visibility = ["PUBLIC"],
+)
+
+prelude.python_bootstrap_binary(
+    name = "resolve",
+    main = "resolve.py",
+    visibility = ["PUBLIC"],
+)

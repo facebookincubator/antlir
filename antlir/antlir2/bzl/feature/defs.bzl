@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/features/apt:apt.bzl", "apt_install", "apt_remove", "apt_remove_if_exists")
 load("//antlir/antlir2/features/clone:clone.bzl", "clone")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
 load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary", "extract_from_layer")
@@ -25,6 +26,9 @@ load("//antlir/bzl:structs.bzl", "structs")
 load(":feature.bzl", feature_new = "feature")
 
 feature = struct(
+    apt_install = apt_install,
+    apt_remove = apt_remove,
+    apt_remove_if_exists = apt_remove_if_exists,
     clone = clone,
     ensure_dirs_exist = ensure_dirs_exist,
     ensure_subdirs_exist = ensure_subdirs_exist,

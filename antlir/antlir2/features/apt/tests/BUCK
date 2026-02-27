@@ -1,0 +1,40 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+
+oncall("antlir")
+
+image.layer(
+    name = "bash-installed",
+    default_os = "debian-trixie",
+    features = [
+        feature.apt_install(packages = [
+            "bash",
+            "dash",
+            "dpkg",
+        ]),
+    ],
+)
+
+image_sh_test(
+    name = "test-bash-installed",
+    layer = ":bash-installed",
+    test = "test-bash-installed.sh",
+)
+
+image.layer(
+    name = "bash-removed",
+    default_os = "debian-trixie",
+    features = [
+        feature.apt_remove(packages = [
+            "bash",
+        ]),
+    ],
+    parent_layer = ":bash-installed",
+)
+
+image_sh_test(
+    name = "test-bash-removed",
+    layer = ":bash-removed",
+    test = "test-bash-removed.sh",
+)

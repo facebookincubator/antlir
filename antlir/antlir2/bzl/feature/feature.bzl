@@ -55,6 +55,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginPluginKind")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis", "feature_record")
+load("//antlir/antlir2/features/apt:apt.bzl", "apt_rule")
 load("//antlir/antlir2/features/clone:clone.bzl", "clone_rule")
 load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta_rule")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_dir_exists_rule")
@@ -88,6 +89,7 @@ load("//antlir/bzl:types.bzl", "types")
 load(":cfg.bzl", "feature_cfg")
 
 _anon_rules = {
+    "apt": apt_rule,
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
     "ensure_dir_exists": ensure_dir_exists_rule,
