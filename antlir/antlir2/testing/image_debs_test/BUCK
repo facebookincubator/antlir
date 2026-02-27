@@ -1,0 +1,17 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "image-debs-test",
+    srcs = glob(["src/**/*.rs"]),
+    compatible_with = [
+        "antlir//antlir/antlir2/os/package_manager:package_manager[apt]",
+    ],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "//antlir/antlir2/antlir2_facts:antlir2_facts",
+    ],
+)

@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/antlir2/testing:image_debs_test.bzl", "image_test_deb_names")
 
 oncall("antlir")
 
@@ -16,10 +16,14 @@ image.layer(
     ],
 )
 
-image_sh_test(
+image_test_deb_names(
     name = "test-bash-installed",
     layer = ":bash-installed",
-    test = "test-bash-installed.sh",
+    names = [
+        "bash",
+        "dash",
+        "dpkg",
+    ],
 )
 
 image.layer(
@@ -33,8 +37,11 @@ image.layer(
     parent_layer = ":bash-installed",
 )
 
-image_sh_test(
+image_test_deb_names(
     name = "test-bash-removed",
     layer = ":bash-removed",
-    test = "test-bash-removed.sh",
+    names = [
+        "bash",
+    ],
+    not_installed = True,
 )
