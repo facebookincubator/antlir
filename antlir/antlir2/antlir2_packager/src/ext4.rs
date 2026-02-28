@@ -28,17 +28,32 @@ pub struct Ext4 {
     label: Option<String>,
     size_mb: Option<u64>,
     free_mb: u64,
+    fixed_metadata: bool,
 }
 
 const MAPPED_OUTPUT: &str = "/__antlir2__/out/ext4";
 const BLOCK_SIZE: u64 = 4096;
 const INODE_SIZE: u64 = 256;
 
+/// Fixed timestamp for reproducible ext4 images.
+/// February 4, 2004 - the initial launch of thefacebook.com.
+/// This matches the FIXED_MTIME used by the OCI tar layer builder.
+const REPRODUCIBLE_SOURCE_DATE_EPOCH: &str = "1075852800";
+
+/// Deterministic UUID for reproducible ext4 images.
+/// Without this, mkfs.ext4 generates a random v4 UUID on every run.
+const REPRODUCIBLE_FS_UUID: &str = "00000000-0000-4000-8000-000000000000";
+
+/// Deterministic hash seed for ext4 dir_index.
+/// Without this, mkfs.ext4 generates a random hash seed on every run.
+const REPRODUCIBLE_HASH_SEED: &str = "00000000-0000-4000-8000-000000000000";
+
 impl PackageFormat for Ext4 {
     fn build(&self, out: &Path, layer: &Path) -> Result<()> {
         File::create(out).context("failed to create output file")?;
 
-        let isol_context = IsolationContext::builder(self.build_appliance.path())
+        let mut binding = IsolationContext::builder(self.build_appliance.path());
+        let isol_context = binding
             .ephemeral(false)
             .readonly()
             .tmpfs(Path::new("/__antlir2__/out"))
@@ -48,11 +63,26 @@ impl PackageFormat for Ext4 {
                 PathBuf::from("/__antlir2__/working_directory"),
                 std::env::current_dir()?,
             ))
-            .working_directory(Path::new("/__antlir2__/working_directory"))
-            .build();
+            .working_directory(Path::new("/__antlir2__/working_directory"));
+
+        let isol_context = if self.fixed_metadata {
+            isol_context
+                .setenv(("SOURCE_DATE_EPOCH", REPRODUCIBLE_SOURCE_DATE_EPOCH))
+                // For resize2fs, https://fburl.com/hl0iah95
+                .setenv(("E2FSPROGS_FAKE_TIME", REPRODUCIBLE_SOURCE_DATE_EPOCH))
+                .build()
+        } else {
+            isol_context.build()
+        };
 
         let isol = unshare(isol_context)?;
         let mut cmd = isol.command("mkfs.ext4")?;
+
+        if self.fixed_metadata {
+            // Fix filesystem UUID to prevent random generation each build
+            cmd.arg("-U").arg(REPRODUCIBLE_FS_UUID);
+        }
+
         if let Some(label) = &self.label {
             cmd.arg("-L").arg(label);
         }
@@ -62,7 +92,16 @@ impl PackageFormat for Ext4 {
         // Features derived from https://linux.die.net/man/8/mkfs.ext4
         cmd.arg("dir_index,extent,large_file,sparse_super,uninit_bg");
         cmd.arg("-E");
-        cmd.arg("discard,lazy_itable_init=1,lazy_journal_init=1");
+        let extended_options = ["discard", "lazy_itable_init=1", "lazy_journal_init=1"]
+            .into_iter()
+            .chain(
+                self.fixed_metadata
+                    .then(|| format!("hash_seed={REPRODUCIBLE_HASH_SEED}"))
+                    .as_deref(),
+            )
+            .collect::<Vec<_>>()
+            .join(",");
+        cmd.arg(extended_options);
         if let Some(size_mb) = self.size_mb {
             cmd.arg(format!("{}M", size_mb));
             run_cmd(&mut cmd).context("failed to build ext4 archive")?;

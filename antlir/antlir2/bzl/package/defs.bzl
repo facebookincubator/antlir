@@ -397,6 +397,7 @@ _ext3, _ext3_anon = _new_package_rule(
 _ext4, _ext4_anon = _new_package_rule(
     format = "ext4",
     rule_attrs = {
+        "fixed_metadata": attrs.bool(default = False, doc = "use a fixed timestamp and UUID for the image"),
         "free_mb": attrs.int(
             default = 0,
             doc = "include at least this much free space in the image",
