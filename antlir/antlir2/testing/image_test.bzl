@@ -371,6 +371,7 @@ def image_python_test(
             # its own systemd configuration (if any)
             systemd = "unconfigured",
             target_compatible_with = target_compatible_with,
+            labels = kwargs.get("labels", []),
         )
 
         # In opt modes, we need to use a parent_layer that has fb-xarexec
