@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
+load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":packages_index.bzl", "download_component_package_indexes")
 
 ComponentInfo = provider(fields = {
@@ -37,7 +38,10 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         allow_nondeterministic_downloads = True,
     )
 
+    metadata_tree = {}
+
     release_json = ctx.actions.declare_output("release.json", has_content_based_path = True)
+    metadata_tree["release.json"] = release_json
     ctx.actions.run(
         cmd_args(
             ctx.attrs._snapshot_bin[RunInfo],
@@ -68,6 +72,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     components_subtargets = {}
     for cname, c in components_package_indexes.items():
         components_subtargets[cname] = [DefaultInfo(sub_targets = {"packages.json": [DefaultInfo(c.json)]})]
+        metadata_tree["components/" + cname + "/packages.json"] = c.json
 
     # Generate a custom InRelease that only lists the components we care
     # about, signed with a dummy key so apt can verify it.
@@ -100,6 +105,8 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         archive_dir_srcs[dist_prefix + cname + "/binary-" + ctx.attrs._arch + "/Packages"] = c.txt
 
     archive_dir = ctx.actions.symlinked_dir("archive", archive_dir_srcs)
+    metadata_tree["archive"] = archive_dir
+    metadata_tree = ctx.actions.symlinked_dir("snapshottable", metadata_tree)
 
     return [
         DefaultInfo(sub_targets = {
@@ -116,6 +123,9 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             distribution = distribution,
             components = components,
             suite_baseurl = suite_baseurl,
+        ),
+        SnapshottableInfo(
+            metadata_tree = metadata_tree,
         ),
     ]
 

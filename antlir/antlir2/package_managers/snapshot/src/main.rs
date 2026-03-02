@@ -5,7 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fs::File;
+use std::path::PathBuf;
 use std::process::ExitCode;
+use std::sync::Mutex;
 
 use anyhow::Result;
 use clap::Parser;
@@ -16,6 +19,7 @@ mod checksums;
 mod decompress;
 mod generate;
 mod parse;
+mod snapshot;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -23,6 +27,8 @@ struct Args {
     verbose: u8,
     #[clap(subcommand)]
     sub: Sub,
+    #[clap(long)]
+    log: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
@@ -30,34 +36,48 @@ enum Sub {
     Decompress(decompress::Decompress),
     Generate(generate::Generate),
     Parse(parse::Parse),
+    Snapshot(snapshot::Snapshot),
 }
 
-fn main() -> ExitCode {
+#[fbinit::main]
+async fn main(fb: fbinit::FacebookInit) -> ExitCode {
     // Wrap the real main function with this so that we can print out the full
     // error
-    if let Err(e) = do_main() {
+    if let Err(e) = do_main(fb).await {
         error!("{e:#?}");
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
 }
 
-fn do_main() -> Result<()> {
+async fn do_main(fb: fbinit::FacebookInit) -> Result<()> {
     let args = Args::parse();
-    tracing_subscriber::FmtSubscriber::builder()
-        .with_max_level(match args.verbose {
-            0 => tracing::Level::ERROR,
-            1 => tracing::Level::WARN,
-            2 => tracing::Level::INFO,
-            3 => tracing::Level::DEBUG,
-            _ => tracing::Level::TRACE,
-        })
-        .finish()
+    let stderr_level = match args.verbose {
+        0 => tracing_subscriber::filter::LevelFilter::ERROR,
+        1 => tracing_subscriber::filter::LevelFilter::WARN,
+        2 => tracing_subscriber::filter::LevelFilter::INFO,
+        3 => tracing_subscriber::filter::LevelFilter::DEBUG,
+        _ => tracing_subscriber::filter::LevelFilter::TRACE,
+    };
+    let stderr_layer = tracing_subscriber::fmt::layer().with_filter(stderr_level);
+    let file_layer = if let Some(log) = &args.log {
+        let file = File::create(log)?;
+        Some(
+            tracing_subscriber::fmt::layer()
+                .with_writer(Mutex::new(file))
+                .with_filter(tracing_subscriber::filter::LevelFilter::DEBUG),
+        )
+    } else {
+        None
+    };
+    tracing_subscriber::registry()
+        .with(stderr_layer)
+        .with(file_layer)
         .init();
-
     match args.sub {
         Sub::Decompress(sub) => sub.run(),
         Sub::Generate(sub) => sub.run(),
         Sub::Parse(sub) => sub.run(),
+        Sub::Snapshot(sub) => sub.run(fb).await,
     }
 }

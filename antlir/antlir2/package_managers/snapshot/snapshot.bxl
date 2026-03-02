@@ -1,0 +1,49 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+load("@prelude//utils:expect.bzl", "expect")
+load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
+
+def _main(ctx: bxl.Context):
+    # Get the snapshot binary as an exec dependency
+    snapshot_bin = ctx.unconfigured_sub_targets("fbcode//antlir/antlir2/package_managers/snapshot:snapshot")
+
+    # Set up BXL actions with the snapshot binary
+    bxl_actions = ctx.bxl_actions(exec_deps = [snapshot_bin])
+    actions = bxl_actions.actions
+    snapshot_run_info = bxl_actions.exec_deps[snapshot_bin][RunInfo]
+
+    target_labels = ctx.cli_args.target
+    expect(len(target_labels) == 1, "Only one target is supported at this time")
+    target = ctx.configured_targets(target_labels[0], modifiers = ctx.modifiers)
+    analysis = ctx.analysis(target)
+    snapshottable_info = analysis.providers()[SnapshottableInfo]
+
+    metadata_json = actions.declare_output("metadata.json")
+    logs = actions.declare_output("logs.txt")
+    actions.run(
+        cmd_args(
+            snapshot_run_info,
+            cmd_args(logs.as_output(), format = "--log={}"),
+            "snapshot",
+            cmd_args(metadata_json.as_output(), format = "--out={}"),
+            cmd_args(ctx.cli_args.storage, format = "--storage={}"),
+            "metadata",
+            cmd_args(snapshottable_info.metadata_tree, format = "--tree={}"),
+        ),
+        category = "snapshot",
+        identifier = "metadata",
+        local_only = True,  # needs network access
+        allow_cache_upload = True,  # the result is deterministic
+    )
+    ctx.output.stream("Metadata snapshot:", ctx.output.ensure(metadata_json), wait_on = [ctx.output.ensure(metadata_json)])
+
+main = bxl_main(
+    impl = _main,
+    cli_args = {
+        "storage": cli_args.string(),
+        "target": cli_args.target_expr(),
+    },
+)

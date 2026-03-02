@@ -5,11 +5,18 @@ oncall("antlir")
 rust_binary(
     name = "snapshot",
     srcs = glob(["src/**/*.rs"]),
+    crate_root = "src/main.rs",
+    fb_deps = [
+        "//manifold/clients/rust:manifold_client",
+    ],
     test_srcs = glob(["testdata/**"]),
     deps = [
         "anyhow",
+        "async-trait",
         "bon",
         "clap",
+        "fbinit",
+        "fbinit-tokio",
         "flate2",
         "hex",
         "liblzma",
@@ -20,6 +27,8 @@ rust_binary(
         "sha2",
         "tracing",
         "tracing-subscriber",
+        "url",
+        "walkdir",
         "//antlir/filesystem/stdio_path:stdio_path",
         "//antlir/util/cli/json_arg:json_arg",
     ],

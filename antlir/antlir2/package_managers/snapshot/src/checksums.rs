@@ -69,3 +69,23 @@ impl Checksums {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_reader() {
+        let input = "Hello world\n".as_bytes();
+        let checksums = Checksums::from_reader(input).expect("failed to compute checksums");
+        assert_eq!(
+            checksums,
+            Checksums {
+                sha1: Some("33ab5639bfd8e7b95eb1d8d0b87781d4ffea4d5d".to_string()),
+                sha256: Some(
+                    "1894a19c85ba153acbf743ac4e43fc004c891604b26f8c69e1e83ea2afc7c48f".to_string()
+                ),
+            }
+        );
+    }
+}
