@@ -92,15 +92,27 @@ impl PackageFormat for Ext4 {
         // Features derived from https://linux.die.net/man/8/mkfs.ext4
         cmd.arg("dir_index,extent,large_file,sparse_super,uninit_bg");
         cmd.arg("-E");
-        let extended_options = ["discard", "lazy_itable_init=1", "lazy_journal_init=1"]
-            .into_iter()
-            .chain(
-                self.fixed_metadata
-                    .then(|| format!("hash_seed={REPRODUCIBLE_HASH_SEED}"))
-                    .as_deref(),
-            )
-            .collect::<Vec<_>>()
-            .join(",");
+        let extended_options = [
+            "discard",
+            if self.fixed_metadata {
+                "lazy_itable_init=0"
+            } else {
+                "lazy_itable_init=1"
+            },
+            if self.fixed_metadata {
+                "lazy_journal_init=0"
+            } else {
+                "lazy_journal_init=1"
+            },
+        ]
+        .into_iter()
+        .chain(
+            self.fixed_metadata
+                .then(|| format!("hash_seed={REPRODUCIBLE_HASH_SEED}"))
+                .as_deref(),
+        )
+        .collect::<Vec<_>>()
+        .join(",");
         cmd.arg(extended_options);
         if let Some(size_mb) = self.size_mb {
             cmd.arg(format!("{}M", size_mb));
