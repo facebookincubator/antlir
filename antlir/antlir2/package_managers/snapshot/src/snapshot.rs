@@ -17,7 +17,9 @@ use serde::Serialize;
 
 use crate::checksums::Checksums;
 
+mod blob_status;
 mod metadata;
+mod packages;
 mod storage;
 use storage::StorageConfig;
 
@@ -41,16 +43,30 @@ pub(super) struct Out {
 enum Sub {
     /// Snapshot metadata tree
     Metadata(metadata::Metadata),
+    /// Check blob status in storage (missing or expiring soon)
+    BlobStatus(blob_status::CheckBlobStatus),
+    /// Download missing packages and upload them to storage
+    Packages(packages::Packages),
 }
 
 impl Snapshot {
     pub(crate) async fn run(self, fb: fbinit::FacebookInit) -> Result<()> {
         let storage = self.storage.into_inner().build(fb)?;
-        let out = match &self.sub {
-            Sub::Metadata(metadata) => metadata.run(storage).await,
-        }?;
         let outfile = BufWriter::new(stdio_path::create(&self.out)?);
-        serde_json::to_writer(outfile, &out)?;
+        match self.sub {
+            Sub::Metadata(metadata) => {
+                let out = metadata.run(storage).await?;
+                serde_json::to_writer(outfile, &out)?;
+            }
+            Sub::BlobStatus(blob_status) => {
+                let out = blob_status.run(storage).await?;
+                serde_json::to_writer(outfile, &out)?;
+            }
+            Sub::Packages(packages) => {
+                let out = packages.run(storage).await?;
+                serde_json::to_writer(outfile, &out)?;
+            }
+        }
         Ok(())
     }
 }

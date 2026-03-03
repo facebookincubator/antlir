@@ -22,14 +22,47 @@ use facebook::ManifoldStorage;
 #[cfg(facebook)]
 use facebook::ManifoldStorageConfig;
 
+/// The status of a blob in storage.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BlobStatus {
+    /// The blob does not exist in storage.
+    Missing,
+    /// The blob exists but its TTL is below the renewal threshold and should be
+    /// extended.
+    ExpiringSoon,
+    /// The blob exists with sufficient TTL remaining.
+    Fresh,
+}
+
 /// Trait for persistent storage backends that can store files and return URLs.
 #[async_trait]
 pub(crate) trait Storage: Send + Sync {
     /// Store a file and return a (URL, Checksums) pair.
-    ///
-    /// `key` is the logical path for this file within the storage namespace
-    /// (e.g. a relative path within a metadata tree).
+    /// The file is written to the flat (content-addressed) namespace and
+    /// a symlink is created in the tree namespace under `key`.
     async fn store(&self, file: &Path, key: &str) -> Result<UrlWithChecksums>;
+
+    /// Store a file in the flat (content-addressed) namespace only.
+    /// No tree symlink is created. Returns a (URL, Checksums) pair where
+    /// the URL points to the flat object.
+    async fn store_flat(&self, file: &Path) -> Result<UrlWithChecksums>;
+
+    /// Check the status of a blob in storage: whether it is missing, expiring
+    /// soon, or fresh. This is a single round-trip operation.
+    async fn blob_status(&self, checksums: &Checksums) -> Result<BlobStatus>;
+
+    /// Extend the TTL of the object with the given checksums.
+    async fn extend_ttl(&self, checksums: &Checksums) -> Result<()>;
+
+    /// Extend the TTL of a tree key and its target.
+    async fn extend_tree_ttl(&self, key: &str) -> Result<()>;
+
+    /// Create a tree symlink at `key` pointing to an existing flat blob
+    /// identified by `checksums`. Used to (re)build the tree namespace from
+    /// content-addressed flat objects that are already known to exist.
+    async fn symlink_flat_to_tree(&self, checksums: &Checksums, key: &str) -> Result<()>;
+
+    fn url(&self, checksums: &Checksums) -> Url;
 }
 
 #[derive(Clone, Deserialize, Serialize)]

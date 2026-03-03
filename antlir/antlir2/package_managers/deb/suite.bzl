@@ -106,7 +106,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
 
     archive_dir = ctx.actions.symlinked_dir("archive", archive_dir_srcs)
     metadata_tree["archive"] = archive_dir
-    metadata_tree = ctx.actions.symlinked_dir("snapshottable", metadata_tree)
+    metadata_tree = ctx.actions.symlinked_dir("snapshottable_metadata", metadata_tree)
 
     return [
         DefaultInfo(sub_targets = {
@@ -126,6 +126,8 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         SnapshottableInfo(
             metadata_tree = metadata_tree,
+            packages_indexes = [c.json for c in components_package_indexes.values()],
+            packages_baseurl = archive_url,
         ),
     ]
 

@@ -21,6 +21,7 @@ def _main(ctx: bxl.Context):
     analysis = ctx.analysis(target)
     snapshottable_info = analysis.providers()[SnapshottableInfo]
 
+    ctx.output.stream("Preparing metadata tree to snapshot")
     metadata_json = actions.declare_output("metadata.json")
     logs = actions.declare_output("logs.txt")
     actions.run(
@@ -39,6 +40,49 @@ def _main(ctx: bxl.Context):
         allow_cache_upload = True,  # the result is deterministic
     )
     ctx.output.stream("Metadata snapshot:", ctx.output.ensure(metadata_json), wait_on = [ctx.output.ensure(metadata_json)])
+
+    # Check blob status (missing or expiring soon) in storage
+    blob_status_json = actions.declare_output("blob_status.json")
+    actions.run(
+        cmd_args(
+            snapshot_run_info,
+            "snapshot",
+            cmd_args(blob_status_json.as_output(), format = "--out={}"),
+            cmd_args(ctx.cli_args.storage, format = "--storage={}"),
+            "blob-status",
+            cmd_args(snapshottable_info.packages_indexes, format = "--entries={}"),
+        ),
+        category = "snapshot",
+        identifier = "blob_status",
+        local_only = True,  # needs network access
+        # this result is non-deterministic unlike the other two that interact
+        # with the storage backend
+        allow_cache_upload = False,
+    )
+    ctx.output.stream("Blob statuses:", ctx.output.ensure(blob_status_json), wait_on = [ctx.output.ensure(blob_status_json)])
+
+    # Download the missing packages and upload them to storage
+    ctx.output.stream("Snapshotting package blobs, this may take a while...", wait_on = [ctx.output.ensure(blob_status_json)])
+    uploaded_json = actions.declare_output("uploaded.json")
+    uploaded_logs = actions.declare_output("uploaded_logs.txt")
+    actions.run(
+        cmd_args(
+            snapshot_run_info,
+            cmd_args(uploaded_logs.as_output(), format = "--log={}"),
+            "snapshot",
+            cmd_args(uploaded_json.as_output(), format = "--out={}"),
+            cmd_args(ctx.cli_args.storage, format = "--storage={}"),
+            "packages",
+            cmd_args(blob_status_json, format = "--blob-status={}"),
+            cmd_args(snapshottable_info.packages_indexes, format = "--all-entries={}"),
+            cmd_args(snapshottable_info.packages_baseurl, format = "--base-url={}"),
+        ),
+        category = "snapshot",
+        identifier = "packages",
+        local_only = True,  # needs network access
+        allow_cache_upload = False,  # downloads are non-deterministic
+    )
+    ctx.output.stream("Snapshotted packages:", ctx.output.ensure(uploaded_json), wait_on = [ctx.output.ensure(uploaded_json)])
 
 main = bxl_main(
     impl = _main,

@@ -11,4 +11,14 @@ SnapshottableInfo = provider(fields = {
     # contains this provider should just produce the entire tree of metadata
     # artifacts every time.
     "metadata_tree": Artifact,
+    # The base url to which package "filename"s are relative
+    "packages_baseurl": str,
+    # A list of JSON artifacts that describe packages that need to be
+    # snapshotted to persistent storage to make this repo reproducible.
+    # These are expensive to snapshot, so the output here is simply an index
+    # where each file is a list of package structs of the form
+    # `{"checksums": ..., "upstream_url": ...}
+    # The snapshotter can then dedupe based on checksum and only download the
+    # blobs that have not already been preserved
+    "packages_indexes": list[Artifact],
 })

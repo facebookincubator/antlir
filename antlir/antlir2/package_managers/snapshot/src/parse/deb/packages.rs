@@ -29,8 +29,7 @@ pub(crate) struct ParsePackages {
 /// A single binary package entry from a Packages index file.
 ///
 /// Only the fields needed for indexing and downloading are extracted into
-/// dedicated struct fields. The complete original stanza text is preserved
-/// verbatim in `raw` so that it can be restored into a Packages file later.
+/// dedicated struct fields.
 ///
 /// See <https://wiki.debian.org/DebianRepository/Format#A.22Packages.22_Indices>
 #[derive(Debug, PartialEq, Serialize)]
@@ -47,9 +46,6 @@ struct Package {
     /// Hash for verifying the .deb file integrity. Clients must require SHA-256
     /// or SHA-512 and must not rely on MD5sum or SHA1.
     checksums: Checksums,
-    /// The complete original stanza text, suitable for writing back into a
-    /// Packages index file verbatim.
-    raw: String,
 }
 
 /// Intermediate builder accumulating lines for a single stanza.
@@ -60,7 +56,6 @@ struct PackageBuilder {
     architecture: Option<String>,
     filename: Option<String>,
     sha256: Option<String>,
-    raw: String,
 }
 
 impl PackageBuilder {
@@ -75,19 +70,11 @@ impl PackageBuilder {
             checksums: Checksums::builder()
                 .sha256(self.sha256.context("missing required SHA256 field")?)
                 .build()?,
-            raw: self.raw,
         })
     }
 
     fn is_empty(&self) -> bool {
         self.package.is_none()
-    }
-
-    fn push_line(&mut self, line: &str) {
-        if !self.raw.is_empty() {
-            self.raw.push('\n');
-        }
-        self.raw.push_str(line);
     }
 }
 
@@ -111,10 +98,8 @@ fn parse<R: BufRead>(reader: R) -> Result<Vec<Package>> {
             continue;
         }
 
-        builder.push_line(&line);
-
-        // Continuation line (starts with space or tab) — part of a multi-line
-        // field value. Already captured in raw, nothing to extract.
+        // Continuation line (starts with space or tab) — part of a multi-line field value. We
+        // don't care about any of those
         if line.starts_with(' ') || line.starts_with('\t') {
             continue;
         }
@@ -222,24 +207,6 @@ mod tests {
                 "1047cc7df5b50a3b3b2db16c6270da90ad91cdb2ba7e011c6938467ea1fb3f94".into()
             )
         );
-    }
-
-    #[test]
-    fn test_raw_round_trip() {
-        let input = include_str!("../../../testdata/deb/Packages");
-        let packages = parse(Cursor::new(input)).expect("failed to parse test Packages");
-
-        // Reassembling all raw stanzas with blank-line separators should
-        // reproduce the original Packages file exactly.
-        let mut reassembled = String::new();
-        for (i, pkg) in packages.iter().enumerate() {
-            if i > 0 {
-                reassembled.push('\n');
-            }
-            reassembled.push_str(&pkg.raw);
-            reassembled.push('\n');
-        }
-        assert_eq!(reassembled, input);
     }
 
     #[test]
