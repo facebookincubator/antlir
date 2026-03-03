@@ -9,6 +9,7 @@ rust_binary(
     fb_deps = [
         "//manifold/clients/rust:manifold_client",
     ],
+    link_style = "shared",
     test_srcs = glob(["testdata/**"]),
     deps = [
         "anyhow",
