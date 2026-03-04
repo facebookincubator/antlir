@@ -1,0 +1,17 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("antlir")
+
+rust_library(
+    name = "cad_stack",
+    srcs = glob(["src/**/*.rs"]),
+    test_deps = ["tempfile"],
+    deps = [
+        "blake3",
+        "cap-std",
+        "nonempty",
+        "serde",
+        "serde_json",
+        "thiserror",
+    ],
+)
