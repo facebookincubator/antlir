@@ -99,6 +99,9 @@ impl Error {
     fn category(&self) -> Option<&'static str> {
         match self {
             Error::WorkingVolume(_) => Some("working_volume"),
+            Error::Compile(antlir2_compile::Error::CrossArchEmulation { .. }) => {
+                Some("cross_arch_emulation")
+            }
             Error::Compile(_) => Some("compile_feature"),
             Error::Depgraph(_) => Some("depgraph"),
             Error::Btrfs(_) => Some("btrfs"),

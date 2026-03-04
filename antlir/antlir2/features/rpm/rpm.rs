@@ -194,7 +194,10 @@ impl antlir2_compile::CompileFeature for Rpm {
             self.versionlock_hard_enforce,
         )
         .map(|_| ())
-        .map_err(antlir2_compile::Error::from)
+        .map_err(|e| match e.downcast::<antlir2_compile::Error>() {
+            Ok(compile_err) => compile_err,
+            Err(other) => antlir2_compile::Error::from(other),
+        })
     }
 }
 
@@ -658,6 +661,19 @@ fn run_dnf_driver(
             })
             .collect();
         if !errors.is_empty() {
+            // Check if any scriptlet output indicates a cross-arch emulation
+            // failure. The "Exec format error" appears in ScriptletOutput
+            // events when trying to run a foreign-arch binary without
+            // binfmt_misc support.
+            if events.iter().any(|ev| match ev {
+                DriverEvent::ScriptletOutput(s) => s.contains("Exec format error"),
+                _ => false,
+            }) {
+                return Err(antlir2_compile::Error::CrossArchEmulation {
+                    what_failed: "rpm install scriptlet".to_string(),
+                }
+                .into());
+            }
             return Err(anyhow::anyhow!(
                 "there were one or more transaction errors: {errors:?}"
             ));

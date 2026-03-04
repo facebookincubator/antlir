@@ -42,6 +42,13 @@ pub enum Error {
     IO(#[from] std::io::Error),
     #[error("extract has conflict: want to install a different version of {0:?}")]
     ExtractConflict(PathBuf),
+    #[error(
+        "Building this image required execution of a cross-arch binary that \
+        could not be done on this host. {what_failed} \
+        If on Sandcastle, this capability can be added to a job to require this \
+        support - https://www.internalfb.com/wiki/Sandcastle/Reference/General/Capabilities/#binfmt"
+    )]
+    CrossArchEmulation { what_failed: String },
     #[error(transparent)]
     Feature(#[from] antlir2_features::Error),
     #[error(transparent)]
