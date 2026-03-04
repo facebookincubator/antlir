@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginPluginKind")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load(":attrs.bzl", "common_attrs", "default_attrs")
+load(":attrs.bzl", "common_attrs", "default_attrs_base")
 load(":cfg.bzl", "package_cfg")
 load(":macro.bzl", "package_macro")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
@@ -83,7 +83,7 @@ _unprivileged_dir = rule(
     impl = _unprivileged_dir_impl,
     cfg = package_cfg,
     uses_plugins = [FeaturePluginPluginKind],
-    attrs = default_attrs | common_attrs | _unprivileged_dir_attrs,
+    attrs = default_attrs_base | common_attrs | _unprivileged_dir_attrs | attrs_selected_by_cfg,
 )
 
 unprivileged_dir_anon = anon_rule(
@@ -92,7 +92,7 @@ unprivileged_dir_anon = anon_rule(
         "base64_encoded_path_mapping": lambda x: ensure_single_output(x[DefaultInfo].sub_targets["base64_encoded_path_mapping"]),
         "package": lambda x: ensure_single_output(x),
     },
-    attrs = default_attrs | common_attrs | _unprivileged_dir_attrs,
+    attrs = default_attrs_base | common_attrs | _unprivileged_dir_attrs | attrs_selected_by_cfg,
 )
 
 unprivileged_dir = package_macro(_unprivileged_dir)

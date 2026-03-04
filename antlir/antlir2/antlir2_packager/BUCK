@@ -1,4 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/facebook/images/build_appliance:defs.bzl", "build_appliance_from_dir")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
@@ -77,7 +80,7 @@ feature.new(
         }),
         ":btrfs-progs",
     ],
-    visibility = ["//antlir/antlir2/build_appliance/..."],
+    visibility = [],
 )
 
 feature.new(
@@ -100,4 +103,26 @@ feature.new(
         oss = [feature.rpms_install(rpms = ["btrfs-progs"])],
     ),
     visibility = [],
+)
+
+image.layer(
+    name = "packager-appliance.layer",
+    default_os = "centos9",
+    features = [
+        ":build-appliance-features",
+    ],
+    visibility = [],
+)
+
+package.unprivileged_dir(
+    name = "packager-appliance.dir",
+    default_os = "centos9",
+    layer = ":packager-appliance.layer",
+    visibility = ["//antlir/antlir2/antlir2_packager/facebook/..."],
+)
+
+build_appliance_from_dir(
+    name = "packager-appliance",
+    dir = ":packager-appliance.dir",
+    visibility = ["PUBLIC"],
 )
