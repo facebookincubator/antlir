@@ -384,7 +384,7 @@ fn main() -> Result<()> {
     // Write parent directories to tar with their metadata from the child layer
     // Sort parents so shallower paths (fewer components) come first - this ensures
     // we write parents before children in the tar, which helps with metadata preservation
-    parents_to_add.sort_by(|a, b| a.components().count().cmp(&b.components().count()));
+    parents_to_add.sort_by_key(|a| a.components().count());
 
     for parent_path in parents_to_add {
         // Strip leading slash before joining to child layer path
