@@ -11,16 +11,12 @@ load(
     "feature_record",
     "new_feature_rule",
 )
-load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:structs.bzl", "structs")
 load(":plan.bzl", "apt_planner")
 
 # Hardcoded trixie suite dep for now. We will figure out how to select the
 # correct suite per OS later.
-TRIXIE_SUITE = internal_external(
-    fb = "fbcode//bot_generated/antlir/deb/trixie:trixie",
-    oss = "antlir//antlir/antlir2/package_managers/deb:trixie",
-)
+TRIXIE_SUITE = "antlir//antlir/antlir2/package_managers/deb:trixie"
 
 def _common(action: str, *, packages: list[str | Select] | Select):
     return ParseTimeFeature(
