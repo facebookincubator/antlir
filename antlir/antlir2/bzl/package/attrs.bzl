@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
-load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
 load(":cfg.bzl", "layer_attrs")
@@ -20,8 +19,8 @@ common_attrs = {
     ),
 } | layer_attrs
 
-# Base attrs that are not expected for users to pass (without build_appliance)
-default_attrs_base = {
+# Attrs that are not expected for users to pass
+default_attrs = {
     "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
     "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
     "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
@@ -30,13 +29,4 @@ default_attrs_base = {
     "_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),
-} | {k: v for k, v in attrs_selected_by_cfg.items() if k != "build_appliance"}
-
-# Attrs that are not expected for users to pass (includes packager build_appliance)
-default_attrs = default_attrs_base | {
-    "build_appliance": attrs.exec_dep(
-        providers = [BuildApplianceInfo],
-        default = "antlir//antlir/antlir2/antlir2_packager:packager-appliance",
-        doc = "Build appliance for packaging. Defaults to a standard packager-appliance that is independent of the target image OS.",
-    ),
-}
+} | attrs_selected_by_cfg
