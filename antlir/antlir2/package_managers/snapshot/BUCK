@@ -22,7 +22,7 @@ rust_binary(
         "futures",
         "hex",
         "liblzma",
-        "reqwest-0-13",
+        "reqwest",
         "sequoia-openpgp",
         "serde",
         "serde_json",
