@@ -526,7 +526,6 @@ uses qemu underneath.
 differs in the action it would take after VM boots. They all create an ephemeral
 container and respawn itself within the container with the `run` command. The
 container image is located at `antlir2/antlir2_vm/antlir2_vm:container-image`.
-Currently we use systemd-nspawn container, but it could change in the future.
 
 The `run` command is the core part manages the VM inside the container and it
 takes three sets of parameters. `--machine-spec` captures hardware and boot

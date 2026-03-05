@@ -273,7 +273,7 @@ def _implicit_vm_test(
     # @oss-disable[end= ]: inner, wrapper, ci_labels = _get_internal_labels(test_rule, run_as_bundle)
     # @oss-disable[end= ]: wrapper_labels.extend(wrapper)
     # @oss-disable[end= ]: inner_labels.extend(inner)
-    labels = ["uses_sudo"]
+    labels = []
     # @oss-disable[end= ]: labels += ci_labels
     # @oss-disable[end= ]: labels += vm_test_labels or []
 
