@@ -30,6 +30,7 @@ pub(crate) fn recv_sendstream(args: &Receive, dst: &Path, wv: &WorkingVolume) ->
         .arg("-f")
         .arg(&args.source);
     if args.rootless {
+        cmd.arg("-m").arg(wv.path());
         cmd.arg("--force-decompress");
     }
     trace!("receiving sendstream: {cmd:?}");
