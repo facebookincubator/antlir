@@ -15,7 +15,6 @@ load("//antlir/antlir2/features/group:group.bzl", "group_add")
 load("//antlir/antlir2/features/hardlink:hardlink.bzl", "hardlink")
 load("//antlir/antlir2/features/install:install.bzl", "install", "install_text")
 load("//antlir/antlir2/features/mount:mount.bzl", "host_mount", "layer_mount")
-load("//antlir/antlir2/features/package_install:package_install.bzl", "package_install", "package_remove")
 load("//antlir/antlir2/features/remove:remove.bzl", "remove")
 load("//antlir/antlir2/features/requires:requires.bzl", "requires")
 load("//antlir/antlir2/features/rpm:rpm.bzl", "dnf_module_enable", "rpms_install", "rpms_remove", "rpms_remove_if_exists", "rpms_upgrade")
@@ -41,8 +40,6 @@ feature = struct(
     install_text = install_text,
     layer_mount = layer_mount,
     hardlink = hardlink,
-    package_install = package_install,
-    package_remove = package_remove,
     host_mount = host_mount,
     remove = remove,
     requires = requires,
