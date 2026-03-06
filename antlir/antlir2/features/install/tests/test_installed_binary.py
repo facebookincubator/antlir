@@ -48,6 +48,50 @@ class TestInstalledBinary(unittest.TestCase):
         self.assertLess(stripped_size, unstripped_size)
 
     @skip_in_dev
+    def test_strip_all_binary_is_smaller_than_stripped(self) -> None:
+        strip_all_size = os.path.getsize("/usr/bin/true-rs.strip-all")
+        stripped_size = os.path.getsize("/usr/bin/true-rs")
+        unstripped_size = os.path.getsize("/usr/bin/true-rs.unstripped")
+        # strip_all should be smaller than both default-stripped and unstripped
+        self.assertLess(strip_all_size, unstripped_size)
+        self.assertLess(strip_all_size, stripped_size)
+
+    @skip_in_dev
+    def test_strip_all_binary_runs(self) -> None:
+        subprocess.run(["/usr/bin/true-rs.strip-all"], check=True)
+
+    @skip_in_dev
+    def test_strip_all_has_no_symtab(self) -> None:
+        result = subprocess.run(
+            ["readelf", "-S", "/usr/bin/true-rs.strip-all"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertNotIn(".symtab", result.stdout)
+
+    @skip_in_dev
+    def test_strip_all_gdb_loads_debuginfo(self) -> None:
+        """Verify that gdb can resolve symbols from separate debuginfo for a
+        strip_all binary. The binary itself has no .symtab, but gdb should
+        find the main function via the build-id debuginfo in /usr/lib/debug."""
+        result = subprocess.run(
+            [
+                "gdb",
+                "/usr/bin/true-rs.strip-all",
+                "-batch",
+                "-ex",
+                "info address main",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        # gdb should resolve 'main' from the separate debuginfo and print its
+        # address, e.g. 'Symbol "main" is at 0x... in a file compiled ...'
+        self.assertIn('Symbol "main"', result.stdout)
+
+    @skip_in_dev
     def test_outplace_par(self) -> None:
         self.assertTrue(
             os.path.isdir(

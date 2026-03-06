@@ -42,6 +42,7 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             ctx.attrs.debuginfo_splitter[RunInfo],
             "strip",
             common_args,
+            "--strip-all" if ctx.attrs.strip_all else cmd_args(),
             cmd_args(stripped.as_output(), format = "--stripped={}"),
         ),
         category = "split",
@@ -92,6 +93,7 @@ split_binary = anon_rule(
         "debuginfo_splitter": attrs.exec_dep(default = "antlir//antlir/antlir2/tools:debuginfo-splitter"),
         "objcopy": attrs.option(attrs.exec_dep(), default = None),
         "src": attrs.dep(),
+        "strip_all": attrs.bool(default = False),
     },
     artifact_promise_mappings = {
         "debuginfo": lambda x: x[SplitBinaryInfo].debuginfo,
@@ -106,10 +108,12 @@ def split_binary_anon(
         ctx: AnalysisContext,
         src: Dependency,
         objcopy: Dependency,
-        debuginfo_splitter: Dependency) -> AnonTarget:
+        debuginfo_splitter: Dependency,
+        strip_all: bool = False) -> AnonTarget:
     return ctx.actions.anon_target(split_binary, {
         "debuginfo_splitter": debuginfo_splitter,
         "name": "debuginfo//" + src.label.package + ":" + src.label.name,
         "objcopy": objcopy,
         "src": src,
+        "strip_all": strip_all,
     })

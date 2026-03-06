@@ -46,6 +46,7 @@ def install(
         xattrs: dict[str, str] | Select = {},
         never_use_dev_binary_symlink: bool = False,
         split_debuginfo: bool = True,
+        strip_all: bool = False,
         always_use_gnu_debuglink: bool = False,
         setcap: str | None = None,
         default_permissions: default_permissions = default_permissions(),
@@ -76,6 +77,11 @@ def install(
 
         split_debuginfo: strip debuginfo from the binary and place it into
             `/usr/lib/debug`
+
+        strip_all: when True and split_debuginfo is also True, use
+            `objcopy --strip-all` instead of `--strip-debug` to also remove
+            `.symtab` and `.strtab` sections, producing a significantly smaller
+            binary. Useful for CLI tools that don't need symbolication.
 
         setcap: add file capabilities to the installed file
 
@@ -161,6 +167,7 @@ def install(
             "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
             "setcap": setcap,
             "split_debuginfo": split_debuginfo,
+            "strip_all": strip_all,
             "text": None,
             "transition_to_distro_platform": transition_to_distro_platform.value,
             "user": user,
@@ -406,6 +413,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 src = src,
                 objcopy = ctx.attrs._objcopy,
                 debuginfo_splitter = ctx.attrs._debuginfo_splitter,
+                strip_all = ctx.attrs.strip_all,
             )
             binary_info = binary_record(
                 installed = installed_binary(
@@ -564,6 +572,7 @@ install_rule = new_feature_rule(
             ),
             default = None,
         ),
+        "strip_all": attrs.bool(default = False),
         "text": attrs.option(attrs.string(), default = None),
         "transition_to_distro_platform": attrs.enum(transition_to_distro_platform.values(), default = "no"),
         "user": attrs.one_of(

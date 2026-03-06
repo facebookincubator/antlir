@@ -30,12 +30,22 @@ def cmd_strip(args: argparse.Namespace) -> None:
             shutil.copy2(args.binary, args.stripped)
         return
 
-    # Remove the debug symbols from the stripped binary
+    # Remove symbols from the stripped binary.
+    # --strip-all removes all symbols (.symtab, .strtab) in addition to debug
+    # sections, producing a significantly smaller binary.
+    # --strip-debug only removes DWARF debug sections but preserves .symtab
+    # and .strtab for symbolication.
+    if args.strip_all:
+        strip_flags = ["--strip-all"]
+    else:
+        strip_flags = ["--strip-debug", "--keep-file-symbols"]
+
     proc = subprocess.run(
         [
             args.objcopy,
-            "--strip-debug",
-            "--keep-file-symbols",
+        ]
+        + strip_flags
+        + [
             "--remove-section=.pseudo_probe",
             "--remove-section=.pseudo_probe_desc",
             args.binary,
@@ -136,6 +146,12 @@ def main() -> None:
 
     strip_parser = subparsers.add_parser("strip", parents=[common_parser])
     strip_parser.add_argument("--stripped", required=True, type=Path)
+    strip_parser.add_argument(
+        "--strip-all",
+        action="store_true",
+        default=False,
+        help="Use --strip-all instead of --strip-debug to also remove .symtab and .strtab",
+    )
     strip_parser.set_defaults(func=cmd_strip)
 
     debuginfo_parser = subparsers.add_parser("debuginfo", parents=[common_parser])

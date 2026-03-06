@@ -175,6 +175,7 @@ image.layer(
         feature.rpms_install(
             rpms = [
                 "bash",
+                "binutils",
                 "coreutils",
                 "gdb",
                 # @oss-disable[end= ]: "fb-xarexec",
@@ -189,6 +190,11 @@ image.layer(
             src = ":true-rs",
             dst = "/usr/bin/true-rs.unstripped",
             split_debuginfo = False,
+        ),
+        feature.install(
+            src = ":true-rs",
+            dst = "/usr/bin/true-rs.strip-all",
+            strip_all = True,
         ),
         feature.install(
             src = ":true-py",
