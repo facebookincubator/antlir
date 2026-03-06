@@ -130,8 +130,17 @@ impl<S: Share> VM<S> {
         let state_dir = Self::create_state_dir()?;
         let pci_bridges = PCIBridges::new(machine.disks.len())?;
         let disks = QCow2Disks::new(&machine.disks, &pci_bridges, &state_dir)?;
+        let mut all_output_dirs = args.get_vm_output_dirs();
+        for dir in &machine.output_dirs {
+            all_output_dirs.insert(PathBuf::from(dir.concat()));
+        }
+        let all_input_dirs: HashSet<PathBuf> = machine
+            .input_dirs
+            .iter()
+            .map(|d| PathBuf::from(d.concat()))
+            .collect();
         let shares = Self::create_shares(
-            Self::get_all_shares_opts(&args.get_vm_output_dirs()),
+            Self::get_all_shares_opts(&all_input_dirs, &all_output_dirs),
             &state_dir,
             machine.mem_mib,
         )?;
@@ -197,25 +206,28 @@ impl<S: Share> VM<S> {
 
     /// All platform paths needs to be mounted inside the VM as read-only shares.
     /// Collect them into ShareOpts along with others.
-    fn get_all_shares_opts(output_dirs: &HashSet<PathBuf>) -> Vec<ShareOpts> {
-        let mut shares: Vec<_> = Platform::get()
+    fn get_all_shares_opts(
+        inputs: &HashSet<PathBuf>,
+        outputs: &HashSet<PathBuf>,
+    ) -> Vec<ShareOpts> {
+        Platform::get()
             .iter()
             .map(|path| ShareOpts {
                 path: path.to_path_buf(),
                 read_only: true,
                 mount_tag: None,
             })
-            .collect();
-        let mut outputs: Vec<_> = output_dirs
-            .iter()
-            .map(|p| ShareOpts {
+            .chain(inputs.iter().map(|p| ShareOpts {
+                path: p.to_path_buf(),
+                read_only: true,
+                mount_tag: None,
+            }))
+            .chain(outputs.iter().map(|p| ShareOpts {
                 path: p.to_path_buf(),
                 read_only: false,
                 mount_tag: None,
-            })
-            .collect();
-        shares.append(&mut outputs);
-        shares
+            }))
+            .collect()
     }
 
     /// Create all shares, start virtiofsd daemon and generate necessary unit files
@@ -1151,8 +1163,23 @@ mod test {
             read_only: false,
             mount_tag: None,
         };
-        let all_opts = VM::<VirtiofsShare>::get_all_shares_opts(&outputs);
+        let all_opts = VM::<VirtiofsShare>::get_all_shares_opts(&HashSet::new(), &outputs);
         assert!(all_opts.contains(&opt));
+
+        let inputs = HashSet::from([PathBuf::from("/extra/input")]);
+        let mut extended_outputs = outputs.clone();
+        extended_outputs.insert(PathBuf::from("/extra/output"));
+        let all_opts = VM::<VirtiofsShare>::get_all_shares_opts(&inputs, &extended_outputs);
+        assert!(all_opts.contains(&ShareOpts {
+            path: PathBuf::from("/extra/input"),
+            read_only: true,
+            mount_tag: None,
+        }));
+        assert!(all_opts.contains(&ShareOpts {
+            path: PathBuf::from("/extra/output"),
+            read_only: false,
+            mount_tag: None,
+        }));
     }
 
     #[test]

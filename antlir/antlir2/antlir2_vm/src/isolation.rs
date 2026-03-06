@@ -87,10 +87,12 @@ impl Platform {
 /// * `image` - container image that would be used to run the VM
 /// * `envs` - env vars to set inside container.
 /// * `outputs` - Additional writable directories
+/// * `inputs` - Additional read-only host directories to bind-mount
 pub(crate) fn isolated(
     image: &PathBuf,
     envs: Vec<KvPair>,
     outputs: HashSet<PathBuf>,
+    inputs: HashSet<PathBuf>,
 ) -> Result<IsolatedContext> {
     let repo = Platform::repo_root()?;
     let mut builder = IsolationContext::builder(image);
@@ -103,6 +105,7 @@ pub(crate) fn isolated(
         .outputs(outputs);
     #[cfg(facebook)]
     builder.inputs(Path::new("/var/facebook/x509_identities/server.pem"));
+    builder.inputs(inputs);
     builder.setenv(
         envs.into_iter()
             .map(|p| (p.key, p.value))

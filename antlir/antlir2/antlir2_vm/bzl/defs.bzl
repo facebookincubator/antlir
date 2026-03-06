@@ -51,6 +51,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             "cpus": ctx.attrs.cpus,
             "disks": [d[DiskInfo] for d in disks],
             "extra_qemu_args": ctx.attrs.extra_qemu_args,
+            "input_dirs": ctx.attrs.input_dirs,
             "machine_type": ctx.attrs.machine_type,
             "max_combined_channels": ctx.attrs.max_combined_channels,
             "mem_mib": ctx.attrs.mem_mib,
@@ -61,6 +62,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
                 "kernel": ctx.attrs.kernel,
             } if ctx.attrs.initrd else None,
             "num_nics": ctx.attrs.num_nics,
+            "output_dirs": ctx.attrs.output_dirs,
             "qemu_binary": cmd_args(ctx.attrs.qemu_binary, delimiter = ""),
             "serial_index": ctx.attrs.serial_index,
             "sidecar_services": ctx.attrs.sidecar_services,
@@ -154,6 +156,12 @@ _vm_host = rule(
             default = None,
             doc = "initrd to boot from when not booting from disk",
         ),
+        "input_dirs": attrs.list(
+            attrs.arg(),
+            default = [],
+            doc = "additional read-only host directories to bind-mount into the VM container. " +
+                  "Useful when extra_qemu_args references paths outside the repo.",
+        ),
         "kernel": attrs.option(
             attrs.source(),
             default = None,
@@ -167,6 +175,12 @@ _vm_host = rule(
         "mount_platform": attrs.bool(
             default = True,
             doc = "Mount runtime platform (aka /usr/local/fbcode) from the host",
+        ),
+        "output_dirs": attrs.list(
+            attrs.arg(),
+            default = [],
+            doc = "additional read-write host directories to bind-mount into the VM container. " +
+                  "Useful when extra_qemu_args references paths outside the repo.",
         ),
         # Must be an arg() because it needs to accept locations.
         "qemu_binary": attrs.arg(

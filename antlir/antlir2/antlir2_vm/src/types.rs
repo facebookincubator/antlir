@@ -297,6 +297,16 @@ pub(crate) struct MachineOpts {
     /// Each arg is serialized as a single-element list by Buck2's attrs.arg().
     #[serde(default)]
     pub(crate) extra_qemu_args: Vec<Vec<String>>,
+    /// Additional read-only host directories to bind-mount into the VM
+    /// container. Each path is serialized as a single-element list by
+    /// Buck2's attrs.arg().
+    #[serde(default)]
+    pub(crate) input_dirs: Vec<Vec<String>>,
+    /// Additional read-write host directories to bind-mount into the VM
+    /// container. Each path is serialized as a single-element list by
+    /// Buck2's attrs.arg().
+    #[serde(default)]
+    pub(crate) output_dirs: Vec<Vec<String>>,
 }
 
 #[cfg(test)]

@@ -96,9 +96,6 @@ struct IsolateCmdArgs {
     /// Pass through these environment variables into the container and VM, if they exist.
     #[arg(long)]
     passenv: Vec<String>,
-    /// Extra RW bind-mount into the VM for debugging purpose
-    #[arg(long)]
-    scratch_dir: Option<PathBuf>,
     /// Whether or not to dump the VM's eth0 traffic to a file. When running the test command, this will set eth0_output_file to a file that will be uploaded to tpx.
     #[arg(long, default_value_t = false)]
     dump_eth0_traffic: bool,
@@ -190,9 +187,6 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = args.run_cmd_args.vm_args.clone();
     let envs = env_names_to_kvpairs(args.passenv.clone());
     vm_args.command_envs = envs.clone();
-    if let Some(scratch_dir) = args.scratch_dir.as_ref() {
-        vm_args.output_dirs.push(scratch_dir.clone());
-    }
 
     // Let's always capture console output unless it's console mode
     let _console_dir;
@@ -205,15 +199,22 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
     antlir2_rootless::unshare_new_userns()?;
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
-    let isolated = isolated(
-        &args.image,
-        envs,
-        vm_args
-            .get_container_output_dirs()
-            .into_iter()
-            .chain(writable_devices())
-            .collect(),
-    )?;
+    let machine_spec = &args.run_cmd_args.machine_spec;
+    let inputs: HashSet<PathBuf> = machine_spec
+        .input_dirs
+        .iter()
+        .map(|d| PathBuf::from(d.concat()))
+        .collect();
+    let mut outputs: HashSet<PathBuf> = vm_args
+        .get_container_output_dirs()
+        .into_iter()
+        .chain(writable_devices())
+        .collect();
+    for dir in &machine_spec.output_dirs {
+        outputs.insert(PathBuf::from(dir.concat()));
+    }
+
+    let isolated = isolated(&args.image, envs, outputs, inputs)?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     let mut command = isolated.command(exe)?;
     command
@@ -357,11 +358,21 @@ fn writable_devices() -> HashSet<PathBuf> {
 /// to discover the tests to run. This command is not our intended test to
 /// execute, so it's unnecessarily wasteful to execute it inside the VM. We
 /// directly run it inside the container without booting VM.
-fn list_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<Command> {
+fn list_test_command(
+    args: &IsolateCmdArgs,
+    validated_args: &ValidatedVMArgs,
+    inputs: HashSet<PathBuf>,
+    outputs: &[Vec<String>],
+) -> Result<Command> {
+    let mut collected_outputs = writable_outputs(validated_args);
+    for dir in outputs {
+        collected_outputs.insert(PathBuf::from(dir.concat()));
+    }
     let isolated = isolated(
         &args.image,
         validated_args.inner.command_envs.clone(),
-        writable_outputs(validated_args),
+        collected_outputs,
+        inputs,
     )?;
     let mut inner_cmd = validated_args
         .inner
@@ -376,11 +387,21 @@ fn list_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) ->
 }
 
 /// For actual test command, we spawn the VM and run it.
-fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<Command> {
+fn vm_test_command(
+    args: &IsolateCmdArgs,
+    validated_args: &ValidatedVMArgs,
+    inputs: HashSet<PathBuf>,
+    outputs: &[Vec<String>],
+) -> Result<Command> {
+    let mut collected_outputs = writable_outputs(validated_args);
+    for dir in outputs {
+        collected_outputs.insert(PathBuf::from(dir.concat()));
+    }
     let isolated = isolated(
         &args.image,
         validated_args.inner.command_envs.clone(),
-        writable_outputs(validated_args),
+        collected_outputs,
+        inputs,
     )?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     let mut command = isolated.command(exe)?;
@@ -405,6 +426,13 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     // The inner antlir2_vm process will need fbcode runtime to start.
     // It may then decide whether to use host's platform for the actual test.
     Platform::set(&MountPlatformDecision(true))?;
+    let machine_spec = &args.run_cmd_args.machine_spec;
+    let inputs: HashSet<PathBuf> = machine_spec
+        .input_dirs
+        .iter()
+        .map(|d| PathBuf::from(d.concat()))
+        .collect();
+    let outputs = &machine_spec.output_dirs;
 
     let validated_args = get_test_vm_args(
         &args.run_cmd_args.vm_args,
@@ -415,9 +443,9 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
     let mut command = if validated_args.is_list {
-        list_test_command(args, &validated_args)
+        list_test_command(args, &validated_args, inputs, outputs)
     } else {
-        vm_test_command(args, &validated_args)
+        vm_test_command(args, &validated_args, inputs, outputs)
     }?;
     let status = log_command(&mut command).status()?;
     if !status.success() {
