@@ -96,7 +96,17 @@ async fn pid1_async(args: Pid1Args) -> Result<()> {
         )));
     }
 
-    let mut pid2 = pid2.spawn().context("while spawning pid2")?;
+    let mut pid2 = match pid2.spawn() {
+        Ok(pid2) => pid2,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return Err(Error::msg(format!(
+                "NotFound while spawning pid2 - is {} in the layer {} ?",
+                String::from_utf8_lossy(args.program.as_bytes()),
+                args.isolation.layer.display(),
+            )));
+        }
+        Err(e) => return Err(Error::from(e).context("while spawning pid2")),
+    };
     // I call this pid2, but it might not actually be 2, so grab it now
     let pid2_id = Pid::from_raw(pid2.id().context("while getting pid2 pid")? as i32);
     let pid2_wait = pid2.wait();
