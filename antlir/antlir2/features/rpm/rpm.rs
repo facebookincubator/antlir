@@ -596,6 +596,7 @@ fn run_dnf_driver(
         .tmpfs(Path::new("/var/log"))
         .tmpfs(Path::new("/dev"))
         .tmpfs(Path::new("/tmp"))
+        .sysfs(Path::new("/sys"))
         // TMPDIR might be set by buck2, be very explicit that it shouldn't be
         // inherited
         .setenv(("TMPDIR", "/tmp"))

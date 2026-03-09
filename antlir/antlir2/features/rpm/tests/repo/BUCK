@@ -206,7 +206,10 @@ all_rpms.append(
     test_rpm(
         name = "antlir2-postscript-tmpdir",
         epoch = 0,
-        post_install_script = "tmp=\"$(mktemp -d)\" && test -d \"$tmp\"",
+        post_install_script = """
+            # create a dir and make sure it exists
+            tmp="$(mktemp -d)" && test -d "$tmp"
+        """,
         release = "1",
         requires_post = [
             "/bin/sh",
@@ -234,6 +237,28 @@ all_rpms.append(
 - Example changelog
 - CVE-2024-0101""",
         release = "1",
+        version = "1",
+    ),
+)
+
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-postscript-cgroup",
+        epoch = 0,
+        post_install_script = """
+            set -ex
+            # Create a child cgroup and run a command inside it
+            mkdir -p /sys/fs/cgroup/antlir2-test-postscript
+            echo $$ > /sys/fs/cgroup/antlir2-test-postscript/cgroup.procs
+            cat /sys/fs/cgroup/antlir2-test-postscript/cgroup.procs
+            echo "Successfully created and ran in a cgroup"
+        """,
+        release = "1",
+        requires_post = [
+            "/bin/sh",
+            "coreutils",
+            "/usr/bin/mount",
+        ],
         version = "1",
     ),
 )

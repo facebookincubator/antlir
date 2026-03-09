@@ -33,6 +33,13 @@ use nix::unistd::User;
 /// still work properly.
 static MS_NOSYMFOLLOW: MsFlags = MsFlags::from_bits_retain(256);
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum SpecialMount {
+    Tmpfs,
+    Devtmpfs,
+    Sysfs,
+}
+
 #[deny(unused_variables)]
 pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
     let IsolationContext {
@@ -46,6 +53,7 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
         ephemeral,
         tmpfs,
         devtmpfs,
+        sysfs,
         tmpfs_overlay,
         hostname,
         readonly,
@@ -55,12 +63,10 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
         register: _,
     } = isol;
 
-    let mut clone_flags = CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUTS;
+    let mut clone_flags =
+        CloneFlags::CLONE_NEWNS | CloneFlags::CLONE_NEWUTS | CloneFlags::CLONE_NEWCGROUP;
     if !enable_network {
         clone_flags |= CloneFlags::CLONE_NEWNET;
-    }
-    if invocation_type.booted() {
-        clone_flags |= CloneFlags::CLONE_NEWCGROUP;
     }
 
     unshare(clone_flags).context("while unsharing into new namespaces")?;
@@ -161,10 +167,11 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
         .open_dir("newroot")
         .context("while (re)opening newroot")?;
 
-    for (tmpfs, dev) in tmpfs
+    for (tmpfs, mount) in tmpfs
         .iter()
-        .map(|t| (t, false))
-        .chain(devtmpfs.iter().map(|t| (t, true)))
+        .map(|t| (t, SpecialMount::Tmpfs))
+        .chain(devtmpfs.iter().map(|t| (t, SpecialMount::Devtmpfs)))
+        .chain(sysfs.iter().map(|t| (t, SpecialMount::Sysfs)))
     {
         match newroot.create_dir_all(tmpfs.strip_abs()) {
             Ok(()) => Ok(()),
@@ -172,18 +179,37 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
             Err(e) => Err(e),
         }
         .with_context(|| format!("while making tmpfs mountpoint at '{}'", tmpfs.display()))?;
-        nix::mount::mount(
-            None::<&str>,
-            &newroot.abspath().join_abs(tmpfs),
-            Some("tmpfs"),
-            MsFlags::empty(),
-            if dev { Some("mode=0755") } else { None },
-        )
-        .with_context(|| format!("while mounting tmpfs at '{}'", tmpfs.display()))?;
+        match mount {
+            SpecialMount::Tmpfs => nix::mount::mount(
+                None::<&str>,
+                &newroot.abspath().join_abs(tmpfs),
+                Some("tmpfs"),
+                MsFlags::empty(),
+                None::<&str>,
+            ),
+            SpecialMount::Devtmpfs => nix::mount::mount(
+                None::<&str>,
+                &newroot.abspath().join_abs(tmpfs),
+                Some("tmpfs"),
+                MsFlags::empty(),
+                Some("mode=0755"),
+            ),
+            SpecialMount::Sysfs => nix::mount::mount(
+                None::<&str>,
+                &newroot.abspath().join_abs(tmpfs),
+                // we can't mount a real sysfs here in some unprivileged
+                // environments, so just always fake it with a tmpfs
+                Some("tmpfs"),
+                MsFlags::empty(),
+                None::<&str>,
+            ),
+        }
+        .with_context(|| format!("while mounting {mount:?} at '{}'", tmpfs.display()))?;
         let tmpfs = newroot
             .open_dir(tmpfs.strip_abs())
             .with_context(|| format!("while opening tmpfs '{}'", tmpfs.display()))?;
-        if dev {
+
+        if mount == SpecialMount::Devtmpfs {
             // when booted, systemd will create /dev/fd
             if !invocation_type.booted() {
                 tmpfs
@@ -223,6 +249,25 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
                 None::<&str>,
             )
             .context("while mounting shm")?;
+        }
+
+        if mount == SpecialMount::Sysfs {
+            // Mount cgroup2 under each sysfs mountpoint
+            tmpfs
+                .create_dir_all("fs/cgroup")
+                .context("while creating 'sys/fs/cgroup'")?;
+            let dir = tmpfs
+                .open_dir("fs/cgroup")
+                .context("while opening /sys/fs/cgroup mountpoint")?
+                .into_std_file();
+            nix::mount::mount(
+                None::<&str>,
+                &dir.abspath(),
+                Some("cgroup2"),
+                MsFlags::empty(),
+                None::<&str>,
+            )
+            .context("while mounting cgroup2")?;
         }
     }
 

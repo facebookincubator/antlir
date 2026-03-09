@@ -74,6 +74,8 @@ pub struct IsolationContext<'a> {
     pub tmpfs: BTreeSet<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::devtmpfs]
     pub devtmpfs: BTreeSet<Cow<'a, Path>>,
+    /// See [IsolationContextBuilder::sysfs]
+    pub sysfs: BTreeSet<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::tmpfs_overlay]
     pub tmpfs_overlay: BTreeSet<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::hostname]
@@ -127,6 +129,7 @@ impl<'a> IsolationContext<'a> {
                 ephemeral: Some(Ephemeral::Tmpfs),
                 tmpfs: Default::default(),
                 devtmpfs: Default::default(),
+                sysfs: Default::default(),
                 tmpfs_overlay: Default::default(),
                 hostname: None,
                 readonly: false,
@@ -219,6 +222,12 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Path to mount a devtmpfs into.
     pub fn devtmpfs<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
         self.ctx.devtmpfs.insert(path.into());
+        self
+    }
+
+    /// Path to mount a (read-only subset of) /sys into.
+    pub fn sysfs<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
+        self.ctx.sysfs.insert(path.into());
         self
     }
 

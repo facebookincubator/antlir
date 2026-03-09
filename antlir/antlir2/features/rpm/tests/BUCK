@@ -1,9 +1,11 @@
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "python_binary", "python_unittest")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":defs.bzl", "expected_t", "test_rpms")
 
@@ -584,4 +586,27 @@ test_rpms(
         feature.rpms_install(rpms = ["foo-3"]),
     ],
     parent_layer = fail_on_file_trigger_parent,
+)
+
+image.layer(
+    name = "postscript-cgroup--layer",
+    dnf_additional_repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
+    features = [
+        feature.rpms_install(rpms = [
+            "antlir2-postscript-cgroup",
+        ]),
+        ":test-deps",
+    ],
+)
+
+python_unittest(
+    name = "test-postscript-cgroup",
+    srcs = ["test_postscript_cgroup.py"],
+    env = {
+        "ANTLIR2_POSTSCRIPT_CGROUP_SUBVOL_SYMLINK": "$(location :postscript-cgroup--layer)",
+    },
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
+    # This test has weird failures on aarch64 emulation, but if it passes on
+    # x86_64 then we know we haven't regressed
+    target_compatible_with = ["ovr_config//cpu:x86_64"],
 )

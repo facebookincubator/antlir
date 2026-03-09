@@ -100,6 +100,7 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         ephemeral,
         tmpfs,
         devtmpfs,
+        sysfs,
         tmpfs_overlay,
         hostname,
         readonly,
@@ -107,6 +108,9 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     } = ctx;
     if !devtmpfs.is_empty() && devtmpfs.len() > 1 && !devtmpfs.contains(Path::new("/dev")) {
         return Err(Error::Unsupported("devtmpfs"));
+    }
+    if !sysfs.is_empty() && sysfs.len() > 1 && !sysfs.contains(Path::new("/sys")) {
+        return Err(Error::Unsupported("sysfs"));
     }
     if !tmpfs_overlay.is_empty() {
         return Err(Error::Unsupported("tmpfs_overlay"));
