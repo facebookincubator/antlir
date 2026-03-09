@@ -50,8 +50,11 @@ package.gpt(
             src = ":gpt-esp",
             label = "ESP",
             type = PartitionType("esp"),
+            uuid = "00000000-0000-4000-8000-000000000000",
         ),
-        Partition(src = ":gpt-rootfs"),
+        Partition(
+            src = ":gpt-rootfs",
+        ),
     ],
 )
 

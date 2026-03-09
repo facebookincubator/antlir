@@ -78,6 +78,7 @@ struct Partition {
     partition_type: PartitionType,
     name: Option<String>,
     alignment: Option<u64>,
+    uuid: Option<Uuid>,
 }
 
 impl Gpt {
@@ -130,6 +131,10 @@ impl Gpt {
             .create_from_device(Box::new(file), self.disk_guid)
             .context("while creating new gpt")?;
 
+        // In 4.1.0, there is no clean API to replace the part UUID with a custom one
+        // https://github.com/Quyzi/gpt/issues/112#issuecomment-3831215604
+        let mut partition_replace_ids = Vec::new();
+
         for partition in self.partitions.iter() {
             let src_size = ByteSize::b(partition.src.metadata()?.len());
             let id = gdisk
@@ -156,6 +161,21 @@ impl Gpt {
             let mut src = File::open(&partition.src).context("while opening partition src")?;
             std::io::copy(&mut src, &mut file_for_writing_contents)
                 .context("while copying partition contents")?;
+
+            if let Some(uuid) = partition.uuid {
+                partition_replace_ids.push((id, uuid));
+            }
+        }
+
+        for (id, uuid) in partition_replace_ids {
+            let mut parts = gdisk.take_partitions();
+            let part = parts
+                .get_mut(&id)
+                .with_context(|| format!("Could not get partition {id:?} to modify"))?;
+            part.part_guid = uuid;
+            gdisk
+                .update_partitions(parts)
+                .with_context(|| format!("updating part uuid for partition {id:?}"))?;
         }
 
         gdisk.write().context("while writing partition table")?;
