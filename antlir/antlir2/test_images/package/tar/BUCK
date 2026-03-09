@@ -1,6 +1,8 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/test_images/package:defs.bzl", "test_in_layer")
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
 
 oncall("antlir")
 
@@ -20,4 +22,22 @@ test_in_layer(
         feature.rpms_install(rpms = ["tar"]),
     ],
     stub = "stub.rs",
+)
+
+image.layer(
+    name = "with-packages",
+    features = [feature.rpms_install(rpms = ["basesystem"])],
+)
+
+package.tar(
+    name = "with-packages.tar",
+    layer = ":with-packages",
+)
+
+python_unittest(
+    name = "test-with-packages.tar",
+    srcs = ["test_with_packages_tar.py"],
+    resources = {
+        ":with-packages.tar": "with-packages.tar",
+    },
 )

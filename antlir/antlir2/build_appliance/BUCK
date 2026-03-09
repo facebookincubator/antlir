@@ -33,11 +33,6 @@ feature.new(
             subdirs_to_create = "out",
         ),
         "//antlir/antlir2/package_managers/dnf/build_appliance:features",
-        select({
-            "//antlir/antlir2/os/package_manager:package_manager[apt]": "//antlir/antlir2/package_managers/apt/build_appliance:features",
-            "DEFAULT": "//antlir/antlir2/package_managers/dnf/build_appliance:features",
-        }),
-        "//antlir/antlir2/antlir2_packager:build-appliance-features",
     ],
     visibility = [
         "PUBLIC",

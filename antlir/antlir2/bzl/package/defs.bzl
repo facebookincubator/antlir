@@ -94,6 +94,9 @@ def _generic_impl(
         } | {
             k: getattr(ctx.attrs, k)
             for k in attrs_selected_by_cfg
+            if k != "build_appliance"
+        } | {
+            "build_appliance": ctx.attrs._layer_build_appliance,
         }).promise.map(partial(
             _generic_impl_with_layer,
             ctx = ctx,
