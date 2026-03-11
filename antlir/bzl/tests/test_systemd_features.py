@@ -15,7 +15,6 @@ from antlir.fs_utils import Path
 
 PROV_ROOT = Path("/usr/lib/systemd/system")
 ADMIN_ROOT = Path("/etc/systemd/system")
-USER_PROV_ROOT = Path("/usr/lib/systemd/user")
 TMPFILES_ROOT = Path("/etc/tmpfiles.d")
 
 
@@ -58,12 +57,6 @@ unit_test_specs: List[SystemdUnitTestSpec] = [
         "cheese-source.service",
         dropin_name="cheese-dropin.conf",
         is_masked=True,
-    ),
-    SystemdUnitTestSpec(
-        "cheese-user.service",
-        installed_root=USER_PROV_ROOT,
-        enabled_target="default.target",
-        target_dep_type="wants",
     ),
     SystemdUnitTestSpec(
         "cheese-template@.service",

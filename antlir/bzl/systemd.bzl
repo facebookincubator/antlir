@@ -156,14 +156,6 @@ def _enable_unit(
         installed_root = PROVIDER_ROOT):
     return _enable_impl(unit, target, dep_type, installed_root, "Enable System Unit")
 
-# Image feature to enable a user unit
-def _enable_user_unit(
-        unit,
-        target = "default.target",
-        dep_type = "wants",
-        installed_root = USER_PROVIDER_ROOT):
-    return _enable_impl(unit, target, dep_type, installed_root, "Enable User Unit")
-
 # Generate an image feature that removes `targets`' dependency on `unit`
 def _remove_dependency_impl(
         # The name of the systemd unit.  This should be in the full form of the
@@ -205,21 +197,6 @@ def _remove_dependency(
         dep_type,
         installed_root,
         "Remove dependency for system unit {}".format(unit),
-    )
-
-# Image feature to remove `targets`' dependence on a user `unit`
-def _remove_dependency_user_unit(
-        *,
-        unit: str,
-        targets: list[str] = ["default.target"],
-        dep_type: str = "wants",
-        installed_root: str = USER_PROVIDER_ROOT):
-    return _remove_dependency_impl(
-        unit,
-        targets,
-        dep_type,
-        installed_root,
-        "Remove dependency for user unit: {}".format(unit),
     )
 
 def _install_impl(
@@ -281,13 +258,6 @@ def _install_unit(
         mode: int | str | None = None):
     return _install_impl(source, dest, install_root, "Install System Unit", force = force, mode = mode)
 
-# Image feature to install a user unit
-def _install_user_unit(
-        source,
-        dest = None,
-        install_root = USER_PROVIDER_ROOT):
-    return _install_impl(source, dest, install_root, "Install User Unit")
-
 def _install_dropin(
         # The source for the unit to be installed. This can be one of:
         #   - A Buck target definition, ie: //some/dir:target or :local-target.
@@ -346,30 +316,6 @@ def _install_dropin(
             must_exist = False,
         ))
     return features
-
-def _remove_dropin(
-        # The unit that this dropin should affect.
-        unit,
-        # The config name. This should only be a single filename, not a full path.
-        dest,
-        # The dir to install the dropin into. In most cases this doesn't need
-        # to be changed.
-        install_root = PROVIDER_ROOT):
-    _assert_unit_suffix(unit)
-
-    # a user must give the right name
-    if not dest.endswith(".conf"):
-        fail("dropin files must have the suffix '.conf'")
-
-    _fail_if_path(dest, "Remove Dropin Dest")
-
-    dst_path = paths.join(install_root, unit + ".d", dest)
-    return [
-        feature.remove(
-            path = dst_path,
-            must_exist = False,
-        ),
-    ]
 
 def _set_default_target(
         # An existing systemd target to be set as the default
@@ -473,9 +419,6 @@ def _mount_unit_file(name, mount):
 def _skip_unit(unit, force = False):
     return _install_dropin("antlir//antlir/bzl:99-skip-unit.conf", unit, force = force)
 
-def _unskip_unit(unit):
-    return _remove_dropin(unit, "99-skip-unit.conf")
-
 def _kernel_modules_load(*modules):
     return [
         [
@@ -498,16 +441,12 @@ def _kernel_modules_load(*modules):
 systemd = struct(
     alias = _alias,
     enable_unit = _enable_unit,
-    enable_user_unit = _enable_user_unit,
     escape = _escape,
     install_dropin = _install_dropin,
     install_unit = _install_unit,
-    install_user_unit = _install_user_unit,
     mask_tmpfiles = _mask_tmpfiles,
     mask_units = _mask_units,
     remove_dependency = _remove_dependency,
-    remove_dependency_user_unit = _remove_dependency_user_unit,
-    remove_dropin = _remove_dropin,
     set_default_target = _set_default_target,
     skip_unit = _skip_unit,
     units = struct(
@@ -516,7 +455,6 @@ systemd = struct(
         unit = unit_t,
     ),
     unmask_units = _unmask_units,
-    unskip_unit = _unskip_unit,
     kernel_modules_load = _kernel_modules_load,
 )
 
