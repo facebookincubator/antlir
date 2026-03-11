@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/appliance_vm:defs.bzl", "ApplianceVmInfo")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
-load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "package_cfg")
-load(":attrs.bzl", "default_attrs")
 load(":gpt.bzl", "GptPartitionSource")
 load(":macro.bzl", "package_macro")
 
@@ -38,7 +38,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     ctx.actions.run(
         cmd_args(
             "sudo" if not ctx.attrs._rootless else cmd_args(),
-            ctx.attrs._antlir2_packager[RunInfo],
+            ctx.attrs.antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
             cmd_args(package.as_output(), format = "--out={}"),
             "--rootless" if ctx.attrs._rootless else cmd_args(),
@@ -56,9 +56,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _btrfs = rule(
     impl = _impl,
     attrs = {
+        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
         "appliance_vm": attrs.default_only(attrs.exec_dep(providers = [ApplianceVmInfo], default = "antlir//antlir/antlir2/appliance_vm:appliance_vm")),
+        "build_appliance": attrs.option(attrs.exec_dep(providers = [BuildApplianceInfo]), default = None),
         "compression_level": attrs.int(default = 3),
         # used by transition
+        "default_os": attrs.option(attrs.string(), default = None),
         "default_subvol": attrs.option(attrs.string(), default = None),
         "free_mb": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
@@ -80,7 +83,8 @@ _btrfs = rule(
             ),
             default = None,
         ),
-    } | cfg_attrs() | default_attrs,
+        "_rootless": rootless_cfg.is_rootless_attr,
+    } | attrs_selected_by_cfg | cfg_attrs(),
     cfg = package_cfg,
 )
 
