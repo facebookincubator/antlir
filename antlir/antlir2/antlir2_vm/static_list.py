@@ -55,6 +55,18 @@ def main():
         inner_test = extra[idx + 1]
         os.execv(args.wrap, [args.wrap, "--json-output", args.json_output, inner_test])
 
+    if which == "rust":
+        # Rust tests don't have a separate lister binary but the test binary
+        # has --list. See testinfra/tpx/tpx-buck/src/translator/rust.rs for
+        # the command, and antlir/antlir2/antlir2_vm/bzl/test.bzl for an example
+        # of how to feed the extra args
+        # argv = ["rust", <inner_test_binary>, <vm_exec>]
+        binary = sys.argv[1]
+        os.execv(
+            binary,
+            [binary, "--list", "-Z", "unstable-options", "--format=json"],
+        )
+
     raise Exception(f"Unknown static list wrapper: {which}")
 
 

@@ -106,3 +106,10 @@ buck_command_alias(
     exe = ":static-list",
     visibility = ["PUBLIC"],
 )
+
+buck_command_alias(
+    name = "static-list-rust",
+    args = ["rust"],
+    exe = ":static-list",
+    visibility = ["PUBLIC"],
+)

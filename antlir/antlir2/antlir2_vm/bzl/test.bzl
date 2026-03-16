@@ -106,6 +106,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 ctx.attrs._static_list_wrapper[RunInfo],
                 cmd_args(original, format = "--wrap={}"),
             ))
+        elif ctx.attrs._static_list_embeds_test_command:
+            # (at least rust): no existing lister, use test_command --list
+            # so need to pass the test_command down to the lister
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
+                ctx.attrs._static_list_wrapper[RunInfo],
+                ctx.attrs.test[ExternalRunnerTestInfo].command,
+            ))
 
     return [
         DefaultInfo(
@@ -178,6 +185,7 @@ _vm_test = rule(
         ),
         "timeout_secs": attrs.int(doc = "total allowed execution time for the test"),
         "vm_host": attrs.dep(providers = [VMHostInfo], doc = "VM host target for the test"),
+        "_static_list_embeds_test_command": attrs.bool(default = False),
         "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
     },
 )
@@ -243,6 +251,7 @@ def _implicit_vm_test(
         systemd_credentials: dict[str, str] | None = None,
         _add_outer_labels: list[str] = [],
         _static_list_wrapper: str | None = None,
+        _static_list_embeds_test_command: bool = False,
         **kwargs) -> list[str]:
     """Wraps a unit test rule to execute inside a VM. @vm_host must be a VM
     target constructed by `:defs.bzl::vm.host()`.
@@ -297,6 +306,7 @@ def _implicit_vm_test(
         systemd_credentials = systemd_credentials or {},
         compatible_with = kwargs.get("compatible_with"),
         _static_list_wrapper = _static_list_wrapper,
+        _static_list_embeds_test_command = _static_list_embeds_test_command,
         target_compatible_with = kwargs.get("target_compatible_with"),
         labels = labels,
     )
@@ -314,5 +324,10 @@ vm_python_test = partial(
     _static_list_wrapper = "antlir//antlir/antlir2/antlir2_vm:static-list-py",
     _add_outer_labels = ["tpx:supports_coverage"],
 )
-vm_rust_test = partial(_implicit_vm_test, rust_unittest)
+vm_rust_test = partial(
+    _implicit_vm_test,
+    rust_unittest,
+    _static_list_wrapper = "antlir//antlir/antlir2/antlir2_vm:static-list-rust",
+    _static_list_embeds_test_command = True,
+)
 vm_sh_test = partial(_implicit_vm_test, buck_sh_test)
