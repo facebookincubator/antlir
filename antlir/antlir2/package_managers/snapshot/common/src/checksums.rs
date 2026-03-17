@@ -20,17 +20,17 @@ use sha2::Sha256;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub(crate) struct Checksums {
+pub struct Checksums {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) sha1: Option<String>,
+    pub sha1: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) sha256: Option<String>,
+    pub sha256: Option<String>,
 }
 
 #[bon]
 impl Checksums {
     #[builder]
-    pub(crate) fn new(sha1: Option<String>, sha256: Option<String>) -> Result<Self> {
+    pub fn new(sha1: Option<String>, sha256: Option<String>) -> Result<Self> {
         if sha1.is_none() && sha256.is_none() {
             bail!("At least one checksum must be provided");
         }
@@ -40,7 +40,7 @@ impl Checksums {
 
 impl Checksums {
     /// Compute SHA1 and SHA256 checksums from a file on disk.
-    pub(crate) fn from_reader<R: Read>(reader: R) -> Result<Self> {
+    pub fn from_reader<R: Read>(reader: R) -> Result<Self> {
         let mut input = BufReader::new(reader);
         let mut sha1_hasher = Sha1::new();
         let mut sha256_hasher = Sha256::new();
@@ -60,9 +60,8 @@ impl Checksums {
     }
 }
 
-#[cfg(test)]
 impl Checksums {
-    pub(crate) fn new_sha256(sha256: String) -> Self {
+    pub fn new_sha256(sha256: String) -> Self {
         Self {
             sha1: None,
             sha256: Some(sha256),

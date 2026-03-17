@@ -33,7 +33,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         actions = ctx.actions,
         out_name = "InRelease",
         url = suite_baseurl + "InRelease",
-        snapshot_run_info = ctx.attrs._snapshot_bin[RunInfo],
+        metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
         checksums = ctx.attrs.inrelease_checksums,
         allow_nondeterministic_downloads = True,
     )
@@ -44,7 +44,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     metadata_tree["release.json"] = release_json
     ctx.actions.run(
         cmd_args(
-            ctx.attrs._snapshot_bin[RunInfo],
+            ctx.attrs._metadata_bin[RunInfo],
             "parse",
             "deb",
             "release",
@@ -61,7 +61,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         components = ctx.attrs.components,
         arch = ctx.attrs._arch,
         suite_baseurl = suite_baseurl,
-        snapshot_run_info = ctx.attrs._snapshot_bin[RunInfo],
+        metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
     )
     components = [
         ComponentInfo(name = c, packages_json = p.json, packages_txt = p.txt)
@@ -81,7 +81,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         has_content_based_path = True,
     )
     generate_cmd = cmd_args(
-        ctx.attrs._snapshot_bin[RunInfo],
+        ctx.attrs._metadata_bin[RunInfo],
         "generate",
         "deb",
         "inrelease",
@@ -142,15 +142,15 @@ _suite = rule(
             "ovr_config//cpu:arm64": "arm64",
             "ovr_config//cpu:x86_64": "amd64",
         }))),
+        "_metadata_bin": attrs.default_only(
+            attrs.exec_dep(
+                providers = [RunInfo],
+                default = "//antlir/antlir2/package_managers/snapshot:metadata",
+            ),
+        ),
         "_signing_key": attrs.default_only(
             attrs.source(
                 default = "//antlir/antlir2/package_managers/deb:dummy_signing_key",
-            ),
-        ),
-        "_snapshot_bin": attrs.default_only(
-            attrs.exec_dep(
-                providers = [RunInfo],
-                default = "//antlir/antlir2/package_managers/snapshot:snapshot",
             ),
         ),
     },

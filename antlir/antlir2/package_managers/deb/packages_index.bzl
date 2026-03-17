@@ -11,7 +11,7 @@ def _download_packages_indexes_impl(
         release_json: ArtifactValue,
         packages_indexes: dict[str, typing.Any],
         suite_baseurl: str,
-        snapshot_run_info: RunInfo):
+        metadata_run_info: RunInfo):
     release = release_json.read_json()
 
     for component_name, (txt, json) in packages_indexes.items():
@@ -28,12 +28,12 @@ def _download_packages_indexes_impl(
             out = txt,
             url = suite_baseurl + pkg_info.href,
             checksums = pkg_info.checksums,
-            snapshot_run_info = snapshot_run_info,
+            metadata_run_info = metadata_run_info,
         )
 
         actions.run(
             cmd_args(
-                snapshot_run_info,
+                metadata_run_info,
                 "parse",
                 "deb",
                 "packages",
@@ -50,6 +50,7 @@ _download_packages_indexes = dynamic_actions(
     impl = _download_packages_indexes_impl,
     attrs = {
         "arch": dynattrs.value(str),
+        "metadata_run_info": dynattrs.value(RunInfo),
         "packages_indexes": dynattrs.dict(
             str,
             dynattrs.tuple(
@@ -58,7 +59,6 @@ _download_packages_indexes = dynamic_actions(
             ),
         ),
         "release_json": dynattrs.artifact_value(),
-        "snapshot_run_info": dynattrs.value(RunInfo),
         "suite_baseurl": dynattrs.value(str),
     },
 )
@@ -75,7 +75,7 @@ def download_component_package_indexes(
         arch: str,
         suite_baseurl: str,
         release_json: Artifact,
-        snapshot_run_info: RunInfo) -> dict[str, ComponentPackages]:
+        metadata_run_info: RunInfo) -> dict[str, ComponentPackages]:
     # Pre-declare one output per component for the decompressed
     # Packages index files
     components = {
@@ -89,7 +89,7 @@ def download_component_package_indexes(
     actions.dynamic_output_new(
         _download_packages_indexes(
             arch = arch,
-            snapshot_run_info = snapshot_run_info,
+            metadata_run_info = metadata_run_info,
             suite_baseurl = suite_baseurl,
             release_json = release_json,
             packages_indexes = {

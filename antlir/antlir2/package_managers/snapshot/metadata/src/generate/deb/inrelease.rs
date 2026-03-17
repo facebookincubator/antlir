@@ -20,8 +20,7 @@ use sequoia_openpgp::policy::StandardPolicy;
 use sequoia_openpgp::serialize::stream::Message;
 use sequoia_openpgp::serialize::stream::Signer;
 use serde::Deserialize;
-
-use crate::checksums::Checksums;
+use snapshot_common::Checksums;
 
 const POLICY: &StandardPolicy = &StandardPolicy::new();
 

@@ -6,43 +6,46 @@
  */
 
 use std::fs::File;
+use std::io::BufWriter;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Mutex;
 
 use anyhow::Result;
 use clap::Parser;
+use json_arg::Json;
 use tracing::error;
 use tracing_subscriber::prelude::*;
 
-mod checksums;
-mod decompress;
-mod generate;
-mod parse;
 mod snapshot;
+use snapshot::storage::StorageConfig;
 
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(short, long, default_value_t=1, action = clap::ArgAction::Count)]
     verbose: u8,
-    #[clap(subcommand)]
-    sub: Sub,
     #[clap(long)]
     log: Option<PathBuf>,
+    #[clap(long)]
+    out: PathBuf,
+    #[clap(long)]
+    storage: Json<StorageConfig>,
+    #[clap(subcommand)]
+    sub: Sub,
 }
 
 #[derive(Debug, Parser)]
 enum Sub {
-    Decompress(decompress::Decompress),
-    Generate(generate::Generate),
-    Parse(parse::Parse),
-    Snapshot(snapshot::Snapshot),
+    /// Snapshot metadata tree
+    Metadata(snapshot::metadata::Metadata),
+    /// Check blob status in storage (missing or expiring soon)
+    BlobStatus(snapshot::blob_status::CheckBlobStatus),
+    /// Download missing packages and upload them to storage
+    Packages(snapshot::packages::Packages),
 }
 
 #[fbinit::main]
 async fn main(fb: fbinit::FacebookInit) -> ExitCode {
-    // Wrap the real main function with this so that we can print out the full
-    // error
     if let Err(e) = do_main(fb).await {
         error!("{e:#?}");
         return ExitCode::FAILURE;
@@ -74,10 +77,22 @@ async fn do_main(fb: fbinit::FacebookInit) -> Result<()> {
         .with(stderr_layer)
         .with(file_layer)
         .init();
+
+    let storage = args.storage.into_inner().build(fb)?;
+    let outfile = BufWriter::new(stdio_path::create(&args.out)?);
     match args.sub {
-        Sub::Decompress(sub) => sub.run(),
-        Sub::Generate(sub) => sub.run(),
-        Sub::Parse(sub) => sub.run(),
-        Sub::Snapshot(sub) => sub.run(fb).await,
+        Sub::Metadata(metadata) => {
+            let out = metadata.run(storage).await?;
+            serde_json::to_writer(outfile, &out)?;
+        }
+        Sub::BlobStatus(blob_status) => {
+            let out = blob_status.run(storage).await?;
+            serde_json::to_writer(outfile, &out)?;
+        }
+        Sub::Packages(packages) => {
+            let out = packages.run(storage).await?;
+            serde_json::to_writer(outfile, &out)?;
+        }
     }
+    Ok(())
 }

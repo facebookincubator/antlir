@@ -1,39 +1,68 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("antlir")
 
-rust_binary(
-    name = "snapshot",
-    srcs = glob(["src/**/*.rs"]),
-    crate_root = "src/main.rs",
-    fb_deps = [
-        "//manifold/clients/rust:manifold_client",
+rust_library(
+    name = "snapshot_common",
+    srcs = glob(["common/src/**/*.rs"]),
+    crate_root = "common/src/lib.rs",
+    deps = [
+        "anyhow",
+        "bon",
+        "hex",
+        "serde",
+        "sha1",
+        "sha2",
     ],
+)
+
+rust_binary(
+    name = "metadata",
+    srcs = glob(["metadata/src/**/*.rs"]),
+    crate_root = "metadata/src/main.rs",
     link_style = "shared",
     test_srcs = glob(["testdata/**"]),
     deps = [
         "anyhow",
-        "async-trait",
-        "bon",
         "clap",
-        "fbinit",
-        "fbinit-tokio",
         "flate2",
-        "futures",
-        "hex",
         "liblzma",
-        "reqwest",
         "sequoia-openpgp",
         "serde",
         "serde_json",
-        "sha1",
-        "sha2",
+        "tracing",
+        "tracing-subscriber",
+        ":snapshot_common",
+        "//antlir/filesystem/stdio_path:stdio_path",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
+
+rust_binary(
+    name = "snapshot",
+    srcs = glob(["snapshot/src/**/*.rs"]),
+    crate_root = "snapshot/src/main.rs",
+    fb_deps = [
+        "//manifold/clients/rust:manifold_client",
+    ],
+    link_style = "shared",
+    deps = [
+        "anyhow",
+        "async-trait",
+        "clap",
+        "fbinit",
+        "fbinit-tokio",
+        "futures",
+        "reqwest",
+        "serde",
+        "serde_json",
         "tempfile",
         "tokio",
         "tracing",
         "tracing-subscriber",
         "url",
         "walkdir",
+        ":snapshot_common",
         "//antlir/filesystem/stdio_path:stdio_path",
         "//antlir/util/cli/json_arg:json_arg",
     ],

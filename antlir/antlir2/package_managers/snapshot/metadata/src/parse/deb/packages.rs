@@ -15,8 +15,7 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use serde::Serialize;
-
-use crate::checksums::Checksums;
+use snapshot_common::Checksums;
 
 #[derive(Parser, Debug)]
 pub(crate) struct ParsePackages {
@@ -151,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let input = include_str!("../../../testdata/deb/Packages");
+        let input = include_str!("../../../../testdata/deb/Packages");
         let packages = parse(Cursor::new(input)).expect("failed to parse test Packages");
 
         assert_eq!(packages.len(), 4);

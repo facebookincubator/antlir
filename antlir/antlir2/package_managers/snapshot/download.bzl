@@ -9,7 +9,7 @@ def download(
         *,
         actions: AnalysisActions,
         url: str,
-        snapshot_run_info: RunInfo | None = None,
+        metadata_run_info: RunInfo | None = None,
         out_name: str | None = None,
         out: OutputArtifact | None = None,
         checksums: dict[str, str] = {},
@@ -78,11 +78,11 @@ def download(
         )
 
     if filetype:
-        if not snapshot_run_info:
-            fail("snapshot_run_info is required to decompress {} files".format(filetype))
+        if not metadata_run_info:
+            fail("metadata_run_info is required to decompress {} files".format(filetype))
         actions.run(
             cmd_args(
-                snapshot_run_info,
+                metadata_run_info,
                 "decompress",
                 dl_target,
                 out,

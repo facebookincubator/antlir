@@ -11,9 +11,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde::Serialize;
+use snapshot_common::Checksums;
 use url::Url;
-
-use crate::checksums::Checksums;
 
 #[cfg(facebook)]
 mod facebook;
@@ -54,15 +53,10 @@ pub(crate) trait Storage: Send + Sync {
     /// Extend the TTL of the object with the given checksums.
     async fn extend_ttl(&self, checksums: &Checksums) -> Result<()>;
 
-    /// Extend the TTL of a tree key and its target.
-    async fn extend_tree_ttl(&self, key: &str) -> Result<()>;
-
     /// Create a tree symlink at `key` pointing to an existing flat blob
     /// identified by `checksums`. Used to (re)build the tree namespace from
     /// content-addressed flat objects that are already known to exist.
     async fn symlink_flat_to_tree(&self, checksums: &Checksums, key: &str) -> Result<()>;
-
-    fn url(&self, checksums: &Checksums) -> Url;
 }
 
 #[derive(Clone, Deserialize, Serialize)]

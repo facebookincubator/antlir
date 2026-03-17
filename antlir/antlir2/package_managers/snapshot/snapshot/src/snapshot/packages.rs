@@ -6,6 +6,7 @@
  */
 
 use std::collections::BTreeMap;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -29,7 +30,6 @@ use super::blob_status::Entry;
 use super::storage::BlobStatus;
 use super::storage::Storage;
 use super::storage::UrlWithChecksums;
-use crate::checksums::Checksums;
 
 const MAX_CONCURRENT: usize = 100;
 const MAX_RETRIES: usize = 5;
@@ -85,7 +85,7 @@ async fn download(client: &reqwest::Client, url: &str) -> Result<(NamedTempFile,
 
 /// Upload a file from `path` to storage, creating both a flat content-addressed
 /// object and a tree symlink at `filename`.
-async fn upload(storage: &dyn Storage, path: &PathBuf, filename: &str) -> Result<UrlWithChecksums> {
+async fn upload(storage: &dyn Storage, path: &Path, filename: &str) -> Result<UrlWithChecksums> {
     storage
         .store(path, filename)
         .await

@@ -28,7 +28,6 @@ def _main(ctx: bxl.Context):
         cmd_args(
             snapshot_run_info,
             cmd_args(logs.as_output(), format = "--log={}"),
-            "snapshot",
             cmd_args(metadata_json.as_output(), format = "--out={}"),
             cmd_args(ctx.cli_args.storage, format = "--storage={}"),
             "metadata",
@@ -46,7 +45,6 @@ def _main(ctx: bxl.Context):
     actions.run(
         cmd_args(
             snapshot_run_info,
-            "snapshot",
             cmd_args(blob_status_json.as_output(), format = "--out={}"),
             cmd_args(ctx.cli_args.storage, format = "--storage={}"),
             "blob-status",
@@ -69,7 +67,6 @@ def _main(ctx: bxl.Context):
         cmd_args(
             snapshot_run_info,
             cmd_args(uploaded_logs.as_output(), format = "--log={}"),
-            "snapshot",
             cmd_args(uploaded_json.as_output(), format = "--out={}"),
             cmd_args(ctx.cli_args.storage, format = "--storage={}"),
             "packages",

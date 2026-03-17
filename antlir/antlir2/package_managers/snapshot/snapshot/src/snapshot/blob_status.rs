@@ -13,11 +13,11 @@ use futures::stream::TryStreamExt;
 use json_arg::JsonFile;
 use serde::Deserialize;
 use serde::Serialize;
+use snapshot_common::Checksums;
 use tracing::debug;
 
 use super::storage::BlobStatus;
 use super::storage::Storage;
-use crate::checksums::Checksums;
 
 const MAX_CONCURRENT_CHECKS: usize = 1024;
 
