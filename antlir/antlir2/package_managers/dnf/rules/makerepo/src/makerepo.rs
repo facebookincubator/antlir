@@ -129,22 +129,31 @@ impl<W: Write> XmlFile<W> {
             XmlFileInner::Uncompressed(w) => w.write_all(package.as_bytes()),
         }
     }
+}
 
+impl XmlFile<BufWriter<File>> {
     fn finish(self) -> Result<RepomdRecord> {
         let mut xml = XmlWriter::new(self.inner);
         xml.write_event(Event::End(BytesEnd::new(self.element)))?;
         let inner = xml.into_inner();
-        match inner {
+        let file = match inner {
             XmlFileInner::Gzipped(w) => {
-                w.finish()?;
-                Ok(RepomdRecord {
-                    location: format!("repodata/{}", self.filename),
-                })
+                let mut buf_writer = w.finish()?;
+                buf_writer.flush().context("while flushing gzipped xml")?;
+                buf_writer
+                    .into_inner()
+                    .context("while unwrapping gzipped xml buf writer")?
             }
-            XmlFileInner::Uncompressed(_) => Ok(RepomdRecord {
-                location: format!("repodata/{}", self.filename),
-            }),
-        }
+            XmlFileInner::Uncompressed(mut w) => {
+                w.flush().context("while flushing xml")?;
+                w.into_inner().context("while unwrapping xml buf writer")?
+            }
+        };
+        file.sync_all().context("while syncing xml")?;
+
+        Ok(RepomdRecord {
+            location: format!("repodata/{}", self.filename),
+        })
     }
 }
 
@@ -267,6 +276,11 @@ fn main() -> Result<()> {
         })?;
     let mut repomd = repomd.into_inner();
     repomd.write_all(b"\n")?;
+    repomd.flush().context("while flushing repomd.xml")?;
+    let repomd = repomd
+        .into_inner()
+        .context("while unwrapping repomd.xml buf writer")?;
+    repomd.sync_all().context("while syncing repomd.xml")?;
 
     Ok(())
 }
