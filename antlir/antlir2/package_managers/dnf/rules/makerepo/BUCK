@@ -1,25 +1,29 @@
-load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "rust_binary")
-load("//antlir/bzl:internal_external.bzl", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "alias", "rust_binary")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 
 rust_binary(
-    name = "makerepo.rc" if is_facebook else "makerepo",
+    name = "makerepo.rc",
     srcs = glob(["src/**/*.rs"]),
     crate = "makerepo",
-    visibility = [] if is_facebook else ["PUBLIC"],
+    visibility = [],
     deps = [
         "anyhow",
         "clap",
         "flate2",
+        "hex",
         "quick-xml",
         "serde",
         "serde_json",
+        "sha2",
     ],
 )
 
-# buildifier: disable=no-effect
-buck_sh_binary(
+alias(
     name = "makerepo",
-    main = "fbcode//antlir/antlir2/package_managers/dnf/rules/makerepo/facebook/msdk:msdk[makerepo/makerepo]",
-) if is_facebook else None
+    actual = internal_external(
+        fb = "fbcode//antlir/antlir2/package_managers/dnf/rules/makerepo/facebook/msdk:msdk[makerepo/makerepo]",
+        oss = ":makerepo.rc",
+    ),
+)
