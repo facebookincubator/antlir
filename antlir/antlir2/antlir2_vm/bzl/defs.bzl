@@ -43,7 +43,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     append = ctx.attrs.append or ""
     append = append.format(tty = ctx.attrs.tty_name)
 
-    machine_json = ctx.actions.declare_output("machine.json")
+    machine_json = ctx.actions.declare_output("machine.json", has_content_based_path = False)
     machine_json_args = ctx.actions.write_json(
         machine_json,
         {

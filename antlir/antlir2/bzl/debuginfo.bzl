@@ -23,9 +23,9 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     if maybe_dwp:
         src_dwp = ensure_single_output(maybe_dwp[DefaultInfo])
 
-    stripped = ctx.actions.declare_output("stripped")
-    debuginfo = ctx.actions.declare_output("debuginfo")
-    metadata = ctx.actions.declare_output("metadata.json")
+    stripped = ctx.actions.declare_output("stripped", has_content_based_path = False)
+    debuginfo = ctx.actions.declare_output("debuginfo", has_content_based_path = False)
+    metadata = ctx.actions.declare_output("metadata.json", has_content_based_path = False)
 
     # TODO(vmagro): Get rid of the empty file fallback
     dwp_out = src_dwp or ctx.actions.write("dwp", "")

@@ -26,7 +26,7 @@ def _plan_fn(
         dnf_available_repos: list[Dependency],
         resolve_cmd: RunInfo,
         **kwargs) -> list[PlanInfo]:
-    items = ctx.actions.declare_output(identifier, "rpm/items.json")
+    items = ctx.actions.declare_output(identifier, "rpm/items.json", has_content_based_path = False)
     items = ctx.actions.write_json(items, feature.analysis.data.items, with_inputs = True)
     res = plan(
         ctx = ctx,
@@ -68,7 +68,7 @@ def plan(
         resolve_cmd: RunInfo,
         plan: Dependency,
         versionlock_hard_enforce: bool) -> struct:
-    tx = ctx.actions.declare_output(identifier, "rpm/transaction.json")
+    tx = ctx.actions.declare_output(identifier, "rpm/transaction.json", has_content_based_path = False)
 
     dnf_repodatas = ctx.actions.anon_target(repodata_only_local_repos, {
         "repos": dnf_available_repos,
@@ -110,7 +110,7 @@ def plan(
         reflink_flavor = flavor.dnf_info.reflink_flavor,
     )
 
-    plan_json = ctx.actions.declare_output(identifier, "rpm/plan.json")
+    plan_json = ctx.actions.declare_output(identifier, "rpm/plan.json", has_content_based_path = False)
     out = ctx.actions.write_json(
         plan_json,
         struct(

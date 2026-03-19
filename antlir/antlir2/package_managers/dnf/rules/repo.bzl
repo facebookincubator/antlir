@@ -26,14 +26,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     repo_id = ctx.label.name.replace("_", "__").replace("/", "_")
 
     # Construct repodata XML blobs from each individual RPM
-    xml_dir = ctx.actions.declare_output("xml", dir = True)
+    xml_dir = ctx.actions.declare_output("xml", dir = True, has_content_based_path = False)
     ctx.actions.copied_dir(xml_dir, {rpm.nevra: rpm.xml for rpm in rpm_infos})
     optional_args = []
 
     # First build a repodata directory that just contains repodata (this would
     # be suitable as a baseurl for dnf)
     if not ctx.attrs.repodata:
-        plain_repodata = ctx.actions.declare_output("repodata", dir = True)
+        plain_repodata = ctx.actions.declare_output("repodata", dir = True, has_content_based_path = False)
         ctx.actions.run(
             cmd_args(
                 ctx.attrs.makerepo[RunInfo],
@@ -55,7 +55,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if is_facebook:
         # Pre-build .solv(x) files so that dnf installation is substantially faster
         # TODO: use repomdxml2solv from libsolv-tools instead of this sketchiness
-        repodata = ctx.actions.declare_output("repodata_with_solv", dir = True)
+        repodata = ctx.actions.declare_output("repodata_with_solv", dir = True, has_content_based_path = False)
         ctx.actions.run(
             cmd_args(
                 ctx.attrs.makecache[RunInfo],
@@ -70,7 +70,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     # Create an artifact that is the _entire_ repository for completely offline
     # usage
-    offline = ctx.actions.declare_output("offline", dir = True)
+    offline = ctx.actions.declare_output("offline", dir = True, has_content_based_path = False)
     offline_map = {
         "repodata": repodata,
     }
@@ -149,7 +149,7 @@ def repo(**kwargs):
 RepoSetInfo = provider(fields = ["repos"])
 
 def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
-    combined_repodatas = ctx.actions.declare_output("repodatas", dir = True)
+    combined_repodatas = ctx.actions.declare_output("repodatas", dir = True, has_content_based_path = False)
     repos = {}
     for repo in ctx.attrs.repos:
         repo_info = repo[RepoInfo]

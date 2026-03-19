@@ -22,8 +22,8 @@ def _main(ctx: bxl.Context):
     snapshottable_info = analysis.providers()[SnapshottableInfo]
 
     ctx.output.stream("Preparing metadata tree to snapshot")
-    metadata_json = actions.declare_output("metadata.json")
-    logs = actions.declare_output("logs.txt")
+    metadata_json = actions.declare_output("metadata.json", has_content_based_path = False)
+    logs = actions.declare_output("logs.txt", has_content_based_path = False)
     actions.run(
         cmd_args(
             snapshot_run_info,
@@ -41,7 +41,7 @@ def _main(ctx: bxl.Context):
     ctx.output.stream("Metadata snapshot:", ctx.output.ensure(metadata_json), wait_on = [ctx.output.ensure(metadata_json)])
 
     # Check blob status (missing or expiring soon) in storage
-    blob_status_json = actions.declare_output("blob_status.json")
+    blob_status_json = actions.declare_output("blob_status.json", has_content_based_path = False)
     actions.run(
         cmd_args(
             snapshot_run_info,
@@ -61,8 +61,8 @@ def _main(ctx: bxl.Context):
 
     # Download the missing packages and upload them to storage
     ctx.output.stream("Snapshotting package blobs, this may take a while...", wait_on = [ctx.output.ensure(blob_status_json)])
-    uploaded_json = actions.declare_output("uploaded.json")
-    uploaded_logs = actions.declare_output("uploaded_logs.txt")
+    uploaded_json = actions.declare_output("uploaded.json", has_content_based_path = False)
+    uploaded_logs = actions.declare_output("uploaded_logs.txt", has_content_based_path = False)
     actions.run(
         cmd_args(
             snapshot_run_info,

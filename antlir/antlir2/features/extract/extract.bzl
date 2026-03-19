@@ -152,8 +152,8 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     else:
         src = ensure_single_output(ctx.attrs.src)
 
-    manifest = ctx.actions.declare_output("manifest.json")
-    libs_dir = ctx.actions.declare_output("libs_dir", dir = True)
+    manifest = ctx.actions.declare_output("manifest.json", has_content_based_path = False)
+    libs_dir = ctx.actions.declare_output("libs_dir", dir = True, has_content_based_path = False)
     ctx.actions.run(
         cmd_args(
             ctx.attrs._analyze[RunInfo],

@@ -14,7 +14,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
     build_appliance = ctx.attrs.build_appliance or ctx.attrs.layer[LayerInfo].build_appliance
 
     def with_anon(oci) -> list[Provider]:
-        out = ctx.actions.declare_output(ctx.label.name)
+        out = ctx.actions.declare_output(ctx.label.name, has_content_based_path = False)
 
         oci = ensure_single_output(oci)
         spec = ctx.actions.write_json(

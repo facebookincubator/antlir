@@ -30,12 +30,12 @@ def _find_incremental_parent(*, layer: LayerInfo, parent_label: Label) -> Depend
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    sendstream = ctx.actions.declare_output("image.sendstream")
+    sendstream = ctx.actions.declare_output("image.sendstream", has_content_based_path = False)
 
     userspace = ctx.attrs._rootless
 
     if not userspace:
-        subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+        subvol_symlink = ctx.actions.declare_output("subvol_symlink", has_content_based_path = False)
     else:
         subvol_symlink = ctx.attrs.layer[LayerInfo].contents.subvol_symlink
 
@@ -83,7 +83,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         with_inputs = True,
     )
 
-    sendstream_v1 = ctx.actions.declare_output("image.sendstream.v1")
+    sendstream_v1 = ctx.actions.declare_output("image.sendstream.v1", has_content_based_path = False)
 
     ctx.actions.run(
         cmd_args(

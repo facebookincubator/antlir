@@ -26,7 +26,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         format = "sendstream"
     if format == "sendstream":
         if ctx.attrs.src.basename.endswith("zst"):
-            src = ctx.actions.declare_output("uncompressed")
+            src = ctx.actions.declare_output("uncompressed", has_content_based_path = False)
             ctx.actions.run(
                 cmd_args(
                     "zstd",
@@ -47,7 +47,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     if format == "tar":
         if ctx.attrs.src.basename.endswith("gz"):
-            src = ctx.actions.declare_output("uncompressed")
+            src = ctx.actions.declare_output("uncompressed", has_content_based_path = False)
             ctx.actions.run(
                 cmd_args(
                     "bash",
@@ -66,7 +66,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 prefer_local = True,
             )
         if ctx.attrs.src.basename.endswith("zst"):
-            src = ctx.actions.declare_output("uncompressed")
+            src = ctx.actions.declare_output("uncompressed", has_content_based_path = False)
             ctx.actions.run(
                 cmd_args(
                     "zstd",
@@ -84,8 +84,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.force_root_ownership and format not in ["caf", "tar"]:
         fail("force_root_ownership is not supported for format={}".format(format))
 
-    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
-    facts_db = ctx.actions.declare_output("facts")
+    subvol_symlink = ctx.actions.declare_output("subvol_symlink", has_content_based_path = False)
+    facts_db = ctx.actions.declare_output("facts", has_content_based_path = False)
     ctx.actions.run(
         cmd_args(
             # this usually requires privileged btrfs operations

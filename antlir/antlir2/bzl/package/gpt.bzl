@@ -41,7 +41,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     # If we're building a fbpkg, put its uuid in the gpt header
     disk_guid = ctx.attrs.disk_guid or native.read_config("build_info", "package_version")
 
-    spec_json = ctx.actions.declare_output("spec.json")
+    spec_json = ctx.actions.declare_output("spec.json", has_content_based_path = False)
     spec = ctx.actions.write_json(
         spec_json,
         {
@@ -53,7 +53,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         },
         with_inputs = True,
     )
-    out = ctx.actions.declare_output("package.gpt")
+    out = ctx.actions.declare_output("package.gpt", has_content_based_path = False)
     ctx.actions.run(
         cmd_args(
             ctx.attrs._antlir2_packager[RunInfo],

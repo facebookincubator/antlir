@@ -35,7 +35,7 @@ def _generic_impl_with_layer(
     if force_extension and not output_name.endswith("." + force_extension):
         output_name += "." + force_extension
 
-    package = ctx.actions.declare_output(output_name, dir = is_dir)
+    package = ctx.actions.declare_output(output_name, dir = is_dir, has_content_based_path = False)
     spec_opts = {}
     if uses_build_appliance:
         spec_opts["build_appliance"] = build_appliance[BuildApplianceInfo].dir
@@ -180,7 +180,7 @@ def _compressed_impl(
             {"dot_meta": ctx.attrs.dot_meta} if ctx.attrs.dot_meta != None else {}
         ),
     ).artifact("package")
-    package = ctx.actions.declare_output(ctx.label.name)
+    package = ctx.actions.declare_output(ctx.label.name, has_content_based_path = False)
 
     if compressor == "gzip":
         compress_cmd = cmd_args(

@@ -45,6 +45,7 @@ def analyze_features(
             ctx.actions.declare_output(
                 identifier + "/features/" + phase.value,
                 "{}[{}].json".format(feature.feature_type, idx),
+                has_content_based_path = False,
             ),
             as_json_for_depgraph(feature),
             with_inputs = True,
@@ -52,6 +53,7 @@ def analyze_features(
         out = ctx.actions.declare_output(
             identifier + "/features/" + phase.value,
             "{}[{}].analyzed.json".format(feature.feature_type, idx),
+            has_content_based_path = False,
         )
 
         plugin = plugins[str(feature.plugin)]
@@ -79,8 +81,8 @@ def build_depgraph(
         extend_facts: list[Artifact],
         identifier: str,
         phase: BuildPhase) -> (Artifact, Artifact):
-    db_output = ctx.actions.declare_output(identifier, "depgraph")
-    topo_features = ctx.actions.declare_output(identifier, "topo_features.json")
+    db_output = ctx.actions.declare_output(identifier, "depgraph", has_content_based_path = False)
+    topo_features = ctx.actions.declare_output(identifier, "topo_features.json", has_content_based_path = False)
 
     analyzed_features = analyze_features(
         ctx = ctx,
@@ -90,7 +92,7 @@ def build_depgraph(
         phase = phase,
     )
 
-    analyzed_features_json = ctx.actions.declare_output(identifier, "analyzed_features.json")
+    analyzed_features_json = ctx.actions.declare_output(identifier, "analyzed_features.json", has_content_based_path = False)
     analyzed_features_json = ctx.actions.write_json(
         analyzed_features_json,
         analyzed_features,

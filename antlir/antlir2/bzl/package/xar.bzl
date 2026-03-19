@@ -10,7 +10,7 @@ load(":defs.bzl", "squashfs_anon")
 load(":macro.bzl", "package_macro")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    out = ctx.actions.declare_output(ctx.label.name)
+    out = ctx.actions.declare_output(ctx.label.name, has_content_based_path = False)
     squash = ctx.actions.anon_target(squashfs_anon, {
         k: getattr(ctx.attrs, k)
         for k in list(layer_attrs) + list(common_attrs) + list(default_attrs)

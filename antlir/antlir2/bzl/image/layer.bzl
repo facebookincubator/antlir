@@ -59,7 +59,7 @@ def _compile(
     antlir2 = ctx.attrs.antlir2[RunInfo]
     if ctx.attrs._working_format == "btrfs":
         parent_arg = cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args()
-        subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink")
+        subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink", has_content_based_path = False)
         out_arg = cmd_args(subvol_symlink.as_output(), format = "--output={}")
         contents = LayerContents(
             subvol_symlink = subvol_symlink,
@@ -68,7 +68,7 @@ def _compile(
     else:
         fail("unknown working format '{}'".format(ctx.attrs._working_format))
 
-    facts_db_out = ctx.actions.declare_output(identifier, "facts")
+    facts_db_out = ctx.actions.declare_output(identifier, "facts", has_content_based_path = False)
 
     ctx.actions.run(
         cmd_args(
@@ -336,7 +336,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         # read anywhere
         compile_feature_hidden_deps.append(
             ctx.actions.write_json(
-                ctx.actions.declare_output(identifier, "features.json"),
+                ctx.actions.declare_output(identifier, "features.json", has_content_based_path = False),
                 [f.analysis.data for f in features],
                 with_inputs = True,
             ),
@@ -404,7 +404,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         phase_sub_targets["plan"] = [DefaultInfo(sub_targets = plan_sub_targets)]
 
         plans = ctx.actions.write_json(
-            ctx.actions.declare_output(identifier, "plans.json"),
+            ctx.actions.declare_output(identifier, "plans.json", has_content_based_path = False),
             {id: pi.output for id, pi in plans.items() if pi.output != None},
             with_inputs = True,
         )
@@ -422,7 +422,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         phase_sub_targets["depgraph"] = [DefaultInfo(facts_db)]
         phase_sub_targets["topo_features.json"] = [DefaultInfo(topo_features)]
 
-        logs["compile"] = ctx.actions.declare_output(identifier, "compile.log")
+        logs["compile"] = ctx.actions.declare_output(identifier, "compile.log", has_content_based_path = False)
         layer, facts_db = _compile(
             ctx = ctx,
             identifier = identifier,
@@ -439,7 +439,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
         phase_contents.append((phase, layer))
 
-        all_logs = ctx.actions.declare_output(identifier, "logs", dir = True)
+        all_logs = ctx.actions.declare_output(identifier, "logs", dir = True, has_content_based_path = False)
         ctx.actions.symlinked_dir(all_logs, {key + ".log": artifact for key, artifact in logs.items()})
         if layer.subvol_symlink:
             phase_sub_targets["subvol_symlink"] = [DefaultInfo(layer.subvol_symlink)]

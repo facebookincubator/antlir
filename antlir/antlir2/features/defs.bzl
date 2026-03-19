@@ -29,7 +29,7 @@ FeaturePluginInfo = provider(fields = [
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     # copy plugin so that it's RPATH configured below works
     plugin_src = ensure_single_output(ctx.attrs.lib[DefaultInfo].sub_targets["shared"])
-    plugin = ctx.actions.declare_output("{}.so".format(ctx.label.name))
+    plugin = ctx.actions.declare_output("{}.so".format(ctx.label.name), has_content_based_path = False)
     ctx.actions.copy_file(plugin, plugin_src)
 
     # Copy all the .so's that this plugin links against (at the time of writing,

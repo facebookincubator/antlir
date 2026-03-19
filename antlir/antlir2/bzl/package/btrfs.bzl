@@ -12,7 +12,7 @@ load(":gpt.bzl", "GptPartitionSource")
 load(":macro.bzl", "package_macro")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    package = ctx.actions.declare_output("image.btrfs")
+    package = ctx.actions.declare_output("image.btrfs", has_content_based_path = False)
     build_appliance = ctx.attrs.build_appliance
 
     spec = ctx.actions.write_json(

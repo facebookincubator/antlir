@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
 def _rpm_manifest_impl(ctx: AnalysisContext) -> list[Provider]:
-    manifest = ctx.actions.declare_output("manifest.json")
+    manifest = ctx.actions.declare_output("manifest.json", has_content_based_path = False)
     ctx.actions.run(
         cmd_args(
             ctx.attrs._rpm_manifest[RunInfo],

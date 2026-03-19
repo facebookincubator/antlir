@@ -29,7 +29,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     compiled_srcs = {}
     for src in ctx.attrs.srcs:
-        compiled = ctx.actions.declare_output(src.short_path + ".py")
+        compiled = ctx.actions.declare_output(src.short_path + ".py", has_content_based_path = False)
         ctx.actions.run(
             cmd_args(
                 ctx.attrs._compile_template[RunInfo],
@@ -84,7 +84,7 @@ def template(visibility = None, **kwargs):
 
 def _render_impl(ctx: AnalysisContext) -> list[Provider]:
     data_json = ctx.actions.write("data.json", ctx.attrs.data_json)
-    rendered = ctx.actions.declare_output("rendered")
+    rendered = ctx.actions.declare_output("rendered", has_content_based_path = False)
     tmpl = ctx.attrs.template[TemplateInfo]
 
     ctx.actions.run(

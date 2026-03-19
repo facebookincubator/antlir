@@ -235,7 +235,7 @@ ShapeInfo = provider(fields = {
 })
 
 def _shape_rule_impl(ctx: AnalysisContext) -> list[Provider]:
-    ir = ctx.actions.declare_output("ir.json")
+    ir = ctx.actions.declare_output("ir.json", has_content_based_path = False)
     deps = {
         dep.label.raw_target(): dep[ShapeInfo].ir
         for dep in ctx.attrs.deps
@@ -263,7 +263,7 @@ def _shape_rule_impl(ctx: AnalysisContext) -> list[Provider]:
     )
     generated_srcs = {}
     for lang, format in [("python", "pydantic"), ("rust", "rust")]:
-        src = ctx.actions.declare_output("impl." + lang)
+        src = ctx.actions.declare_output("impl." + lang, has_content_based_path = False)
         ctx.actions.run(
             cmd_args(
                 ctx.attrs._ir2code[RunInfo],

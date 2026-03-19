@@ -24,15 +24,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         out_name = (None if ctx.attrs.out == "." else ctx.attrs.out.removesuffix("/")) or "out"
         if ctx.attrs.out == "." or ctx.attrs.out.endswith("/"):
             out_is_dir = True
-            out = ctx.actions.declare_output(out_name, dir = True)
+            out = ctx.actions.declare_output(out_name, dir = True, has_content_based_path = False)
         else:
-            out = ctx.actions.declare_output(out_name)
+            out = ctx.actions.declare_output(out_name, has_content_based_path = False)
         default_info = DefaultInfo(out)
         if ctx.attrs.default_out:
             fail("default_out cannot be combined with out")
     elif ctx.attrs.outs:
         out_is_dir = True
-        out = ctx.actions.declare_output("outs", dir = True)
+        out = ctx.actions.declare_output("outs", dir = True, has_content_based_path = False)
         default_out = out
         if ctx.attrs.default_out:
             default_out = out.project(ctx.attrs.default_out)

@@ -156,7 +156,7 @@ def compiler_plan_to_local_repos(
     Use the planned dnf transaction to build a directory of all the RPM repodata
     and RPM blobs we need to perform the dnf installations in the image.
     """
-    dir = ctx.actions.declare_output(identifier, "dnf_repos", dir = True)
+    dir = ctx.actions.declare_output(identifier, "dnf_repos", dir = True, has_content_based_path = False)
 
     ctx.actions.dynamic_output_new(
         _compiler_plan_to_local_repos_dynamic(

@@ -27,7 +27,7 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
     else:
         layers.insert(0, None)
     for parent, (child_phase, child_contents) in zip(layers, layers[1:]):
-        tar = ctx.actions.declare_output(child_phase.value, "layer.tar")
+        tar = ctx.actions.declare_output(child_phase.value, "layer.tar", has_content_based_path = False)
         if parent:
             parent = parent[1]  # parent phase info doesn't matter, throw it away
         ctx.actions.run(
@@ -47,7 +47,7 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
         # the uncompressed tar is needed for hashing, but then we want to put a
         # compressed tar in the actual archive
         # need a compressed tar to actually put in the archive, but the
-        tar_zst = ctx.actions.declare_output(child_phase.value, "layer.tar.zst")
+        tar_zst = ctx.actions.declare_output(child_phase.value, "layer.tar.zst", has_content_based_path = False)
         ctx.actions.run(
             cmd_args(
                 "zstd",
@@ -106,7 +106,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
                 })]
             sub_targets_layers[str(i)] = [DefaultInfo(sub_targets = multi_layer_subtargets)]
 
-        out = ctx.actions.declare_output(ctx.label.name, dir = True)
+        out = ctx.actions.declare_output(ctx.label.name, dir = True, has_content_based_path = False)
         spec = ctx.actions.write_json(
             "spec.json",
             {"oci": {

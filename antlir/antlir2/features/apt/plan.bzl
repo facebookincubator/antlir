@@ -28,7 +28,7 @@ def _plan_fn(
     # access a parent layer subvolume
     kwargs.pop("rootless", None)
 
-    items = ctx.actions.declare_output(identifier, "apt/items.json")
+    items = ctx.actions.declare_output(identifier, "apt/items.json", has_content_based_path = False)
     items = ctx.actions.write_json(items, feature.analysis.data.items, with_inputs = True)
 
     # Get parent dpkg status from supplements if available
@@ -76,9 +76,9 @@ def plan(
         plan: Dependency,
         suite: Dependency,
         parent_dpkg_status: Artifact | None = None) -> struct:
-    tx = ctx.actions.declare_output(identifier, "apt/transaction.json")
-    dpkg_status_out = ctx.actions.declare_output(identifier, "apt/dpkg_status.txt")
-    debs_dir = ctx.actions.declare_output(identifier, "apt/debs", dir = True)
+    tx = ctx.actions.declare_output(identifier, "apt/transaction.json", has_content_based_path = False)
+    dpkg_status_out = ctx.actions.declare_output(identifier, "apt/dpkg_status.txt", has_content_based_path = False)
+    debs_dir = ctx.actions.declare_output(identifier, "apt/debs", dir = True, has_content_based_path = False)
 
     archive_dir = suite[DebSuiteInfo].archive_dir
 
@@ -110,7 +110,7 @@ def plan(
         ),
     )
 
-    plan_json = ctx.actions.declare_output(identifier, "apt/plan.json")
+    plan_json = ctx.actions.declare_output(identifier, "apt/plan.json", has_content_based_path = False)
     out = ctx.actions.write_json(
         plan_json,
         struct(

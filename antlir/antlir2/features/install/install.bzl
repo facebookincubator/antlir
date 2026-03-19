@@ -240,7 +240,7 @@ def _python_outplace_features(
     # antlir needs this because otherwise the chroot ends up with a bunch of broken symlinks.
     par = ctx.attrs.src[DefaultInfo].sub_targets["outplace"]
     link_tree = par[DefaultInfo].sub_targets["link-tree"]
-    signed_link_tree = ctx.actions.declare_output("signed_link_tree")
+    signed_link_tree = ctx.actions.declare_output("signed_link_tree", has_content_based_path = False)
     ctx.actions.run(
         cmd_args([
             ctx.attrs._mac_signer[RunInfo],
@@ -502,7 +502,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     #
     # We should ignore any first-party shared libs since they'll be bundled with
     # the PAR.
-    rpm_subjects = ctx.actions.declare_output("rpm_requires.txt")
+    rpm_subjects = ctx.actions.declare_output("rpm_requires.txt", has_content_based_path = False)
     if src_is_python:
         features.extend([f.analysis for f in ctx.attrs._python_pex_deps[FeatureInfo].features])
         if is_python_xar_target(ctx.attrs.src):

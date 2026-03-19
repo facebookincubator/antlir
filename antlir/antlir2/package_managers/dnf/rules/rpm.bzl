@@ -24,7 +24,7 @@ RpmInfo = provider(fields = [
 ])
 
 def _make_xml(ctx: AnalysisContext, rpm: Artifact, href: str) -> Artifact:
-    out = ctx.actions.declare_output("xml.json")
+    out = ctx.actions.declare_output("xml.json", has_content_based_path = False)
     ctx.actions.run(
         cmd_args(
             ctx.attrs.makechunk[RunInfo],
@@ -45,7 +45,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     else:
         if not ctx.attrs.url:
             fail("'rpm' or 'url' required")
-        rpm_file = ctx.actions.declare_output("rpm.rpm")
+        rpm_file = ctx.actions.declare_output("rpm.rpm", has_content_based_path = False)
         ctx.actions.download_file(rpm_file, ctx.attrs.url, sha256 = ctx.attrs.sha256, sha1 = ctx.attrs.sha1)
 
     # TODO: move nevra directly into attrs.string()
@@ -91,7 +91,7 @@ def common_impl(
     # too late at that point, and it's a huge efficiency win to only build them
     # once per reflink flavor that we put it directly onto the provider
     extents = {
-        flavor: ctx.actions.declare_output("{}_extents.rpm".format(flavor))
+        flavor: ctx.actions.declare_output("{}_extents.rpm".format(flavor), has_content_based_path = False)
         for flavor in reflink_flavors
     }
     for flavor, appliance in reflink_flavors.items():

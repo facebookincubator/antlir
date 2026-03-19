@@ -30,11 +30,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                     projected = True
                     break
             if not projected:
-                outputs[path] = ctx.actions.declare_output(path.removeprefix("/"))
+                outputs[path] = ctx.actions.declare_output(path.removeprefix("/"), has_content_based_path = False)
     else:
         default_output = ctx.actions.declare_output(
             ctx.attrs.out or paths_bzl.basename(ctx.attrs.path),
             dir = ctx.attrs.dir,
+            has_content_based_path = False,
         )
         outputs = {ctx.attrs.path: default_output}
         projected_outputs = {}

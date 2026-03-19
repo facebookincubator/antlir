@@ -80,8 +80,8 @@ def download_component_package_indexes(
     # Packages index files
     components = {
         component: ComponentPackages(
-            txt = actions.declare_output(component, "Packages"),
-            json = actions.declare_output(component, "packages.json"),
+            txt = actions.declare_output(component, "Packages", has_content_based_path = False),
+            json = actions.declare_output(component, "packages.json", has_content_based_path = False),
         )
         for component in components
     }

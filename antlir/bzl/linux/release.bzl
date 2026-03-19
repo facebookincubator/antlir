@@ -96,7 +96,7 @@ def _release_file_impl(ctx: AnalysisContext) -> list[Provider]:
         if not key.isupper():
             fail("api_versions keys must be UPPER ({})".format(key))
 
-    rev_time = ctx.actions.declare_output("rev_time.txt")
+    rev_time = ctx.actions.declare_output("rev_time.txt", has_content_based_path = False)
     if ctx.attrs.vcs_rev_time:
         ctx.actions.run(
             cmd_args(
@@ -118,7 +118,7 @@ def _release_file_impl(ctx: AnalysisContext) -> list[Provider]:
     else:
         ctx.actions.write(rev_time, "1969-12-31 16:00:00-08:00")
 
-    contents_out = ctx.actions.declare_output("os-release")
+    contents_out = ctx.actions.declare_output("os-release", has_content_based_path = False)
 
     ctx.actions.dynamic_output_new(
         _release_file_dynamic(

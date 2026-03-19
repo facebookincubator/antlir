@@ -25,7 +25,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         ctx.attrs.exe,
         cmd_args(ctx.attrs.args),
     )
-    script = ctx.actions.declare_output("script.sh")
+    script = ctx.actions.declare_output("script.sh", has_content_based_path = False)
     script, hidden = ctx.actions.write(
         script,
         cmd_args(

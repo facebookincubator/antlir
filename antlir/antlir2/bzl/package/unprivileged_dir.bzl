@@ -17,9 +17,9 @@ def _unprivileged_dir_impl_with_layer(
         *,
         ctx: AnalysisContext) -> list[Provider]:
     output_name = ctx.attrs.out or ctx.label.name
-    package = ctx.actions.declare_output(output_name, dir = True)
+    package = ctx.actions.declare_output(output_name, dir = True, has_content_based_path = False)
 
-    encoded_path_mapping = ctx.actions.declare_output("encoded_path_mapping.json")
+    encoded_path_mapping = ctx.actions.declare_output("encoded_path_mapping.json", has_content_based_path = False)
     if not ctx.attrs.base64_encode_filenames:
         ctx.actions.write_json(encoded_path_mapping.as_output(), {})
     spec = ctx.actions.write_json(
