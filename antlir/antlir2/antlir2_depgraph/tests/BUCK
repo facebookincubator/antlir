@@ -532,6 +532,68 @@ bad_depgraph(
     ],
 )
 
+good_depgraph(
+    name = "symlink-targeting-mount",
+    features = [
+        feature.layer_mount(
+            mountpoint = "/mnt",
+            source = ":mount-a",
+        ),
+        feature.ensure_dir_symlink(
+            link = "/mnt-link",
+            target = "/mnt",
+        ),
+    ],
+)
+
+good_depgraph(
+    name = "symlink-targeting-mount-file",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/mnt"),
+        feature.host_mount(
+            is_directory = False,
+            mountpoint = "/mnt/file",
+            source = "/dev/null",
+        ),
+        feature.ensure_file_symlink(
+            link = "/file-link",
+            target = "/mnt/file",
+        ),
+    ],
+)
+
+bad_depgraph(
+    name = "file-symlink-targeting-dir-mount-fails",
+    error_regex = "does not satisfy the validation rules",
+    features = [
+        feature.layer_mount(
+            mountpoint = "/mnt",
+            source = ":mount-a",
+        ),
+        feature.ensure_file_symlink(
+            link = "/mnt-link",
+            target = "/mnt",
+        ),
+    ],
+)
+
+bad_depgraph(
+    name = "dir-symlink-targeting-file-mount-fails",
+    error_regex = "does not satisfy the validation rules",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/mnt"),
+        feature.host_mount(
+            is_directory = False,
+            mountpoint = "/mnt/file",
+            source = "/dev/null",
+        ),
+        feature.ensure_dir_symlink(
+            link = "/file-link",
+            target = "/mnt/file",
+        ),
+    ],
+)
+
 bad_depgraph(
     name = "install-under-mount-fails",
     error_regex = "^.*/mnt.*\\sdoes not satisfy the validation rules: FileType\\(Directory\\)\\s.*",

@@ -87,12 +87,16 @@ impl antlir2_depgraph_if::RequiresProvides for Symlink {
             // exists yet or if it will be created later in the run, but any
             // features that depend on this symlink do, so just always order the
             // symlink after its target
+            let file_type = match self.is_directory {
+                true => FileType::Directory,
+                false => FileType::File,
+            };
             requires.push(Requirement::ordered(
                 ItemKey::Path(absolute_target),
-                Validator::FileType(match self.is_directory {
-                    true => FileType::Directory,
-                    false => FileType::File,
-                }),
+                Validator::Any(vec![
+                    Validator::FileType(file_type),
+                    Validator::MountFileType(file_type),
+                ]),
             ));
         }
         Ok(requires)

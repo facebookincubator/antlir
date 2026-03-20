@@ -32,6 +32,8 @@ pub enum Validator {
     Any(Vec<Validator>),
     /// Assert an [Item] is of a certain [FileType].
     FileType(FileType),
+    /// Assert an [Item] is a [Mount] of a certain [FileType].
+    MountFileType(FileType),
     /// Asserts an [Item] is an executable file.
     Executable,
 }
@@ -44,6 +46,9 @@ impl Validator {
             Self::Any(v) => v.iter().any(|v| v.satisfies(item)),
             Self::FileType(f) => match item {
                 Item::Path(Path::Entry(e)) => e.file_type == *f,
+                _ => false,
+            },
+            Self::MountFileType(f) => match item {
                 Item::Path(Path::Mount(m)) => m.file_type == *f,
                 _ => false,
             },
