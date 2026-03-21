@@ -226,7 +226,7 @@ fn walkdir_entry_to_path_item(path: PathBuf, entry: &walkdir::DirEntry) -> Resul
         Ok(Item::Path(PathItem::Entry(FsEntry {
             path,
             file_type: FileType::File,
-            mode: 0o644,
+            mode: 0o444,
         })))
     } else if entry.file_type().is_dir() {
         Ok(Item::Path(PathItem::Entry(FsEntry {
@@ -423,15 +423,6 @@ impl antlir2_compile::CompileFeature for Install {
                     .uid(uid.as_raw())
                     .gid(gid.as_raw())
                     .call()?;
-
-                if !entry.file_type().is_symlink() {
-                    let mode = if entry.file_type().is_file() {
-                        0o644
-                    } else {
-                        0o755
-                    };
-                    std::fs::set_permissions(&dst_path, Permissions::from_mode(mode))?;
-                }
             }
 
             let dir_path = ctx.dst_path(&self.dst)?;
