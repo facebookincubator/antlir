@@ -43,6 +43,7 @@ antlir_rust_extension(
     crate_root = "fs_utils_rs.rs",
     rust_visibility = ["//antlir/..."],
     typestub = "fs_utils_rs.pyi",
+    deps = [":fs_utils"],
 )
 
 python_library(
@@ -65,7 +66,6 @@ python_library(
         "//tupperware/scripts/...",
     ],
     deps = [
-        ":fs_utils_rs",  # @autodeps2-fixme-manual
     ],
 )
 
@@ -77,6 +77,7 @@ antlir_rust_extension(
     typestub = "artifacts_dir.pyi",
     visibility = ["PUBLIC"],
     deps = [
+        ":fs_utils",
         ":fs_utils_rs-rust",
         "//antlir:find_root",
     ],
