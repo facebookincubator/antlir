@@ -18,6 +18,7 @@ rust_library(
         "thiserror",
         "tracing",
         "//antlir/antlir2/antlir2_rootless/unshare_userns:unshare_userns",
+        "//antlir/antlir2/antlir2_rootless/unshare_userns:unshare_userns_c",
         "//antlir/antlir2/antlir2_userns:antlir2_userns",
     ],
 )

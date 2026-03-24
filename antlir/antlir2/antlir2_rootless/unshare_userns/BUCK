@@ -15,7 +15,7 @@ rust_library(
     ],
     visibility = ["//antlir/antlir2/antlir2_rootless:"],
     deps = [
-        ":unshare_userns_c",  # @autodeps2-fixme-manual
+        ":unshare_userns_c",
     ],
 )
 
@@ -28,5 +28,8 @@ cpp_library(
         # OSS toolchain
         "-D_GNU_SOURCE",
     ],
-    visibility = [":unshare_userns"],
+    visibility = [
+        ":unshare_userns",
+        "//antlir/antlir2/antlir2_rootless:",
+    ],
 )
