@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
-load(":defs.bzl", "bad_depgraph", "good_depgraph")
+load(":defs.bzl", "bad_depgraph", "deterministic_depgraph", "good_depgraph")
 
 oncall("antlir")
 
@@ -605,6 +605,49 @@ bad_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/mnt/empty",
+        ),
+    ],
+)
+
+deterministic_depgraph(
+    name = "deterministic-simple-install",
+    features = [
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo",
+        ),
+        feature.ensure_dirs_exist(dirs = "/etc"),
+        feature.install_text(
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/fakeshell",
+            mode = "a+rx",
+        ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            uidmap = "antlir",
+            username = "antlir",
+        ),
+        feature.group_add(
+            groupname = "antlir",
+            uidmap = "antlir",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/owned-by-antlir",
+            group = "antlir",
+            user = "antlir",
         ),
     ],
 )

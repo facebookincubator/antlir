@@ -102,3 +102,111 @@ def good_depgraph(name, **kwargs):
         layer = ":" + name,
         **default_target_platform_kwargs()
     )
+
+def _deterministic_depgraph_impl(ctx: AnalysisContext) -> list[Provider]:
+    features_info = ctx.attrs.features[FeatureInfo]
+    plugins = {str(plugin.label.raw_target()): plugin[FeaturePluginInfo] for plugin in ctx.plugins[FeaturePluginPluginKind]}
+
+    # Analyze features once - these are the shared inputs to both depgraph runs
+    analyzed_features = analyze_features(
+        ctx = ctx,
+        plugins = plugins,
+        features = features_info.features,
+        identifier = "depgraph_determinism",
+        phase = BuildPhase("compile"),
+    )
+
+    analyzed_features_json = ctx.actions.write_json(
+        ctx.actions.declare_output("analyzed_features.json"),
+        analyzed_features,
+        with_inputs = True,
+    )
+
+    # Run the depgraph builder twice with the same inputs but different output paths
+    outputs = []
+    for run in ("run1", "run2"):
+        db_output = ctx.actions.declare_output(run, "depgraph")
+        topo_features = ctx.actions.declare_output(run, "topo_features.json")
+
+        ctx.actions.run(
+            cmd_args(
+                ctx.attrs.antlir2[RunInfo],
+                "depgraph",
+                cmd_args(analyzed_features_json, format = "--features={}"),
+                cmd_args(db_output.as_output(), format = "--db-out={}"),
+                cmd_args(topo_features.as_output(), format = "--topo-features-out={}"),
+            ),
+            category = "antlir2_depgraph",
+            identifier = run,
+            env = {
+                "RUST_LOG": "antlir2=trace",
+            },
+        )
+        outputs.append((db_output, topo_features))
+
+    db1, topo1 = outputs[0]
+    db2, topo2 = outputs[1]
+
+    compare_script = ctx.actions.write(
+        "compare.sh",
+        """\
+#!/bin/bash
+set -euo pipefail
+if ! cmp -s "$1" "$2"; then
+    echo "FAIL: depgraph db outputs differ"
+    exit 1
+fi
+if ! cmp -s "$3" "$4"; then
+    echo "FAIL: topo_features outputs differ"
+    exit 1
+fi
+echo "PASS: depgraph outputs are bitwise identical"
+""",
+        is_executable = True,
+    )
+
+    cmd = cmd_args(
+        "/bin/bash",
+        compare_script,
+        db1,
+        db2,
+        topo1,
+        topo2,
+    )
+
+    return [
+        DefaultInfo(),
+        RunInfo(args = cmd),
+    ]
+
+_deterministic_depgraph_test_runner = rule(
+    impl = _deterministic_depgraph_impl,
+    attrs = {
+        "antlir2": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2")),
+        "features": attrs.dep(
+            providers = [FeatureInfo],
+            pulls_plugins = [FeaturePluginPluginKind],
+        ),
+        "_analyze_feature": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_depgraph_if:analyze")),
+    },
+    uses_plugins = [FeaturePluginPluginKind],
+)
+
+def deterministic_depgraph(
+        name: str,
+        features,
+        **kwargs):
+    feature.new(
+        name = name + "--features",
+        features = features,
+        visibility = [":" + name],
+    )
+    _deterministic_depgraph_test_runner(
+        name = name + "--test",
+        features = ":" + name + "--features",
+        **(default_target_platform_kwargs() | kwargs)
+    )
+    buck_sh_test(
+        name = name,
+        test = ":" + name + "--test",
+    )
