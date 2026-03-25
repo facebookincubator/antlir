@@ -429,8 +429,15 @@ _erofs, _erofs_anon = _new_package_rule(
     can_be_partition = True,
 )
 
+# @unused
+_cad_stack, _cad_stack_anon = _new_package_rule(
+    format = "cad_stack",
+    is_dir = True,
+)
+
 package = struct(
     btrfs = btrfs,
+    cad_stack = package_macro(_cad_stack, always_rootless = True),
     cpio = package_macro(_cpio),
     cpio_gz = package_macro(_cpio_gz),
     cpio_zst = package_macro(_cpio_zst),

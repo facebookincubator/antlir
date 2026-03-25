@@ -56,7 +56,8 @@ def test_in_layer(
         stub: str,
         layer_features,
         omit_package_features = [],
-        deps: list[str] = []):
+        deps: list[str] = [],
+        ephemeral: str | None = None):
     image.layer(
         name = name + "-layer",
         features = [feature.rpms_install(rpms = ["basesystem"])] + layer_features,
@@ -64,6 +65,7 @@ def test_in_layer(
     image_rust_test(
         name = name,
         layer = ":{}-layer".format(name),
+        ephemeral = ephemeral,
         **rust_test_attrs(
             stub = stub,
             deps = deps,

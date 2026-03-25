@@ -16,6 +16,7 @@ use clap::Parser;
 use json_arg::JsonFile;
 
 mod btrfs;
+mod cad_stack;
 mod cpio;
 mod docker_archive;
 mod erofs;
@@ -103,6 +104,7 @@ fn main() -> Result<()> {
 
     match args.spec.into_inner() {
         Spec::Btrfs(p) => p.build(&args.out),
+        Spec::CadStack(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::Cpio(p) => p.build(&args.out, layer.context("layer required for this format")?),
         Spec::DockerArchive(p) => p.build(&args.out),
         Spec::Erofs(p) => p.build(&args.out, layer.context("layer required for this format")?),

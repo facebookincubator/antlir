@@ -40,6 +40,8 @@ use crate::file_content::FileContent;
 use crate::meta::Data;
 use crate::meta::Inode;
 
+pub const ALIAS_ROOT: &str = "ROOT";
+
 /// Describes what filesystem operation was being performed when an error occurred.
 #[derive(Debug, Clone, Copy)]
 pub enum Operation {
@@ -129,6 +131,14 @@ impl<T> IoContext<T> for std::result::Result<T, rustix::io::Errno> {
 pub fn add_dir_recursive(store: &ObjectStore, dir: fs::Dir) -> Result<Checksum<Dir>> {
     let mut seen_inodes: HashMap<(u64, u64), (PathBuf, Checksum<Inode>)> = HashMap::new();
     add_dir_recursive_impl(store, dir, Path::new("."), &mut seen_inodes)
+}
+
+/// Same as [add_dir_recursive] but also mark this directory as "the root dir"
+/// of the layer for easy lookup later
+pub fn add_root_dir(store: &ObjectStore, dir: fs::Dir) -> Result<Checksum<Dir>> {
+    let root_dir = add_dir_recursive(store, dir)?;
+    store.set_alias(ALIAS_ROOT, &root_dir)?;
+    Ok(root_dir)
 }
 
 fn add_dir_recursive_impl(
@@ -279,6 +289,13 @@ pub fn extract_dir_recursive(
     target: &fs::Dir,
 ) -> Result<()> {
     extract_dir_recursive_impl(store, dir_checksum, target, target, Path::new("."))
+}
+
+/// Same as [extract_dir_recursive] but looks up the root dir instead of needing
+/// to be provided with a checksum
+pub fn extract_root_dir(store: &ObjectStore, target: &fs::Dir) -> Result<()> {
+    let root = store.get_alias_checksum(ALIAS_ROOT)?;
+    extract_dir_recursive(store, &root, target)
 }
 
 fn extract_dir_recursive_impl(

@@ -1,0 +1,28 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/test_images/package:defs.bzl", "test_in_layer")
+
+oncall("antlir")
+
+package.cad_stack(
+    name = "test.cad_stack",
+    layer = "//antlir/antlir2/test_images/package:standard",
+)
+
+test_in_layer(
+    name = "test-cad_stack",
+    # can't materialize xattrs on overlayfs
+    ephemeral = "btrfs",
+    layer_features = [
+        feature.ensure_dirs_exist(dirs = "/package"),
+        feature.install(
+            src = ":test.cad_stack",
+            dst = "/package.cad_stack",
+        ),
+    ],
+    stub = "stub.rs",
+    deps = [
+        "//antlir/antlir2/cad_stack:cad_stack",
+        "//antlir/antlir2/cad_stack/cad_stack_fs:cad_stack_fs",
+    ],
+)

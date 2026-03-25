@@ -11,6 +11,7 @@ use serde::Deserialize;
 #[serde(rename_all = "snake_case")]
 pub enum Spec {
     Btrfs(crate::btrfs::Btrfs),
+    CadStack(crate::cad_stack::CadStack),
     Cpio(crate::cpio::Cpio),
     DockerArchive(crate::docker_archive::DockerArchive),
     Erofs(crate::erofs::Erofs),

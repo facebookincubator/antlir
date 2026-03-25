@@ -7,7 +7,6 @@
 
 use std::collections::BTreeSet;
 use std::collections::VecDeque;
-use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::path::PathBuf;
 
