@@ -41,7 +41,7 @@ def _download_packages_indexes_impl(
                 json,
             ),
             category = "parse",
-            identifier = "{}/Packages".format(component_name),
+            identifier = "{}/{}/Packages".format(arch, component_name),
         )
 
     return []
@@ -77,11 +77,11 @@ def download_component_package_indexes(
         release_json: Artifact,
         metadata_run_info: RunInfo) -> dict[str, ComponentPackages]:
     # Pre-declare one output per component for the decompressed
-    # Packages index files
+    # Packages index files, namespaced by arch to allow multiple arches
     components = {
         component: ComponentPackages(
-            txt = actions.declare_output(component, "Packages", has_content_based_path = False),
-            json = actions.declare_output(component, "packages.json", has_content_based_path = False),
+            txt = actions.declare_output(arch + "/" + component, "Packages", has_content_based_path = False),
+            json = actions.declare_output(arch + "/" + component, "packages.json", has_content_based_path = False),
         )
         for component in components
     }

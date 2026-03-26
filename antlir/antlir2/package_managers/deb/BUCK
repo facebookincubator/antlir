@@ -10,6 +10,10 @@ export_file(
 
 suite(
     name = "trixie",
+    architectures = [
+        "amd64",
+        "arm64",
+    ],
     archive_url = "https://mirror.facebook.net/debian",
     components = [
         "main",

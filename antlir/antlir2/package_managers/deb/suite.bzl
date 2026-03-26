@@ -9,6 +9,7 @@ load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "Snapshotta
 load(":packages_index.bzl", "download_component_package_indexes")
 
 ComponentInfo = provider(fields = {
+    "arch": str,
     "name": str,
     "packages_json": Artifact,
     "packages_txt": Artifact,
@@ -55,24 +56,31 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         identifier = "InRelease",
     )
 
-    components_package_indexes = download_component_package_indexes(
-        actions = ctx.actions,
-        release_json = release_json,
-        components = ctx.attrs.components,
-        arch = ctx.attrs._arch,
-        suite_baseurl = suite_baseurl,
-        metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
-    )
+    # Download package indexes for each architecture
+    per_arch_indexes = {}
+    for arch in ctx.attrs.architectures:
+        per_arch_indexes[arch] = download_component_package_indexes(
+            actions = ctx.actions,
+            release_json = release_json,
+            components = ctx.attrs.components,
+            arch = arch,
+            suite_baseurl = suite_baseurl,
+            metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
+        )
+
     components = [
-        ComponentInfo(name = c, packages_json = p.json, packages_txt = p.txt)
-        for c, p in components_package_indexes.items()
+        ComponentInfo(name = c, arch = arch, packages_json = p.json, packages_txt = p.txt)
+        for arch, arch_indexes in per_arch_indexes.items()
+        for c, p in arch_indexes.items()
     ]
     components_json = ctx.actions.write_json("components.json", components, with_inputs = True)
 
     components_subtargets = {}
-    for cname, c in components_package_indexes.items():
-        components_subtargets[cname] = [DefaultInfo(sub_targets = {"packages.json": [DefaultInfo(c.json)]})]
-        metadata_tree["components/" + cname + "/packages.json"] = c.json
+    for arch, arch_indexes in per_arch_indexes.items():
+        for cname, c in arch_indexes.items():
+            key = arch + "/" + cname
+            components_subtargets[key] = [DefaultInfo(sub_targets = {"packages.json": [DefaultInfo(c.json)]})]
+            metadata_tree["components/" + key + "/packages.json"] = c.json
 
     # Generate a custom InRelease that only lists the components we care
     # about, signed with a dummy key so apt can verify it.
@@ -86,7 +94,6 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         "deb",
         "inrelease",
         cmd_args(release_json, format = "--release-json={}"),
-        cmd_args(ctx.attrs._arch, format = "--arch={}"),
         cmd_args(ctx.attrs._signing_key, format = "--signing-key={}"),
         cmd_args(components_json, format = "--components-json={}"),
         generated_inrelease.as_output(),
@@ -101,12 +108,19 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     archive_dir_srcs = {
         dist_prefix + "InRelease": generated_inrelease,
     }
-    for cname, c in components_package_indexes.items():
-        archive_dir_srcs[dist_prefix + cname + "/binary-" + ctx.attrs._arch + "/Packages"] = c.txt
+    for arch, arch_indexes in per_arch_indexes.items():
+        for cname, c in arch_indexes.items():
+            archive_dir_srcs[dist_prefix + cname + "/binary-" + arch + "/Packages"] = c.txt
 
     archive_dir = ctx.actions.symlinked_dir("archive", archive_dir_srcs)
     metadata_tree["archive"] = archive_dir
     metadata_tree = ctx.actions.symlinked_dir("snapshottable_metadata", metadata_tree)
+
+    all_packages_indexes = [
+        p.json
+        for arch_indexes in per_arch_indexes.values()
+        for p in arch_indexes.values()
+    ]
 
     return [
         DefaultInfo(sub_targets = {
@@ -126,7 +140,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         SnapshottableInfo(
             metadata_tree = metadata_tree,
-            packages_indexes = [c.json for c in components_package_indexes.values()],
+            packages_indexes = all_packages_indexes,
             packages_baseurl = archive_url,
         ),
     ]
@@ -134,14 +148,14 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
 _suite = rule(
     impl = _suite_impl,
     attrs = {
+        "architectures": attrs.list(attrs.string(), default = select({
+            "ovr_config//cpu:arm64": ["arm64"],
+            "ovr_config//cpu:x86_64": ["amd64"],
+        })),
         "archive_url": attrs.string(),
         "components": attrs.list(attrs.string()),
         "distribution": attrs.option(attrs.string(), default = None),
         "inrelease_checksums": attrs.dict(attrs.string(), attrs.string(), default = {}),
-        "_arch": attrs.default_only(attrs.string(default = select({
-            "ovr_config//cpu:arm64": "arm64",
-            "ovr_config//cpu:x86_64": "amd64",
-        }))),
         "_metadata_bin": attrs.default_only(
             attrs.exec_dep(
                 providers = [RunInfo],
