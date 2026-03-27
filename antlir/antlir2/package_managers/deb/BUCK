@@ -25,8 +25,8 @@ suite(
     # snapshot is a P0 for this effort so we can deal with a few diffs in this
     # stack that keep it hardcoded
     inrelease_checksums = {
-        "sha1": "dfb946d1ea6f26a92a523b652dc4b3ccd6fc5a62",
-        "sha256": "59bcb7bc2e221c6e7d2361adf8f82dfbd28ad8d755f2fe42f56d3be42fd25a4c",
+        "sha1": "ca4c891ee6114d2a800cc3b2675a36847ecc1da8",
+        "sha256": "7592e4ccb4658a58bfe485d3356b3c983bf8ccff7fca1f6091e4d4296284ed18",
     },
     visibility = ["PUBLIC"],
 )
