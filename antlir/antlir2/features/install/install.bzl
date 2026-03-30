@@ -12,6 +12,7 @@ load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:python_helpers.bzl", "PYTHON_OUTPLACE_PAR_ROLLOUT", "extract_par_elfs", "is_python_target", "is_python_xar_target")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
@@ -44,7 +45,7 @@ def install(
         user: str | int | Select = "root",
         group: str | int | Select = "root",
         xattrs: dict[str, str] | Select = {},
-        never_use_dev_binary_symlink: bool = False,
+        never_use_dev_binary_symlink: bool | Select = False,
         split_debuginfo: bool = True,
         strip_all: bool = False,
         always_use_gnu_debuglink: bool = False,
@@ -103,8 +104,8 @@ def install(
     # installed is a binary or not
     mode = stat.mode(mode) if mode != None else None
 
-    if setcap and not never_use_dev_binary_symlink:
-        fail("setcap does not work on dev mode binaries. You must set never_use_dev_binary_symlink=True")
+    if setcap:
+        selects.apply(never_use_dev_binary_symlink, lambda v: None if v else fail("setcap does not work on dev mode binaries. You must set never_use_dev_binary_symlink=True"))
 
     if always_use_gnu_debuglink and not split_debuginfo:
         fail("always_use_gnu_debuglink requires split_debuginfo=True")
