@@ -51,7 +51,7 @@ pub(crate) fn run(
     let mut setenv: BTreeMap<_, _> = spec.setenv.into_iter().collect();
     // forward test runner env vars to the inner test
     for (key, val) in std::env::vars() {
-        if key.starts_with("TEST_PILOT") {
+        if key.starts_with("TEST_PILOT") || key.starts_with("TEST_RESULT") {
             setenv.insert(key, val);
         }
     }
@@ -139,6 +139,15 @@ pub(crate) fn run(
                     .context("LLVM_PROFILE_FILE did not have parent")?
                     .to_owned(),
             );
+        }
+    }
+
+    for env in [
+        "TEST_RESULT_ARTIFACTS_DIR",
+        "TEST_RESULT_ARTIFACT_ANNOTATIONS_DIR",
+    ] {
+        if let Some(dir) = std::env::var_os(env) {
+            ctx.outputs(PathBuf::from(&dir));
         }
     }
 
