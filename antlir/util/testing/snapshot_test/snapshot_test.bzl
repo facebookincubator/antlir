@@ -7,7 +7,7 @@
 load("@prelude//:paths.bzl", "paths")
 
 def _dir_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
-    inputs = ctx.actions.declare_output("inputs", dir = True)
+    inputs = ctx.actions.declare_output("inputs", dir = True, has_content_based_path = False)
     input_dir_map = {"actual": ctx.attrs.actual}
     for src in ctx.attrs.snapshot:
         input_dir_map[paths.join("snapshot", src.basename)] = src
@@ -64,7 +64,7 @@ def dir_snapshot_test(**kwargs):
     )
 
 def _file_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
-    inputs = ctx.actions.declare_output("inputs", dir = True)
+    inputs = ctx.actions.declare_output("inputs", dir = True, has_content_based_path = False)
     ctx.actions.copied_dir(inputs, {
         "actual": ctx.attrs.actual,
         "snapshot": ctx.attrs.snapshot,

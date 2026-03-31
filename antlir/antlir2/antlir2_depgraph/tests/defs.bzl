@@ -117,7 +117,7 @@ def _deterministic_depgraph_impl(ctx: AnalysisContext) -> list[Provider]:
     )
 
     analyzed_features_json = ctx.actions.write_json(
-        ctx.actions.declare_output("analyzed_features.json"),
+        ctx.actions.declare_output("analyzed_features.json", has_content_based_path = False),
         analyzed_features,
         with_inputs = True,
     )
@@ -125,8 +125,8 @@ def _deterministic_depgraph_impl(ctx: AnalysisContext) -> list[Provider]:
     # Run the depgraph builder twice with the same inputs but different output paths
     outputs = []
     for run in ("run1", "run2"):
-        db_output = ctx.actions.declare_output(run, "depgraph")
-        topo_features = ctx.actions.declare_output(run, "topo_features.json")
+        db_output = ctx.actions.declare_output(run, "depgraph", has_content_based_path = False)
+        topo_features = ctx.actions.declare_output(run, "topo_features.json", has_content_based_path = False)
 
         ctx.actions.run(
             cmd_args(

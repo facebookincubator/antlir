@@ -26,7 +26,7 @@ def _fact(msg: str) -> struct:
     )
 
 def _plan_fn(*, ctx: AnalysisContext, identifier: str, msg: str, **_kwargs) -> list[PlanInfo]:
-    out = ctx.actions.declare_output(identifier, "out")
+    out = ctx.actions.declare_output(identifier, "out", has_content_based_path = False)
     fact = ctx.actions.write_json(out, [_fact("planner: " + msg)])
     return [PlanInfo(
         id = "extend_facts",
