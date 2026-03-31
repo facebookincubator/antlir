@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::fs::FileTimes;
 use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::PermissionsExt;
 use std::os::unix::fs::fchown;
 use std::path::Path;
 
@@ -54,7 +55,9 @@ where
     trace!("opening dst for metadata operations");
     let f = std::fs::File::open(dst)?;
     trace!("setting permissions");
-    f.set_permissions(metadata.permissions())?;
+    let mut perms = metadata.permissions();
+    perms.set_mode(perms.mode() & !0o002);
+    f.set_permissions(perms)?;
     // There are cases where we might have to re-set the {ug}id to a corrected
     // value if the name differs between two layers, but it's reasonably sane to
     // default to using the same uid/gid instead of root:root as would result
