@@ -17,7 +17,6 @@ pub use btrfs_send_stream_upgrade_lib::send_elements::send_version::SendVersion;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use rand::Rng;
-use rand::rng;
 use structopt::StructOpt;
 
 const FIVE_MILLISECONDS: time::Duration = time::Duration::from_millis(5);
@@ -86,7 +85,7 @@ fn populate_tempfile(tempfile: &mut tempfile::NamedTempFile) -> anyhow::Result<(
 }
 
 fn populate_read_ranges(vec: &mut [Vec<u16>]) -> anyhow::Result<u16> {
-    let mut rng = rng();
+    let mut rng = rand::rng();
     let mut reader = 0usize;
     let start_offset = 2 * (rng.random::<u16>() % MAX_HALF_START_OFFSET);
     let mut start = start_offset;
