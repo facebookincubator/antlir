@@ -17,7 +17,7 @@ pub use btrfs_send_stream_upgrade_lib::send_elements::send_version::SendVersion;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use rand::Rng;
-use rand::thread_rng;
+use rand::rng;
 use structopt::StructOpt;
 
 const FIVE_MILLISECONDS: time::Duration = time::Duration::from_millis(5);
@@ -86,15 +86,15 @@ fn populate_tempfile(tempfile: &mut tempfile::NamedTempFile) -> anyhow::Result<(
 }
 
 fn populate_read_ranges(vec: &mut [Vec<u16>]) -> anyhow::Result<u16> {
-    let mut rng = thread_rng();
+    let mut rng = rng();
     let mut reader = 0usize;
-    let start_offset = 2 * (rng.r#gen::<u16>() % MAX_HALF_START_OFFSET);
+    let start_offset = 2 * (rng.random::<u16>() % MAX_HALF_START_OFFSET);
     let mut start = start_offset;
     while start < MAXIMUM_NUMBER {
         // Since u16 is two bytes long, let's ensure that all lengths
         // are multiples of two to keep both bytes together
         // Also skip zero values
-        let length: u16 = 2 * (rng.r#gen::<u16>() % MAX_HALF_LENGTH + 1u16);
+        let length: u16 = 2 * (rng.random::<u16>() % MAX_HALF_LENGTH + 1u16);
         let end = std::cmp::min(start + length, MAXIMUM_NUMBER);
         vec[reader].push(start);
         vec[reader].push(end);

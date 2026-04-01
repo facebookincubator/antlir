@@ -14,8 +14,8 @@ pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_queue::BlockingQueue;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::ordered_element::OrderedElement;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::ordered_element_queue::OrderedElementQueue;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 
 const FIVE_MILLISECONDS: time::Duration = time::Duration::from_millis(5);
 const TWO_SECONDS: time::Duration = time::Duration::from_secs(2);
@@ -64,7 +64,7 @@ fn producer(
         val += num_threads;
     }
     // Shuffle the values so that the consumer gets them out-of-order
-    let mut rng = thread_rng();
+    let mut rng = rng();
     items_to_enqueue.shuffle(&mut rng);
     // Push everything we have to the consumer; we'll wait a bit between
     // pushes
