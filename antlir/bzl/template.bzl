@@ -53,7 +53,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         TemplateInfo(
             root = root.short_path,
             templates = templates,
-            compiled_srcs = ctx.actions.copied_dir("compiled", templates),
+            compiled_srcs = ctx.actions.copied_dir("compiled", templates, has_content_based_path = False),
         ),
     ]
 

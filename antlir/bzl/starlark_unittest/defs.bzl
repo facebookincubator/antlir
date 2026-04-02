@@ -12,7 +12,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         starlark = ensure_single_output(d)
         deps_dir[str(d.label.raw_target()).replace("//", "/")] = starlark
 
-    deps_dir = ctx.actions.copied_dir("deps", deps_dir)
+    deps_dir = ctx.actions.copied_dir("deps", deps_dir, has_content_based_path = False)
     test_cmd = [
         ctx.attrs._runner[RunInfo],
         cmd_args(ctx.attrs.srcs, format = "--test={}"),

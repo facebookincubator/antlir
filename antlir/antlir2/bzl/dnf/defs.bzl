@@ -33,7 +33,7 @@ def _repodata_only_local_repos_impl(ctx: AnalysisContext) -> list[Provider]:
 
     # copied_dir instead of symlink_dir so that this can be directly bind
     # mounted into the container
-    repos_dir = ctx.actions.copied_dir("repodatas", tree)
+    repos_dir = ctx.actions.copied_dir("repodatas", tree, has_content_based_path = False)
     return [
         DefaultInfo(repos_dir),
         LocalReposInfo(repos_dir = repos_dir),
