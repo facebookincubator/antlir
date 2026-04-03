@@ -112,9 +112,9 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         for cname, c in arch_indexes.items():
             archive_dir_srcs[dist_prefix + cname + "/binary-" + arch + "/Packages"] = c.txt
 
-    archive_dir = ctx.actions.symlinked_dir("archive", archive_dir_srcs)
+    archive_dir = ctx.actions.symlinked_dir("archive", archive_dir_srcs, has_content_based_path = False)
     metadata_tree["archive"] = archive_dir
-    metadata_tree = ctx.actions.symlinked_dir("snapshottable_metadata", metadata_tree)
+    metadata_tree = ctx.actions.symlinked_dir("snapshottable_metadata", metadata_tree, has_content_based_path = False)
 
     all_packages_indexes = [
         p.json
