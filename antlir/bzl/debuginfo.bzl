@@ -16,7 +16,8 @@ def _split(
         default_os: str | None = None,
         visibility: list[str] | None = None,
         rootless: bool | None = None,
-        metadata = None) -> struct:
+        metadata = None,
+        target_compatible_with = None) -> struct:
     """
     Given an OS-like image layer, split it into two images, one of which
     contains the original layer minus any debug symbols and the other _only_ the
@@ -36,6 +37,7 @@ def _split(
         rootless = rootless,
         default_os = default_os,
         metadata = metadata,
+        target_compatible_with = target_compatible_with,
     )
     image.layer(
         name = debuginfo_name,
@@ -52,6 +54,7 @@ def _split(
         rootless = rootless,
         default_os = default_os,
         metadata = metadata,
+        target_compatible_with = target_compatible_with,
     )
     return struct(
         stripped = normalize_target(":" + stripped_name),
