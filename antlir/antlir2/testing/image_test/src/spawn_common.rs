@@ -293,14 +293,19 @@ pub(crate) fn run(
             }
         }
         None => {
-            // some systems-y tests want to read /sys
-            ctx.inputs(Path::new("/sys"));
             ctx.user(spec.user);
             let mut cmd = test.into_inner_cmd().into_iter();
             let program = cmd.next().expect("must have program arg");
             let mut isol = match spec.rootless {
                 false => nspawn(ctx.build())?.command(program)?,
-                true => unshare(ctx.build())?.command(program)?,
+                true => {
+                    // unshare does not mount sysfs. This creates a tmpfs and mount namespaced cgroupfs to it
+                    ctx.sysfs(Path::new("/sys"));
+                    // https://fburl.com/code/m46rogxp
+                    // Some tests using jemalloc will fail without access to this
+                    ctx.inputs(Path::new("/sys/kernel/mm/transparent_hugepage/enabled"));
+                    unshare(ctx.build())?.command(program)?
+                }
             };
             isol.args(cmd);
             debug!("executing test in isolated container: {isol:?}");

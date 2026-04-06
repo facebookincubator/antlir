@@ -220,11 +220,6 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     }
     nspawn_args.push("--capability=all".into());
     env.insert("SYSTEMD_SECCOMP".into(), "0".into());
-    // systemd v259+ refuses pre-existing cgroupfs mounts inside the
-    // container when using cgroup namespaces (CLONE_NEWCGROUP).  Disable
-    // cgroup-namespace mode so that mount_cgroups is called with
-    // accept_existing=true, which restores the pre-v259 behaviour.
-    env.insert("SYSTEMD_NSPAWN_USE_CGNS".into(), "0".into());
 
     Ok(IsolatedContext {
         program: program.into(),
