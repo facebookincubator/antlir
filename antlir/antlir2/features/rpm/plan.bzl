@@ -59,7 +59,7 @@ def plan(
         label: Label,
         flavor: FlavorInfo | typing.Any,
         build_appliance: BuildApplianceInfo | typing.Any,
-        parent_layer_contents: LayerContents | None,
+        parent_layer_contents: LayerContents | None | typing.Any,
         dnf_available_repos: list[Dependency],
         dnf_versionlock: Artifact | None,
         dnf_versionlock_extend: dict[str, str],
