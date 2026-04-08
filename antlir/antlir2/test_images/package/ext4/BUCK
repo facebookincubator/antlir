@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/test_images/package:defs.bzl", "test_in_layer")
+load("//antlir/antlir2/test_images/package:defs.bzl", "package_feature", "test_in_layer")
 load("//antlir/bzl:build_defs.bzl", "python_unittest")
 
 oncall("antlir")
@@ -54,5 +54,6 @@ test_in_layer(
         ),
         feature.rpms_install(rpms = ["e2fsprogs"]),
     ],
+    omit_package_features = [package_feature("hardlink_ino_eq")],
     stub = "stub.rs",
 )
