@@ -130,13 +130,24 @@ pub fn list_unit_files<P>(root: P) -> Result<Vec<UnitFile>>
 where
     P: AsRef<Path>,
 {
-    let out = Command::new("systemctl")
+    let out = match Command::new("systemctl")
         .arg("--output=json")
         .arg("--root")
         .arg(root.as_ref())
         .arg("list-unit-files")
         .output()
-        .context("while running 'systemctl list-unit-files'")?;
+    {
+        Ok(out) => out,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            // systemctl is not available in this environment (e.g. minimal
+            // RE workers), just return an empty list since many image layers
+            // don't contain systemd units anyway.
+            return Ok(Vec::new());
+        }
+        Err(e) => {
+            return Err(anyhow::Error::from(e).context("while running 'systemctl list-unit-files'"));
+        }
+    };
     // systemd can return a non-zero exit code if there are no unit files, while
     // still printing out valid json, so just don't bother checking the error
     // code
