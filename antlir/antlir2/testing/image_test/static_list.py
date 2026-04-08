@@ -56,6 +56,19 @@ def main():
         args = parser.parse_args(sys.argv)
         os.execv(args.wrap, [args.wrap, "--json-output", args.json_output] + args.cmd)
 
+    if which == "rust":
+        # Rust tests don't have a separate lister binary but the test binary
+        # itself supports --list. The test command is passed directly via
+        # _static_list_embeds_test_command.
+        binary = sys.argv[0]
+        # LSAN does not work under PID namespaces or QEMU emulation, so
+        # disable it for test discovery.
+        os.environ["ASAN_OPTIONS"] = "detect_leaks=0"
+        os.execv(
+            binary,
+            [binary, "--list", "-Z", "unstable-options", "--format=json"],
+        )
+
     raise Exception(f"Unknown static list wrapper: {which}")
 
 

@@ -99,6 +99,32 @@ image_python_test(
     layer = ":base",
 )
 
+# This layer includes a service that sleeps for 10 seconds during boot,
+# making test discovery slow if it has to boot the container.
+# With static listing, discovery bypasses the boot entirely.
+image.layer(
+    name = "slow-discovery",
+    features = [
+        systemd.install_unit("slow-discovery.service"),
+        systemd.enable_unit(
+            "slow-discovery.service",
+            target = "default.target",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_rust_test(
+    name = "test-rust-slow-boot-discovery",
+    srcs = ["test_slow_boot.rs"],
+    boot = True,
+    boot_after_units = ["slow-discovery.service"],
+    boot_requires_units = ["slow-discovery.service"],
+    crate = "test_slow_boot",
+    crate_root = "test_slow_boot.rs",
+    layer = ":slow-discovery",
+)
+
 image.layer(
     name = "foo-rpms",
     dnf_available_repos = "//antlir/antlir2/features/rpm/tests:test-repo-set",

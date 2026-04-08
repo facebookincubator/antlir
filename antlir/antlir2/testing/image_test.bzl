@@ -141,7 +141,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     env = env_from_wrapped_test(ctx.attrs.test)
     if ctx.attrs._static_list_wrapper:
         original = env.pop("STATIC_LIST_TESTS_BINARY", None)
-        if original:
+        if ctx.attrs._static_list_embeds_test_command:
+            # (at least rust): no existing lister, use test_command --list
+            # so need to pass the test_command down to the lister
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
+                ctx.attrs._static_list_wrapper[RunInfo],
+                ctx.attrs.test[ExternalRunnerTestInfo].command,
+            ))
+        elif original:
             env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
                 ctx.attrs._static_list_wrapper[RunInfo],
                 cmd_args(original, format = "--wrap={}"),
@@ -215,6 +222,7 @@ _image_test = rule(
         "run_as_user": attrs.string(default = "root"),
         "test": attrs.dep(providers = [ExternalRunnerTestInfo]),
         "_rootless": rootless_cfg.is_rootless_attr,
+        "_static_list_embeds_test_command": attrs.bool(default = False),
         "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
     } | cfg_attrs(),
     doc = "Run a test inside an image layer",
@@ -228,6 +236,7 @@ image_test = rule_with_default_target_platform(_image_test)
 
 def _implicit_image_test(
         test_rule,
+        *,
         name: str,
         layer: str | Select,
         run_as_user: str | Select | None = None,
@@ -245,6 +254,7 @@ def _implicit_image_test(
         rootless: bool | None = None,
         ephemeral: str | None = None,
         _static_list_wrapper: str | None = None,
+        _static_list_embeds_test_command: bool = False,
         exec_compatible_with: list[str] | Select | None = None,
         target_compatible_with: list[str] | Select | None = None,
         default_target_platform: str | None = None,
@@ -324,6 +334,7 @@ def _implicit_image_test(
         rootless = rootless,
         ephemeral = ephemeral,
         _static_list_wrapper = _static_list_wrapper,
+        _static_list_embeds_test_command = _static_list_embeds_test_command,
         exec_compatible_with = exec_compatible_with,
         target_compatible_with = target_compatible_with,
         default_target_platform = default_target_platform,
@@ -341,7 +352,12 @@ image_cpp_test = partial(
     ),
 )
 
-image_rust_test = partial(_implicit_image_test, rust_unittest)
+image_rust_test = partial(
+    _implicit_image_test,
+    rust_unittest,
+    _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-rust",
+    _static_list_embeds_test_command = True,
+)
 image_sh_test = partial(_implicit_image_test, buck_sh_test)
 
 def image_python_test(

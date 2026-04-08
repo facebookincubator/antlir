@@ -73,6 +73,11 @@ pub(crate) fn run(
         }
     }
 
+    // LSAN does not work under PID namespaces, so disable it
+    setenv
+        .entry("ASAN_OPTIONS".to_owned())
+        .or_insert_with(|| "detect_leaks=0".to_owned());
+
     let working_directory = std::env::current_dir().context("while getting cwd")?;
 
     let mut ctx = IsolationContext::builder(&spec.layer);
