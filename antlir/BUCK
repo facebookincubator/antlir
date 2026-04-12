@@ -22,8 +22,8 @@ python_library(
     srcs = ["cli.py"],
     visibility = [
         "//antlir/...",
+        "//cas/caf/...",
         "//cogwheel/launcher_v1/...",
-        "//fbpkg/caf/...",
         "//tupperware/cm/antlir/...",
     ],
     deps = [
@@ -52,8 +52,8 @@ python_library(
     visibility = [
         "fbsource//xplat/scripts/...",
         "//antlir/...",
+        "//cas/caf/...",
         "//chef/tools:chef-lib",
-        "//fbpkg/caf/...",
         "//kernel/kernels:test_selection_lib",
         "//metalos/initrd/facebook/...",
         "//metalos/os/tests:gen-bind-antlir-dirs-library",
