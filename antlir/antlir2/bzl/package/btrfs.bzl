@@ -40,6 +40,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "sudo" if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
+            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
             cmd_args(package.as_output(), format = "--out={}"),
             "--rootless" if ctx.attrs._rootless else cmd_args(),
         ),

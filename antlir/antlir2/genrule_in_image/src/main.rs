@@ -11,19 +11,23 @@ use std::path::PathBuf;
 
 use antlir2_isolate::IsolationContext;
 use antlir2_isolate::unshare;
+use antlir2_working_volume::WorkingFormat;
+use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::ensure;
+use cad_stack_fs::extract_root_dir;
+use cap_std::ambient_authority;
+use cap_std::fs::Dir;
 use clap::Parser;
-use clap::ValueEnum;
 use nix::unistd::Gid;
 use nix::unistd::Uid;
 
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
-    layer: PathBuf,
+    layer: Vec<PathBuf>,
     #[clap(long)]
     rootless: bool,
     #[clap(value_enum, long)]
@@ -47,11 +51,6 @@ struct Out {
     dir: bool,
 }
 
-#[derive(Debug, ValueEnum, Clone, Copy)]
-enum WorkingFormat {
-    Btrfs,
-}
-
 fn main() -> Result<()> {
     let args = Args::parse();
     tracing_subscriber::fmt()
@@ -71,7 +70,32 @@ fn main() -> Result<()> {
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
     drop(root_guard);
 
-    let mut builder = IsolationContext::builder(args.layer.as_path());
+    let layer_path = match args.working_format {
+        WorkingFormat::Btrfs => {
+            ensure!(args.layer.len() == 1, "btrfs requires exactly one layer");
+            args.layer[0].clone()
+        }
+        WorkingFormat::CadStack => {
+            let wv = WorkingVolume::ensure()?;
+            let path = wv.allocate_new_subvol_path()?;
+            std::fs::create_dir_all(&path)?;
+
+            let store = cad_stack::ObjectStore::open_rw(
+                args.layer[0].join("store"),
+                args.layer.iter().skip(1).map(|p| p.join("store")),
+            )
+            .context("while opening cad-stack store")?;
+            extract_root_dir(
+                &store,
+                &Dir::open_ambient_dir(&path, ambient_authority())
+                    .context("while opening new root")?,
+            )
+            .context("while re-hydrating cad-stack")?;
+            path
+        }
+    };
+
+    let mut builder = IsolationContext::builder(layer_path.as_path());
     builder.ephemeral(true);
     #[cfg(facebook)]
     builder.platform(["/usr/local/fbcode", "/mnt/gvfs"]);

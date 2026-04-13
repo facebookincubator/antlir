@@ -31,6 +31,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(out.as_output(), format = "--out={}"),
             cmd_args(spec, format = "--spec={}"),
+            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
         ),
         category = "antlir2_package",
         identifier = "xar",

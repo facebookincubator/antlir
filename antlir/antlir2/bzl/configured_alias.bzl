@@ -53,6 +53,13 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
             constraints = constraints,
         )
 
+    working_format_setting = refs.working_format[ConstraintSettingInfo]
+    if attrs.working_format:
+        constraint = refs.working_format[DefaultInfo].sub_targets.get(attrs.working_format)
+        if not constraint:
+            fail("Invalid working_format: " + attrs.working_format)
+        constraints[working_format_setting.label] = constraint[ConstraintValueInfo]
+
     return PlatformInfo(
         label = platform.label,
         configuration = ConfigurationInfo(
@@ -66,6 +73,7 @@ _transition = transition(
     refs = {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
+        "working_format": "antlir//antlir/antlir2/cfg:working_format",
     } | (
         # @oss-disable[end= ]: fb_refs
         {} # @oss-enable

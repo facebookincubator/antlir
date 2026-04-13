@@ -7,7 +7,7 @@ constraint(
     default = "btrfs",
     values = [
         "btrfs",
-        "none",
+        "cad-stack",
     ],
     visibility = ["PUBLIC"],
 )

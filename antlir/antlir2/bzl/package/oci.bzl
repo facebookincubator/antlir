@@ -124,6 +124,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
                 "--dir",
                 cmd_args(out.as_output(), format = "--out={}"),
                 cmd_args(spec, format = "--spec={}"),
+                cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
             ),
             category = "antlir2_package",
             identifier = "oci",

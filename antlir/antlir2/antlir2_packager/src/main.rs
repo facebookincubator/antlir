@@ -9,9 +9,14 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use antlir2_working_volume::WorkingFormat;
+use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
+use cad_stack_fs::extract_root_dir;
+use cap_std::ambient_authority;
+use cap_std::fs::Dir;
 use clap::Parser;
 use json_arg::JsonFile;
 
@@ -48,7 +53,9 @@ pub(crate) struct PackageArgs {
     spec: JsonFile<Spec>,
     #[clap(long)]
     /// The layer being packaged
-    layer: Option<PathBuf>,
+    layer: Vec<PathBuf>,
+    #[clap(long)]
+    working_format: WorkingFormat,
     #[clap(long)]
     dir: bool,
     #[clap(long)]
@@ -100,28 +107,89 @@ fn main() -> Result<()> {
         None
     };
 
-    let layer = args.layer.as_deref();
+    let materialize_layer = || match args.working_format {
+        WorkingFormat::Btrfs => {
+            if args.layer.len() != 1 {
+                Err(anyhow!("btrfs requires exactly one layer"))
+            } else {
+                Ok(args.layer[0].clone())
+            }
+        }
+        WorkingFormat::CadStack => {
+            let wv = WorkingVolume::ensure()?;
+            let path = wv.allocate_new_subvol_path()?;
+            // Try to create a btrfs subvolume so that formats like sendstream
+            // (which need a real subvolume) work correctly. Fall back to a
+            // plain directory for environments without btrfs (e.g. RE).
+            if antlir2_btrfs::Subvolume::create(&path).is_err() {
+                std::fs::create_dir_all(&path)?;
+            }
+
+            let store = ::cad_stack::ObjectStore::open_rw(
+                args.layer[0].join("store"),
+                args.layer.iter().skip(1).map(|p| p.join("store")),
+            )
+            .context("while opening root store")?;
+            extract_root_dir(
+                &store,
+                &Dir::open_ambient_dir(&path, ambient_authority())
+                    .context("while opening new root")?,
+            )
+            .context("while re-hydrating cad-stack")?;
+            Ok(path)
+        }
+    };
 
     match args.spec.into_inner() {
         Spec::Btrfs(p) => p.build(&args.out),
-        Spec::CadStack(p) => p.build(&args.out, layer.context("layer required for this format")?),
-        Spec::Cpio(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::CadStack(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
+        Spec::Cpio(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
         Spec::DockerArchive(p) => p.build(&args.out),
-        Spec::Erofs(p) => p.build(&args.out, layer.context("layer required for this format")?),
-        Spec::Ext3(p) => p.build(&args.out, layer.context("layer required for this format")?),
-        Spec::Ext4(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Erofs(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
+        Spec::Ext3(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
+        Spec::Ext4(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
         Spec::Gpt(p) => p.build(&args.out),
         Spec::Oci(p) => p.build(&args.out),
-        Spec::Rpm(p) => p.build(&args.out, layer.context("layer required for this format")?),
-        Spec::Sendstream(p) => p.build(&args.out, layer.context("layer required for this format")?),
-        Spec::Squashfs(p) => p.build(&args.out, layer.context("layer required for this format")?),
-        Spec::Tar(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Rpm(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
+        Spec::Sendstream(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
+        Spec::Squashfs(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
+        Spec::Tar(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
         Spec::UnprivilegedDir(p) => p.build(
             &args.out,
-            layer.context("layer required for this format")?,
+            &materialize_layer().context("layer required for this format")?,
             root_guard,
         ),
-        Spec::Vfat(p) => p.build(&args.out, layer.context("layer required for this format")?),
+        Spec::Vfat(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
         Spec::Xar(p) => p.build(&args.out),
     }
 }

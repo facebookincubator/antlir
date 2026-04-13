@@ -18,12 +18,18 @@ use antlir2_facts::fact::subvolume::Subvolume as SubvolumeFact;
 use antlir2_features::Feature;
 use antlir2_features::plugin::Plugin;
 use antlir2_rootless::Rootless;
+use antlir2_working_volume::WorkingFormat;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
+use anyhow::anyhow;
 use buck_label::Label;
+use cad_stack_fs::add_root_dir;
+use cad_stack_fs::extract_root_dir;
+use cap_std::ambient_authority;
+use cap_std::fs::Dir;
 use clap::Parser;
-use clap::ValueEnum;
 use json_arg::JsonFile;
+use tempfile::TempDir;
 use tracing::debug;
 use tracing::trace;
 use tracing::warn;
@@ -43,7 +49,7 @@ pub(crate) struct Compile {
 
     #[clap(long)]
     /// Path to a subvolume to use as the starting point
-    parent: Option<PathBuf>,
+    parent: Vec<PathBuf>,
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
@@ -79,20 +85,20 @@ pub(crate) struct Compile {
     plans: JsonFile<HashMap<String, PathBuf>>,
 }
 
-#[derive(Debug, ValueEnum, Clone, Copy)]
-enum WorkingFormat {
-    Btrfs,
-}
-
 #[derive(Debug)]
 enum WorkingLayer {
     Btrfs(Subvolume),
+    /// On RE, we don't necessarily have a btrfs volume to work with, and it's
+    /// of limited utility even if we did because we would never be able to
+    /// snapshot it
+    TempDir(TempDir),
 }
 
 impl WorkingLayer {
     fn path(&self) -> &Path {
         match self {
             WorkingLayer::Btrfs(subvol) => subvol.path(),
+            WorkingLayer::TempDir(dir) => dir.path(),
         }
     }
 }
@@ -103,6 +109,7 @@ impl Compile {
         // this must happen before unshare
         let working_volume = match self.working_format {
             WorkingFormat::Btrfs => Some(WorkingVolume::ensure()?),
+            WorkingFormat::CadStack => Some(WorkingVolume::ensure()?),
         };
 
         let rootless = match self.rootless {
@@ -221,9 +228,14 @@ impl Compile {
                     subvol.path().display(),
                 );
 
-                let _ = std::fs::remove_file(&self.output);
-                std::os::unix::fs::symlink(subvol.path(), &self.output)
-                    .context("while making symlink")?;
+                match self.working_format {
+                    WorkingFormat::Btrfs => {
+                        let _ = std::fs::remove_file(&self.output);
+                        std::os::unix::fs::symlink(subvol.path(), &self.output)
+                            .context("while making symlink")?;
+                    }
+                    _ => return Err(anyhow!("Btrfs only makes sense with Btrfs").into()),
+                }
 
                 let root_guard = rootless.map(|r| r.escalate()).transpose()?;
                 if let Err(e) = working_volume
@@ -235,6 +247,32 @@ impl Compile {
                 }
                 drop(root_guard);
             }
+            WorkingLayer::TempDir(dir) => match self.working_format {
+                WorkingFormat::CadStack => {
+                    let root_guard = rootless.map(|r| r.escalate()).transpose()?;
+                    antlir2_facts::update_db::sync_db_with_layer()
+                        .db(&self.facts_db_out)
+                        .layer(dir.path())
+                        .maybe_build_appliance(self.build_appliance.as_deref())
+                        .package_manager(&self.package_manager)
+                        .call()?;
+                    drop(root_guard);
+
+                    let store = cad_stack::ObjectStore::open_rw(
+                        self.output.join("store"),
+                        self.parent.iter().map(|p| p.join("store")),
+                    )
+                    .context("while creating cad_stack object store")?;
+                    add_root_dir(
+                        &store,
+                        Dir::open_ambient_dir(dir.path(), ambient_authority())
+                            .context("while opening subvol root")?,
+                    )
+                    .context("while adding root to object store")?;
+                    dir.close().context("while cleaning up tempdir")?;
+                }
+                _ => return Err(anyhow!("TempDir only makes sense with CadStack").into()),
+            },
         }
 
         Ok(())
@@ -263,16 +301,41 @@ impl Compile {
                     .allocate_new_subvol_path()
                     .context("while allocating new path for subvol")?;
                 let _guard = rootless.map(|r| r.escalate()).transpose()?;
-                let subvol = match &self.parent {
-                    Some(parent) => {
+                let subvol = match self.parent.len() {
+                    0 => Subvolume::create(&dst)?,
+                    1 => {
+                        let parent = self.parent[0].clone();
                         trace!("snapshotting parent {parent:?}");
                         let parent = Subvolume::open(parent)?;
                         parent.snapshot(&dst, Default::default())?
                     }
-                    None => Subvolume::create(&dst)?,
+                    _ => return Err(anyhow!("only one parent is supported with btrfs").into()),
                 };
                 debug!("produced r/w subvol '{subvol:?}'");
                 Ok(WorkingLayer::Btrfs(subvol))
+            }
+            WorkingFormat::CadStack => {
+                let _dst = working_volume
+                    .context("working_volume must have been created for btrfs")?
+                    .allocate_new_subvol_path()
+                    .context("while allocating new path for subvol")?;
+                let _guard = rootless.map(|r| r.escalate()).transpose()?;
+                let root_tempdir = TempDir::new().context("while creating tmpdir")?;
+                if !self.parent.is_empty() {
+                    let parent = cad_stack::ObjectStore::open_rw(
+                        self.parent[0].join("store"),
+                        self.parent.iter().skip(1).map(|p| p.join("store")),
+                    )
+                    .context("while opening parent")?;
+                    extract_root_dir(
+                        &parent,
+                        &Dir::open_ambient_dir(root_tempdir.path(), ambient_authority())
+                            .context("while opening new root")?,
+                    )
+                    .context("while re-hydrating parent")?;
+                }
+                debug!("produced r/w tempdir '{:?}'", root_tempdir.path());
+                Ok(WorkingLayer::TempDir(root_tempdir))
             }
         }
     }

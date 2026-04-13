@@ -44,13 +44,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         fail("out or outs is required")
 
     def _with_anon_layer(layer) -> list[Provider]:
+        layer_fmt = layer[LayerInfo].contents.configured_working_format
         ctx.actions.run(
             cmd_args(
                 "sudo" if not ctx.attrs._rootless else cmd_args(),
                 ctx.attrs._genrule_in_image[RunInfo],
                 "--rootless" if ctx.attrs._rootless else cmd_args(),
-                cmd_args(layer[LayerInfo].contents.subvol_symlink, format = "--layer={}") if ctx.attrs._working_format == "btrfs" else cmd_args(),
-                cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
+                cmd_args(
+                    layer[LayerInfo].contents.subvol_symlink if layer_fmt == "btrfs" else layer[LayerInfo].contents.cad_stack,
+                    format = "--layer={}",
+                ),
+                cmd_args(layer_fmt, format = "--working-format={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
                 "--dir" if out_is_dir else cmd_args(),
                 cmd_args([
@@ -65,7 +69,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             ),
             local_only = (
                 # btrfs subvolumes can only exist locally
-                ctx.attrs._working_format == "btrfs" or
+                layer_fmt == "btrfs" or
                 # no sudo access on remote execution
                 not ctx.attrs._rootless or
                 # no aarch64 emulation on remote execution

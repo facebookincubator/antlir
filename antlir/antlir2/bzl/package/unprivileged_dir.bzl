@@ -34,6 +34,7 @@ def _unprivileged_dir_impl_with_layer(
             cmd_args("sudo", "--preserve-env=TMPDIR") if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
+            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
             cmd_args(layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
             "--dir",
             cmd_args(package.as_output(), format = "--out={}"),

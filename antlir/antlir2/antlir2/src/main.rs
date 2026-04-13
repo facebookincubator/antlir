@@ -26,7 +26,7 @@ pub enum Error {
     #[error(transparent)]
     Compile(#[from] antlir2_compile::Error),
     #[error(transparent)]
-    Depgraph(#[from] antlir2_depgraph::Error),
+    Depgraph(Box<antlir2_depgraph::Error>),
     #[error(transparent)]
     Btrfs(#[from] antlir2_btrfs::Error),
     #[error(transparent)]
@@ -43,6 +43,12 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+impl From<antlir2_depgraph::Error> for Error {
+    fn from(e: antlir2_depgraph::Error) -> Self {
+        Error::Depgraph(Box::new(e))
+    }
+}
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -93,6 +99,8 @@ impl LogArgs {
 enum Subcommand {
     Compile(cmd::Compile),
     Depgraph(cmd::Depgraph),
+    #[clap(subcommand)]
+    CadStack(cmd::CadStack),
 }
 
 impl Error {
@@ -130,6 +138,7 @@ fn main() -> Result<()> {
     let result = match args.subcommand {
         Subcommand::Compile(x) => x.run(rootless),
         Subcommand::Depgraph(x) => x.run(),
+        Subcommand::CadStack(x) => x.run(rootless),
     };
     if let Err(e) = result {
         error!("{e:#?}");

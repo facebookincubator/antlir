@@ -6,6 +6,7 @@
 load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":macro.bzl", "package_macro")
@@ -90,8 +91,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "sudo" if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs.antlir2_packager[RunInfo],
             "--rootless" if ctx.attrs._rootless else cmd_args(),
+            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
             cmd_args(spec, format = "--spec={}"),
-            cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
+            cmd_args(
+                {
+                    "btrfs": ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
+                    "cad-stack": ctx.attrs.layer[LayerInfo].contents.cad_stack,
+                }[ctx.attrs._working_format],
+                format = "--layer={}",
+            ),
             cmd_args(sendstream_v1.as_output(), format = "--out={}"),
         ),
         local_only = True,  # needs root and local subvol
@@ -143,7 +151,7 @@ _attrs = {
                                                                  ))),
     "volume_name": attrs.string(default = "volume"),
     "_rootless": rootless_cfg.is_rootless_attr,
-} | layer_attrs | rootless_cfg.attrs
+} | layer_attrs | rootless_cfg.attrs | attrs_selected_by_cfg
 
 _sendstream_v2 = rule(
     impl = _impl,

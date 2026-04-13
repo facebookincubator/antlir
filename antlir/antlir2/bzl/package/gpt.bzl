@@ -58,6 +58,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
+            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
             cmd_args(out.as_output(), format = "--out={}"),
         ),
         category = "antlir2_package",
@@ -88,6 +89,13 @@ _gpt = rule(
             ),
         ),
         "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
+        "_working_format": attrs.default_only(attrs.string(
+            default = select({
+                "DEFAULT": "btrfs",
+                "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
+                "antlir//antlir/antlir2/cfg:working_format[cad-stack]": "cad-stack",
+            }),
+        )),
     },
 )
 

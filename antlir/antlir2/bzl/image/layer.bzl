@@ -60,10 +60,26 @@ def _compile(
     if ctx.attrs._working_format == "btrfs":
         parent_arg = cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args()
         subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink", has_content_based_path = False)
+        cad_stack_top = None
         out_arg = cmd_args(subvol_symlink.as_output(), format = "--output={}")
         contents = LayerContents(
             subvol_symlink = subvol_symlink,
             subvol_symlink_rootless = rootless,
+            configured_working_format = "btrfs",
+        )
+    elif ctx.attrs._working_format == "cad-stack":
+        parent_stack = parent.cad_stack if parent else []
+        parent_arg = cmd_args(parent_stack, format = "--parent={}") if parent else cmd_args()
+        cad_stack_top = ctx.actions.declare_output(identifier, "cad_stack")
+        out_arg = cmd_args(cad_stack_top.as_output(), format = "--output={}")
+
+        subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink")
+
+        contents = LayerContents(
+            subvol_symlink = subvol_symlink,
+            subvol_symlink_rootless = rootless,
+            cad_stack = [cad_stack_top] + parent_stack,
+            configured_working_format = "cad-stack",
         )
     else:
         fail("unknown working format '{}'".format(ctx.attrs._working_format))
@@ -111,6 +127,30 @@ def _compile(
         no_outputs_cleanup = ctx.attrs._working_format == "btrfs",
         error_handler = antlir2_error_handler,
     )
+
+    if ctx.attrs._working_format == "cad-stack":
+        # create a local action that can be used to materialize the cad-stack
+        # directory to a local subvolume for use by rules that don't yet
+        # understand cad-stack natively
+        ctx.actions.run(
+            cmd_args(
+                cmd_args("sudo") if not rootless else cmd_args(),
+                antlir2,
+                "cad-stack",
+                "materialize",
+                cmd_args("--rootless") if rootless else cmd_args(),
+                cmd_args(cad_stack_top, format = "--top={}"),
+                parent_arg,
+                cmd_args(subvol_symlink.as_output(), format = "--subvol-symlink={}"),
+            ),
+            category = "materialize_to_subvol",
+            env = {
+                "RUST_LOG": "antlir2=trace",
+            },
+            identifier = identifier,
+            # by definition this is a local subvolume
+            local_only = True,
+        )
 
     return contents, facts_db_out
 
@@ -453,6 +493,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 rootless = ctx.attrs._rootless,
                 binaries_require_repo = ctx.attrs._binaries_require_repo,
             )
+        if layer.cad_stack:
+            phase_sub_targets["cad_stack"] = [DefaultInfo(layer.cad_stack[0])]
 
         debug_sub_targets[phase.value] = [
             DefaultInfo(
@@ -486,7 +528,9 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         sub_targets["subvol_symlink"] = [DefaultInfo(layer.subvol_symlink)]
     else:
-        fail("no subvol_symlink, this is impossible when the only supported format is btrfs")
+        fail("no subvol_symlink, this is impossible when we always have an action to produce a local btrfs subvolume")
+    if layer.cad_stack:
+        sub_targets["cad_stack"] = [DefaultInfo(layer.cad_stack[0])]
 
     providers = [
         DefaultInfo(
@@ -621,6 +665,7 @@ def layer(
         # mark whether or not this was an implicit layer that must inherit its
         # parent flavor configuration
         implicit_layer_reason: str | None = None,
+        exec_compatible_with = None,
         **kwargs):
     """
     Create a new image layer
@@ -711,6 +756,16 @@ def layer(
             lambda sels: sels.tcw,
         )
 
+    # We can assume that if the caller is passing this, they know what they're
+    # doing and are voiding the antlir2 limited warranty
+    if not exec_compatible_with:
+        exec_compatible_with = ["prelude//platforms:may_run_local"] + select({
+            # arm images can be built on x86_64 hosts, but the reverse
+            # is not true
+            "ovr_config//cpu:arm64": ["ovr_config//os:linux"],
+            "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64", "ovr_config//os:linux"],
+        })
+
     return layer_rule(
         name = name,
         parent_layer = parent_layer,
@@ -721,11 +776,6 @@ def layer(
         target_compatible_with = target_compatible_with,
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
         _binaries_require_repo = binaries_require_repo.select_value,
-        exec_compatible_with = ["prelude//platforms:may_run_local"] + select({
-            # arm images can be built on x86_64 hosts, but the reverse
-            # is not true
-            "ovr_config//cpu:arm64": ["ovr_config//os:linux"],
-            "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64", "ovr_config//os:linux"],
-        }),
+        exec_compatible_with = exec_compatible_with,
         **kwargs
     )

@@ -8,17 +8,15 @@
 #![feature(duration_constructors)]
 
 use std::fmt::Debug;
-use std::fs::OpenOptions;
 use std::io::ErrorKind;
 use std::os::unix::fs::MetadataExt as _;
-use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::fs::chown;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_rootless::Rootless;
-use nix::libc;
+use clap::ValueEnum;
 use nix::unistd::getegid;
 use nix::unistd::geteuid;
 use tracing::trace;
@@ -105,7 +103,7 @@ impl WorkingVolume {
         let mut fix_with_sudo = false;
         if meta.uid() != expected_uid || meta.gid() != expected_gid {
             if let Some(rootless) = rootless {
-                if let Err(e) = rootless
+                if let Err(_e) = rootless
                     .as_root(|| chown(&subvols_dir, Some(expected_uid), Some(expected_gid)))
                     .map_err(std::io::Error::other)
                 {
@@ -147,4 +145,10 @@ impl WorkingVolume {
             .subvols_path()
             .join(Uuid::new_v4().simple().to_string()))
     }
+}
+
+#[derive(Debug, ValueEnum, Clone, Copy, PartialEq, Eq)]
+pub enum WorkingFormat {
+    Btrfs,
+    CadStack,
 }

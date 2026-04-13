@@ -116,6 +116,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     contents = LayerContents(
         subvol_symlink = subvol_symlink,
         subvol_symlink_rootless = ctx.attrs._rootless,
+        configured_working_format = ctx.attrs._working_format,
     )
 
     return [

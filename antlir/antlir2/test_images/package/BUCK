@@ -24,6 +24,14 @@ image.layer(
     ],
 )
 
+image.layer(
+    name = "standard-remote",
+    features = [
+        standard_features(prefix = "/"),
+    ],
+    working_format = "cad-stack",
+)
+
 export_file(
     name = "standard_tests.rs",
     visibility = [

@@ -9,6 +9,7 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "cap-std",
         "clap",
         "nix",
         "tracing",
@@ -16,6 +17,9 @@ rust_binary(
         "walkdir",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
+        "//antlir/antlir2/cad_stack:cad_stack",
+        "//antlir/antlir2/cad_stack/cad_stack_fs:cad_stack_fs",
     ],
 )
 

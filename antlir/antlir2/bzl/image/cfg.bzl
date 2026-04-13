@@ -31,7 +31,7 @@ def cfg_attrs():
             https://www.internalfb.com/intern/staticdocs/antlir2/docs/recipes/multi-os-images/
         """),
         "working_format": attrs.option(
-            attrs.enum(["btrfs"]),
+            attrs.enum(["btrfs", "cad-stack"]),
             default = None,
             doc = "Underlying on-disk format for the layer build",
         ),
@@ -58,6 +58,7 @@ attrs_selected_by_cfg = {
         default = select({
             "DEFAULT": "btrfs",
             "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
+            "antlir//antlir/antlir2/cfg:working_format[cad-stack]": "cad-stack",
         }),
     )),
 }
@@ -93,7 +94,10 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
 
     working_format_setting = refs.working_format[ConstraintSettingInfo]
     if attrs.working_format and working_format_setting.label not in constraints:
-        constraints[working_format_setting.label] = getattr(refs, "working_format." + attrs.working_format)[ConstraintValueInfo]
+        constraint = refs.working_format[DefaultInfo].sub_targets.get(attrs.working_format)
+        if not constraint:
+            fail("Invalid working_format: " + attrs.working_format)
+        constraints[working_format_setting.label] = constraint[ConstraintValueInfo]
 
     label = platform.label
 
@@ -115,7 +119,6 @@ layer_cfg = transition(
         "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:package_manager[dnf]",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
-        "working_format.btrfs": "antlir//antlir/antlir2/cfg:working_format[btrfs]",
     } | (
         # @oss-disable[end= ]: fb_refs
         {} # @oss-enable

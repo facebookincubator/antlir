@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
+load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
@@ -57,7 +58,8 @@ def test_in_layer(
         layer_features,
         omit_package_features = [],
         deps: list[str] = [],
-        ephemeral: str | None = None):
+        ephemeral: str | None = None,
+        also_remote: bool = True):
     image.layer(
         name = name + "-layer",
         features = [feature.rpms_install(rpms = ["basesystem"])] + layer_features,
@@ -72,6 +74,12 @@ def test_in_layer(
             omit_features = omit_package_features,
         )
     )
+    if also_remote:
+        antlir2_configured_alias(
+            name = name + "-remote",
+            actual = ":" + name,
+            working_format = "cad-stack",
+        )
 
 def standard_features(
         *,

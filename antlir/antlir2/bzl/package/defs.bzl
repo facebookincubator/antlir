@@ -58,12 +58,19 @@ def _generic_impl_with_layer(
             cmd_args("sudo", "--preserve-env=TMPDIR") if (sudo and not ctx.attrs._rootless) else cmd_args(),
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
-            cmd_args(layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
+            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
+            cmd_args(
+                {
+                    "btrfs": layer[LayerInfo].contents.subvol_symlink,
+                    "cad-stack": layer[LayerInfo].contents.cad_stack,
+                }[ctx.attrs._working_format],
+                format = "--layer={}",
+            ),
             "--dir" if is_dir else cmd_args(),
             cmd_args(package.as_output(), format = "--out={}"),
             "--rootless" if ctx.attrs._rootless else cmd_args(),
         ),
-        local_only = True,
+        local_only = ctx.attrs._working_format == "btrfs",
         category = "antlir2_package",
         identifier = format,
     )
