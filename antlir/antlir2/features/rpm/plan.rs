@@ -72,9 +72,29 @@ fn main() -> Result<()> {
 
     let args = Args::parse();
 
+    // When running with sudo (not rootless), drop privileges so that the
+    // output file is created with the correct ownership, preventing
+    // root-owned files from being left in buck-out.
+    let rootless_ctx = if !args.rootless {
+        Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?)
+    } else {
+        None
+    };
+
+    // Create the output file as the unprivileged user before entering any
+    // privileged section. Even if the process crashes, this ensures no
+    // root-owned files are left in buck-out.
+    File::create(&args.out).context("while creating output file")?;
+
     if args.rootless {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
+
+    // Re-escalate to root for mount namespace isolation and planning
+    let _root_guard = rootless_ctx
+        .map(|r| r.escalate())
+        .transpose()
+        .context("while re-escalating privileges")?;
 
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
@@ -104,7 +124,7 @@ fn main() -> Result<()> {
             args.exclude_rpm.into_iter().collect(),
         ))
         .context("while planning transaction")?;
-    let out = BufWriter::new(File::create(&args.out).context("while creating output file")?);
+    let out = BufWriter::new(File::create(&args.out).context("while opening output file")?);
     serde_json::to_writer(out, &tx).context("while serializing plan")?;
     Ok(())
 }
