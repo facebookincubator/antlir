@@ -107,3 +107,30 @@ image_python_test(
     # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
 )
+
+# Test collapse_into_one_layer: package the same layer as a single collapsed
+# layer and verify the container still runs correctly.
+
+oci(
+    name = "oci-collapse",
+    collapse_into_one_layer = True,
+    entrypoint = [
+        "/entrypoint.sh",
+        "foo",
+    ],
+    layer = ":layer",
+)
+
+image_python_test(
+    name = "test-collapse",
+    srcs = ["test.py"],
+    env = {
+        "OCI": "$(location :oci-collapse)",
+    },
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
+    layer = ":test-layer",
+)

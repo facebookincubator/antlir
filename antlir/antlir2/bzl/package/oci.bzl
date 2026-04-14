@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "LayerContents", "LayerInfo")
 load(":attrs.bzl", "common_attrs", "default_attrs")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":macro.bzl", "package_macro")
@@ -17,54 +17,75 @@ OciLayersInfo = provider(fields = [
     "layers",  # [(BuildPhase, Artifact)]
 ])
 
+def _make_layer_tar(
+        *,
+        ctx: AnalysisContext,
+        identifier: str,
+        parent: LayerContents | None,
+        child_subvol: LayerContents) -> OciLayer:
+    tar = ctx.actions.declare_output(identifier, "layer.tar", has_content_based_path = False)
+    ctx.actions.run(
+        cmd_args(
+            "sudo" if not ctx.attrs._rootless else cmd_args(),
+            ctx.attrs._make_oci_layer[RunInfo],
+            "--rootless" if ctx.attrs._rootless else cmd_args(),
+            cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args(),
+            cmd_args(child_subvol.subvol_symlink, format = "--child={}"),
+            cmd_args(tar.as_output(), format = "--out={}"),
+        ),
+        local_only = True,  # comparing local subvols
+        category = "oci_layer",
+        identifier = identifier,
+    )
+
+    # the uncompressed tar is needed for hashing, but then we want to put a
+    # compressed tar in the actual archive
+    tar_zst = ctx.actions.declare_output(identifier, "layer.tar.zst", has_content_based_path = False)
+    ctx.actions.run(
+        cmd_args(
+            "zstd",
+            "--compress",
+            "-15",
+            "-T0",  # we like threads
+            tar,
+            "-o",
+            tar_zst.as_output(),
+        ),
+        category = "oci_layer_compress",
+        identifier = identifier,
+    )
+    return OciLayer(tar = tar, tar_zst = tar_zst)
+
 def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
     layer = ctx.attrs.layer[LayerInfo]
 
     oci_layers = []
-    layers = list(layer.phase_contents)
-    if layer.parent:
-        layers.insert(0, (None, layer.parent[LayerInfo].contents))
-    else:
-        layers.insert(0, None)
-    for parent, (child_phase, child_contents) in zip(layers, layers[1:]):
-        tar = ctx.actions.declare_output(child_phase.value, "layer.tar", has_content_based_path = False)
-        if parent:
-            parent = parent[1]  # parent phase info doesn't matter, throw it away
-        ctx.actions.run(
-            cmd_args(
-                "sudo" if not ctx.attrs._rootless else cmd_args(),
-                ctx.attrs._make_oci_layer[RunInfo],
-                "--rootless" if ctx.attrs._rootless else cmd_args(),
-                cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args(),
-                cmd_args(child_contents.subvol_symlink, format = "--child={}"),
-                cmd_args(tar.as_output(), format = "--out={}"),
-            ),
-            local_only = True,  # comparing local subvols
-            category = "oci_layer",
-            identifier = child_phase.value,
-        )
 
-        # the uncompressed tar is needed for hashing, but then we want to put a
-        # compressed tar in the actual archive
-        # need a compressed tar to actually put in the archive, but the
-        tar_zst = ctx.actions.declare_output(child_phase.value, "layer.tar.zst", has_content_based_path = False)
-        ctx.actions.run(
-            cmd_args(
-                "zstd",
-                "--compress",
-                "-15",
-                "-T0",  # we like threads
-                tar,
-                "-o",
-                tar_zst.as_output(),
-            ),
-            category = "oci_layer_compress",
-            identifier = child_phase.value,
-        )
-        oci_layers.append((child_phase, OciLayer(
-            tar = tar,
-            tar_zst = tar_zst,
+    if ctx.attrs.collapse_into_one_layer:
+        # Produce a single layer from the final contents against empty,
+        # ignoring all parent layers and phase breakdowns.
+        last_phase, _last_contents = layer.phase_contents[-1]
+        oci_layers.append((last_phase, _make_layer_tar(
+            ctx = ctx,
+            identifier = "collapsed",
+            parent = None,
+            child_subvol = layer.contents,
         )))
+    else:
+        layers = list(layer.phase_contents)
+        if layer.parent:
+            layers.insert(0, (None, layer.parent[LayerInfo].contents))
+        else:
+            layers.insert(0, None)
+        for parent, (child_phase, child_contents) in zip(layers, layers[1:]):
+            if parent:
+                parent = parent[1]  # parent phase info doesn't matter, throw it away
+            oci_layers.append((child_phase, _make_layer_tar(
+                ctx = ctx,
+                identifier = child_phase.value,
+                parent = parent,
+                child_subvol = child_contents,
+            )))
 
     return [
         DefaultInfo(),
@@ -74,6 +95,7 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
 _oci_layers = anon_rule(
     impl = _oci_layers_impl,
     attrs = {
+        "collapse_into_one_layer": attrs.bool(default = False),
         "layer": attrs.dep(providers = [LayerInfo]),
         "_make_oci_layer": attrs.default_only(
             attrs.exec_dep(
@@ -86,11 +108,14 @@ _oci_layers = anon_rule(
 )
 
 def _impl(ctx: AnalysisContext) -> Promise:
-    layers = [ctx.attrs.layer]
-    for _ in range(0, 1000):
-        if not layers[0][LayerInfo].parent:
-            break
-        layers.insert(0, layers[0][LayerInfo].parent)
+    if ctx.attrs.collapse_into_one_layer:
+        layers = [ctx.attrs.layer]
+    else:
+        layers = [ctx.attrs.layer]
+        for _ in range(0, 1000):
+            if not layers[0][LayerInfo].parent:
+                break
+            layers.insert(0, layers[0][LayerInfo].parent)
 
     def _with_anon(oci_multi_layers) -> list[Provider]:
         deltas = []
@@ -141,6 +166,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         (
             _oci_layers,
             {
+                "collapse_into_one_layer": ctx.attrs.collapse_into_one_layer,
                 "layer": layer,
                 "name": layer[LayerInfo].label,
                 "_make_oci_layer": ctx.attrs._make_oci_layer,
@@ -151,6 +177,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
     ]).promise.map(_with_anon)
 
 oci_attrs = {
+    "collapse_into_one_layer": attrs.bool(default = False, doc = "If True, collapse all layers into a single layer containing the final filesystem state"),
     "entrypoint": attrs.list(attrs.string(), doc = "Command to run as the main process"),
     "ref": attrs.string(
         default = native.read_config("build_info", "revision", "local"),
