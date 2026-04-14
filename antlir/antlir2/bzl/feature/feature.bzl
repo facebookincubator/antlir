@@ -78,6 +78,7 @@ load("//antlir/antlir2/features/requires:requires.bzl", "requires_rule")
 load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_rule")
 load("//antlir/antlir2/features/symlink:symlink.bzl", "ensure_dir_symlink_rule", "ensure_file_symlink_rule")
 load("//antlir/antlir2/features/tarball:tarball.bzl", "tarball_rule")
+load("//antlir/antlir2/features/test_only_features/build_environment:build_environment.bzl", "build_environment_rule")
 load("//antlir/antlir2/features/test_only_features/extend_facts:extend_facts.bzl", "extend_facts_rule")
 load("//antlir/antlir2/features/test_only_features/supplements:supplements.bzl", "supplements_rule")
 load("//antlir/antlir2/features/test_only_features/trace:trace.bzl", "trace_rule")
@@ -113,6 +114,7 @@ _anon_rules = {
     "requires": requires_rule,
     "rpm": rpms_rule,
     "tarball": tarball_rule,
+    "test_only_features/build_environment": build_environment_rule,
     "test_only_features/extend_facts": extend_facts_rule,
     "test_only_features/supplements": supplements_rule,
     "test_only_features/trace": trace_rule,

@@ -1,0 +1,20 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/features/test_only_features/build_environment:build_environment.bzl", "build_environment")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+
+oncall("antlir")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.rpms_install(rpms = ["python3"]),
+        build_environment(path = "/.build_environment.json"),
+    ],
+)
+
+image_python_test(
+    name = "test-build-environment",
+    srcs = ["test_build_environment.py"],
+    layer = ":layer",
+)

@@ -1,0 +1,12 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "build_environment",
+    visibility = ["//antlir/antlir2/features/test_only_features/build_environment/tests/..."],
+    deps = [
+        "nix",
+        "serde_json",
+    ],
+)
