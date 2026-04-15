@@ -48,7 +48,11 @@ def package_macro(
         # Package actions use local_only=True, but add it as a constraint on the
         # exec platform too so that aarch64 devservers don't try to run it
         # remotely anyway
-        kwargs.setdefault("exec_compatible_with", ["prelude//platforms:may_run_local"])
+        kwargs.setdefault("exec_compatible_with", select({
+            "DEFAULT": ["prelude//platforms:may_run_local"],
+            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
+            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
+        }))
 
         buck_rule(
             default_os = default_os,

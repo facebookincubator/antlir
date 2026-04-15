@@ -11,3 +11,14 @@ constraint(
     ],
     visibility = ["PUBLIC"],
 )
+
+constraint(
+    name = "exec_mode",
+    default = "prefer-local",
+    values = [
+        "force-local",
+        "force-remote",
+        "prefer-local",
+    ],
+    visibility = ["PUBLIC"],
+)

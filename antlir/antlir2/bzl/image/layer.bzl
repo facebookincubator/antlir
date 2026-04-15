@@ -121,8 +121,10 @@ def _compile(
             # no sudo access on remote execution
             not ctx.attrs._rootless or
             # no aarch64 emulation on remote execution
-            target_arch == "aarch64"
+            target_arch == "aarch64" or
+            ctx.attrs._exec_mode == "force-local"
         ),
+        prefer_remote = ctx.attrs._exec_mode == "force-remote",
         # the old output is used to clean up the local subvolume
         no_outputs_cleanup = ctx.attrs._working_format == "btrfs",
         error_handler = antlir2_error_handler,
@@ -676,6 +678,9 @@ def layer(
     if "flavor" in kwargs:
         fail("flavor cannot be manually set on layer targets")
 
+    # exec_mode should only be set on package and test targets, not layers
+    kwargs.pop("exec_mode", None)
+
     # Some layers must inherit their parent flavor and not the package setting,
     # but this should be a narrow use case mainly limited to antlir-owned macros.
     if implicit_layer_reason:
@@ -759,7 +764,11 @@ def layer(
     # We can assume that if the caller is passing this, they know what they're
     # doing and are voiding the antlir2 limited warranty
     if not exec_compatible_with:
-        exec_compatible_with = ["prelude//platforms:may_run_local"] + select({
+        exec_compatible_with = select({
+            "DEFAULT": ["prelude//platforms:may_run_local"],
+            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
+            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
+        }) + select({
             # arm images can be built on x86_64 hosts, but the reverse
             # is not true
             "ovr_config//cpu:arm64": ["ovr_config//os:linux"],

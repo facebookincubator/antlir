@@ -255,6 +255,7 @@ def _implicit_image_test(
         ephemeral: str | None = None,
         _static_list_wrapper: str | None = None,
         _static_list_embeds_test_command: bool = False,
+        exec_mode: str | None = None,
         exec_compatible_with: list[str] | Select | None = None,
         target_compatible_with: list[str] | Select | None = None,
         default_target_platform: str | None = None,
@@ -314,7 +315,11 @@ def _implicit_image_test(
         # `image_diff_test` is `local_only=True`, use this to force exec_deps to
         # resolve to the host platform where the test is actually going to
         # execute
-        exec_compatible_with = ["prelude//platforms:may_run_local"]
+        exec_compatible_with = select({
+            "DEFAULT": ["prelude//platforms:may_run_local"],
+            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
+            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
+        })
 
     image_test(
         name = name,
@@ -329,6 +334,7 @@ def _implicit_image_test(
         hostname = hostname,
         default_os = default_os,
         # @oss-disable[end= ]: default_rou = default_rou,
+        exec_mode = exec_mode,
         systemd = systemd or "unconfigured",
         mount_platform = mount_platform,
         rootless = rootless,

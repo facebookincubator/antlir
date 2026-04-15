@@ -55,6 +55,13 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
             fail("Invalid working_format: " + attrs.working_format)
         constraints[working_format_setting.label] = constraint[ConstraintValueInfo]
 
+    exec_mode_setting = refs.exec_mode[ConstraintSettingInfo]
+    if attrs.exec_mode and exec_mode_setting.label not in constraints:
+        constraint = refs.exec_mode[DefaultInfo].sub_targets.get(attrs.exec_mode)
+        if not constraint:
+            fail("Invalid exec_mode: " + attrs.exec_mode)
+        constraints[exec_mode_setting.label] = constraint[ConstraintValueInfo]
+
     label = platform.label
 
     # if we made any changes, change the label
@@ -74,6 +81,7 @@ package_cfg = transition(
     refs = os_transition_refs() | {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
+        "exec_mode": "antlir//antlir/antlir2/cfg:exec_mode",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
     } | (
         # @oss-disable[end= ]: fb_refs

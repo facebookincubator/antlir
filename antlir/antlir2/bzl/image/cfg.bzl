@@ -30,6 +30,10 @@ def cfg_attrs():
             For more details, see:
             https://www.internalfb.com/intern/staticdocs/antlir2/docs/recipes/multi-os-images/
         """),
+        "exec_mode": attrs.option(
+            attrs.enum(["force-local", "force-remote", "prefer-local"]),
+            default = None,
+        ),
         "working_format": attrs.option(
             attrs.enum(["btrfs", "cad-stack"]),
             default = None,
@@ -49,6 +53,14 @@ attrs_selected_by_cfg = {
         providers = [FlavorInfo],
         default = select({os.select_key: os.flavor for os in OSES}),
     ),
+    "_exec_mode": attrs.default_only(attrs.string(
+        default = select({
+            "DEFAULT": "prefer-local",
+            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": "force-local",
+            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": "force-remote",
+            "antlir//antlir/antlir2/cfg:exec_mode[prefer-local]": "prefer-local",
+        }),
+    )),
     "_package_manager": package_manager_selected_attr,
     "_rootless": rootless_cfg.is_rootless_attr,
     "_selected_target_arch": attrs.default_only(attrs.string(
@@ -99,6 +111,13 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
             fail("Invalid working_format: " + attrs.working_format)
         constraints[working_format_setting.label] = constraint[ConstraintValueInfo]
 
+    exec_mode_setting = refs.exec_mode[ConstraintSettingInfo]
+    if attrs.exec_mode and exec_mode_setting.label not in constraints:
+        constraint = refs.exec_mode[DefaultInfo].sub_targets.get(attrs.exec_mode)
+        if not constraint:
+            fail("Invalid exec_mode: " + attrs.exec_mode)
+        constraints[exec_mode_setting.label] = constraint[ConstraintValueInfo]
+
     label = platform.label
 
     # if we made any changes, change the label
@@ -116,6 +135,7 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
 layer_cfg = transition(
     impl = _impl,
     refs = {
+        "exec_mode": "antlir//antlir/antlir2/cfg:exec_mode",
         "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:package_manager[dnf]",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
