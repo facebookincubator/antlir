@@ -14,7 +14,7 @@ pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_queue::BlockingQueue;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::ordered_element::OrderedElement;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::ordered_element_queue::OrderedElementQueue;
-use rand::seq::SliceRandom;
+use rand::seq::SliceRandom as _;
 
 const FIVE_MILLISECONDS: time::Duration = time::Duration::from_millis(5);
 const TWO_SECONDS: time::Duration = time::Duration::from_secs(2);

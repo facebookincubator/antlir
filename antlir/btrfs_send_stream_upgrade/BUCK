@@ -54,7 +54,7 @@ rust_unittest(
     srcs = ["tests/test_ordered_element_queue.rs"],
     deps = [
         "anyhow",
-        "rand_09",
+        "rand",
         ":btrfs_send_stream_upgrade_lib",
     ],
 )
@@ -64,7 +64,7 @@ rust_unittest(
     srcs = ["tests/test_read_once_buffer_cache.rs"],
     deps = [
         "anyhow",
-        "rand_09",
+        "rand",
         "structopt",
         "tempfile",
         ":btrfs_send_stream_upgrade_lib",
@@ -76,7 +76,7 @@ rust_unittest(
     srcs = ["tests/test_unordered_element_queue.rs"],
     deps = [
         "anyhow",
-        "rand_09",
+        "rand",
         ":btrfs_send_stream_upgrade_lib",
     ],
 )

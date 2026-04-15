@@ -15,7 +15,7 @@ pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_queue::BlockingQueue;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::unordered_element::UnorderedElement;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::unordered_element_queue::UnorderedElementQueue;
-use rand::seq::SliceRandom;
+use rand::seq::SliceRandom as _;
 
 const FIVE_MILLISECONDS: time::Duration = time::Duration::from_millis(5);
 const NUM_PRODUCERS: u32 = 17;
