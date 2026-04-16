@@ -4,7 +4,10 @@ oncall("antlir")
 
 feature_impl(
     name = "build_environment",
-    visibility = ["//antlir/antlir2/features/test_only_features/build_environment/tests/..."],
+    visibility = [
+        "//antlir/antlir2/features/test_only_features/build_environment/tests/...",
+        "//antlir/antlir2/test_images/...",
+    ],
     deps = [
         "nix",
         "serde_json",

@@ -73,7 +73,13 @@ def _compile(
         cad_stack_top = ctx.actions.declare_output(identifier, "cad_stack")
         out_arg = cmd_args(cad_stack_top.as_output(), format = "--output={}")
 
-        subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink")
+        # The materialize_to_subvol action is local_only, so we can only
+        # create it when the execution platform supports local execution.
+        # The only case where it doesn't is "force-remote".
+        # When we can't materialize locally, let consumers (like
+        # image_test) create their own with a local-capable platform.
+        can_materialize_locally = ctx.attrs._exec_mode != "force-remote"
+        subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink") if can_materialize_locally else None
 
         contents = LayerContents(
             subvol_symlink = subvol_symlink,
@@ -85,6 +91,17 @@ def _compile(
         fail("unknown working format '{}'".format(ctx.attrs._working_format))
 
     facts_db_out = ctx.actions.declare_output(identifier, "facts", has_content_based_path = False)
+
+    local_only = (
+        # btrfs subvolumes can only exist locally
+        ctx.attrs._working_format == "btrfs" or
+        # no sudo access on remote execution
+        not ctx.attrs._rootless or
+        # aarch64 can only run remotely on aarch64 RE workers, which
+        # are selected by exec_compatible_with when force-remote is set
+        (target_arch == "aarch64" and ctx.attrs._exec_mode != "force-remote") or
+        ctx.attrs._exec_mode == "force-local"
+    )
 
     ctx.actions.run(
         cmd_args(
@@ -115,25 +132,17 @@ def _compile(
             "RUST_LOG": "antlir2=trace",
         },
         identifier = identifier,
-        local_only = (
-            # btrfs subvolumes can only exist locally
-            ctx.attrs._working_format == "btrfs" or
-            # no sudo access on remote execution
-            not ctx.attrs._rootless or
-            # no aarch64 emulation on remote execution
-            target_arch == "aarch64" or
-            ctx.attrs._exec_mode == "force-local"
-        ),
-        prefer_remote = ctx.attrs._exec_mode == "force-remote",
+        local_only = local_only,
+        prefer_remote = not local_only and (ctx.attrs._exec_mode == "force-remote"),
         # the old output is used to clean up the local subvolume
         no_outputs_cleanup = ctx.attrs._working_format == "btrfs",
         error_handler = antlir2_error_handler,
     )
 
-    if ctx.attrs._working_format == "cad-stack":
-        # create a local action that can be used to materialize the cad-stack
-        # directory to a local subvolume for use by rules that don't yet
-        # understand cad-stack natively
+    if ctx.attrs._working_format == "cad-stack" and subvol_symlink:
+        # create a local action that can be used to materialize the
+        # cad-stack directory to a local subvolume for use by rules
+        # that don't yet understand cad-stack natively
         ctx.actions.run(
             cmd_args(
                 cmd_args("sudo") if not rootless else cmd_args(),
@@ -519,7 +528,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
     if layer.subvol_symlink:
-        subvol_symlink = layer.subvol_symlink
         sub_targets["container"] = _container_sub_target(
             ctx.attrs._run_container,
             layer,
@@ -529,14 +537,12 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
 
         sub_targets["subvol_symlink"] = [DefaultInfo(layer.subvol_symlink)]
-    else:
-        fail("no subvol_symlink, this is impossible when we always have an action to produce a local btrfs subvolume")
     if layer.cad_stack:
         sub_targets["cad_stack"] = [DefaultInfo(layer.cad_stack[0])]
 
     providers = [
         DefaultInfo(
-            subvol_symlink,
+            layer.subvol_symlink,
             sub_targets = sub_targets,
         ),
         LayerInfo(
@@ -769,8 +775,19 @@ def layer(
             "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
             "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
         }) + select({
-            # arm images can be built on x86_64 hosts, but the reverse
-            # is not true
+            "DEFAULT": [],
+            # When force-remote, the RE worker must match the target
+            # architecture since there is no cross-arch emulation on
+            # RE workers.
+            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": select({
+                "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+                "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+            }),
+        }) + select({
+            # arm images can be cross-built on x86_64 hosts (but not x86_64 RE
+            # workers) so we omit the CPU constraint for arm64. x86_64 targets
+            # always require an x86_64 execution platform (emulation does not
+            # work aarch64->x86_64).
             "ovr_config//cpu:arm64": ["ovr_config//os:linux"],
             "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64", "ovr_config//os:linux"],
         })

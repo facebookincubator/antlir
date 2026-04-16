@@ -47,6 +47,34 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     boot_after_units = _default_list(ctx.attrs.boot_after_units, default = ["sysinit.target", "basic.target"])
     boot_wants_units = _default_list(ctx.attrs.boot_wants_units, default = ["default.target"])
 
+    layer_contents = ctx.attrs.layer[LayerInfo].contents
+    if layer_contents.subvol_symlink:
+        subvol_symlink = layer_contents.subvol_symlink
+    else:
+        # The layer was compiled on RE without a local materialize_to_subvol
+        # (e.g. force-remote + aarch64). Create our own local materialize
+        # action using the layer's cad_stack.
+        subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+        rootless = layer_contents.subvol_symlink_rootless
+        cad_stack = layer_contents.cad_stack
+        ctx.actions.run(
+            cmd_args(
+                cmd_args("sudo") if not rootless else cmd_args(),
+                ctx.attrs._antlir2[RunInfo],
+                "cad-stack",
+                "materialize",
+                cmd_args("--rootless") if rootless else cmd_args(),
+                cmd_args(cad_stack[0], format = "--top={}"),
+                [cmd_args(p, format = "--parent={}") for p in cad_stack[1:]],
+                cmd_args(subvol_symlink.as_output(), format = "--subvol-symlink={}"),
+            ),
+            category = "materialize_to_subvol",
+            env = {
+                "RUST_LOG": "antlir2=trace",
+            },
+            local_only = True,
+        )
+
     mounts = {}
     for mount in ctx.attrs.layer[LayerInfo].mounts:
         if mount.layer:
@@ -63,7 +91,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             } if ctx.attrs.boot else None,
             "ephemeral": ctx.attrs.ephemeral,
             "hostname": ctx.attrs.hostname,
-            "layer": ctx.attrs.layer[LayerInfo].contents.subvol_symlink,
+            "layer": subvol_symlink,
             "mount_platform": ctx.attrs.mount_platform,
             "mounts": mounts,
             "pass_env": ctx.attrs.test[ExternalRunnerTestInfo].env.keys(),
@@ -221,6 +249,7 @@ _image_test = rule(
         ),
         "run_as_user": attrs.string(default = "root"),
         "test": attrs.dep(providers = [ExternalRunnerTestInfo]),
+        "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
         "_rootless": rootless_cfg.is_rootless_attr,
         "_static_list_embeds_test_command": attrs.bool(default = False),
         "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
@@ -311,15 +340,12 @@ def _implicit_image_test(
         labels = selects.apply(labels, lambda labels: labels + ["uses_sudo"])
 
     if not exec_compatible_with:
-        # Test execution platform is not *usually* where tests run, but since
-        # `image_diff_test` is `local_only=True`, use this to force exec_deps to
-        # resolve to the host platform where the test is actually going to
-        # execute
-        exec_compatible_with = select({
-            "DEFAULT": ["prelude//platforms:may_run_local"],
-            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
-            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
-        })
+        # The test always needs local execution capability (because it requires
+        # a local btrfs subvolume): the test itself runs locally
+        # (remote_enabled=False), and when the layer was compiled on RE without
+        # a local materialize_to_subvol (e.g. force-remote + aarch64), the test
+        # rule creates its own local_only materialize action.
+        exec_compatible_with = ["prelude//platforms:may_run_local"]
 
     image_test(
         name = name,
