@@ -438,7 +438,7 @@ def driver(spec) -> None:
                 gpg_errors[pkg].append("RPM is not signed")
 
     if gpg_warnings:
-        with out as out:
+        with out as f:
             for pkg, errors in gpg_warnings.items():
                 for error in errors:
                     json.dump(
@@ -448,18 +448,18 @@ def driver(spec) -> None:
                                 "error": error,
                             }
                         },
-                        out,
+                        f,
                     )
-                    out.write("\n")
+                    f.write("\n")
     if gpg_errors:
-        with out as out:
+        with out as f:
             for pkg, errors in gpg_errors.items():
                 for error in errors:
                     json.dump(
                         {"gpg_error": {"package": package_struct(pkg), "error": error}},
-                        out,
+                        f,
                     )
-                    out.write("\n")
+                    f.write("\n")
         sys.exit(1)
 
     # setting base.args will record a comment in the history db
@@ -476,7 +476,7 @@ def driver(spec) -> None:
     try:
         base.do_transaction(cb)
     except dnf.exceptions.Error as e:
-        with out as out:
+        with out as f:
             message = str(e)
             if cb.rpms_with_scriptlet_errors:
                 # If we encounter RPMs that must be allowed to have failing
@@ -486,8 +486,8 @@ def driver(spec) -> None:
                 message += " There were scriptlet errors in the following rpms. "
                 message += "Newer versions of dnf can consider this a hard failure. "
                 message += str(cb.rpms_with_scriptlet_errors)
-            json.dump({"tx_error": message}, out)
-            out.write("\n")
+            json.dump({"tx_error": message}, f)
+            f.write("\n")
         sys.exit(1)
     finally:
         base.close()
