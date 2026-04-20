@@ -144,6 +144,12 @@ if is_facebook:
             architectures = [new_arch_t("x86_64")],
             has_platform_toolchain = False,
         ),
+        _new_os(
+            name = "almalinux9",
+            architectures = [new_arch_t("x86_64")],
+            build_appliance = "antlir//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
+            has_platform_toolchain = False,
+        ),
     ])
 else:
     # This is very gross, but there are some tests that still assume C8 exists,
