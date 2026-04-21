@@ -1,54 +1,37 @@
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 oncall("antlir")
 
-rust_library(
+feature_impl(
     name = "extract",
-    srcs = ["extract.rs"],
-    visibility = [],
     deps = [
         "anyhow",
         "goblin",
         "once_cell",
         "regex",
-        "tracing",
+        "serde_json",
         "twox-hash",
-        "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_path:antlir2_path",
     ],
 )
 
-feature_impl(
-    name = "extract_buck_binary",
-    deps = [
-        "serde_json",
-        ":extract",
-    ],
-)
-
-feature_impl(
-    name = "extract_from_layer",
-    deps = [
-        "anyhow",
-        ":extract",
-        "//antlir/antlir2/antlir2_path:antlir2_path",
-    ],
-)
-
 rust_binary(
-    name = "extract-buck-binary-analyze",
-    srcs = ["extract_buck_binary_analyze.rs"],
+    name = "extract-analyze",
+    srcs = ["extract_analyze.rs"],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
         "clap",
+        "nix",
         "serde_json",
         "tracing",
         "tracing-subscriber",
-        ":extract",
-        ":extract_buck_binary.lib",
+        ":extract.lib",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_path:antlir2_path",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
 )

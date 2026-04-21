@@ -25,7 +25,6 @@ load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep_analyze")
 load(
     "//antlir/antlir2/features:feature_info.bzl",
     "FeatureAnalysis",
@@ -34,6 +33,9 @@ load(
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
+
+_EXTRACT_PLUGIN = "antlir//antlir/antlir2/features/extract:extract"
+_EXTRACT_ANALYZE = "antlir//antlir/antlir2/features/extract:extract-analyze"
 
 def extract_from_layer(
         layer: str | Select,
@@ -62,12 +64,16 @@ def extract_from_layer(
     """
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
-        plugin = "antlir//antlir/antlir2/features/extract:extract_from_layer",
+        plugin = _EXTRACT_PLUGIN,
         deps = {
             "layer": layer,
         },
+        exec_deps = {
+            "_analyze": _EXTRACT_ANALYZE,
+        },
         kwargs = {
             "binaries": binaries,
+            "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         },
     )
 
@@ -99,13 +105,13 @@ def extract_buck_binary(
     """
     return ParseTimeFeature(
         feature_type = "extract_buck_binary",
-        plugin = "antlir//antlir/antlir2/features/extract:extract_buck_binary",
+        plugin = _EXTRACT_PLUGIN,
         # include in deps so we can look at the providers
         deps = {
             "src": src,
         },
         exec_deps = {
-            "_analyze": "antlir//antlir/antlir2/features/extract:extract-buck-binary-analyze",
+            "_analyze": _EXTRACT_ANALYZE,
             "_debuginfo_splitter": "fbcode//antlir/antlir2/tools:debuginfo-splitter",
             "_objcopy": internal_external(
                 fb = "fbsource//third-party/binutils:objcopy",
@@ -120,13 +126,39 @@ def extract_buck_binary(
     )
 
 def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
+    layer_subvol = ctx.attrs.layer[LayerInfo].contents.subvol_symlink
+
+    manifest = ctx.actions.declare_output("manifest.json")
+    libs_dir = ctx.actions.declare_output("libs_dir", dir = True)
+
+    binary_args = []
+    for b in ctx.attrs.binaries:
+        binary_args.append(cmd_args(b, format = "--binary={}"))
+
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._analyze[RunInfo],
+            "from-layer",
+            cmd_args(layer_subvol, format = "--layer={}"),
+            binary_args,
+            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+            cmd_args(manifest.as_output(), format = "--manifest={}"),
+            cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
+        ),
+        category = "extract_from_layer",
+        local_only = True,
+    )
+
     return [
         DefaultInfo(),
         FeatureAnalysis(
             feature_type = "extract_from_layer",
             data = struct(
-                layer = layer_dep_analyze(ctx.attrs.layer),
-                binaries = ctx.attrs.binaries,
+                provides = ctx.attrs.binaries,
+                libs = struct(
+                    manifest = manifest,
+                    libs_dir = libs_dir,
+                ),
             ),
             plugin = ctx.attrs.plugin,
         ),
@@ -137,6 +169,8 @@ extract_from_layer_rule = new_feature_rule(
     attrs = {
         "binaries": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "target_arch": attrs.string(),
+        "_analyze": attrs.exec_dep(),
     },
 )
 
@@ -157,7 +191,9 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     ctx.actions.run(
         cmd_args(
             ctx.attrs._analyze[RunInfo],
+            "buck-binary",
             cmd_args(src, format = "--src={}"),
+            cmd_args(ctx.attrs.dst, format = "--dst={}"),
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(manifest.as_output(), format = "--manifest={}"),
             cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
@@ -174,14 +210,12 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
         FeatureAnalysis(
             feature_type = "extract_buck_binary",
             data = struct(
-                src = src,
-                dst = ctx.attrs.dst,
+                provides = [ctx.attrs.dst],
                 libs = struct(
                     manifest = manifest,
                     libs_dir = libs_dir,
                 ),
             ),
-            required_artifacts = [src],
             plugin = ctx.attrs.plugin,
         ),
     ]

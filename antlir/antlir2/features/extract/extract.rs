@@ -6,14 +6,26 @@
  */
 
 use std::borrow::Cow;
+use std::collections::BTreeSet;
 use std::ffi::OsStr;
+use std::fs::File;
 use std::hash::Hasher;
+use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_compile::Arch;
+use antlir2_compile::CompilerContext;
 use antlir2_compile::util::copy_with_metadata;
+use antlir2_depgraph_if::Requirement;
+use antlir2_depgraph_if::Validator;
+use antlir2_depgraph_if::item::FileType;
+use antlir2_depgraph_if::item::FsEntry;
+use antlir2_depgraph_if::item::Item;
+use antlir2_depgraph_if::item::ItemKey;
+use antlir2_depgraph_if::item::Path as PathItem;
+use antlir2_features::types::PathInLayer;
 use antlir2_isolate::IsolationContext;
 use antlir2_isolate::unshare;
 use antlir2_path::PathExt;
@@ -22,9 +34,110 @@ use anyhow::Result;
 use goblin::elf::Elf;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use serde::Deserialize;
+use serde::Serialize;
+use serde::de::Deserializer;
+use serde::de::Error as _;
 use tracing::trace;
-use tracing::warn;
 use twox_hash::XxHash64;
+
+pub type Feature = Extract;
+
+/// An entry in the extract manifest describing a file to install.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub enum ManifestEntry {
+    /// Copy a file from libs_dir to an absolute path in the image
+    File { src_relpath: PathBuf, dst: PathBuf },
+    /// Create a symlink at `link` pointing to `target`
+    Symlink { link: PathBuf, target: PathBuf },
+}
+
+/// A manifest of files to install in the image, produced by an analysis action
+/// and consumed by the extract feature compile step.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct Manifest(pub BTreeSet<ManifestEntry>);
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct Extract {
+    pub provides: Vec<PathInLayer>,
+    pub libs: Libs,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct Libs {
+    #[serde(deserialize_with = "Libs::deserialize_manifest_file")]
+    manifest: Manifest,
+    libs_dir: PathBuf,
+}
+
+impl Libs {
+    fn deserialize_manifest_file<'de, D>(deserializer: D) -> Result<Manifest, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let path = PathBuf::deserialize(deserializer)?;
+        let f =
+            BufReader::new(File::open(&path).map_err(|e| {
+                D::Error::custom(format!("failed to open {}: {e}", path.display()))
+            })?);
+        serde_json::from_reader(f).map_err(D::Error::custom)
+    }
+}
+
+impl antlir2_depgraph_if::RequiresProvides for Extract {
+    fn provides(&self) -> Result<Vec<Item>, String> {
+        // Intentionally provide only the direct files the user asked for,
+        // because we don't want to produce conflicts with all the transitive
+        // dependencies. However, we will check that any duplicated items are in
+        // fact identical, to prevent insane mismatches like this
+        // https://fb.workplace.com/groups/btrmeup/posts/5913570682055882
+        Ok(self
+            .provides
+            .iter()
+            .map(|path| {
+                Item::Path(PathItem::Entry(FsEntry {
+                    path: path.to_owned(),
+                    file_type: FileType::File,
+                    mode: 0o555,
+                }))
+            })
+            .collect())
+    }
+
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
+        Ok(self
+            .provides
+            .iter()
+            .map(|path| {
+                Requirement::ordered(
+                    ItemKey::Path(path.parent().expect("dst always has parent").to_owned()),
+                    Validator::FileType(FileType::Directory),
+                )
+            })
+            .collect())
+    }
+}
+
+impl antlir2_compile::CompileFeature for Extract {
+    #[tracing::instrument(name = "extract", skip(ctx), ret, err)]
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
+        for entry in &self.libs.manifest.0 {
+            match entry {
+                ManifestEntry::File { src_relpath, dst } => {
+                    trace!("copying {} -> {}", src_relpath.display(), dst.display());
+                    copy_dep(&self.libs.libs_dir.join(src_relpath), &ctx.dst_path(dst)?)?;
+                }
+                ManifestEntry::Symlink { link, target } => {
+                    trace!("symlinking {} -> {}", link.display(), target.display());
+                    let dst = ctx.dst_path(link)?;
+                    let _ = std::fs::remove_file(&dst);
+                    std::os::unix::fs::symlink(target, &dst)?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
 
 /// Simple regex to parse the output of `ld.so --list` which is used to resolve
 /// the dependencies of a binary.
@@ -204,4 +317,14 @@ pub fn default_interpreter(target: Arch) -> &'static Path {
         Arch::X86_64 => "/usr/lib64/ld-linux-x86-64.so.2",
         Arch::Aarch64 => "/lib/ld-linux-aarch64.so.1",
     })
+}
+
+/// In all the cases that we care about, a library will live under /lib64, but
+/// this directory will be a symlink to /usr/lib64. To avoid build conflicts with
+/// other image layers, replace it.
+pub fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
+    match path.starts_with("/lib") || path.starts_with("/lib64") {
+        false => Cow::Borrowed(path),
+        true => Cow::Owned(Path::new("/usr").join_abs(path)),
+    }
 }
