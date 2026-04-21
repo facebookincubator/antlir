@@ -72,6 +72,15 @@ _RPMS_THAT_CAN_FAIL_SCRIPTS = {
     "nsight-compute-2019.4.0": "TODO(T166170831)",
 }
 
+# Intentionally unsigned RPMs built by package.rpm() to fix broken upstream
+# dependency declarations. These are metadata-only packages with no files.
+# When any of these are in the transaction, RPM's package file verification
+# must be disabled since they have no signatures.
+_UNSIGNED_RPMS = {
+    "antlir2-chef",
+    "antlir2-chef-always-cleanup",
+}
+
 
 _SCRIPTLET_ERROR_RE = re.compile(r"^Error in (\S+) scriptlet in rpm package (.*)$")
 
@@ -473,6 +482,29 @@ def driver(spec) -> None:
     cb = TransactionProgress(
         out, ignore_scriptlet_errors=spec["ignore_scriptlet_errors"]
     )
+    # If any known unsigned packages (see _UNSIGNED_RPMS) are in the
+    # transaction, disable RPM's package file verification during the
+    # transaction test. This is safe because we already verified GPG signatures
+    # for all packages in the loop above (unsigned packages from @commandline
+    # or repos without gpgkeys are explicitly skipped there).
+    #
+    # Newer RPM versions (e.g. in ELN) enforce signature verification during
+    # transaction tests, rejecting unsigned packages regardless of the
+    # _pkgverify_level macro or setVSFlags(). The only reliable way to skip
+    # verifyPackageFiles() is via setProbFilter(RPMPROB_FILTER_VERIFY).
+    # RPMPROB_FILTER_IGNOREARCH is needed because we do cross-compile
+    # for aarch64 in Sandcastle.
+    if any(pkg.name in _UNSIGNED_RPMS for pkg in base.transaction.install_set):
+        base._ts.ts.setVSFlags(librpm._RPMVSF_NOSIGNATURES | librpm._RPMVSF_NODIGESTS)
+        # getProbFilter() is not available in all RPM Python binding versions
+        current_filter = (
+            base._ts.ts.getProbFilter() if hasattr(base._ts.ts, "getProbFilter") else 0
+        )
+        base._ts.ts.setProbFilter(
+            current_filter
+            | librpm.RPMPROB_FILTER_VERIFY
+            | librpm.RPMPROB_FILTER_IGNOREARCH
+        )
     try:
         base.do_transaction(cb)
     except dnf.exceptions.Error as e:
