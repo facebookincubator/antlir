@@ -132,15 +132,19 @@ def _impl(ctx: AnalysisContext) -> Promise:
             sub_targets_layers[str(i)] = [DefaultInfo(sub_targets = multi_layer_subtargets)]
 
         out = ctx.actions.declare_output(ctx.label.name, dir = True, has_content_based_path = False)
+        spec_oci = {
+            "deltas": deltas,
+            "entrypoint": ctx.attrs.entrypoint,
+            "facts_db": ctx.attrs.layer[LayerInfo].facts_db,
+            "ref": ctx.attrs.ref,
+            "skopeo": ctx.attrs._skopeo[DefaultInfo].default_outputs[0],
+            "skopeo_policy": ctx.attrs._skopeo_policy[DefaultInfo].default_outputs[0],
+            "target_arch": ctx.attrs._target_arch,
+            "zstd_chunked": ctx.attrs.zstd_chunked,
+        }
         spec = ctx.actions.write_json(
             "spec.json",
-            {"oci": {
-                "deltas": deltas,
-                "entrypoint": ctx.attrs.entrypoint,
-                "facts_db": ctx.attrs.layer[LayerInfo].facts_db,
-                "ref": ctx.attrs.ref,
-                "target_arch": ctx.attrs._target_arch,
-            }},
+            {"oci": spec_oci},
             with_inputs = True,
         )
         ctx.actions.run(
@@ -183,9 +187,23 @@ oci_attrs = {
         default = native.read_config("build_info", "revision", "local"),
         doc = "Ref name for OCI image",
     ),
+    "zstd_chunked": attrs.bool(
+        default = False,
+        doc = "If True, re-materialize the OCI layout with zstd:chunked-compressed layers via skopeo",
+    ),
     "_make_oci_layer": attrs.default_only(
         attrs.exec_dep(
             default = "antlir//antlir/antlir2/antlir2_packager/make_oci_layer:make-oci-layer",
+        ),
+    ),
+    "_skopeo": attrs.default_only(
+        attrs.exec_dep(
+            default = "//crackerjack/vaagent:skopeo",
+        ),
+    ),
+    "_skopeo_policy": attrs.default_only(
+        attrs.exec_dep(
+            default = "//crackerjack/vaagent:skopeo_policy",
         ),
     ),
 }

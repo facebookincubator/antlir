@@ -134,3 +134,27 @@ image_python_test(
     # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
 )
+
+oci(
+    name = "oci-zstd-chunked",
+    entrypoint = [
+        "/entrypoint.sh",
+        "foo",
+    ],
+    layer = ":layer",
+    zstd_chunked = True,
+)
+
+image_python_test(
+    name = "test-zstd-chunked",
+    srcs = ["test_zstd_chunked.py"],
+    env = {
+        "OCI": "$(location :oci-zstd-chunked)",
+    },
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
+    layer = ":test-layer",
+)
