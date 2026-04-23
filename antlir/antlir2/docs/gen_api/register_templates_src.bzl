@@ -13,7 +13,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         for f in ctx.attrs.templates
     ])
     src += "])}"
-    src = ctx.actions.write("register_templates_src.rs", src)
+    src = ctx.actions.write("register_templates_src.rs", src, has_content_based_path = False)
     return [DefaultInfo(src)]
 
 register_templates_src = rule(

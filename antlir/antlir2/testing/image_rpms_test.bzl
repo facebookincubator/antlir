@@ -19,7 +19,7 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
     if not src:
         if ctx.attrs.names == None:
             fail("'names' is required if 'src' is omitted")
-        src = ctx.actions.write("names.txt", "\n".join(ctx.attrs.names))
+        src = ctx.actions.write("names.txt", "\n".join(ctx.attrs.names), has_content_based_path = False)
     script = ctx.actions.write(
         "test.sh",
         cmd_args(
@@ -38,6 +38,7 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         is_executable = True,
         with_inputs = True,
+        has_content_based_path = False,
     )
     return [
         DefaultInfo(),

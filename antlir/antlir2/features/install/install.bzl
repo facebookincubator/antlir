@@ -332,7 +332,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     src = ctx.attrs.src
     mode = ctx.attrs.mode
     if ctx.attrs.text != None:
-        src = ctx.actions.write("install_text", ctx.attrs.text)
+        src = ctx.actions.write("install_text", ctx.attrs.text, has_content_based_path = False)
 
     # If the user is installing a directory, we require they include a trailing
     # '/' in `dst` because there is otherwise no way to tell

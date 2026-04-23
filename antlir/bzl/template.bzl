@@ -83,7 +83,7 @@ def template(visibility = None, **kwargs):
     )
 
 def _render_impl(ctx: AnalysisContext) -> list[Provider]:
-    data_json = ctx.actions.write("data.json", ctx.attrs.data_json)
+    data_json = ctx.actions.write("data.json", ctx.attrs.data_json, has_content_based_path = False)
     rendered = ctx.actions.declare_output("rendered", has_content_based_path = False)
     tmpl = ctx.attrs.template[TemplateInfo]
 
