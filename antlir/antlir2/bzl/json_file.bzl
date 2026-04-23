@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    f = ctx.actions.write_json("out.json", ctx.attrs.obj)
+    f = ctx.actions.write_json("out.json", ctx.attrs.obj, has_content_based_path = False)
     return [DefaultInfo(f)]
 
 json_file = rule(

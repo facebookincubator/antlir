@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    supplements_json = ctx.actions.write_json("supplements.json", ctx.attrs.layer[LayerInfo].supplements)
+    supplements_json = ctx.actions.write_json("supplements.json", ctx.attrs.layer[LayerInfo].supplements, has_content_based_path = False)
     return [
         DefaultInfo(supplements_json),
     ]

@@ -40,7 +40,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 value = ctx.attrs.value,
             ),
         ),
-    ])
+    ], has_content_based_path = False)
 
     return [
         DefaultInfo(),

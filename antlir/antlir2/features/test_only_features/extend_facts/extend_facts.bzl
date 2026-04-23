@@ -36,7 +36,7 @@ def _plan_fn(*, ctx: AnalysisContext, identifier: str, msg: str, **_kwargs) -> l
     )]
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [_fact(ctx.attrs.msg)])
+    fact_json = ctx.actions.write_json("facts.json", [_fact(ctx.attrs.msg)], has_content_based_path = False)
 
     return [
         DefaultInfo(),

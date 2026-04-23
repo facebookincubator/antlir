@@ -12,7 +12,7 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     root = ensure_single_output(ctx.attrs.root)
     if ctx.attrs.env:
-        env_json = ctx.actions.write_json("env.json", ctx.attrs.env)
+        env_json = ctx.actions.write_json("env.json", ctx.attrs.env, has_content_based_path = False)
     else:
         env_json = None
     cmd = cmd_args(

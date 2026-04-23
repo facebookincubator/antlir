@@ -73,7 +73,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         for arch, arch_indexes in per_arch_indexes.items()
         for c, p in arch_indexes.items()
     ]
-    components_json = ctx.actions.write_json("components.json", components, with_inputs = True)
+    components_json = ctx.actions.write_json("components.json", components, with_inputs = True, has_content_based_path = False)
 
     components_subtargets = {}
     for arch, arch_indexes in per_arch_indexes.items():

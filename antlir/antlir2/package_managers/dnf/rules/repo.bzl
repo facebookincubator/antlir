@@ -78,7 +78,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         offline_map[package_href(rpm.nevra, rpm.pkgid)] = rpm.raw_rpm
     ctx.actions.copied_dir(offline, offline_map)
 
-    dnf_conf_json = ctx.actions.write_json("dnf_conf.json", ctx.attrs.dnf_conf)
+    dnf_conf_json = ctx.actions.write_json("dnf_conf.json", ctx.attrs.dnf_conf, has_content_based_path = False)
 
     return [
         DefaultInfo(default_outputs = [repodata], sub_targets = {

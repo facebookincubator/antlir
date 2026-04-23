@@ -9,7 +9,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "filelists": ctx.attrs.filelists,
             "other": ctx.attrs.other,
             "primary": ctx.attrs.primary,
-        }),
+        }, has_content_based_path = False),
     )]
 
 xml = rule(
