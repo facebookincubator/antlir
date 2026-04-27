@@ -32,6 +32,8 @@ def _make_layer_tar(
             cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args(),
             cmd_args(child_subvol.subvol_symlink, format = "--child={}"),
             cmd_args(tar.as_output(), format = "--out={}"),
+            cmd_args(ctx.attrs.strip_paths, format = "--strip-path={}"),
+            cmd_args(ctx.attrs.retain_paths, format = "--retain-path={}"),
         ),
         local_only = True,  # comparing local subvols
         category = "oci_layer",
@@ -97,6 +99,8 @@ _oci_layers = anon_rule(
     attrs = {
         "collapse_into_one_layer": attrs.bool(default = False),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "retain_paths": attrs.list(attrs.string(), default = []),
+        "strip_paths": attrs.list(attrs.string(), default = []),
         "_make_oci_layer": attrs.default_only(
             attrs.exec_dep(
                 default = "antlir//antlir/antlir2/antlir2_packager/make_oci_layer:make-oci-layer",
@@ -173,6 +177,8 @@ def _impl(ctx: AnalysisContext) -> Promise:
                 "collapse_into_one_layer": ctx.attrs.collapse_into_one_layer,
                 "layer": layer,
                 "name": layer[LayerInfo].label,
+                "retain_paths": [str(p) for p in ctx.attrs.retain_paths],
+                "strip_paths": [str(p) for p in ctx.attrs.strip_paths],
                 "_make_oci_layer": ctx.attrs._make_oci_layer,
                 "_rootless": ctx.attrs._rootless,
             },
@@ -187,6 +193,8 @@ oci_attrs = {
         default = native.read_config("build_info", "revision", "local"),
         doc = "Ref name for OCI image",
     ),
+    "retain_paths": attrs.list(attrs.regex(), default = [], doc = "List of regexes matched against absolute paths in the image; any path that does NOT match is excluded from the OCI layer tar"),
+    "strip_paths": attrs.list(attrs.regex(), default = [], doc = "List of regexes matched against absolute paths in the image; any matching path is excluded from the OCI layer tar"),
     "zstd_chunked": attrs.bool(
         default = False,
         doc = "If True, re-materialize the OCI layout with zstd:chunked-compressed layers via skopeo",

@@ -4,8 +4,14 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:oci.bzl", "oci")
 load("//antlir/antlir2/features/oci:oci.bzl", "oci_features")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+load("//antlir/bzl:build_defs.bzl", "python_library")
 
 oncall("antlir")
+
+python_library(
+    name = "podman_helpers",
+    srcs = ["podman_helpers.py"],
+)
 
 image.layer(
     name = "base",
@@ -106,6 +112,7 @@ image_python_test(
     }),
     # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
+    deps = [":podman_helpers"],
 )
 
 # Test collapse_into_one_layer: package the same layer as a single collapsed
@@ -133,6 +140,7 @@ image_python_test(
     }),
     # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
+    deps = [":podman_helpers"],
 )
 
 oci(
@@ -157,4 +165,123 @@ image_python_test(
     }),
     # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
     layer = ":test-layer",
+    deps = [":podman_helpers"],
+)
+
+# Test strip_paths and retain_paths filtering
+
+image.layer(
+    name = "filter-layer",
+    features = [
+        feature.rpms_install(rpms = ["bash"]),
+        feature.install_text(
+            dst = "/kept-file",
+            text = "this file is kept\n",
+        ),
+        feature.install_text(
+            dst = "/ignored-file",
+            text = "this file is ignored\n",
+        ),
+        feature.ensure_dirs_exist(dirs = "/ignored-dir"),
+        feature.install_text(
+            dst = "/ignored-dir/nested",
+            text = "nested in ignored dir\n",
+        ),
+        feature.install_text(
+            dst = "/entrypoint.sh",
+            mode = "a+rx",
+            text = """#!/bin/bash
+echo "filter-test"
+""",
+        ),
+    ],
+)
+
+oci(
+    name = "oci-strip-paths",
+    entrypoint = ["/entrypoint.sh"],
+    layer = ":filter-layer",
+    strip_paths = [
+        "^/ignored-file$",
+        "^/ignored-dir",
+    ],
+)
+
+oci(
+    name = "oci-retain-paths",
+    entrypoint = ["/entrypoint.sh"],
+    layer = ":filter-layer",
+    retain_paths = [
+        "^/entrypoint\\.sh$",
+        "^/kept-file$",
+        "^/usr",
+        "^/lib",
+        "^/bin",
+        "^/sbin",
+        "^/etc",
+        "^/var",
+    ],
+)
+
+image.layer(
+    name = "strip-whiteout-base",
+    features = [
+        feature.rpms_install(rpms = ["bash"]),
+        feature.ensure_dirs_exist(dirs = "/wh-test-dir"),
+        feature.install_text(
+            dst = "/wh-test-dir/removed-file",
+            text = "will be removed in child layer\n",
+        ),
+        feature.install_text(
+            dst = "/wh-test-dir/kept-file",
+            text = "stays\n",
+        ),
+        feature.ensure_dirs_exist(dirs = "/wh-deleted-dir"),
+        feature.install_text(
+            dst = "/wh-deleted-dir/file",
+            text = "parent dir deleted\n",
+        ),
+        feature.install_text(
+            dst = "/entrypoint.sh",
+            mode = "a+rx",
+            text = """#!/bin/bash
+echo "wh-test"
+""",
+        ),
+    ],
+)
+
+image.layer(
+    name = "strip-whiteout-child",
+    features = [
+        feature.remove(path = "/wh-test-dir/removed-file"),
+        feature.remove(path = "/wh-deleted-dir"),
+    ],
+    parent_layer = ":strip-whiteout-base",
+)
+
+oci(
+    name = "oci-strip-whiteout",
+    entrypoint = ["/entrypoint.sh"],
+    layer = ":strip-whiteout-child",
+    strip_paths = [
+        "^/wh-test-dir/removed-file$",
+    ],
+)
+
+image_python_test(
+    name = "test-path-filtering",
+    srcs = ["test_path_filtering.py"],
+    env = {
+        "OCI_RETAIN": "$(location :oci-retain-paths)",
+        "OCI_STRIP": "$(location :oci-strip-paths)",
+        "OCI_STRIP_WHITEOUT": "$(location :oci-strip-whiteout)",
+    },
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
+    layer = ":test-layer",
+    deps = [":podman_helpers"],
 )

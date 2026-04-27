@@ -5,40 +5,21 @@
 
 import json
 import os
-import re
 import subprocess
 from pathlib import Path
-from subprocess import CalledProcessError
 from unittest import TestCase
+
+from antlir.antlir2.test_images.package.oci.podman_helpers import load_image
 
 OCI_PATH: Path = Path(os.environ["OCI"])
 
 
 class Test(TestCase):
-    def load_image(self) -> str:
-        try:
-            proc = subprocess.run(
-                ["podman", "load", "--input", OCI_PATH],
-                check=True,
-                text=True,
-                capture_output=True,
-            )
-        except CalledProcessError as e:
-            self.fail(f"podman load failed ({e.returncode}): {e.stdout}\n{e.stderr}")
-        self.assertIn("Loaded image", proc.stdout)
-        image_id = re.match(
-            r"^Loaded image: sha256:([a-f0-9]+)$", proc.stdout, re.MULTILINE
-        )
-        self.assertIsNotNone(image_id)
-        image_id = image_id.group(1)
-        self.assertIsNotNone(image_id)
-        return image_id
-
     def test_podman_load(self) -> None:
-        self.assertIsNotNone(self.load_image())
+        self.assertIsNotNone(load_image(OCI_PATH))
 
     def test_podman_run(self) -> None:
-        image_id = self.load_image()
+        image_id = load_image(OCI_PATH)
         proc = subprocess.run(
             [
                 "podman",
@@ -61,7 +42,7 @@ class Test(TestCase):
 
     def test_image_has_labels(self) -> None:
         """Verify that the image contains the expected labels."""
-        image_id = self.load_image()
+        image_id = load_image(OCI_PATH)
 
         # Inspect the image to get labels
         proc = subprocess.run(
@@ -80,7 +61,7 @@ class Test(TestCase):
 
     def test_image_has_env(self) -> None:
         """Verify that the image contains the expected environment variables."""
-        image_id = self.load_image()
+        image_id = load_image(OCI_PATH)
 
         # Inspect the image to get env
         proc = subprocess.run(

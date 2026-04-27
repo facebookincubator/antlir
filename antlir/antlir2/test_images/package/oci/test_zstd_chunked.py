@@ -8,11 +8,10 @@
 
 import json
 import os
-import re
-import subprocess
 from pathlib import Path
-from subprocess import CalledProcessError
 from unittest import TestCase
+
+from antlir.antlir2.test_images.package.oci.podman_helpers import load_image
 
 OCI_PATH: Path = Path(os.environ["OCI"])
 ZSTD_CHUNKED_MEDIA_TYPE = "application/vnd.oci.image.layer.v1.tar+zstd"
@@ -24,25 +23,6 @@ ZSTD_CHUNKED_ANNOTATIONS = (
 
 
 class TestZstdChunked(TestCase):
-    def load_image(self) -> str:
-        try:
-            proc = subprocess.run(
-                ["podman", "load", "--input", OCI_PATH],
-                check=True,
-                text=True,
-                capture_output=True,
-            )
-        except CalledProcessError as e:
-            self.fail(f"podman load failed ({e.returncode}): {e.stdout}\n{e.stderr}")
-        self.assertIn("Loaded image", proc.stdout)
-        image_id = re.match(
-            r"^Loaded image: sha256:([a-f0-9]+)$", proc.stdout, re.MULTILINE
-        )
-        self.assertIsNotNone(image_id)
-        image_id = image_id.group(1)
-        self.assertIsNotNone(image_id)
-        return image_id
-
     def manifest(self) -> object:
         index = json.loads((OCI_PATH / "index.json").read_text())
         self.assertEqual(1, len(index["manifests"]))
@@ -64,4 +44,4 @@ class TestZstdChunked(TestCase):
                 self.assertNotEqual("", annotations[annotation])
 
     def test_podman_load_accepts_zstd_chunked_oci(self) -> None:
-        self.assertIsNotNone(self.load_image())
+        self.assertIsNotNone(load_image(OCI_PATH))

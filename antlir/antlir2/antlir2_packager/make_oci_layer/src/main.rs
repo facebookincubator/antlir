@@ -24,6 +24,7 @@ use clap::Parser;
 use nix::sys::stat::SFlag;
 use nix::sys::stat::major;
 use nix::sys::stat::minor;
+use regex::RegexSet;
 use tar::Builder;
 use tar::EntryType;
 use tar::Header;
@@ -44,6 +45,10 @@ struct Args {
     out: PathBuf,
     #[clap(long)]
     rootless: bool,
+    #[clap(long)]
+    strip_path: Vec<String>,
+    #[clap(long)]
+    retain_path: Vec<String>,
 }
 
 struct Entry {
@@ -110,12 +115,57 @@ impl Entries {
     }
 }
 
+struct PathFilter {
+    strip: RegexSet,
+    retain: RegexSet,
+}
+
+impl PathFilter {
+    fn new(strip_patterns: &[String], retain_patterns: &[String]) -> Result<Self> {
+        Ok(Self {
+            strip: RegexSet::new(strip_patterns).with_context(|| {
+                format!("while compiling strip_path regexes {strip_patterns:?}")
+            })?,
+            retain: RegexSet::new(retain_patterns).with_context(|| {
+                format!("while compiling retain_path regexes {retain_patterns:?}")
+            })?,
+        })
+    }
+
+    // Regexes match against absolute paths as they appear inside the container.
+    fn should_keep(&self, path: &Path) -> bool {
+        // no filtering -> keep all entries
+        if self.strip.is_empty() && self.retain.is_empty() {
+            return true;
+        }
+        // paths we get here typically do not have a leading slash, so one must
+        // be added
+        let path_str = if path.is_absolute() {
+            path.display().to_string()
+        } else {
+            format!("/{}", path.display())
+        };
+        // if the path matches any of the strip patterns, it is not kept
+        if self.strip.is_match(&path_str) {
+            return false;
+        }
+        // if any retain_paths have been set, that is our answer
+        if !self.retain.is_empty() {
+            return self.retain.is_match(&path_str);
+        }
+        // if nothing else has happened, keep it
+        true
+    }
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
     if args.rootless {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
+
+    let path_filter = PathFilter::new(&args.strip_path, &args.retain_path)?;
 
     let stream: Iter<File> = match &args.parent {
         Some(parent) => Iter::diff(parent, &args.child)?,
@@ -136,6 +186,9 @@ fn main() -> Result<()> {
     for change in stream {
         let change = change?;
         let path = change.path().to_owned();
+        if path != Path::new("") && !path_filter.should_keep(&path) {
+            continue;
+        }
         match change.into_operation() {
             Operation::Create { mode } => {
                 // File is being created - remove from pending whiteouts if present
@@ -354,9 +407,10 @@ fn main() -> Result<()> {
 
     // Add missing parent directories to the tar.
     // When creating subdirectories, parent directories may exist in the child layer
-    // (inherited from parent layers with custom ownership) but don't appear in the
-    // btrfs send stream if they weren't modified. Container runtimes implicitly create
-    // missing parents as root:root, losing the correct ownership from parent layers.
+    // (inherited from parent layers with custom ownership) but don't appear in
+    // the change stream if they weren't modified. Container runtimes implicitly
+    // create missing parents as root:root, losing the correct ownership from
+    // parent layers.
     // Solution: Explicitly include all parent directories from the child layer.
     let initial_paths: Vec<PathBuf> = written_to_tar.iter().cloned().collect();
     let mut written_paths: HashSet<PathBuf> = written_to_tar.clone();
@@ -409,6 +463,10 @@ fn main() -> Result<()> {
     // Skip redundant nested whiteouts - if a parent directory is being deleted,
     // we don't need whiteout markers for its children.
     for wh_path in &pending_whiteouts {
+        if !path_filter.should_keep(wh_path) {
+            continue;
+        }
+
         // Check if any ancestor of this path is also being deleted
         let has_deleted_ancestor = wh_path
             .ancestors()
