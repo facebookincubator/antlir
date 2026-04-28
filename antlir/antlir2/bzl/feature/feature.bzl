@@ -176,6 +176,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         json_file = ctx.actions.write_json(
             "features.json",
             [as_json_for_depgraph(feature) for feature in features],
+            has_content_based_path = False,
         )
 
         return [

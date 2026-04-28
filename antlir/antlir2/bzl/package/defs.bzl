@@ -52,6 +52,7 @@ def _generic_impl_with_layer(
         "spec.json",
         {format: spec_opts},
         with_inputs = True,
+        has_content_based_path = False,
     )
     ctx.actions.run(
         cmd_args(

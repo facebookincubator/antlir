@@ -82,6 +82,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "volume_name": ctx.attrs.volume_name,
         }},
         with_inputs = True,
+        has_content_based_path = False,
     )
 
     sendstream_v1 = ctx.actions.declare_output("image.sendstream.v1", has_content_based_path = False)

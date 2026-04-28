@@ -250,6 +250,7 @@ def _shape_rule_impl(ctx: AnalysisContext) -> list[Provider]:
         "deps.json",
         deps,
         with_inputs = True,
+        has_content_based_path = False,
     )
     ctx.actions.run(
         cmd_args(

@@ -99,6 +99,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "user": ctx.attrs.run_as_user,
         },
         with_inputs = True,
+        has_content_based_path = False,
     )
 
     env_args = [

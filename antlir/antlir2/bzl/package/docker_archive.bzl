@@ -25,6 +25,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
                 "repo_tags": ctx.attrs.repo_tags,
             }},
             with_inputs = True,
+            has_content_based_path = False,
         )
         ctx.actions.run(
             cmd_args(

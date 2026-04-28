@@ -25,6 +25,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "target_name": ctx.label.name,
         }},
         with_inputs = True,
+        has_content_based_path = False,
     )
     ctx.actions.run(
         cmd_args(

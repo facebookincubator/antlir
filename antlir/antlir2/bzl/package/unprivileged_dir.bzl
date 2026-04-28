@@ -28,6 +28,7 @@ def _unprivileged_dir_impl_with_layer(
             "base64_encoded_filenames": encoded_path_mapping.as_output(),
         } if ctx.attrs.base64_encode_filenames else {}},
         with_inputs = True,
+        has_content_based_path = False,
     )
     ctx.actions.run(
         cmd_args(
