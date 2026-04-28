@@ -27,6 +27,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         is_executable = True,
         allow_args = True,
+        has_content_based_path = False,
     )
     return [DefaultInfo(run_script), RunInfo(run_cmd)]
 

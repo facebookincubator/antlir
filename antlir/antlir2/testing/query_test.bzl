@@ -40,6 +40,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             delimiter = "\n",
         ),
         is_executable = True,
+        has_content_based_path = False,
     )
     return [
         DefaultInfo(),

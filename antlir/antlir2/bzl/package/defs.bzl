@@ -222,6 +222,7 @@ def _compressed_impl(
             delimiter = "\n",
         ),
         is_executable = True,
+        has_content_based_path = False,
     )
     ctx.actions.run(
         cmd_args(

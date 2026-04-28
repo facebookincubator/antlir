@@ -140,6 +140,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         is_executable = True,
         allow_args = True,
         with_inputs = True,
+        has_content_based_path = False,
     )
 
     container_script, _ = ctx.actions.write(
@@ -164,6 +165,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         allow_args = True,
         is_executable = True,
         with_inputs = True,
+        has_content_based_path = False,
     )
 
     env = env_from_wrapped_test(ctx.attrs.test)

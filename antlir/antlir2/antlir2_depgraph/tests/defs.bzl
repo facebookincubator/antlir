@@ -163,6 +163,7 @@ fi
 echo "PASS: depgraph outputs are bitwise identical"
 """,
         is_executable = True,
+        has_content_based_path = False,
     )
 
     cmd = cmd_args(

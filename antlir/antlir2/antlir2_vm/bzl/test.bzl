@@ -71,6 +71,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         is_executable = True,
         allow_args = True,
+        has_content_based_path = False,
     )
 
     # vm_exec will spawn a shell inside VM

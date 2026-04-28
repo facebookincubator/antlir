@@ -93,6 +93,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args("#!/bin/bash", cmd_args(run_cmd, delimiter = " \\\n  "), "\n"),
         is_executable = True,
         allow_args = True,
+        has_content_based_path = False,
     )
     return [
         DefaultInfo(

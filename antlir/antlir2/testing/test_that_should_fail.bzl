@@ -33,6 +33,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args("#!/bin/bash", cmd_args(test_cmd, delimiter = " \\\n  ")),
         is_executable = True,
         allow_args = True,
+        has_content_based_path = False,
     )
     return [
         ExternalRunnerTestInfo(

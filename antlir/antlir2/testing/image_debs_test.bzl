@@ -26,6 +26,7 @@ def _deb_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         is_executable = True,
         with_inputs = True,
+        has_content_based_path = False,
     )
     return [
         DefaultInfo(),
