@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs:testpilot_defs.bzl", "tpx_labels")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
@@ -39,7 +40,7 @@ image.layer(
     ],
     labels = internal_external(
         fb = [],
-        oss = ["disabled"],
+        oss = [tpx_labels.disabled],
     ),
     parent_layer = ":base",
 )
@@ -48,7 +49,7 @@ image_sh_test(
     name = "extract-buck-test",
     labels = internal_external(
         fb = [],
-        oss = ["disabled"],
+        oss = [tpx_labels.disabled],
     ),
     layer = ":extract-buck",
     test = "test-extract-buck.sh",
