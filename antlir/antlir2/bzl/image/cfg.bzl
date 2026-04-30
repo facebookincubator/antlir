@@ -66,13 +66,13 @@ attrs_selected_by_cfg = {
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),
-    "_working_format": attrs.default_only(attrs.string(
+    "_working_format": attrs.string(
         default = select({
             "DEFAULT": "btrfs",
             "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
             "antlir//antlir/antlir2/cfg:working_format[cad-stack]": "cad-stack",
         }),
-    )),
+    ),
 }
 
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:

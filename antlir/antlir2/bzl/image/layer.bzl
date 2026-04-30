@@ -44,6 +44,7 @@ def _compile(
         ctx: AnalysisContext,
         identifier: str,
         parent: LayerContents | typing.Any | None,
+        working_format: str,
         logs: OutputArtifact,
         rootless: bool,
         target_arch: str,
@@ -57,7 +58,7 @@ def _compile(
     Compile features into a new image layer
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
-    if ctx.attrs._working_format == "btrfs":
+    if working_format == "btrfs":
         parent_arg = cmd_args(parent.subvol_symlink, format = "--parent={}") if parent else cmd_args()
         subvol_symlink = ctx.actions.declare_output(identifier, "subvol_symlink", has_content_based_path = False)
         cad_stack_top = None
@@ -67,7 +68,7 @@ def _compile(
             subvol_symlink_rootless = rootless,
             configured_working_format = "btrfs",
         )
-    elif ctx.attrs._working_format == "cad-stack":
+    elif working_format == "cad-stack":
         parent_stack = parent.cad_stack if parent else []
         parent_arg = cmd_args(parent_stack, format = "--parent={}") if parent else cmd_args()
         cad_stack_top = ctx.actions.declare_output(identifier, "cad_stack")
@@ -88,13 +89,13 @@ def _compile(
             configured_working_format = "cad-stack",
         )
     else:
-        fail("unknown working format '{}'".format(ctx.attrs._working_format))
+        fail("unknown working format '{}'".format(working_format))
 
     facts_db_out = ctx.actions.declare_output(identifier, "facts", has_content_based_path = False)
 
     local_only = (
         # btrfs subvolumes can only exist locally
-        ctx.attrs._working_format == "btrfs" or
+        working_format == "btrfs" or
         # no sudo access on remote execution
         not ctx.attrs._rootless or
         # aarch64 can only run remotely on aarch64 RE workers, which
@@ -121,7 +122,7 @@ def _compile(
             ],
             cmd_args(topo_features, format = "--features={}"),
             cmd_args(plans, format = "--plans={}"),
-            cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
+            cmd_args(working_format, format = "--working-format={}"),
             cmd_args(parent_facts_db, format = "--parent-facts-db={}") if parent_facts_db else cmd_args(),
             cmd_args(facts_db_out.as_output(), format = "--facts-db-out={}"),
             cmd_args(build_appliance.dir, format = "--build-appliance={}") if build_appliance else cmd_args(),
@@ -135,11 +136,11 @@ def _compile(
         local_only = local_only,
         prefer_remote = not local_only and (ctx.attrs._exec_mode == "force-remote"),
         # the old output is used to clean up the local subvolume
-        no_outputs_cleanup = ctx.attrs._working_format == "btrfs",
+        no_outputs_cleanup = working_format == "btrfs",
         error_handler = antlir2_error_handler,
     )
 
-    if ctx.attrs._working_format == "cad-stack" and subvol_symlink:
+    if working_format == "cad-stack" and subvol_symlink:
         # create a local action that can be used to materialize the
         # cad-stack directory to a local subvolume for use by rules
         # that don't yet understand cad-stack natively
@@ -328,6 +329,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # inconvenient for image authors, but is incredibly useful for everyone
     # involved, so we can do it for them implicitly.
 
+    working_format = ctx.attrs._working_format
+    if ctx.attrs._working_format == "inherited":
+        working_format = ctx.attrs.parent_layer[LayerInfo].contents.configured_working_format
+
     layer = ctx.attrs.parent_layer[LayerInfo].contents if ctx.attrs.parent_layer else None
     facts_db = ctx.attrs.parent_layer[LayerInfo].facts_db if ctx.attrs.parent_layer else None
     supplements = dict(ctx.attrs.parent_layer[LayerInfo].supplements) if ctx.attrs.parent_layer else {}
@@ -478,6 +483,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             ctx = ctx,
             identifier = identifier,
             parent = layer,
+            working_format = working_format,
             logs = logs["compile"].as_output(),
             rootless = ctx.attrs._rootless,
             target_arch = ctx.attrs._selected_target_arch,
@@ -683,6 +689,8 @@ def layer(
 
     if "flavor" in kwargs:
         fail("flavor cannot be manually set on layer targets")
+    if "_working_format" in kwargs:
+        fail("_working_format cannot be manually set on layer targets")
 
     # exec_mode should only be set on package and test targets, not layers
     kwargs.pop("exec_mode", None)
@@ -697,6 +705,7 @@ def layer(
             expect_non_none(parent_layer, msg = "parent_layer required for implicit layers"),
             lambda parent_layer: parent_layer + "[flavor]",
         )
+        kwargs["_working_format"] = "inherited"
 
     force_flavor = kwargs.pop("force_flavor", None)
     if force_flavor:
