@@ -157,11 +157,20 @@ fn write<O: OciObject>(blobs_dir: &Dir, obj: &O) -> Result<Descriptor> {
 
 impl Oci {
     pub(crate) fn build(&self, out: &Path) -> Result<()> {
+        self.validate_target_arch()?;
+
         if self.zstd_chunked {
             self.build_zstd_chunked(out)
         } else {
             self.build_layout(out)
         }
+    }
+
+    fn validate_target_arch(&self) -> Result<()> {
+        if let Arch::Other(arch) = &self.target_arch {
+            anyhow::bail!("unsupported OCI target architecture '{arch}'; expected a GOARCH value");
+        }
+        Ok(())
     }
 
     fn build_zstd_chunked(&self, out: &Path) -> Result<()> {
@@ -345,5 +354,50 @@ impl Oci {
             .context("while writing index.json")?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn oci_with_target_arch(target_arch: Arch) -> Oci {
+        Oci {
+            deltas: Vec::new(),
+            refname: String::new(),
+            skopeo: PathBuf::new(),
+            skopeo_policy: PathBuf::new(),
+            target_arch,
+            entrypoint: Vec::new(),
+            facts_db: PathBuf::new(),
+            zstd_chunked: false,
+        }
+    }
+
+    #[test]
+    fn accepts_goarch_target_arches() {
+        assert!(
+            oci_with_target_arch(Arch::Amd64)
+                .validate_target_arch()
+                .is_ok()
+        );
+        assert!(
+            oci_with_target_arch(Arch::ARM64)
+                .validate_target_arch()
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn rejects_other_target_arch() {
+        let oci = oci_with_target_arch(Arch::Other("x86_64".to_owned()));
+
+        let err = oci
+            .validate_target_arch()
+            .expect_err("kernel architecture should be rejected");
+        assert!(
+            err.to_string().contains("x86_64"),
+            "error should include unsupported architecture: {err:#}"
+        );
     }
 }

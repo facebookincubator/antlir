@@ -17,6 +17,13 @@ OciLayersInfo = provider(fields = [
     "layers",  # [(BuildPhase, Artifact)]
 ])
 
+def _oci_arch(arch: str) -> str:
+    if arch == "x86_64":
+        return "amd64"
+    if arch == "aarch64":
+        return "arm64"
+    return arch
+
 def _make_layer_tar(
         *,
         ctx: AnalysisContext,
@@ -143,7 +150,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
             "ref": ctx.attrs.ref,
             "skopeo": ctx.attrs._skopeo[DefaultInfo].default_outputs[0],
             "skopeo_policy": ctx.attrs._skopeo_policy[DefaultInfo].default_outputs[0],
-            "target_arch": ctx.attrs._target_arch,
+            "target_arch": _oci_arch(ctx.attrs._target_arch),
             "zstd_chunked": ctx.attrs.zstd_chunked,
         }
         spec = ctx.actions.write_json(
