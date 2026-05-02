@@ -30,6 +30,7 @@ use oci_spec::image::Arch;
 use oci_spec::image::ConfigBuilder;
 use oci_spec::image::Descriptor;
 use oci_spec::image::DescriptorBuilder;
+use oci_spec::image::HistoryBuilder;
 use oci_spec::image::ImageConfigurationBuilder;
 use oci_spec::image::ImageIndexBuilder;
 use oci_spec::image::ImageManifestBuilder;
@@ -96,6 +97,8 @@ pub struct Oci {
 pub struct Delta {
     tar: PathBuf,
     tar_zst: PathBuf,
+    #[serde(default)]
+    name: Option<String>,
 }
 
 trait Blob {
@@ -272,6 +275,17 @@ impl Oci {
             rootfs_digest_chain.push(format!("sha256:{layer_hash}"));
         }
 
+        let history: Vec<_> = self
+            .deltas
+            .iter()
+            .map(|delta| {
+                HistoryBuilder::default()
+                    .created_by(delta.name.clone().unwrap_or_else(|| "antlir2".to_owned()))
+                    .build()
+                    .expect("build history entry")
+            })
+            .collect();
+
         let facts_db = RoDatabase::open(&self.facts_db)
             .with_context(|| format!("while opening facts db '{}'", self.facts_db.display()))?;
         let mut labels = HashMap::new();
@@ -321,6 +335,7 @@ impl Oci {
                     .build()
                     .context("while building rootfs")?,
             )
+            .history(history)
             .build()
             .context("while building image configuration")?;
         let image_config_descriptor =

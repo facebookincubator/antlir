@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerContents", "LayerInfo")
+load("//antlir/bzl:structs.bzl", "structs")
 load(":attrs.bzl", "common_attrs", "default_attrs")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":macro.bzl", "package_macro")
@@ -23,6 +24,11 @@ def _oci_arch(arch: str) -> str:
     if arch == "aarch64":
         return "arm64"
     return arch
+
+def _oci_layer_delta(layer: OciLayer, name: str) -> dict:
+    delta = structs.to_dict(layer)
+    delta["name"] = name
+    return delta
 
 def _make_layer_tar(
         *,
@@ -134,8 +140,12 @@ def _impl(ctx: AnalysisContext) -> Promise:
 
         for i, multi_layer in enumerate(oci_multi_layers):
             multi_layer_subtargets = {}
+            layer_label = str(layers[i][LayerInfo].label)
             for phase, layer in multi_layer[OciLayersInfo].layers:
-                deltas.append(layer)
+                deltas.append(_oci_layer_delta(
+                    layer,
+                    "{}[{}]".format(layer_label, phase.value),
+                ))
                 multi_layer_subtargets[phase.value] = [DefaultInfo(sub_targets = {
                     "tar": [DefaultInfo(layer.tar)],
                     "tar.zst": [DefaultInfo(layer.tar_zst)],
