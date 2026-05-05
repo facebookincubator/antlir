@@ -65,6 +65,7 @@ pub(crate) fn run(
     // Example usage: buck2 test //target -- --env ANTLIR_EXTRA_TEST_ARGS=--nocapture --env RUST_LOG=trace ...
     for maybe_pass in [
         "RUST_LOG",
+        "RUSTC_BOOTSTRAP",
         "ANTLIR_EXTRA_TEST_ARGS",
         "ANTLIR_STREAM_TO_CONSOLE",
     ] {
