@@ -7,7 +7,6 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::io::ErrorKind;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -116,9 +115,11 @@ pub(crate) fn create_tpx_blobs(
 pub(crate) fn env_names_to_kvpairs(env_names: Vec<String>) -> Vec<KvPair> {
     let mut names: HashSet<_> = env_names.into_iter().collect();
     // If these env exist, always pass them through.
-    ["RUST_LOG", "RUST_BACKTRACE"].iter().for_each(|name| {
-        names.insert(name.to_string());
-    });
+    ["RUST_LOG", "RUST_BACKTRACE", "RUSTC_BOOTSTRAP"]
+        .iter()
+        .for_each(|name| {
+            names.insert(name.to_string());
+        });
     names
         .iter()
         .filter_map(|name| match std::env::var(name) {
@@ -164,7 +165,13 @@ mod test {
         result: HashMap<String, OsString>,
     }
 
-    const ALLOWED_ENV_NAMES: &[&str] = &["RUST_LOG", "RUST_BACKTRACE", "TEST_PILOT_A", "OTHER"];
+    const ALLOWED_ENV_NAMES: &[&str] = &[
+        "RUST_LOG",
+        "RUST_BACKTRACE",
+        "RUSTC_BOOTSTRAP",
+        "TEST_PILOT_A",
+        "OTHER",
+    ];
 
     impl EnvTest {
         fn new(
