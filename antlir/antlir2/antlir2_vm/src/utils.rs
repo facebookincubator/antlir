@@ -224,11 +224,12 @@ mod test {
             EnvTest::new(
                 vec![
                     ("RUST_LOG", "info"),
+                    ("RUSTC_BOOTSTRAP", "1"),
                     ("TEST_PILOT_A", "A"),
                     ("OTHER", "other"),
                 ],
                 vec![],
-                vec![("RUST_LOG", "info")],
+                vec![("RUST_LOG", "info"), ("RUSTC_BOOTSTRAP", "1")],
             ),
             // Selection
             EnvTest::new(
@@ -240,11 +241,16 @@ mod test {
             EnvTest::new(
                 vec![
                     ("RUST_LOG", "info"),
+                    ("RUSTC_BOOTSTRAP", "1"),
                     ("TEST_PILOT_A", "A"),
                     ("OTHER", "other"),
                 ],
                 vec!["TEST_PILOT_A"],
-                vec![("TEST_PILOT_A", "A"), ("RUST_LOG", "info")],
+                vec![
+                    ("TEST_PILOT_A", "A"),
+                    ("RUST_LOG", "info"),
+                    ("RUSTC_BOOTSTRAP", "1"),
+                ],
             ),
         ]
         .iter()
