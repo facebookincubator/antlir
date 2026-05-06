@@ -43,8 +43,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use sha2::Digest;
 use sha2::Sha256;
-use tempfile::TempDir;
-use tempfile::tempdir;
+use tempfile::tempdir_in;
 
 use crate::run_cmd;
 
@@ -84,7 +83,6 @@ pub struct Oci {
     #[serde(rename = "ref")]
     refname: String,
     skopeo: PathBuf,
-    skopeo_policy: PathBuf,
     target_arch: Arch,
     entrypoint: Vec<String>,
     facts_db: PathBuf,
@@ -177,52 +175,22 @@ impl Oci {
     }
 
     fn build_zstd_chunked(&self, out: &Path) -> Result<()> {
-        let input_oci = tempdir().context("while creating temporary OCI directory")?;
+        std::fs::create_dir_all(out).context("while creating output directory")?;
+        let input_oci = tempdir_in(out).context("while creating temporary OCI directory")?;
         self.build_layout(input_oci.path())?;
 
-        std::fs::create_dir_all(out).context("while creating output directory")?;
-        let skopeo_dir = self.extract_skopeo_bundle()?;
-        let skopeo_root = skopeo_dir.path().join("skopeo_bundle");
-        let skopeo_binary = skopeo_root.join("skopeo");
-
-        let mut cmd = self.skopeo_copy_command(&skopeo_binary, &skopeo_root, input_oci.path(), out);
-        run_cmd(&mut cmd).context("while converting OCI layout to zstd:chunked")?;
-
-        Ok(())
-    }
-
-    fn skopeo_copy_command(
-        &self,
-        skopeo_binary: &Path,
-        skopeo_root: &Path,
-        input_oci: &Path,
-        out: &Path,
-    ) -> Command {
-        let src_oci_arg = format!("oci:{}:{}", input_oci.display(), self.refname);
+        let src_oci_arg = format!("oci:{}:{}", input_oci.path().display(), self.refname);
         let dest_oci_arg = format!("oci:{}:{}", out.display(), self.refname);
 
-        let mut cmd = Command::new(skopeo_binary);
-        cmd.env("LD_LIBRARY_PATH", skopeo_root)
-            .arg("--policy")
-            .arg(&self.skopeo_policy)
+        let mut cmd = Command::new(&self.skopeo);
+        cmd.arg("--insecure-policy")
             .arg("copy")
             .arg("--dest-compress-format=zstd:chunked")
             .arg(src_oci_arg)
             .arg(dest_oci_arg);
-        cmd
-    }
+        run_cmd(&mut cmd).context("while converting OCI layout to zstd:chunked")?;
 
-    fn extract_skopeo_bundle(&self) -> Result<TempDir> {
-        let extracted = tempdir().context("while creating temporary skopeo directory")?;
-        run_cmd(
-            Command::new("tar")
-                .arg("-xf")
-                .arg(&self.skopeo)
-                .arg("-C")
-                .arg(extracted.path()),
-        )
-        .context("while extracting skopeo bundle")?;
-        Ok(extracted)
+        Ok(())
     }
 
     fn build_layout(&self, out: &Path) -> Result<()> {
@@ -381,7 +349,6 @@ mod tests {
             deltas: Vec::new(),
             refname: String::new(),
             skopeo: PathBuf::new(),
-            skopeo_policy: PathBuf::new(),
             target_arch,
             entrypoint: Vec::new(),
             facts_db: PathBuf::new(),

@@ -159,7 +159,6 @@ def _impl(ctx: AnalysisContext) -> Promise:
             "facts_db": ctx.attrs.layer[LayerInfo].facts_db,
             "ref": ctx.attrs.ref,
             "skopeo": ctx.attrs._skopeo[DefaultInfo].default_outputs[0],
-            "skopeo_policy": ctx.attrs._skopeo_policy[DefaultInfo].default_outputs[0],
             "target_arch": _oci_arch(ctx.attrs._target_arch),
             "zstd_chunked": ctx.attrs.zstd_chunked,
         }
@@ -176,6 +175,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
                 cmd_args(out.as_output(), format = "--out={}"),
                 cmd_args(spec, format = "--spec={}"),
                 cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
+                hidden = [ctx.attrs._skopeo[RunInfo]],
             ),
             category = "antlir2_package",
             identifier = "oci",
@@ -224,12 +224,7 @@ oci_attrs = {
     ),
     "_skopeo": attrs.default_only(
         attrs.exec_dep(
-            default = "//crackerjack/vaagent:skopeo",
-        ),
-    ),
-    "_skopeo_policy": attrs.default_only(
-        attrs.exec_dep(
-            default = "//crackerjack/vaagent:skopeo_policy",
+            default = "antlir//antlir/antlir2/bzl/package:skopeo",
         ),
     ),
 }
