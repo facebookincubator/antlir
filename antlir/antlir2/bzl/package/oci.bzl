@@ -4,19 +4,19 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerContents", "LayerInfo")
-load("//antlir/bzl:structs.bzl", "structs")
 load(":attrs.bzl", "common_attrs", "default_attrs")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":macro.bzl", "package_macro")
 
 OciLayer = record(
+    identifier = str,
     tar = Artifact,
     tar_zst = Artifact,
 )
 
-OciLayersInfo = provider(fields = [
-    "layers",  # [(BuildPhase, Artifact)]
-])
+OciLayersInfo = provider(fields = {
+    "layers": list[OciLayer],
+})
 
 def _oci_arch(arch: str) -> str:
     if arch == "x86_64":
@@ -26,9 +26,11 @@ def _oci_arch(arch: str) -> str:
     return arch
 
 def _oci_layer_delta(layer: OciLayer, name: str) -> dict:
-    delta = structs.to_dict(layer)
-    delta["name"] = name
-    return delta
+    return {
+        "name": name,
+        "tar": layer.tar,
+        "tar_zst": layer.tar_zst,
+    }
 
 def _make_layer_tar(
         *,
@@ -69,7 +71,7 @@ def _make_layer_tar(
         category = "oci_layer_compress",
         identifier = identifier,
     )
-    return OciLayer(tar = tar, tar_zst = tar_zst)
+    return OciLayer(identifier = identifier, tar = tar, tar_zst = tar_zst)
 
 def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
     layer = ctx.attrs.layer[LayerInfo]
@@ -80,12 +82,12 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
         # Produce a single layer from the final contents against empty,
         # ignoring all parent layers and phase breakdowns.
         last_phase, _last_contents = layer.phase_contents[-1]
-        oci_layers.append((last_phase, _make_layer_tar(
+        oci_layers.append(_make_layer_tar(
             ctx = ctx,
-            identifier = "collapsed",
+            identifier = last_phase.value,
             parent = None,
             child_subvol = layer.contents,
-        )))
+        ))
     else:
         layers = list(layer.phase_contents)
         if layer.parent:
@@ -95,12 +97,12 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
         for parent, (child_phase, child_contents) in zip(layers, layers[1:]):
             if parent:
                 parent = parent[1]  # parent phase info doesn't matter, throw it away
-            oci_layers.append((child_phase, _make_layer_tar(
+            oci_layers.append(_make_layer_tar(
                 ctx = ctx,
                 identifier = child_phase.value,
                 parent = parent,
                 child_subvol = child_contents,
-            )))
+            ))
 
     return [
         DefaultInfo(),
@@ -141,12 +143,12 @@ def _impl(ctx: AnalysisContext) -> Promise:
         for i, multi_layer in enumerate(oci_multi_layers):
             multi_layer_subtargets = {}
             layer_label = str(layers[i][LayerInfo].label)
-            for phase, layer in multi_layer[OciLayersInfo].layers:
+            for layer in multi_layer[OciLayersInfo].layers:
                 deltas.append(_oci_layer_delta(
                     layer,
-                    "{}[{}]".format(layer_label, phase.value),
+                    "{}[{}]".format(layer_label, layer.identifier),
                 ))
-                multi_layer_subtargets[phase.value] = [DefaultInfo(sub_targets = {
+                multi_layer_subtargets[layer.identifier] = [DefaultInfo(sub_targets = {
                     "tar": [DefaultInfo(layer.tar)],
                     "tar.zst": [DefaultInfo(layer.tar_zst)],
                 })]
