@@ -77,9 +77,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             ),
             category = "antlir2_genrule",
         )
-        return [
-            default_info,
-        ]
+        providers = [default_info]
+        if ctx.attrs.executable:
+            providers.append(RunInfo(args = cmd_args(out)))
+        return providers
 
     if int(bool(ctx.attrs.layer)) + int(bool(ctx.attrs.exec_layer)) != 1:
         fail("exactly one of layer or exec_layer must be specified")
@@ -120,6 +121,7 @@ _genrule_in_image = rule(
                 (//antlir/antlir2/genrule_in_image:prep)
             """,
         ),
+        "executable": attrs.bool(default = False),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "layer_is_prepped": attrs.bool(default = False),

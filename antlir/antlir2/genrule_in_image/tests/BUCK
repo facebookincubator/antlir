@@ -148,6 +148,27 @@ genrule_in_image(
     layer = ":layer-with-mount",
 )
 
+genrule_in_image(
+    name = "executable-script",
+    out = "script.sh",
+    bash = """
+        echo '#!/bin/bash' > $OUT
+        echo 'echo hello from executable' >> $OUT
+        chmod +x $OUT
+    """,
+    executable = True,
+    layer = ":layer",
+)
+
+genrule_in_image(
+    name = "run-executable-script",
+    out = "f",
+    bash = """
+        $(exe :executable-script) > $OUT
+    """,
+    layer = ":layer",
+)
+
 python_unittest(
     name = "test",
     srcs = ["test.py"],
@@ -158,6 +179,7 @@ python_unittest(
         "EXE_PAR": "$(location :run-exe-par)",
         "NAMED_DIR": "$(location :named-dir)",
         "NAMED_OUTS": "$(location :named-outs)",
+        "RUN_EXECUTABLE_SCRIPT": "$(location :run-executable-script)",
         "SINGLE_FILE": "$(location :single-file)",
         "WITH_MOUNT": "$(location :with-mount)",
     },

@@ -48,6 +48,11 @@ class Test(unittest.TestCase):
         self.assertTrue(f.exists())
         self.assertEqual(f.read_text(), "From par\n")
 
+    def test_executable(self) -> None:
+        f = Path(os.getenv("RUN_EXECUTABLE_SCRIPT"))
+        self.assertTrue(f.exists())
+        self.assertEqual(f.read_text(), "hello from executable\n")
+
     def test_with_mount(self) -> None:
         f = Path(os.getenv("WITH_MOUNT"))
         self.assertTrue(f.exists())
