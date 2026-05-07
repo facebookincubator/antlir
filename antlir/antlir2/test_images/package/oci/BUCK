@@ -76,6 +76,10 @@ cat /to-be-deleted-and-recreated
             key = "TEST_ENV_VAR",
             value = "test-value",
         ),
+        oci_features.cmd(cmd = [
+            "bar",
+            "baz",
+        ]),
     ],
     parent_layer = ":intermediate",
 )

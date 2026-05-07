@@ -78,6 +78,18 @@ impl Fact for OciEnv {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct OciCmd {
+    cmd: Vec<String>,
+}
+
+#[fact_impl("antlir2_packager::oci::OciCmd")]
+impl Fact for OciCmd {
+    fn key(&self) -> Key {
+        self.cmd.join("\t").into()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct OciUser {
     user: String,
 }
@@ -319,12 +331,27 @@ impl Oci {
             user = Some(oci_user.user.clone());
         }
 
+        let mut cmd = None;
+        for oci_cmd in facts_db.iter::<OciCmd>()? {
+            if let Some(existing_cmd) = &cmd {
+                anyhow::bail!(
+                    "duplicate OCI cmd '{:?}', already set to '{:?}'",
+                    oci_cmd.cmd,
+                    existing_cmd
+                );
+            }
+            cmd = Some(oci_cmd.cmd.clone());
+        }
+
         let mut config_builder = ConfigBuilder::default()
             .entrypoint(self.entrypoint.clone())
             .labels(labels)
             .env(env_list);
         if let Some(user) = user {
             config_builder = config_builder.user(user);
+        }
+        if let Some(cmd) = cmd {
+            config_builder = config_builder.cmd(cmd);
         }
 
         let image_configuration = ImageConfigurationBuilder::default()

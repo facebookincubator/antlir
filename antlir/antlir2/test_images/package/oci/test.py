@@ -88,3 +88,16 @@ class Test(TestCase):
         )
 
         self.assertEqual("root", json.loads(proc.stdout.strip()))
+
+    def test_image_has_cmd(self) -> None:
+        """Verify that the image contains the expected default command."""
+        image_id = load_image(OCI_PATH)
+
+        proc = subprocess.run(
+            ["podman", "inspect", image_id, "--format", "{{json .Config.Cmd}}"],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+        self.assertEqual(["bar", "baz"], json.loads(proc.stdout.strip()))

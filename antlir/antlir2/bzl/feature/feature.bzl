@@ -71,6 +71,7 @@ load("//antlir/antlir2/features/group:group.bzl", "group_rule")
 load("//antlir/antlir2/features/hardlink:hardlink.bzl", "hardlink_rule")
 load("//antlir/antlir2/features/install:install.bzl", "install_rule")
 load("//antlir/antlir2/features/mount:mount.bzl", "mount_rule")
+load("//antlir/antlir2/features/oci/oci_cmd:oci_cmd.bzl", "oci_cmd_rule")
 load("//antlir/antlir2/features/oci/oci_env:oci_env.bzl", "oci_env_rule")
 load("//antlir/antlir2/features/oci/oci_label:oci_label.bzl", "oci_label_rule")
 load("//antlir/antlir2/features/oci/oci_user:oci_user.bzl", "oci_user_rule")
@@ -109,6 +110,7 @@ _anon_rules = {
     "hardlink": hardlink_rule,
     "install": install_rule,
     "mount": mount_rule,
+    "oci/oci_cmd": oci_cmd_rule,
     "oci/oci_env": oci_env_rule,
     "oci/oci_label": oci_label_rule,
     "oci/oci_user": oci_user_rule,
