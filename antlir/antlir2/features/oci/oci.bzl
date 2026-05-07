@@ -9,6 +9,7 @@ load("//antlir/antlir2/features/oci/oci_exposed_port:oci_exposed_port.bzl", "oci
 load("//antlir/antlir2/features/oci/oci_label:oci_label.bzl", "oci_label")
 load("//antlir/antlir2/features/oci/oci_stop_signal:oci_stop_signal.bzl", "oci_stop_signal")
 load("//antlir/antlir2/features/oci/oci_user:oci_user.bzl", "oci_user")
+load("//antlir/antlir2/features/oci/oci_volume:oci_volume.bzl", "oci_volume")
 load("//antlir/antlir2/features/oci/oci_working_dir:oci_working_dir.bzl", "oci_working_dir")
 
 oci_features = struct(
@@ -18,5 +19,6 @@ oci_features = struct(
     label = oci_label,
     stop_signal = oci_stop_signal,
     user = oci_user,
+    volume = oci_volume,
     working_dir = oci_working_dir,
 )

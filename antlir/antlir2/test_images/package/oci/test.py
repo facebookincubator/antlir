@@ -148,3 +148,18 @@ class Test(TestCase):
         exposed_ports = json.loads(proc.stdout.strip())
         self.assertIn("8080/tcp", exposed_ports)
         self.assertIn("9090/udp", exposed_ports)
+
+    def test_image_has_volumes(self) -> None:
+        """Verify that the image contains the expected volumes."""
+        image_id = load_image(OCI_PATH)
+
+        proc = subprocess.run(
+            ["podman", "inspect", image_id, "--format", "{{json .Config.Volumes}}"],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+        volumes = json.loads(proc.stdout.strip())
+        self.assertIn("/cache", volumes)
+        self.assertIn("/logs", volumes)

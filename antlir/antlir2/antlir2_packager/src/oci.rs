@@ -91,6 +91,18 @@ impl Fact for OciExposedPort {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct OciVolume {
+    path: String,
+}
+
+#[fact_impl("antlir2_packager::oci::OciVolume")]
+impl Fact for OciVolume {
+    fn key(&self) -> Key {
+        self.path.clone().into()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct OciCmd {
     cmd: Vec<String>,
 }
@@ -409,6 +421,11 @@ impl Oci {
             .map(|port| port.port.clone())
             .collect();
 
+        let volumes: BTreeSet<_> = facts_db
+            .iter::<OciVolume>()?
+            .map(|volume| volume.path.clone())
+            .collect();
+
         let mut config_builder = ConfigBuilder::default()
             .entrypoint(self.entrypoint.clone())
             .labels(labels)
@@ -428,6 +445,9 @@ impl Oci {
         if !exposed_ports.is_empty() {
             config_builder =
                 config_builder.exposed_ports(exposed_ports.into_iter().collect::<Vec<_>>());
+        }
+        if !volumes.is_empty() {
+            config_builder = config_builder.volumes(volumes.into_iter().collect::<Vec<_>>());
         }
 
         let image_configuration = ImageConfigurationBuilder::default()

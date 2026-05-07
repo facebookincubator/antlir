@@ -83,6 +83,8 @@ cat /to-be-deleted-and-recreated
             "baz",
         ]),
         oci_features.stop_signal(signal = "SIGTERM"),
+        oci_features.volume(path = "/cache"),
+        oci_features.volume(path = "/logs"),
         oci_features.working_dir(working_dir = "/tmp"),
     ],
     parent_layer = ":intermediate",
