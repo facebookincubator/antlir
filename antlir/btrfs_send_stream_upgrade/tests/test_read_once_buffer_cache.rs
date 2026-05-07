@@ -16,8 +16,8 @@ pub use btrfs_send_stream_upgrade_lib::mp::sync::read_once_buffer_cache::ReadOnc
 pub use btrfs_send_stream_upgrade_lib::send_elements::send_version::SendVersion;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
+use clap::Parser as _;
 use rand::RngExt as _;
-use structopt::StructOpt;
 
 const FIVE_MILLISECONDS: time::Duration = time::Duration::from_millis(5);
 const NUM_READERS: usize = 7;
@@ -114,7 +114,7 @@ fn resequence_io_read_from_file() -> anyhow::Result<()> {
 
     // Set up an IO context for the file in question
     let dummy_vector = vec!["--help"];
-    let mut options = SendStreamUpgradeOptions::from_iter(dummy_vector);
+    let mut options = SendStreamUpgradeOptions::parse_from(dummy_vector);
     options.input = Some(tempfile.path().to_path_buf());
     let mut context = SendStreamUpgradeContext::new(options)?;
     context.set_versions(SendVersion::SendVersion1, SendVersion::SendVersion2);

@@ -7,10 +7,10 @@
 
 use btrfs_send_stream_upgrade_lib::upgrade::send_stream::SendStream;
 use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
-use structopt::StructOpt;
+use clap::Parser as _;
 
 fn main() -> anyhow::Result<()> {
-    let options = SendStreamUpgradeOptions::from_args();
+    let options = SendStreamUpgradeOptions::parse();
     let mut stream = SendStream::new(options)?;
 
     stream.upgrade()?;

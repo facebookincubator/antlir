@@ -7,12 +7,11 @@
 
 use std::path::PathBuf;
 
-use structopt::StructOpt;
-use structopt::clap::AppSettings;
+use clap::ArgAction;
+use clap::Parser;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(about = "Command to upgrade a btrfs send stream")]
-#[structopt(global_setting = AppSettings::AllowNegativeNumbers)]
+#[derive(Debug, Clone, Parser)]
+#[command(about = "Command to upgrade a btrfs send stream")]
 pub struct SendStreamUpgradeOptions {
     /// Avoid crcing input
     ///
@@ -21,14 +20,14 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// false is the default value (default_value isn't set because of structopt
     /// weirdness)
-    #[structopt(short, long, parse(from_flag))]
+    #[arg(short, long)]
     pub avoid_crcing_input: bool,
 
     /// Command Bytes to Dump to Event Log
     ///
     /// This represents the maximum number of command bytes dumped as a part of
     /// serde checks
-    #[structopt(short, long, default_value = "0")]
+    #[arg(short, long, default_value = "0")]
     pub bytes_to_log: usize,
 
     /// Compression level
@@ -42,20 +41,20 @@ pub struct SendStreamUpgradeOptions {
     /// the kernel
     ///
     /// 22 is the maximum value that can be used
-    #[structopt(short, long, default_value = "3")]
+    #[arg(short, long, default_value = "3")]
     pub compression_level: i32,
 
     /// Extra buffer cache backlog
     ///
     /// This will specify the maximum backlog that can be held in the buffer
     /// cache in bytes
-    #[structopt(short, long, default_value = "1073741824")]
+    #[arg(short, long, default_value = "1073741824")]
     pub extra_buffer_cache_backlog: usize,
 
     /// Path to input file representing a send stream to upgrade
     ///
     /// Optional argument; stdin is used if this is not specified
-    #[structopt(short, long)]
+    #[arg(short, long)]
     pub input: Option<PathBuf>,
 
     /// Maximum Batched Extent Size
@@ -70,13 +69,13 @@ pub struct SendStreamUpgradeOptions {
     /// 0 will disable batching
     ///
     /// 131072 is the maximum value that can be used
-    #[structopt(short, long, default_value = "131072")]
+    #[arg(short, long, default_value = "131072")]
     pub maximum_batched_extent_size: usize,
 
     /// Path to output file representing an upgraded send stream
     ///
     /// Optional argument; stdout is used if this is not specified
-    #[structopt(short, long)]
+    #[arg(short, long)]
     pub output: Option<PathBuf>,
 
     /// Pad data payload offset with dummy commands
@@ -86,7 +85,7 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// false is the default value (default_value isn't set because of structopt
     /// weirdness)
-    #[structopt(short, long, parse(from_flag))]
+    #[arg(short, long)]
     pub pad_with_dummy_commands: bool,
 
     /// Quiet
@@ -95,13 +94,13 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// false is the default value (default_value isn't set because of structopt
     /// weirdness)
-    #[structopt(short, long, parse(from_flag))]
+    #[arg(short, long)]
     pub quiet: bool,
 
     /// Read buffer size
     ///
     /// This controls the maximum size of the read buffer
-    #[structopt(short, long, default_value = "1048576")]
+    #[arg(short, long, default_value = "1048576")]
     pub read_buffer_size: usize,
 
     /// Serialize-Deserialize Checks
@@ -111,7 +110,7 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// false is the default value (default_value isn't set because of structopt
     /// weirdness)
-    #[structopt(short, long, parse(from_flag))]
+    #[arg(short, long)]
     pub serde_checks: bool,
 
     /// Thread Count
@@ -148,20 +147,20 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// Writer threads will flush commands in the order they were originally
     /// read
-    #[structopt(short, long, default_value = "0")]
+    #[arg(short, long, default_value = "0")]
     pub thread_count: usize,
 
     /// Verbosity
     ///
     /// This represents the log level for the event log that is directed to
     /// stderr
-    #[structopt(short, long, parse(from_occurrences))]
-    pub verbose: usize,
+    #[arg(short, long, action = ArgAction::Count)]
+    pub verbose: u8,
 
     /// Write buffer size
     ///
     /// This controls the maximum size of the write buffer
-    #[structopt(short, long, default_value = "8192")]
+    #[arg(short, long, default_value = "8192")]
     pub write_buffer_size: usize,
 }
 

@@ -12,6 +12,7 @@ rust_library(
     test_srcs = glob(["tests/**/*.rs"]),
     deps = [
         "anyhow",
+        "clap",
         "crc32c-hw",
         "lazy_static",
         "maplit",
@@ -21,7 +22,6 @@ rust_library(
         "num_cpus",
         "slog",
         "slog-term",
-        "structopt",
         "thiserror",
         "zstd",
     ],
@@ -35,7 +35,7 @@ rust_binary(
     ],
     deps = [
         "anyhow",
-        "structopt",
+        "clap",
         ":btrfs_send_stream_upgrade_lib",
     ],
 )
@@ -64,8 +64,8 @@ rust_unittest(
     srcs = ["tests/test_read_once_buffer_cache.rs"],
     deps = [
         "anyhow",
+        "clap",
         "rand",
-        "structopt",
         "tempfile",
         ":btrfs_send_stream_upgrade_lib",
     ],

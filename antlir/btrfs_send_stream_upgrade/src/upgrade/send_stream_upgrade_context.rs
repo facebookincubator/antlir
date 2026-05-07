@@ -52,7 +52,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
         } else {
             // Convert verbosity to a log level
             // Note that extra verbose flags will result in Level::Trace
-            let level = match Level::from_usize(options.verbose) {
+            let level = match Level::from_usize(usize::from(options.verbose)) {
                 Some(log_level) => log_level,
                 None => slog::Level::Trace,
             };
