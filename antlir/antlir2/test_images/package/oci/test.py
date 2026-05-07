@@ -75,3 +75,16 @@ class Test(TestCase):
         self.assertIsNotNone(env_list, "Image should have environment variables")
         self.assertIn("HHVM_DISABLE_PERSONALITY=1", env_list)
         self.assertIn("TEST_ENV_VAR=test-value", env_list)
+
+    def test_image_has_user(self) -> None:
+        """Verify that the image contains the expected default user."""
+        image_id = load_image(OCI_PATH)
+
+        proc = subprocess.run(
+            ["podman", "inspect", image_id, "--format", "{{json .Config.User}}"],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+        self.assertEqual("root", json.loads(proc.stdout.strip()))

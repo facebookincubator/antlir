@@ -77,6 +77,18 @@ impl Fact for OciEnv {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct OciUser {
+    user: String,
+}
+
+#[fact_impl("antlir2_packager::oci::OciUser")]
+impl Fact for OciUser {
+    fn key(&self) -> Key {
+        self.user.clone().into()
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Oci {
@@ -295,15 +307,32 @@ impl Oci {
             .map(|(k, v)| format!("{k}={v}"))
             .collect();
 
+        let mut user = None;
+        for oci_user in facts_db.iter::<OciUser>()? {
+            if let Some(existing_user) = &user {
+                anyhow::bail!(
+                    "duplicate OCI user '{}', already set to '{}'",
+                    oci_user.user,
+                    existing_user
+                );
+            }
+            user = Some(oci_user.user.clone());
+        }
+
+        let mut config_builder = ConfigBuilder::default()
+            .entrypoint(self.entrypoint.clone())
+            .labels(labels)
+            .env(env_list);
+        if let Some(user) = user {
+            config_builder = config_builder.user(user);
+        }
+
         let image_configuration = ImageConfigurationBuilder::default()
             .architecture(self.target_arch.clone())
             .os("linux")
             .created(chrono::Utc::now().to_rfc3339())
             .config(
-                ConfigBuilder::default()
-                    .entrypoint(self.entrypoint.clone())
-                    .labels(labels)
-                    .env(env_list)
+                config_builder
                     .build()
                     .context("while building image config")?,
             )

@@ -33,6 +33,7 @@ image.layer(
             key = "HHVM_DISABLE_PERSONALITY",
             value = "1",
         ),
+        oci_features.user(user = "root"),
     ],
 )
 
