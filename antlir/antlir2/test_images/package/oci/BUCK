@@ -80,6 +80,7 @@ cat /to-be-deleted-and-recreated
             "bar",
             "baz",
         ]),
+        oci_features.working_dir(working_dir = "/tmp"),
     ],
     parent_layer = ":intermediate",
 )

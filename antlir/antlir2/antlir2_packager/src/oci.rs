@@ -101,6 +101,18 @@ impl Fact for OciUser {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct OciWorkingDir {
+    working_dir: String,
+}
+
+#[fact_impl("antlir2_packager::oci::OciWorkingDir")]
+impl Fact for OciWorkingDir {
+    fn key(&self) -> Key {
+        self.working_dir.clone().into()
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Oci {
@@ -343,6 +355,18 @@ impl Oci {
             cmd = Some(oci_cmd.cmd.clone());
         }
 
+        let mut working_dir = None;
+        for oci_working_dir in facts_db.iter::<OciWorkingDir>()? {
+            if let Some(existing_working_dir) = &working_dir {
+                anyhow::bail!(
+                    "duplicate OCI working_dir '{}', already set to '{}'",
+                    oci_working_dir.working_dir,
+                    existing_working_dir
+                );
+            }
+            working_dir = Some(oci_working_dir.working_dir.clone());
+        }
+
         let mut config_builder = ConfigBuilder::default()
             .entrypoint(self.entrypoint.clone())
             .labels(labels)
@@ -352,6 +376,9 @@ impl Oci {
         }
         if let Some(cmd) = cmd {
             config_builder = config_builder.cmd(cmd);
+        }
+        if let Some(working_dir) = working_dir {
+            config_builder = config_builder.working_dir(working_dir);
         }
 
         let image_configuration = ImageConfigurationBuilder::default()

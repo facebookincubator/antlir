@@ -101,3 +101,16 @@ class Test(TestCase):
         )
 
         self.assertEqual(["bar", "baz"], json.loads(proc.stdout.strip()))
+
+    def test_image_has_working_dir(self) -> None:
+        """Verify that the image contains the expected working directory."""
+        image_id = load_image(OCI_PATH)
+
+        proc = subprocess.run(
+            ["podman", "inspect", image_id, "--format", "{{json .Config.WorkingDir}}"],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+        self.assertEqual("/tmp", json.loads(proc.stdout.strip()))
