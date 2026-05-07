@@ -113,6 +113,18 @@ impl Fact for OciWorkingDir {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct OciStopSignal {
+    stop_signal: String,
+}
+
+#[fact_impl("antlir2_packager::oci::OciStopSignal")]
+impl Fact for OciStopSignal {
+    fn key(&self) -> Key {
+        self.stop_signal.clone().into()
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Oci {
@@ -367,6 +379,18 @@ impl Oci {
             working_dir = Some(oci_working_dir.working_dir.clone());
         }
 
+        let mut stop_signal = None;
+        for oci_stop_signal in facts_db.iter::<OciStopSignal>()? {
+            if let Some(existing_stop_signal) = &stop_signal {
+                anyhow::bail!(
+                    "duplicate OCI stop_signal '{}', already set to '{}'",
+                    oci_stop_signal.stop_signal,
+                    existing_stop_signal
+                );
+            }
+            stop_signal = Some(oci_stop_signal.stop_signal.clone());
+        }
+
         let mut config_builder = ConfigBuilder::default()
             .entrypoint(self.entrypoint.clone())
             .labels(labels)
@@ -379,6 +403,9 @@ impl Oci {
         }
         if let Some(working_dir) = working_dir {
             config_builder = config_builder.working_dir(working_dir);
+        }
+        if let Some(stop_signal) = stop_signal {
+            config_builder = config_builder.stop_signal(stop_signal);
         }
 
         let image_configuration = ImageConfigurationBuilder::default()

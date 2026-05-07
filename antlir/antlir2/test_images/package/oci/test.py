@@ -114,3 +114,16 @@ class Test(TestCase):
         )
 
         self.assertEqual("/tmp", json.loads(proc.stdout.strip()))
+
+    def test_image_has_stop_signal(self) -> None:
+        """Verify that the image contains the expected stop signal."""
+        image_id = load_image(OCI_PATH)
+
+        proc = subprocess.run(
+            ["podman", "inspect", image_id, "--format", "{{json .Config.StopSignal}}"],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+        self.assertEqual("SIGTERM", json.loads(proc.stdout.strip()))
