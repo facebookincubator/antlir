@@ -30,6 +30,7 @@ use oci_spec::image::Arch;
 use oci_spec::image::ConfigBuilder;
 use oci_spec::image::Descriptor;
 use oci_spec::image::DescriptorBuilder;
+use oci_spec::image::History;
 use oci_spec::image::HistoryBuilder;
 use oci_spec::image::ImageConfigurationBuilder;
 use oci_spec::image::ImageIndexBuilder;
@@ -88,6 +89,8 @@ pub struct Oci {
     facts_db: PathBuf,
     #[serde(default)]
     zstd_chunked: bool,
+    #[serde(default)]
+    base_layers_dir: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -97,6 +100,13 @@ pub struct Delta {
     tar_zst: PathBuf,
     #[serde(default)]
     name: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct BaseLayersManifest {
+    layers: Vec<Delta>,
+    #[serde(default)]
+    history: Vec<History>,
 }
 
 trait Blob {
@@ -222,9 +232,27 @@ impl Oci {
             .build()
             .context("while building platform")?;
 
+        let mut base_deltas = Vec::new();
+        let mut base_history = Vec::new();
+        if let Some(base_dir) = &self.base_layers_dir {
+            let manifest_path = base_dir.join("manifest.json");
+            let manifest: BaseLayersManifest = serde_json::from_reader(BufReader::new(
+                File::open(&manifest_path)
+                    .with_context(|| format!("while opening {}", manifest_path.display()))?,
+            ))
+            .context("while reading base layers manifest")?;
+            for mut delta in manifest.layers {
+                delta.tar = base_dir.join(&delta.tar);
+                delta.tar_zst = base_dir.join(&delta.tar_zst);
+                base_deltas.push(delta);
+            }
+            base_history = manifest.history;
+        }
+
         let mut layer_descriptors = Vec::new();
         let mut rootfs_digest_chain = Vec::new();
-        for delta in &self.deltas {
+
+        for delta in base_deltas.iter().chain(self.deltas.iter()) {
             let mut tar_zst = Vec::new();
             BufReader::new(File::open(&delta.tar_zst).context("while opening tar.zst")?)
                 .read_to_end(&mut tar_zst)
@@ -243,45 +271,28 @@ impl Oci {
             rootfs_digest_chain.push(format!("sha256:{layer_hash}"));
         }
 
-        let history: Vec<_> = self
-            .deltas
-            .iter()
-            .map(|delta| {
-                HistoryBuilder::default()
-                    .created_by(delta.name.clone().unwrap_or_else(|| "antlir2".to_owned()))
-                    .build()
-                    .expect("build history entry")
-            })
-            .collect();
+        let mut history = base_history;
+        history.extend(self.deltas.iter().map(|delta| {
+            HistoryBuilder::default()
+                .created_by(delta.name.clone().unwrap_or_else(|| "antlir2".to_owned()))
+                .build()
+                .expect("build history entry")
+        }));
 
         let facts_db = RoDatabase::open(&self.facts_db)
             .with_context(|| format!("while opening facts db '{}'", self.facts_db.display()))?;
         let mut labels = HashMap::new();
         for label in facts_db.iter::<OciLabel>()? {
-            if labels.contains_key(&label.key) {
-                anyhow::bail!(
-                    "duplicate label '{}', already set to '{}'",
-                    label.key,
-                    labels[&label.key]
-                );
-            }
             labels.insert(label.key.clone(), label.value.clone());
         }
 
         let mut env_map = HashMap::new();
         for env in facts_db.iter::<OciEnv>()? {
-            if env_map.contains_key(&env.key) {
-                anyhow::bail!(
-                    "duplicate env '{}', already set to '{}'",
-                    env.key,
-                    env_map[&env.key]
-                );
-            }
             env_map.insert(env.key.clone(), env.value.clone());
         }
         let env_list: Vec<String> = env_map
             .into_iter()
-            .map(|(k, v)| format!("{}={}", k, v))
+            .map(|(k, v)| format!("{k}={v}"))
             .collect();
 
         let image_configuration = ImageConfigurationBuilder::default()
@@ -353,6 +364,7 @@ mod tests {
             entrypoint: Vec::new(),
             facts_db: PathBuf::new(),
             zstd_chunked: false,
+            base_layers_dir: None,
         }
     }
 

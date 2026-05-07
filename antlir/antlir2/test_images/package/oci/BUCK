@@ -285,3 +285,49 @@ image_python_test(
     layer = ":test-layer",
     deps = [":podman_helpers"],
 )
+
+# Test OCI prebuilt roundtrip: import an OCI image via image.prebuilt, add a
+# layer on top, then re-package. The base OCI archive's layers and metadata
+# should be preserved byte-for-byte.
+
+image.prebuilt(
+    name = "oci-prebuilt-import",
+    src = ":oci",
+    format = "oci",
+)
+
+image.layer(
+    name = "prebuilt-addon-layer",
+    features = [
+        feature.install_text(
+            dst = "/prebuilt-test-marker",
+            text = "roundtrip-success\n",
+        ),
+    ],
+    parent_layer = ":oci-prebuilt-import",
+)
+
+oci(
+    name = "oci-from-prebuilt",
+    entrypoint = [
+        "/entrypoint.sh",
+        "foo",
+    ],
+    layer = ":prebuilt-addon-layer",
+)
+
+image_python_test(
+    name = "test-prebuilt",
+    srcs = ["test_prebuilt.py"],
+    env = {
+        "OCI_FROM_PREBUILT": "$(location :oci-from-prebuilt)",
+        "OCI_ORIGINAL": "$(location :oci)",
+    },
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
+    layer = ":test-layer",
+    deps = [":podman_helpers"],
+)

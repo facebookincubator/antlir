@@ -9,7 +9,9 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "flate2",
         "jwalk",
+        "oci-spec",
         # @oss-disable[end= ]: "serde",
         # @oss-disable[end= ]: "serde_json",
         "tar",
@@ -18,6 +20,7 @@ rust_binary(
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
+        "zstd",
         "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
         "//antlir/antlir2/antlir2_error_handler:antlir2_error_handler",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",

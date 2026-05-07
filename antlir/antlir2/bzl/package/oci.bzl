@@ -16,14 +16,15 @@ OciLayer = record(
 
 OciLayersInfo = provider(fields = {
     "layers": list[OciLayer],
+    "oci_layers_dir": Artifact | None,
 })
 
-def _oci_arch(arch: str) -> str:
+def oci_arch(arch: str) -> str:
     if arch == "x86_64":
         return "amd64"
     if arch == "aarch64":
         return "arm64"
-    return arch
+    fail("unsupported OCI architecture: {}".format(arch))
 
 def _oci_layer_delta(layer: OciLayer, name: str) -> dict:
     return {
@@ -31,6 +32,12 @@ def _oci_layer_delta(layer: OciLayer, name: str) -> dict:
         "tar": layer.tar,
         "tar_zst": layer.tar_zst,
     }
+
+def _oci_layer_sub_targets(layer: OciLayer) -> list[Provider]:
+    return [DefaultInfo(sub_targets = {
+        "tar": [DefaultInfo(layer.tar)],
+        "tar.zst": [DefaultInfo(layer.tar_zst)],
+    })]
 
 def _make_layer_tar(
         *,
@@ -106,7 +113,10 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
 
     return [
         DefaultInfo(),
-        OciLayersInfo(layers = oci_layers),
+        OciLayersInfo(
+            layers = oci_layers,
+            oci_layers_dir = None,
+        ),
     ]
 
 _oci_layers = anon_rule(
@@ -127,6 +137,7 @@ _oci_layers = anon_rule(
 )
 
 def _impl(ctx: AnalysisContext) -> Promise:
+    base_layers_dir = None
     if ctx.attrs.collapse_into_one_layer:
         layers = [ctx.attrs.layer]
     else:
@@ -135,6 +146,15 @@ def _impl(ctx: AnalysisContext) -> Promise:
             if not layers[0][LayerInfo].parent:
                 break
             layers.insert(0, layers[0][LayerInfo].parent)
+
+        root = layers[0]
+        if OciLayersInfo in root:
+            oci_info = root[OciLayersInfo]
+            if oci_info.oci_layers_dir:
+                if root[LayerInfo].parent:
+                    fail("package.oci: a layer with OciLayersInfo (prebuilt OCI archive) must not have a parent_layer")
+                base_layers_dir = oci_info.oci_layers_dir
+                layers = layers[1:]
 
     def _with_anon(oci_multi_layers) -> list[Provider]:
         deltas = []
@@ -148,10 +168,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
                     layer,
                     "{}[{}]".format(layer_label, layer.identifier),
                 ))
-                multi_layer_subtargets[layer.identifier] = [DefaultInfo(sub_targets = {
-                    "tar": [DefaultInfo(layer.tar)],
-                    "tar.zst": [DefaultInfo(layer.tar_zst)],
-                })]
+                multi_layer_subtargets[layer.identifier] = _oci_layer_sub_targets(layer)
             sub_targets_layers[str(i)] = [DefaultInfo(sub_targets = multi_layer_subtargets)]
 
         out = ctx.actions.declare_output(ctx.label.name, dir = True, has_content_based_path = False)
@@ -161,9 +178,11 @@ def _impl(ctx: AnalysisContext) -> Promise:
             "facts_db": ctx.attrs.layer[LayerInfo].facts_db,
             "ref": ctx.attrs.ref,
             "skopeo": ctx.attrs._skopeo[DefaultInfo].default_outputs[0],
-            "target_arch": _oci_arch(ctx.attrs._target_arch),
+            "target_arch": oci_arch(ctx.attrs._target_arch),
             "zstd_chunked": ctx.attrs.zstd_chunked,
         }
+        if base_layers_dir:
+            spec_oci["base_layers_dir"] = base_layers_dir
         spec = ctx.actions.write_json(
             "spec.json",
             {"oci": spec_oci},

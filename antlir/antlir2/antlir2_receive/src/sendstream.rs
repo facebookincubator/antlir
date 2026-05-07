@@ -15,21 +15,25 @@ use anyhow::Result;
 use anyhow::ensure;
 use tracing::trace;
 
-use crate::Receive;
-
-pub(crate) fn recv_sendstream(args: &Receive, dst: &Path, wv: &WorkingVolume) -> Result<()> {
+pub(crate) fn recv_sendstream(
+    source: &Path,
+    dst: &Path,
+    wv: &WorkingVolume,
+    btrfs: &Path,
+    rootless: bool,
+) -> Result<()> {
     // make sure that working_dir is btrfs before we try to invoke
     // 'btrfs' so that we can fail with a nicely categorized error
     antlir2_btrfs::ensure_path_is_on_btrfs(wv.path())?;
 
     let recv_tmp = tempfile::tempdir_in(wv.path())?;
-    let mut cmd = Command::new(&args.btrfs);
+    let mut cmd = Command::new(btrfs);
     cmd.arg("--quiet")
         .arg("receive")
         .arg(recv_tmp.path())
         .arg("-f")
-        .arg(&args.source);
-    if args.rootless {
+        .arg(source);
+    if rootless {
         cmd.arg("-m").arg(wv.path());
         cmd.arg("--force-decompress");
     }

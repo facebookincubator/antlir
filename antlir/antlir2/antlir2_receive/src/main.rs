@@ -13,13 +13,14 @@ use antlir2_btrfs::Subvolume;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use clap::Parser;
-use clap::ValueEnum;
+use clap::Subcommand;
 use tracing::trace;
 use tracing::warn;
 use tracing_subscriber::prelude::*;
 
 #[cfg(facebook)]
 mod facebook;
+mod oci;
 mod sendstream;
 
 #[derive(Parser, Debug)]
@@ -28,9 +29,6 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// Path to the image file
     source: PathBuf,
-    #[clap(long, value_enum)]
-    /// Format of the image file
-    format: Format,
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
@@ -40,9 +38,6 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// Force all files to be owned by root:root
     force_root_ownership: bool,
-    #[clap(long, default_value = "btrfs")]
-    /// path to 'btrfs' command
-    btrfs: PathBuf,
     #[clap(long)]
     facts_db_out: PathBuf,
     #[clap(long)]
@@ -50,12 +45,30 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// Package manager used by the image OS
     package_manager: String,
+    #[clap(subcommand)]
+    format: FormatCmd,
 }
 
-#[derive(Debug, Copy, Clone, ValueEnum)]
-pub enum Format {
-    Sendstream,
+#[derive(Subcommand, Debug)]
+pub(crate) enum FormatCmd {
+    Sendstream {
+        #[clap(long, default_value = "btrfs")]
+        /// path to 'btrfs' command
+        btrfs: PathBuf,
+    },
     Tar,
+    Oci {
+        #[clap(long)]
+        /// OCI ref name to import from an OCI layout
+        r#ref: Option<String>,
+        #[clap(long)]
+        /// OCI target architecture to import from an OCI layout
+        arch: Option<String>,
+        #[clap(long)]
+        /// Extract individual OCI layers into this directory for later
+        /// repackaging
+        oci_layers_out: Option<PathBuf>,
+    },
     #[cfg(facebook)]
     Caf,
 }
@@ -123,14 +136,21 @@ impl Receive {
 
         let root = rootless.map(|r| r.escalate()).transpose()?;
 
-        match self.format {
-            Format::Sendstream => {
+        let mut oci_metadata = None;
+        match &self.format {
+            FormatCmd::Sendstream { btrfs } => {
                 if self.force_root_ownership {
                     return Err(Error::CannotForceRootOwnership);
                 }
-                sendstream::recv_sendstream(&self, &dst, &working_volume)?;
+                sendstream::recv_sendstream(
+                    &self.source,
+                    &dst,
+                    &working_volume,
+                    btrfs,
+                    self.rootless,
+                )?;
             }
-            Format::Tar => {
+            FormatCmd::Tar => {
                 let subvol = Subvolume::create(&dst).context("while creating subvol")?;
                 let mut archive =
                     tar::Archive::new(BufReader::new(File::open(&self.source).with_context(
@@ -141,8 +161,33 @@ impl Receive {
                     .unpack(subvol.path())
                     .context("while unpacking tar")?;
             }
+            FormatCmd::Oci {
+                r#ref,
+                arch,
+                oci_layers_out,
+            } => {
+                let subvol = Subvolume::create(&dst).context("while creating subvol")?;
+                oci::recv_oci(
+                    &self.source,
+                    subvol.path(),
+                    r#ref.as_deref(),
+                    arch.as_deref(),
+                )
+                .context("while receiving oci layout")?;
+                if let Some(layers_out) = oci_layers_out {
+                    oci_metadata = Some(
+                        oci::extract_oci_layers(
+                            &self.source,
+                            layers_out,
+                            r#ref.as_deref(),
+                            arch.as_deref(),
+                        )
+                        .context("while extracting OCI layers")?,
+                    );
+                }
+            }
             #[cfg(facebook)]
-            Format::Caf => {
+            FormatCmd::Caf => {
                 facebook::caf::recv_caf(&self.source, &dst, self.force_root_ownership)
                     .context("while receiving caf")?;
             }
@@ -160,6 +205,39 @@ impl Receive {
             .package_manager(&self.package_manager)
             .call()
             .context("while updating facts db with layer contents")?;
+
+        if let Some(metadata) = oci_metadata {
+            let mut db = antlir2_facts::RwDatabase::open(&self.facts_db_out)
+                .context("while reopening facts db for OCI metadata")?;
+            let mut tx = db
+                .transaction()
+                .context("while starting facts transaction")?;
+            for (key, value) in &metadata.labels {
+                let fact: antlir2_facts::fact::Generic =
+                    serde_json::from_value(serde_json::json!({
+                        "type": "antlir2_packager::oci::OciLabel",
+                        "key": format!("{key}={value}"),
+                        "value": {"key": key, "value": value}
+                    }))
+                    .expect("valid OciLabel generic fact");
+                tx.insert_generic(&fact)
+                    .context("while inserting OciLabel fact")?;
+            }
+            for env_entry in &metadata.env {
+                if let Some((key, value)) = env_entry.split_once('=') {
+                    let fact: antlir2_facts::fact::Generic =
+                        serde_json::from_value(serde_json::json!({
+                            "type": "antlir2_packager::oci::OciEnv",
+                            "key": format!("{key}={value}"),
+                            "value": {"key": key, "value": value}
+                        }))
+                        .expect("valid OciEnv generic fact");
+                    tx.insert_generic(&fact)
+                        .context("while inserting OciEnv fact")?;
+                }
+            }
+            tx.commit().context("while committing OCI metadata facts")?;
+        }
 
         if self.output.exists() {
             trace!("removing existing output {}", self.output.display());
