@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
@@ -74,6 +75,18 @@ impl Fact for OciEnv {
     fn key(&self) -> Key {
         // use the full KEY=VALUE pair to be able to see any conflicts later on
         format!("{}={}", self.key, self.value).into()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct OciExposedPort {
+    port: String,
+}
+
+#[fact_impl("antlir2_packager::oci::OciExposedPort")]
+impl Fact for OciExposedPort {
+    fn key(&self) -> Key {
+        self.port.clone().into()
     }
 }
 
@@ -391,6 +404,11 @@ impl Oci {
             stop_signal = Some(oci_stop_signal.stop_signal.clone());
         }
 
+        let exposed_ports: BTreeSet<_> = facts_db
+            .iter::<OciExposedPort>()?
+            .map(|port| port.port.clone())
+            .collect();
+
         let mut config_builder = ConfigBuilder::default()
             .entrypoint(self.entrypoint.clone())
             .labels(labels)
@@ -406,6 +424,10 @@ impl Oci {
         }
         if let Some(stop_signal) = stop_signal {
             config_builder = config_builder.stop_signal(stop_signal);
+        }
+        if !exposed_ports.is_empty() {
+            config_builder =
+                config_builder.exposed_ports(exposed_ports.into_iter().collect::<Vec<_>>());
         }
 
         let image_configuration = ImageConfigurationBuilder::default()

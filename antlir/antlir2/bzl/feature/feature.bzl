@@ -73,6 +73,7 @@ load("//antlir/antlir2/features/install:install.bzl", "install_rule")
 load("//antlir/antlir2/features/mount:mount.bzl", "mount_rule")
 load("//antlir/antlir2/features/oci/oci_cmd:oci_cmd.bzl", "oci_cmd_rule")
 load("//antlir/antlir2/features/oci/oci_env:oci_env.bzl", "oci_env_rule")
+load("//antlir/antlir2/features/oci/oci_exposed_port:oci_exposed_port.bzl", "oci_exposed_port_rule")
 load("//antlir/antlir2/features/oci/oci_label:oci_label.bzl", "oci_label_rule")
 load("//antlir/antlir2/features/oci/oci_stop_signal:oci_stop_signal.bzl", "oci_stop_signal_rule")
 load("//antlir/antlir2/features/oci/oci_user:oci_user.bzl", "oci_user_rule")
@@ -114,6 +115,7 @@ _anon_rules = {
     "mount": mount_rule,
     "oci/oci_cmd": oci_cmd_rule,
     "oci/oci_env": oci_env_rule,
+    "oci/oci_exposed_port": oci_exposed_port_rule,
     "oci/oci_label": oci_label_rule,
     "oci/oci_stop_signal": oci_stop_signal_rule,
     "oci/oci_user": oci_user_rule,

@@ -76,6 +76,8 @@ cat /to-be-deleted-and-recreated
             key = "TEST_ENV_VAR",
             value = "test-value",
         ),
+        oci_features.exposed_port(port = "8080/tcp"),
+        oci_features.exposed_port(port = "9090/udp"),
         oci_features.cmd(cmd = [
             "bar",
             "baz",

@@ -127,3 +127,24 @@ class Test(TestCase):
         )
 
         self.assertEqual("SIGTERM", json.loads(proc.stdout.strip()))
+
+    def test_image_has_exposed_ports(self) -> None:
+        """Verify that the image contains the expected exposed ports."""
+        image_id = load_image(OCI_PATH)
+
+        proc = subprocess.run(
+            [
+                "podman",
+                "inspect",
+                image_id,
+                "--format",
+                "{{json .Config.ExposedPorts}}",
+            ],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+        exposed_ports = json.loads(proc.stdout.strip())
+        self.assertIn("8080/tcp", exposed_ports)
+        self.assertIn("9090/udp", exposed_ports)
