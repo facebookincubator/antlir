@@ -40,6 +40,15 @@ feature.new(
 feature.new(
     name = "resolvconf",
     features = [
+        # centos10 ships /etc/resolv.conf as a symlink to
+        # /run/systemd/resolve/stub-resolv.conf. Without removing it first,
+        # antlir2's feature.install does std::fs::copy() which follows the
+        # symlink and tries to write to a non-existent target, failing with
+        # ENOENT.
+        feature.remove(
+            must_exist = False,
+            path = "/etc/resolv.conf",
+        ),
         linux.config.network.resolv.install(
             nameservers = [],
             search_domains = [],
