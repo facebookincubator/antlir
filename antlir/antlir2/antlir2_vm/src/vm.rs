@@ -139,10 +139,18 @@ impl<S: Share> VM<S> {
             .iter()
             .map(|d| PathBuf::from(d.concat()))
             .collect();
+        // Detect if extra_qemu_args provides custom NUMA memory backends.
+        // When true, the shares layer skips its default single-node NUMA setup.
+        let custom_numa = machine
+            .extra_qemu_args
+            .iter()
+            .flatten()
+            .any(|arg| arg.contains("memory-backend-memfd"));
         let shares = Self::create_shares(
             Self::get_all_shares_opts(&all_input_dirs, &all_output_dirs),
             &state_dir,
             machine.mem_mib,
+            custom_numa,
         )?;
         let mut nics = VirtualNICs::new(machine.num_nics, machine.max_combined_channels)?;
         if nics.len() > 0 {
@@ -231,7 +239,12 @@ impl<S: Share> VM<S> {
     }
 
     /// Create all shares, start virtiofsd daemon and generate necessary unit files
-    fn create_shares(shares: Vec<ShareOpts>, state_dir: &Path, mem_mb: usize) -> Result<Shares<S>> {
+    fn create_shares(
+        shares: Vec<ShareOpts>,
+        state_dir: &Path,
+        mem_mb: usize,
+        custom_numa: bool,
+    ) -> Result<Shares<S>> {
         let virtiofs_shares: Result<Vec<_>> = shares
             .into_iter()
             .enumerate()
@@ -240,7 +253,12 @@ impl<S: Share> VM<S> {
                 Ok(share)
             })
             .collect();
-        let shares = Shares::new(virtiofs_shares?, mem_mb, state_dir.to_path_buf())?;
+        let shares = Shares::new(
+            virtiofs_shares?,
+            mem_mb,
+            state_dir.to_path_buf(),
+            custom_numa,
+        )?;
         shares.generate_unit_files()?;
         Ok(shares)
     }
@@ -879,7 +897,7 @@ mod test {
             args,
             pci_bridges,
             disks,
-            shares: Shares::new(vec![share], 1024, state_dir.path().to_path_buf())
+            shares: Shares::new(vec![share], 1024, state_dir.path().to_path_buf(), false)
                 .expect("Failed to create Shares"),
             nics,
             state_dir: state_dir.path().to_path_buf(),

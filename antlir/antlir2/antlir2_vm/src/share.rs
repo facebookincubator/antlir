@@ -255,10 +255,18 @@ pub(crate) struct Shares<T: Share> {
     /// the unit files to the right place and setup dependency links, which instructs systemd to
     /// setup the mounts for `shares`.
     exports_share: VirtiofsShare,
+    /// When true, extra_qemu_args provides custom NUMA memory backends.
+    /// Skip the default single-node memory/NUMA setup.
+    custom_numa: bool,
 }
 
 impl<T: Share> Shares<T> {
-    pub(crate) fn new(shares: Vec<T>, mem_mb: usize, state_dir: PathBuf) -> Result<Self> {
+    pub(crate) fn new(
+        shares: Vec<T>,
+        mem_mb: usize,
+        state_dir: PathBuf,
+        custom_numa: bool,
+    ) -> Result<Self> {
         if shares.is_empty() {
             return Err(ShareError::EmptyShareError);
         }
@@ -278,6 +286,7 @@ impl<T: Share> Shares<T> {
             shares,
             mem_mb,
             unit_files_dir,
+            custom_numa,
             exports_share,
         })
     }
@@ -302,17 +311,25 @@ impl<T: Share> Shares<T> {
         Ok(())
     }
 
-    /// Required by virtiofsd shares
+    /// Memory/NUMA setup for virtiofsd. When custom_numa is set,
+    /// extra_qemu_args provides all memory backends (with share=on) and
+    /// NUMA topology, so we emit nothing here.
     fn memory_file_qemu_args(&self) -> Vec<OsString> {
-        [
-            "-object",
-            &format!("memory-backend-memfd,id=mem,share=on,size={}M", self.mem_mb,),
-            "-numa",
-            "node,memdev=mem",
-        ]
-        .iter()
-        .map(|x| x.into())
-        .collect()
+        if self.custom_numa {
+            // extra_qemu_args provides all memory-backend-memfd objects
+            // (each with share=on for virtiofsd) and NUMA node assignments.
+            vec![]
+        } else {
+            [
+                "-object",
+                &format!("memory-backend-memfd,id=mem,share=on,size={}M", self.mem_mb),
+                "-numa",
+                "node,memdev=mem",
+            ]
+            .iter()
+            .map(|x| x.into())
+            .collect()
+        }
     }
 }
 
@@ -416,7 +433,7 @@ Options=rw"#;
             mount_tag: None,
         };
         let share = VirtiofsShare::new(opts, 3, state_dir.path().to_path_buf());
-        let shares = Shares::new(vec![share], 1024, state_dir.path().to_path_buf())
+        let shares = Shares::new(vec![share], 1024, state_dir.path().to_path_buf(), false)
             .expect("Failed to create Shares");
 
         shares
