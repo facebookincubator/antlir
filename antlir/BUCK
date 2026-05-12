@@ -23,7 +23,6 @@ python_library(
     visibility = [
         "//antlir/...",
         "//cas/caf/...",
-        "//cogwheel/launcher_v1/...",
         "//tupperware/cm/antlir/...",
     ],
     deps = [
