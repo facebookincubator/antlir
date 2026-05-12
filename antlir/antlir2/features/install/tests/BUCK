@@ -334,7 +334,7 @@ buck_genrule(
     name = "large-source",
     out = "large-source",
     cmd = """
-        head -c 512M </dev/urandom >$OUT
+        dd if=/dev/zero bs=1K count=1 of=$OUT && dd if=/dev/urandom bs=1M count=512 >> $OUT
     """,
     visibility = [],
 )
