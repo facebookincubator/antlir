@@ -414,7 +414,7 @@ def image_python_test(
             name = with_xarexec,
             parent_layer = layer,
             features = [
-                feature.rpms_install(rpms = ["fb-xarexec", "squashfuse"]),
+                feature.rpms_install(rpms = ["fb-xarexec"]),
             ],
             visibility = [":" + name],
             # setting implicit_layer reason means that any flags that normally
