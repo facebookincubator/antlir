@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_targ
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/linux/vm/console:defs.bzl", "TTY_NAME")
 load(":run_command.bzl", "vm_run_command")
-load(":test.bzl", "vm_cpp_test", "vm_python_test", "vm_rust_test", "vm_sh_test")
+load(":test.bzl", "vm_cpp_test", "vm_pool_broker", "vm_python_test", "vm_rust_test", "vm_sh_test")
 load(":types.bzl", "DiskInfo", "VMHostInfo")
 
 def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
@@ -231,6 +231,7 @@ _vm_host = rule(
 vm = struct(
     host = rule_with_default_target_platform(_vm_host, local_only_exec = True),
     cpp_test = vm_cpp_test,
+    pool_broker = vm_pool_broker,
     python_test = vm_python_test,
     rust_test = vm_rust_test,
     sh_test = vm_sh_test,

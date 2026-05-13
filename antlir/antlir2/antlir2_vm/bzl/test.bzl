@@ -139,6 +139,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 # create TAP network devices
                 remote_enabled = False,
             ),
+            local_resources = {
+                "vm_pool": ctx.attrs._vm_pool.label,
+            } if ctx.attrs._vm_pool != None else {},
+            required_local_resources = [
+                RequiredTestLocalResource("vm_pool", listing = False, execution = True),
+            ] if ctx.attrs._vm_pool != None else [],
         ),
     ]
 
@@ -188,6 +194,11 @@ _vm_test = rule(
         "vm_host": attrs.dep(providers = [VMHostInfo], doc = "VM host target for the test"),
         "_static_list_embeds_test_command": attrs.bool(default = False),
         "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
+        "_vm_pool": attrs.option(
+            attrs.dep(providers = [LocalResourceInfo]),
+            default = None,
+            doc = "VM pool broker for limiting concurrent VM execution based on available memory",
+        ),
     },
 )
 
@@ -241,6 +252,7 @@ def _implicit_vm_test(
         *,
         name: str,
         vm_host: str,
+        vm_pool: str | None = None,
         run_as_bundle: bool = False,
         timeout_secs: None | int | Select = None,
         first_boot_command: None | str = None,
@@ -308,6 +320,7 @@ def _implicit_vm_test(
         compatible_with = kwargs.get("compatible_with"),
         _static_list_wrapper = _static_list_wrapper,
         _static_list_embeds_test_command = _static_list_embeds_test_command,
+        _vm_pool = vm_pool,
         target_compatible_with = kwargs.get("target_compatible_with"),
         labels = labels,
     )
@@ -332,3 +345,49 @@ vm_rust_test = partial(
     _static_list_embeds_test_command = True,
 )
 vm_sh_test = partial(_implicit_vm_test, buck_sh_test)
+
+def _vm_pool_broker_impl(ctx: AnalysisContext) -> list[Provider]:
+    setup_script = """
+        mem_avail_kb=$(awk '/^MemAvailable:/ {{ print $2 }}' /proc/meminfo)
+        mem_avail_mib=$((mem_avail_kb / 1024))
+        num_vms=$((mem_avail_mib / {mem_per_vm_mib}))
+        if [ "$num_vms" -lt {min_vms} ]; then
+            num_vms={min_vms}
+        fi
+        if [ {max_vms} -gt 0 ] && [ "$num_vms" -gt {max_vms} ]; then
+            num_vms={max_vms}
+        fi
+        slots=""
+        i=0
+        while [ "$i" -lt "$num_vms" ]; do
+            if [ "$i" -gt 0 ]; then
+                slots="$slots, "
+            fi
+            slots="$slots{{\\\"slot\\\": \\\"$i\\\"}}"
+            i=$((i + 1))
+        done
+        echo "{{\\\"resources\\\": [$slots]}}"
+    """.format(
+        mem_per_vm_mib = ctx.attrs.mem_per_vm_mib,
+        min_vms = ctx.attrs.min_vms,
+        max_vms = ctx.attrs.max_vms,
+    )
+
+    return [
+        DefaultInfo(),
+        LocalResourceInfo(
+            setup = cmd_args(["sh", "-c", setup_script]),
+            resource_env_vars = {
+                "VM_POOL_SLOT": "slot",
+            },
+        ),
+    ]
+
+vm_pool_broker = rule(
+    impl = _vm_pool_broker_impl,
+    attrs = {
+        "max_vms": attrs.int(default = 0, doc = "Maximum number of concurrent VMs (0 = no cap, limited only by available memory)"),
+        "mem_per_vm_mib": attrs.int(default = 4096, doc = "Memory in MiB required per VM"),
+        "min_vms": attrs.int(default = 1, doc = "Minimum number of concurrent VMs"),
+    },
+)
