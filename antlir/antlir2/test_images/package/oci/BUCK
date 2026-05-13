@@ -324,6 +324,10 @@ oci(
         "/entrypoint.sh",
         "foo",
     ],
+    image_labels = {
+        "com.meta.test.final": "final-value",
+        "com.meta.test.label": "overridden-value",
+    },
     layer = ":prebuilt-addon-layer",
 )
 
@@ -331,6 +335,7 @@ image_python_test(
     name = "test-prebuilt",
     srcs = ["test_prebuilt.py"],
     env = {
+        "BUILD_REVISION": read_config("build_info", "revision", "local"),
         "OCI_FROM_PREBUILT": "$(location :oci-from-prebuilt)",
         "OCI_ORIGINAL": "$(location :oci)",
     },

@@ -71,6 +71,9 @@ class PrebuiltTest(TestCase):
         self.assertEqual("roundtrip-success\n", proc.stdout)
 
     def test_prebuilt_has_labels(self) -> None:
+        build_revision = os.environ["BUILD_REVISION"]
+        rebuilt_config = _load_config(OCI_FROM_PREBUILT)
+
         image_id = load_image(OCI_FROM_PREBUILT)
         proc = subprocess.run(
             ["podman", "inspect", image_id, "--format", "{{json .Config.Labels}}"],
@@ -81,9 +84,30 @@ class PrebuiltTest(TestCase):
         labels = json.loads(proc.stdout.strip())
         self.assertIsNotNone(labels)
         self.assertIn("com.meta.test.label", labels)
-        self.assertEqual(labels["com.meta.test.label"], "test-value")
+        self.assertEqual(labels["com.meta.test.label"], "overridden-value")
         self.assertIn("com.meta.test.another", labels)
         self.assertEqual(labels["com.meta.test.another"], "another-value")
+        self.assertIn("com.meta.test.final", labels)
+        self.assertEqual(labels["com.meta.test.final"], "final-value")
+        self.assertIn("org.opencontainers.image.created", labels)
+        self.assertEqual(
+            labels["org.opencontainers.image.created"], rebuilt_config["created"]
+        )
+        self.assertIn("build-date", labels)
+        self.assertEqual(labels["build-date"], rebuilt_config["created"])
+        self.assertIn("org.opencontainers.image.revision", labels)
+        self.assertEqual(labels["org.opencontainers.image.revision"], build_revision)
+        self.assertIn("org.opencontainers.image.version", labels)
+        self.assertEqual(
+            labels["org.opencontainers.image.version"], f"fbsource:{build_revision}"
+        )
+
+    def test_prebuilt_uses_generated_created_timestamp(self) -> None:
+        rebuilt_config = _load_config(OCI_FROM_PREBUILT)
+        self.assertEqual(
+            rebuilt_config["config"]["Labels"]["org.opencontainers.image.created"],
+            rebuilt_config["created"],
+        )
 
     def test_prebuilt_has_env(self) -> None:
         image_id = load_image(OCI_FROM_PREBUILT)

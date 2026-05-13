@@ -26,7 +26,10 @@ use anyhow::Context;
 use anyhow::Result;
 use cap_std::fs::Dir;
 use maplit::hashmap;
+use oci_spec::image::ANNOTATION_CREATED;
 use oci_spec::image::ANNOTATION_REF_NAME;
+use oci_spec::image::ANNOTATION_REVISION;
+use oci_spec::image::ANNOTATION_VERSION;
 use oci_spec::image::Arch;
 use oci_spec::image::ConfigBuilder;
 use oci_spec::image::Descriptor;
@@ -48,6 +51,9 @@ use sha2::Sha256;
 use tempfile::tempdir_in;
 
 use crate::run_cmd;
+
+const ANNOTATION_BUILD_DATE: &str = "build-date";
+const STALE_INHERITED_ANNOTATIONS: &[&str] = &["vcs-ref", "vcs-type"];
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct OciLabel {
@@ -150,6 +156,32 @@ impl Fact for OciStopSignal {
     }
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct BuildInfo {
+    revision: Option<String>,
+    time_iso8601: Option<String>,
+}
+
+impl BuildInfo {
+    fn created(&self) -> String {
+        self.time_iso8601
+            .as_ref()
+            .filter(|s| !s.is_empty())
+            .cloned()
+            .unwrap_or_else(|| {
+                chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+            })
+    }
+
+    fn revision(&self) -> &str {
+        self.revision
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("local")
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Oci {
@@ -159,6 +191,10 @@ pub struct Oci {
     skopeo: PathBuf,
     target_arch: Arch,
     entrypoint: Vec<String>,
+    #[serde(default)]
+    build_info: BuildInfo,
+    #[serde(default)]
+    image_labels: HashMap<String, String>,
     facts_db: PathBuf,
     #[serde(default)]
     zstd_chunked: bool,
@@ -354,10 +390,14 @@ impl Oci {
 
         let facts_db = RoDatabase::open(&self.facts_db)
             .with_context(|| format!("while opening facts db '{}'", self.facts_db.display()))?;
-        let mut labels = HashMap::new();
-        for label in facts_db.iter::<OciLabel>()? {
-            labels.insert(label.key.clone(), label.value.clone());
-        }
+        let created = self.build_info.created();
+        let revision = self.build_info.revision();
+        let derived_labels = build_derived_labels(&created, revision);
+        let labels = merge_labels(
+            facts_db.iter::<OciLabel>()?,
+            &derived_labels,
+            &self.image_labels,
+        );
 
         let mut env_map = HashMap::new();
         for env in facts_db.iter::<OciEnv>()? {
@@ -453,7 +493,7 @@ impl Oci {
         let image_configuration = ImageConfigurationBuilder::default()
             .architecture(self.target_arch.clone())
             .os("linux")
-            .created(chrono::Utc::now().to_rfc3339())
+            .created(created)
             .config(
                 config_builder
                     .build()
@@ -503,6 +543,32 @@ impl Oci {
     }
 }
 
+fn build_derived_labels(created: &str, revision: &str) -> HashMap<String, String> {
+    hashmap! {
+        ANNOTATION_BUILD_DATE.to_owned() => created.to_owned(),
+        ANNOTATION_CREATED.to_owned() => created.to_owned(),
+        ANNOTATION_REVISION.to_owned() => revision.to_owned(),
+        ANNOTATION_VERSION.to_owned() => format!("fbsource:{revision}"),
+    }
+}
+
+fn merge_labels(
+    inherited_labels: impl IntoIterator<Item = OciLabel>,
+    derived_labels: &HashMap<String, String>,
+    final_labels: &HashMap<String, String>,
+) -> HashMap<String, String> {
+    let mut labels = HashMap::new();
+    for label in inherited_labels {
+        if STALE_INHERITED_ANNOTATIONS.contains(&label.key.as_str()) {
+            continue;
+        }
+        labels.insert(label.key, label.value);
+    }
+    labels.extend(derived_labels.clone());
+    labels.extend(final_labels.clone());
+    labels
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -514,6 +580,8 @@ mod tests {
             skopeo: PathBuf::new(),
             target_arch,
             entrypoint: Vec::new(),
+            build_info: BuildInfo::default(),
+            image_labels: HashMap::new(),
             facts_db: PathBuf::new(),
             zstd_chunked: false,
             base_layers_dir: None,
@@ -545,5 +613,52 @@ mod tests {
             err.to_string().contains("x86_64"),
             "error should include unsupported architecture: {err:#}"
         );
+    }
+
+    #[test]
+    fn final_labels_override_inherited_labels() {
+        let inherited_labels = vec![
+            OciLabel {
+                key: "com.meta.test.same".to_owned(),
+                value: "inherited".to_owned(),
+            },
+            OciLabel {
+                key: "com.meta.test.only-inherited".to_owned(),
+                value: "kept".to_owned(),
+            },
+            OciLabel {
+                key: ANNOTATION_CREATED.to_owned(),
+                value: "inherited-created".to_owned(),
+            },
+            OciLabel {
+                key: ANNOTATION_BUILD_DATE.to_owned(),
+                value: "inherited-build-date".to_owned(),
+            },
+            OciLabel {
+                key: "vcs-ref".to_owned(),
+                value: "inherited-vcs-ref".to_owned(),
+            },
+            OciLabel {
+                key: "vcs-type".to_owned(),
+                value: "inherited-vcs-type".to_owned(),
+            },
+        ];
+        let derived_labels = build_derived_labels("final-created", "final-revision");
+        let final_labels = hashmap! {
+            "com.meta.test.same".to_owned() => "final".to_owned(),
+            "com.meta.test.only-final".to_owned() => "added".to_owned(),
+        };
+
+        let labels = merge_labels(inherited_labels, &derived_labels, &final_labels);
+
+        assert_eq!(labels["com.meta.test.same"], "final");
+        assert_eq!(labels["com.meta.test.only-inherited"], "kept");
+        assert_eq!(labels["com.meta.test.only-final"], "added");
+        assert_eq!(labels[ANNOTATION_CREATED], "final-created");
+        assert_eq!(labels[ANNOTATION_BUILD_DATE], "final-created");
+        assert_eq!(labels[ANNOTATION_VERSION], "fbsource:final-revision");
+        assert_eq!(labels[ANNOTATION_REVISION], "final-revision");
+        assert!(!labels.contains_key("vcs-ref"));
+        assert!(!labels.contains_key("vcs-type"));
     }
 }

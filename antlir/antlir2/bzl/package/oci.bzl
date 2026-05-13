@@ -173,9 +173,14 @@ def _impl(ctx: AnalysisContext) -> Promise:
 
         out = ctx.actions.declare_output(ctx.label.name, dir = True, has_content_based_path = False)
         spec_oci = {
+            "build_info": {
+                "revision": ctx.attrs._build_info_revision,
+                "time_iso8601": ctx.attrs._build_info_time_iso8601,
+            },
             "deltas": deltas,
             "entrypoint": ctx.attrs.entrypoint,
             "facts_db": ctx.attrs.layer[LayerInfo].facts_db,
+            "image_labels": ctx.attrs.image_labels,
             "ref": ctx.attrs.ref,
             "skopeo": ctx.attrs._skopeo[DefaultInfo].default_outputs[0],
             "target_arch": oci_arch(ctx.attrs._target_arch),
@@ -228,6 +233,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
 oci_attrs = {
     "collapse_into_one_layer": attrs.bool(default = False, doc = "If True, collapse all layers into a single layer containing the final filesystem state"),
     "entrypoint": attrs.list(attrs.string(), doc = "Command to run as the main process"),
+    "image_labels": attrs.dict(attrs.string(), attrs.string(), default = {}, doc = "OCI image labels applied after inherited and packager-generated labels, so these values override duplicate labels."),
     "ref": attrs.string(
         default = native.read_config("build_info", "revision", "local"),
         doc = "Ref name for OCI image",
@@ -238,6 +244,12 @@ oci_attrs = {
         default = False,
         doc = "If True, re-materialize the OCI layout with zstd:chunked-compressed layers via skopeo",
     ),
+    "_build_info_revision": attrs.default_only(attrs.string(
+        default = native.read_config("build_info", "revision", "local"),
+    )),
+    "_build_info_time_iso8601": attrs.default_only(attrs.string(
+        default = native.read_config("build_info", "time_iso8601", ""),
+    )),
     "_make_oci_layer": attrs.default_only(
         attrs.exec_dep(
             default = "antlir//antlir/antlir2/antlir2_packager/make_oci_layer:make-oci-layer",
