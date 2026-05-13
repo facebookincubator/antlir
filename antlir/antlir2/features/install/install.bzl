@@ -206,6 +206,8 @@ installed_binary = record(
     debuginfo = field([Artifact, None], default = None),
     dwp = field([Artifact, None], default = None),
     metadata = field([Artifact, None], default = None),
+    resources_debuginfo = field([Artifact, None], default = None),
+    resources_metadata = field([Artifact, None], default = None),
 )
 
 binary_record = record(
@@ -415,12 +417,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 objcopy = ctx.attrs._objcopy,
                 debuginfo_splitter = ctx.attrs._debuginfo_splitter,
                 strip_all = ctx.attrs.strip_all,
+                resources_dir = implicit_resources.resources_dir if implicit_resources else None,
             )
             binary_info = binary_record(
                 installed = installed_binary(
                     debuginfo = split_anon_target.artifact("debuginfo"),
                     metadata = split_anon_target.artifact("metadata"),
                     dwp = split_anon_target.artifact("dwp"),
+                    resources_debuginfo = split_anon_target.artifact("resources_debuginfo") if implicit_resources else None,
+                    resources_metadata = split_anon_target.artifact("resources_metadata") if implicit_resources else None,
                 ),
             )
             required_artifacts.extend([
@@ -428,6 +433,18 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 binary_info.installed.metadata,
                 binary_info.installed.dwp,
             ])
+            if implicit_resources:
+                resources_stripped = split_anon_target.artifact("resources_stripped")
+                required_artifacts.extend([
+                    resources_stripped,
+                    binary_info.installed.resources_debuginfo,
+                    binary_info.installed.resources_metadata,
+                ])
+                implicit_resources = implicit_resources_record(
+                    resources_json = implicit_resources.resources_json,
+                    resources_dir = resources_stripped,
+                    resources_dir_name = implicit_resources.resources_dir_name,
+                )
             src = split_anon_target.artifact("src")
         else:
             src = ensure_single_output(src)

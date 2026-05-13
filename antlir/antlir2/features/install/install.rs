@@ -132,6 +132,8 @@ pub struct InstalledBinary {
     pub debuginfo: BuckOutSource,
     pub dwp: Option<BuckOutSource>,
     pub metadata: SplitBinaryMetadata,
+    pub resources_debuginfo: Option<BuckOutSource>,
+    pub resources_metadata: Option<BuckOutSource>,
 }
 
 /// Buck2's `record` will always include `null` values, but serde's native enum
@@ -170,6 +172,8 @@ impl<'de> Deserialize<'de> for InstalledBinary {
             debuginfo: BuckOutSource,
             dwp: Option<BuckOutSource>,
             metadata: Metadata,
+            resources_debuginfo: Option<BuckOutSource>,
+            resources_metadata: Option<BuckOutSource>,
         }
 
         #[derive(Deserialize)]
@@ -195,6 +199,8 @@ impl<'de> Deserialize<'de> for InstalledBinary {
                     }
                     Metadata::Metadata(metadata) => metadata,
                 },
+                resources_debuginfo: s.resources_debuginfo,
+                resources_metadata: s.resources_metadata,
             })
         })
     }
@@ -282,26 +288,45 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
                             mode: 0o755,
                         })));
                     }
-                    BinaryInfo::Installed(InstalledBinary {
-                        debuginfo: _,
-                        dwp: _,
-                        metadata,
-                    }) => {
-                        if let Some(buildid) = &metadata.buildid {
-                            let debug_dst = Path::new("/usr/lib/debug/.build-id")
-                                .join(&buildid[..2])
-                                .join(&buildid[2..])
-                                .with_extension("debug");
+                    BinaryInfo::Installed(installed) => {
+                        if let Some(buildid) = &installed.metadata.buildid {
+                            let debug_dir = buildid_debug_path(buildid);
                             provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                path: debug_dst.parent().expect("must have parent").to_owned(),
+                                path: debug_dir.parent().expect("must have parent").to_owned(),
                                 file_type: FileType::Directory,
                                 mode: 0o555,
                             })));
-                            // Note we don't emit a provides for the debug file itself
-                            // as this may be emitted by multiple features, and we don't
-                            // yet have an existing usecase of images needing to require
-                            // it. If that becomes the case, we can emit provides that
-                            // ignore conflicts.
+                        }
+                        if let Some(resources_metadata) = &installed.resources_metadata {
+                            for entry in WalkDir::new(resources_metadata) {
+                                let entry = entry
+                                    .with_context(|| {
+                                        format!(
+                                            "while walking resources metadata dir {:?}",
+                                            resources_metadata
+                                        )
+                                    })
+                                    .map_err(|e| e.to_string())?;
+                                if !entry.file_type().is_file() {
+                                    continue;
+                                }
+                                let metadata_content =
+                                    std::fs::read(entry.path()).map_err(|e| e.to_string())?;
+                                let metadata: SplitBinaryMetadata =
+                                    serde_json::from_slice(&metadata_content)
+                                        .map_err(|e| e.to_string())?;
+                                if let Some(buildid) = &metadata.buildid {
+                                    let debug_dir = buildid_debug_path(buildid);
+                                    provides.push(Item::Path(PathItem::Entry(FsEntry {
+                                        path: debug_dir
+                                            .parent()
+                                            .expect("must have parent")
+                                            .to_owned(),
+                                        file_type: FileType::Directory,
+                                        mode: 0o555,
+                                    })));
+                                }
+                            }
                         }
                     }
                 }
@@ -459,6 +484,7 @@ impl antlir2_compile::CompileFeature for Install {
                         dwp,
                         debuginfo,
                         metadata,
+                        ..
                     }) => {
                         if self.always_use_gnu_debuglink {
                             let debug_dst = dst.with_extension("debug");
@@ -472,11 +498,7 @@ impl antlir2_compile::CompileFeature for Install {
                             add_gnu_debuglink(&dst, &debug_dst)?;
                         } else if let Some(buildid) = &metadata.buildid {
                             let debug_dst = ctx
-                                .dst_path(
-                                    Path::new("/usr/lib/debug/.build-id")
-                                        .join(&buildid[..2])
-                                        .join(&buildid[2..]),
-                                )?
+                                .dst_path(buildid_debug_path(buildid))?
                                 .with_extension("debug");
                             cp_debug_symbols(debuginfo, &debug_dst, dwp, uid, gid)?;
                             copy_with_metadata()
@@ -586,9 +608,44 @@ impl antlir2_compile::CompileFeature for Install {
                     .gid(gid.as_raw())
                     .call()?;
             }
+            if let Some(BinaryInfo::Installed(installed)) = &self.binary_info
+                && let Some(resources_debuginfo) = &installed.resources_debuginfo
+                && let Some(resources_metadata) = &installed.resources_metadata
+            {
+                for entry in WalkDir::new(resources_metadata) {
+                    let entry = entry.map_err(std::io::Error::from)?;
+                    if !entry.file_type().is_file() {
+                        continue;
+                    }
+                    let meta_relpath = entry
+                        .path()
+                        .strip_prefix(resources_metadata)
+                        .expect("must be under metadata dir");
+                    let resource_relpath = meta_relpath.with_extension("");
+
+                    let metadata_content = std::fs::read(entry.path())?;
+                    let metadata: SplitBinaryMetadata =
+                        serde_json::from_slice(&metadata_content)
+                            .context("reading resource split metadata")?;
+
+                    if let Some(buildid) = &metadata.buildid {
+                        let debuginfo_src = resources_debuginfo.join(&resource_relpath);
+                        let debug_dst = ctx
+                            .dst_path(buildid_debug_path(buildid))?
+                            .with_extension("debug");
+                        cp_debug_symbols(&debuginfo_src, &debug_dst, &None, uid, gid)?;
+                    }
+                }
+            }
         }
         Ok(())
     }
+}
+
+fn buildid_debug_path(buildid: &str) -> PathBuf {
+    Path::new("/usr/lib/debug/.build-id")
+        .join(&buildid[..2])
+        .join(&buildid[2..])
 }
 
 fn cp_debug_symbols(

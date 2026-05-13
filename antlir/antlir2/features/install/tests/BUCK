@@ -485,3 +485,33 @@ image_python_test(
     layer = ":install-binary-with-implicit-resources",
     supports_static_listing = False,
 )
+
+rust_binary(
+    name = "binary-with-deterministic-resource",
+    srcs = ["true.rs"],
+    crate_root = "true.rs",
+    resources = {
+        "deterministic": ":deterministic-binary",
+    },
+)
+
+image.layer(
+    name = "deterministic-split-debuginfo-resource",
+    features = [
+        feature.rpms_install(rpms = ["coreutils"]),
+        feature.install(
+            src = ":binary-with-deterministic-resource",
+            dst = "/binary-with-deterministic-resource",
+            never_use_dev_binary_symlink = True,
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_python_test(
+    name = "test-deterministic-split-debuginfo-resource",
+    srcs = ["test_deterministic_split_debuginfo_resource.py"],
+    # @oss-disable[end= ]: labels = [ci.mode("fbcode//mode/opt")],
+    layer = ":deterministic-split-debuginfo-resource",
+    supports_static_listing = False,
+)

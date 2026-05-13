@@ -20,43 +20,62 @@ def is_elf_binary(binary: Path) -> bool:
         return first_4 == b"\x7fELF"
 
 
-def cmd_strip(args: argparse.Namespace) -> None:
-    """Generate the stripped binary."""
-    if not is_elf_binary(args.binary):
-        # If this is not an ELF binary, it can't be stripped so just copy the original
-        if args.binary.is_dir():
-            shutil.copytree(args.binary, args.stripped, symlinks=True)
+def strip_binary(binary: Path, objcopy: str, stripped: Path, strip_all: bool) -> None:
+    if not is_elf_binary(binary):
+        if binary.is_dir():
+            shutil.copytree(binary, stripped, symlinks=True)
         else:
-            shutil.copy2(args.binary, args.stripped)
+            shutil.copy2(binary, stripped)
         return
 
-    # Remove symbols from the stripped binary.
     # --strip-all removes all symbols (.symtab, .strtab) in addition to debug
     # sections, producing a significantly smaller binary.
     # --strip-debug only removes DWARF debug sections but preserves .symtab
     # and .strtab for symbolication.
-    if args.strip_all:
+    if strip_all:
         strip_flags = ["--strip-all"]
     else:
         strip_flags = ["--strip-debug", "--keep-file-symbols"]
 
     proc = subprocess.run(
-        [
-            args.objcopy,
-        ]
+        [objcopy]
         + strip_flags
         + [
             "--remove-section=.pseudo_probe",
             "--remove-section=.pseudo_probe_desc",
-            args.binary,
-            args.stripped,
+            binary,
+            stripped,
         ],
         capture_output=True,
     )
     if proc.returncode != 0:
         raise RuntimeError(
             "Failed to strip debug symbols for {}:\\n{}\\n{}".format(
-                args.binary,
+                binary,
+                proc.stdout.decode("utf-8", errors="surrogateescape"),
+                proc.stderr.decode("utf-8", errors="surrogateescape"),
+            )
+        )
+
+
+def cmd_strip(args: argparse.Namespace) -> None:
+    strip_binary(args.binary, args.objcopy, args.stripped, args.strip_all)
+
+
+def extract_debuginfo(binary: Path, objcopy: str, debuginfo: Path) -> None:
+    if not is_elf_binary(binary):
+        with open(debuginfo, "w"):
+            pass
+        return
+
+    proc = subprocess.run(
+        [objcopy, "--only-keep-debug", binary, debuginfo],
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            "Failed to extract debug symbols for {}:\\n{}\\n{}".format(
+                binary,
                 proc.stdout.decode("utf-8", errors="surrogateescape"),
                 proc.stderr.decode("utf-8", errors="surrogateescape"),
             )
@@ -64,37 +83,12 @@ def cmd_strip(args: argparse.Namespace) -> None:
 
 
 def cmd_debuginfo(args: argparse.Namespace) -> None:
-    """Generate the debuginfo file."""
-    if not is_elf_binary(args.binary):
-        # If this is not an ELF binary, create an empty debuginfo file
-        with open(args.debuginfo, "w"):
-            pass
-        return
-
-    # Save debug symbols to a separate debuginfo file
-    proc = subprocess.run(
-        [
-            args.objcopy,
-            "--only-keep-debug",
-            args.binary,
-            args.debuginfo,
-        ],
-        capture_output=True,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(
-            "Failed to extract debug symbols for {}:\\n{}\\n{}".format(
-                args.binary,
-                proc.stdout.decode("utf-8", errors="surrogateescape"),
-                proc.stderr.decode("utf-8", errors="surrogateescape"),
-            )
-        )
+    extract_debuginfo(args.binary, args.objcopy, args.debuginfo)
 
 
-def cmd_metadata(args: argparse.Namespace) -> None:
-    """Generate the metadata.json file."""
-    if not is_elf_binary(args.binary):
-        with open(args.metadata, "w") as f:
+def write_metadata(binary: Path, objcopy: str, metadata: Path) -> None:
+    if not is_elf_binary(binary):
+        with open(metadata, "w") as f:
             json.dump({}, f)
         return
 
@@ -103,12 +97,12 @@ def cmd_metadata(args: argparse.Namespace) -> None:
     # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
     buildid_proc = subprocess.run(
         [
-            args.objcopy,
+            objcopy,
             "-O",
             "binary",
             "--only-section",
             ".note.gnu.build-id",
-            args.binary,
+            binary,
             "/dev/stdout",
         ],
         capture_output=True,
@@ -116,7 +110,7 @@ def cmd_metadata(args: argparse.Namespace) -> None:
     if buildid_proc.returncode != 0:
         raise RuntimeError(
             "Failed to get build-id for {}:\\n{}\\n{}".format(
-                args.binary,
+                binary,
                 buildid_proc.stdout.decode("utf-8", errors="surrogateescape"),
                 buildid_proc.stderr.decode("utf-8", errors="surrogateescape"),
             )
@@ -125,7 +119,7 @@ def cmd_metadata(args: argparse.Namespace) -> None:
 
     # Prefer to install the debug info by BuildID since it does not require another
     # objcopy invocation and is more standard
-    with open(args.metadata, "w") as f:
+    with open(metadata, "w") as f:
         if buildid := buildid[len(buildid) - 20 :].hex():
             json.dump({"buildid": buildid}, f)
         else:
@@ -133,6 +127,41 @@ def cmd_metadata(args: argparse.Namespace) -> None:
             # will end up being placed under, which debuglink relies on, so opt to no-op
             # here and linking will ultimately be handled in the install feature.
             json.dump({}, f)
+
+
+def cmd_metadata(args: argparse.Namespace) -> None:
+    write_metadata(args.binary, args.objcopy, args.metadata)
+
+
+def cmd_split_dir(args: argparse.Namespace) -> None:
+    """Split all binaries in a directory, producing stripped/debuginfo/metadata output dirs."""
+    input_dir = args.input_dir
+    stripped_dir = args.stripped_dir
+    debuginfo_dir = args.debuginfo_dir
+    metadata_dir = args.metadata_dir
+
+    stripped_dir.mkdir(parents=True, exist_ok=True)
+    debuginfo_dir.mkdir(parents=True, exist_ok=True)
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+
+    for filepath in sorted(input_dir.rglob("*")):
+        if not filepath.is_file():
+            continue
+
+        relpath = filepath.relative_to(input_dir)
+
+        stripped_path = stripped_dir / relpath
+        stripped_path.parent.mkdir(parents=True, exist_ok=True)
+
+        debuginfo_path = debuginfo_dir / relpath
+        debuginfo_path.parent.mkdir(parents=True, exist_ok=True)
+
+        metadata_path = metadata_dir / relpath.parent / (relpath.name + ".json")
+        metadata_path.parent.mkdir(parents=True, exist_ok=True)
+
+        strip_binary(filepath, args.objcopy, stripped_path, args.strip_all)
+        extract_debuginfo(filepath, args.objcopy, debuginfo_path)
+        write_metadata(filepath, args.objcopy, metadata_path)
 
 
 def main() -> None:
@@ -161,6 +190,19 @@ def main() -> None:
     metadata_parser = subparsers.add_parser("metadata", parents=[common_parser])
     metadata_parser.add_argument("--metadata", required=True, type=Path)
     metadata_parser.set_defaults(func=cmd_metadata)
+
+    split_dir_parser = subparsers.add_parser("split-dir")
+    split_dir_parser.add_argument("--objcopy", required=True)
+    split_dir_parser.add_argument("--input-dir", required=True, type=Path)
+    split_dir_parser.add_argument("--stripped-dir", required=True, type=Path)
+    split_dir_parser.add_argument("--debuginfo-dir", required=True, type=Path)
+    split_dir_parser.add_argument("--metadata-dir", required=True, type=Path)
+    split_dir_parser.add_argument(
+        "--strip-all",
+        action="store_true",
+        default=False,
+    )
+    split_dir_parser.set_defaults(func=cmd_split_dir)
 
     args = parser.parse_args()
     args.func(args)
