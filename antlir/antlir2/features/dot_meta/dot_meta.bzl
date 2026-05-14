@@ -6,11 +6,7 @@
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature", "new_feature_rule")
 
-def dot_meta(
-        *,
-        revision: [str, None] = None,
-        package_name: [str, None] = None,
-        package_version: [str, None] = None):
+def dot_meta(*, revision: [str, None] = None, package_name: [str, None] = None, package_version: [str, None] = None):
     """
     Stamp build info into /.meta in the built layer
     """

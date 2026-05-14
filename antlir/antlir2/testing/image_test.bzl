@@ -88,7 +88,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "after_units": boot_after_units,
                 "requires_units": boot_requires_units,
                 "wants_units": boot_wants_units,
-            } if ctx.attrs.boot else None,
+            }
+            if ctx.attrs.boot
+            else None,
             "ephemeral": ctx.attrs.ephemeral,
             "hostname": ctx.attrs.hostname,
             "layer": subvol_symlink,
@@ -102,10 +104,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         has_content_based_path = False,
     )
 
-    env_args = [
-        cmd_args("export ", k, "=", cmd_args(v, quote = "shell"), delimiter = "")
-        for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()
-    ]
+    env_args = [cmd_args("export ", k, "=", cmd_args(v, quote = "shell"), delimiter = "") for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()]
 
     test_cmd = cmd_args(
         ctx.attrs.image_test[RunInfo],
@@ -175,15 +174,19 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         if ctx.attrs._static_list_embeds_test_command:
             # (at least rust): no existing lister, use test_command --list
             # so need to pass the test_command down to the lister
-            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
-                ctx.attrs._static_list_wrapper[RunInfo],
-                ctx.attrs.test[ExternalRunnerTestInfo].command,
-            ))
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(
+                cmd_args(
+                    ctx.attrs._static_list_wrapper[RunInfo],
+                    ctx.attrs.test[ExternalRunnerTestInfo].command,
+                )
+            )
         elif original:
-            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
-                ctx.attrs._static_list_wrapper[RunInfo],
-                cmd_args(original, format = "--wrap={}"),
-            ))
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(
+                cmd_args(
+                    ctx.attrs._static_list_wrapper[RunInfo],
+                    cmd_args(original, format = "--wrap={}"),
+                )
+            )
 
     return [
         ExternalRunnerTestInfo(
@@ -256,7 +259,8 @@ _image_test = rule(
         "_rootless": rootless_cfg.is_rootless_attr,
         "_static_list_embeds_test_command": attrs.bool(default = False),
         "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
-    } | cfg_attrs(),
+    }
+    | cfg_attrs(),
     doc = "Run a test inside an image layer",
     cfg = layer_cfg,
 )
@@ -267,41 +271,43 @@ image_test = rule_with_default_target_platform(_image_test)
 # TestPilot
 
 def _implicit_image_test(
-        test_rule,
-        *,
-        name: str,
-        layer: str | Select,
-        run_as_user: str | Select | None = None,
-        labels: list[str] | Select | None = None,
-        boot: bool = False,
-        boot_requires_units: [list[str], None] = None,
-        boot_after_units: [list[str], None] = None,
-        boot_wants_units: [list[str], None] = None,
-        hostname: str | None = None,
-        _add_outer_labels: list[str] = [],
-        default_os: str | None = None,
-        # @oss-disable[end= ]: default_rou: str | None = None,
-        systemd: str | None = None,
-        metadata: dict[str, typing.Any] | None = None,
-        modifiers: list[str] | None = None,
-        mount_platform: bool | None = None,
-        rootless: bool | None = None,
-        ephemeral: str | None = None,
-        _static_list_wrapper: str | None = None,
-        _static_list_embeds_test_command: bool = False,
-        exec_mode: str | None = None,
-        exec_compatible_with: list[str] | Select | None = None,
-        target_compatible_with: list[str] | Select | None = None,
-        default_target_platform: str | None = None,
-        visibility: list[str] | None = None,
-        **kwargs):
+    test_rule,
+    *,
+    name: str,
+    layer: str | Select,
+    run_as_user: str | Select | None = None,
+    labels: list[str] | Select | None = None,
+    boot: bool = False,
+    boot_requires_units: [list[str], None] = None,
+    boot_after_units: [list[str], None] = None,
+    boot_wants_units: [list[str], None] = None,
+    hostname: str | None = None,
+    _add_outer_labels: list[str] = [],
+    default_os: str | None = None,
+    # @oss-disable[end= ]: default_rou: str | None = None,
+    systemd: str | None = None,
+    metadata: dict[str, typing.Any] | None = None,
+    modifiers: list[str] | None = None,
+    mount_platform: bool | None = None,
+    rootless: bool | None = None,
+    ephemeral: str | None = None,
+    _static_list_wrapper: str | None = None,
+    _static_list_embeds_test_command: bool = False,
+    exec_mode: str | None = None,
+    exec_compatible_with: list[str] | Select | None = None,
+    target_compatible_with: list[str] | Select | None = None,
+    default_target_platform: str | None = None,
+    visibility: list[str] | None = None,
+    **kwargs,
+):
     test_rule(
         name = name + "_image_test_inner",
-        labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test") + [
+        labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test")
+        + [
             # never schedule any CI on this inner target
             # @oss-disable[end= ]: ci.skip_target(),
         ],
-        **kwargs
+        **kwargs,
     )
 
     labels = selects.apply(
@@ -384,7 +390,8 @@ image_cpp_test = partial(
     _implicit_image_test,
     cpp_unittest,
     _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-cpp",
-    _add_outer_labels = ["tpx:optout-test-result-output-spec", "tpx:supports_coverage"] + internal_external(
+    _add_outer_labels = ["tpx:optout-test-result-output-spec", "tpx:supports_coverage"]
+    + internal_external(
         fb = [],
         # don't have working gtest in oss (yet)
         oss = ["disabled"],
@@ -400,14 +407,15 @@ image_rust_test = partial(
 image_sh_test = partial(_implicit_image_test, buck_sh_test)
 
 def image_python_test(
-        name: str,
-        layer: str,
-        default_os: str | None = None,
-        default_rou: str | None = None,
-        systemd: str | None = None,
-        target_compatible_with: list[str] | Select | None = None,
-        with_xarexec: bool = True,
-        **kwargs):
+    name: str,
+    layer: str,
+    default_os: str | None = None,
+    default_rou: str | None = None,
+    systemd: str | None = None,
+    target_compatible_with: list[str] | Select | None = None,
+    with_xarexec: bool = True,
+    **kwargs,
+):
     if is_facebook and with_xarexec:
         with_xarexec = name + "--with-xarexec"
         image.layer(
@@ -448,5 +456,5 @@ def image_python_test(
         systemd = systemd,
         target_compatible_with = target_compatible_with,
         _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-py",
-        **kwargs
+        **kwargs,
     )

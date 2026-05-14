@@ -10,12 +10,7 @@ GptPartitionSource = provider(fields = ["src"])
 
 PartitionType = enum("linux", "esp")
 
-def Partition(
-        src: str,
-        type: PartitionType = PartitionType("linux"),
-        label: str | None = None,
-        alignment: int | None = None,
-        uuid: str | None = None):
+def Partition(src: str, type: PartitionType = PartitionType("linux"), label: str | None = None, alignment: int | None = None, uuid: str | None = None):
     return (src, type.value, label, alignment, uuid, "_internal_came_from_package_fn")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -64,12 +59,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         category = "antlir2_package",
         identifier = "gpt",
     )
-    return [DefaultInfo(
-        out,
-        sub_targets = {
-            "spec.json": [DefaultInfo(spec_json)],
-        },
-    )]
+    return [
+        DefaultInfo(
+            out,
+            sub_targets = {
+                "spec.json": [DefaultInfo(spec_json)],
+            },
+        )
+    ]
 
 _gpt = rule(
     impl = _impl,
@@ -89,13 +86,15 @@ _gpt = rule(
             ),
         ),
         "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
-        "_working_format": attrs.default_only(attrs.string(
-            default = select({
-                "DEFAULT": "btrfs",
-                "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
-                "antlir//antlir/antlir2/cfg:working_format[cad-stack]": "cad-stack",
-            }),
-        )),
+        "_working_format": attrs.default_only(
+            attrs.string(
+                default = select({
+                    "DEFAULT": "btrfs",
+                    "antlir//antlir/antlir2/cfg:working_format[btrfs]": "btrfs",
+                    "antlir//antlir/antlir2/cfg:working_format[cad-stack]": "cad-stack",
+                }),
+            )
+        ),
     },
 )
 

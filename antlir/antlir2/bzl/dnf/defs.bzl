@@ -11,9 +11,11 @@ load(
     "package_href",
 )
 
-LocalReposInfo = provider(fields = {
-    "repos_dir": Artifact,
-})
+LocalReposInfo = provider(
+    fields = {
+        "repos_dir": Artifact,
+    }
+)
 
 def _repodata_only_local_repos_impl(ctx: AnalysisContext) -> list[Provider]:
     """
@@ -49,10 +51,7 @@ repodata_only_local_repos = anon_rule(
     },
 )
 
-def _best_rpm_artifact(
-        *,
-        rpm_info: RpmInfo | Provider,
-        reflink_flavor: str | None) -> Artifact:
+def _best_rpm_artifact(*, rpm_info: RpmInfo | Provider, reflink_flavor: str | None) -> Artifact:
     if not reflink_flavor:
         return rpm_info.raw_rpm
     else:
@@ -65,12 +64,7 @@ def _best_rpm_artifact(
             fail("{} does not have a reflinkable artifact for {}".format(rpm_info.nevra, reflink_flavor))
         return rpm_info.extents[reflink_flavor]
 
-def _compiler_plan_to_local_repos_impl(
-        actions: AnalysisActions,
-        tx: ArtifactValue,
-        dnf_available_repos: list,
-        reflink_flavor: str | None,
-        dir: OutputArtifact):
+def _compiler_plan_to_local_repos_impl(actions: AnalysisActions, tx: ArtifactValue, dnf_available_repos: list, reflink_flavor: str | None, dir: OutputArtifact):
     """
     Dynamic action implementation that reads the transaction file and builds
     the local repos directory.
@@ -105,9 +99,7 @@ def _compiler_plan_to_local_repos_impl(
         if install["repo"] == None:
             continue
 
-        nevra = "{name}-{epoch}:{version}-{release}.{arch}".format(
-            **install["package"]
-        )
+        nevra = "{name}-{epoch}:{version}-{release}.{arch}".format(**install["package"])
 
         # The same exact NEVRA may appear in multiple repositories, and then
         # we have no guarantee that dnf will resolve the transaction the
@@ -146,12 +138,8 @@ _compiler_plan_to_local_repos_dynamic = dynamic_actions(
 )
 
 def compiler_plan_to_local_repos(
-        *,
-        ctx: AnalysisContext,
-        identifier: str,
-        dnf_available_repos: list[RepoInfo | Provider],
-        tx: Artifact,
-        reflink_flavor: str | None) -> Artifact:
+    *, ctx: AnalysisContext, identifier: str, dnf_available_repos: list[RepoInfo | Provider], tx: Artifact, reflink_flavor: str | None
+) -> Artifact:
     """
     Use the planned dnf transaction to build a directory of all the RPM repodata
     and RPM blobs we need to perform the dnf installations in the image.

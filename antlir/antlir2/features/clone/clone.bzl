@@ -8,13 +8,14 @@ load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep", "layer_
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature", "new_feature_rule")
 
 def clone(
-        *,
-        src_layer: str | Select,
-        path: str | Select | None = None,
-        src_path: str | Select | None = None,
-        dst_path: str | Select | None = None,
-        user: str | None = None,
-        group: str | None = None):
+    *,
+    src_layer: str | Select,
+    path: str | Select | None = None,
+    src_path: str | Select | None = None,
+    dst_path: str | Select | None = None,
+    user: str | None = None,
+    group: str | None = None,
+):
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
@@ -119,10 +120,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:
         fail(
-            "Your `src_path` {} ends in /, which means only the contents " +
-            "of the directory will be cloned. Therefore, you must also add a " +
-            "trailing / to `dst_path` to signal that clone will write " +
-            "inside that pre-existing directory dst_path".format(src_path),
+            "Your `src_path` {} ends in /, which means only the contents "
+            + "of the directory will be cloned. Therefore, you must also add a "
+            + "trailing / to `dst_path` to signal that clone will write "
+            + "inside that pre-existing directory dst_path".format(src_path),
         )
 
     usergroup = None

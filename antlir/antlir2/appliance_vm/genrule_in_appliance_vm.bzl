@@ -10,10 +10,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 def _genrule_in_appliance_vm_impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.outs:
         out_artifact = ctx.actions.declare_output("out", dir = True, has_content_based_path = False)
-        default_info = DefaultInfo(sub_targets = {
-            name: [DefaultInfo(out_artifact.project(path))]
-            for name, path in ctx.attrs.outs.items()
-        })
+        default_info = DefaultInfo(sub_targets = {name: [DefaultInfo(out_artifact.project(path))] for name, path in ctx.attrs.outs.items()})
     else:
         out_artifact = ctx.actions.declare_output(ctx.attrs.out or "out", has_content_based_path = False)
         default_info = DefaultInfo(out_artifact)

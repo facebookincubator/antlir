@@ -8,35 +8,36 @@ load("@prelude//utils:utils.bzl", "map_val")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 
 def ParseTimeFeature(
-        *,
-        feature_type: str,
-        # Plugin that implements this feature
-        plugin: str,
-        # Plugins that this feature uses internally
-        uses_plugins: dict[str, str] | None = None,
-        # Items in this list may be either raw source files, or dependencies
-        # produced by another rule. If a dependency, the full provider set will be
-        # made available to the analysis code for the feature.
-        deps_or_srcs: dict[str, typing.Any] | None = None,
-        # Items in this list must be coerce-able to an "artifact"
-        srcs: dict[str, typing.Any] | None = None,
-        # These items must be `deps` and will be validated early in analysis time to
-        # contain the required providers
-        deps: dict[str, typing.Any] | None = None,
-        # Deps resolved for the execution platform. These should not be installed
-        # into images because they are produced only to be run on the build worker
-        exec_deps: dict[str, typing.Any] | None = None,
-        # Deps that are transitioned to target the distro platform (instead of
-        # the default fbcode platforms)
-        distro_platform_deps: dict[str, typing.Any] | None = None,
-        # Sources/deps that do not require named tracking between the parse and
-        # analysis phases. Useful to support `select` in features that accept lists
-        # of dependencies.
-        unnamed_deps_or_srcs: list[typing.Any] | None = None,
-        # attrs.arg values
-        args: dict[str, typing.Any] | None = None,
-        # Plain data that defines this feature, aside from input artifacts/dependencies
-        kwargs = dict[str, typing.Any]):
+    *,
+    feature_type: str,
+    # Plugin that implements this feature
+    plugin: str,
+    # Plugins that this feature uses internally
+    uses_plugins: dict[str, str] | None = None,
+    # Items in this list may be either raw source files, or dependencies
+    # produced by another rule. If a dependency, the full provider set will be
+    # made available to the analysis code for the feature.
+    deps_or_srcs: dict[str, typing.Any] | None = None,
+    # Items in this list must be coerce-able to an "artifact"
+    srcs: dict[str, typing.Any] | None = None,
+    # These items must be `deps` and will be validated early in analysis time to
+    # contain the required providers
+    deps: dict[str, typing.Any] | None = None,
+    # Deps resolved for the execution platform. These should not be installed
+    # into images because they are produced only to be run on the build worker
+    exec_deps: dict[str, typing.Any] | None = None,
+    # Deps that are transitioned to target the distro platform (instead of
+    # the default fbcode platforms)
+    distro_platform_deps: dict[str, typing.Any] | None = None,
+    # Sources/deps that do not require named tracking between the parse and
+    # analysis phases. Useful to support `select` in features that accept lists
+    # of dependencies.
+    unnamed_deps_or_srcs: list[typing.Any] | None = None,
+    # attrs.arg values
+    args: dict[str, typing.Any] | None = None,
+    # Plain data that defines this feature, aside from input artifacts/dependencies
+    kwargs = dict[str, typing.Any],
+):
     return (
         feature_type,
         plugin,
@@ -78,62 +79,68 @@ Planner = record(
 )
 
 # Produced by the feature implementation, this tells the rule how to build it
-FeatureAnalysis = provider(fields = {
-    # Arbitrary data that is available during buck2 analysis but is not
-    # serialized to JSON for the compiler (so artifacts referenced here will not
-    # be accidentally materialized)
-    "buck_only_data": provider_field(typing.Any, default = None),
-    # Some features do mutations to the image filesystem that cannot be
-    # discovered in the depgraph, so those features are grouped together in
-    # hidden internal layer(s) that acts as the parent layer(s) for the final
-    # image.
-    "build_phase": provider_field(BuildPhase, default = BuildPhase("compile")),
-    # Arbitrary feature record type (the antlir2 compiler must be able to
-    # deserialize this)
-    "data": provider_field(typing.Any),
-    # Arbitrary JSON files that will be inserted into the facts db
-    "extend_facts_json": provider_field(list[Artifact], default = []),
-    "feature_type": provider_field(str),
-    # Function that will be called to update the 'supplements' map of the
-    # LayerInfo that is using this feature
-    "mutate_supplements": provider_field(typing.Any, default = None),
-    # This feature requires running some logic within the feature's plugin
-    # implementation to inform buck of dynamic dependencies.
-    "planner": provider_field(Planner | None, default = None),
-    # Binary plugin implementation of this feature
-    "plugin": provider_field(ProvidersLabel),
-    # Some features must be folded into one feature that acts on all the inputs
-    # at once (typically package manager features) for performance, correctness
-    # or both. This function will be called with two arguments, both of type
-    # `feature_record` and the return result should be a single, merged
-    # `feature_record` that represents the combination of both
-    "reduce_fn": provider_field(typing.Any, default = None),
-    # Artifacts that are needed to build this feature. Antlir does not
-    # automatically attach any dependencies to features based on the input,
-    # feature implementations must always specify it exactly (this prevents
-    # building things unnecessarily)
-    "required_artifacts": provider_field(list[Artifact], default = []),
-    # Runnable binaries required to build this feature.
-    "required_run_infos": provider_field(list[RunInfo], default = []),
-})
+FeatureAnalysis = provider(
+    fields = {
+        # Arbitrary data that is available during buck2 analysis but is not
+        # serialized to JSON for the compiler (so artifacts referenced here will not
+        # be accidentally materialized)
+        "buck_only_data": provider_field(typing.Any, default = None),
+        # Some features do mutations to the image filesystem that cannot be
+        # discovered in the depgraph, so those features are grouped together in
+        # hidden internal layer(s) that acts as the parent layer(s) for the final
+        # image.
+        "build_phase": provider_field(BuildPhase, default = BuildPhase("compile")),
+        # Arbitrary feature record type (the antlir2 compiler must be able to
+        # deserialize this)
+        "data": provider_field(typing.Any),
+        # Arbitrary JSON files that will be inserted into the facts db
+        "extend_facts_json": provider_field(list[Artifact], default = []),
+        "feature_type": provider_field(str),
+        # Function that will be called to update the 'supplements' map of the
+        # LayerInfo that is using this feature
+        "mutate_supplements": provider_field(typing.Any, default = None),
+        # This feature requires running some logic within the feature's plugin
+        # implementation to inform buck of dynamic dependencies.
+        "planner": provider_field(Planner | None, default = None),
+        # Binary plugin implementation of this feature
+        "plugin": provider_field(ProvidersLabel),
+        # Some features must be folded into one feature that acts on all the inputs
+        # at once (typically package manager features) for performance, correctness
+        # or both. This function will be called with two arguments, both of type
+        # `feature_record` and the return result should be a single, merged
+        # `feature_record` that represents the combination of both
+        "reduce_fn": provider_field(typing.Any, default = None),
+        # Artifacts that are needed to build this feature. Antlir does not
+        # automatically attach any dependencies to features based on the input,
+        # feature implementations must always specify it exactly (this prevents
+        # building things unnecessarily)
+        "required_artifacts": provider_field(list[Artifact], default = []),
+        # Runnable binaries required to build this feature.
+        "required_run_infos": provider_field(list[RunInfo], default = []),
+    }
+)
 
-MultiFeatureAnalysis = provider(fields = {
-    "features": provider_field(list[FeatureAnalysis]),
-})
+MultiFeatureAnalysis = provider(
+    fields = {
+        "features": provider_field(list[FeatureAnalysis]),
+    }
+)
 
-PlanInfo = provider(fields = {
-    "extend_facts_json": provider_field(list[Artifact], default = []),
-    "hidden": provider_field(ArgLike, default = []),
-    # Unique string identifying this plan artifact for retrieval by the feature
-    # that produced it
-    "id": provider_field(str),
-    # Function that will be called to update the 'supplements' map of the
-    # LayerInfo that is using this feature
-    "mutate_supplements": provider_field(typing.Any, default = None),
-    "output": provider_field(Artifact | None, default = None),
-    # Expose some artifacts as debug subtargets
-    "sub_artifacts": provider_field(dict[str, Artifact], default = {}),
-})
+PlanInfo = provider(
+    fields = {
+        "extend_facts_json": provider_field(list[Artifact], default = []),
+        "hidden": provider_field(ArgLike, default = []),
+        # Unique string identifying this plan artifact for retrieval by the feature
+        # that produced it
+        "id": provider_field(str),
+        # Function that will be called to update the 'supplements' map of the
+        # LayerInfo that is using this feature
+        "mutate_supplements": provider_field(typing.Any, default = None),
+        "output": provider_field(Artifact | None, default = None),
+        # Expose some artifacts as debug subtargets
+        "sub_artifacts": provider_field(dict[str, Artifact], default = {}),
+    }
+)
 
 feature_record = record(
     feature_type = str,
@@ -142,17 +149,11 @@ feature_record = record(
     plugin = ProvidersLabel,
 )
 
-def data_only_feature_rule(
-        feature_attrs: dict[str, typing.Any],
-        feature_type: str,
-        build_phase: BuildPhase = BuildPhase("compile")):
+def data_only_feature_rule(feature_attrs: dict[str, typing.Any], feature_type: str, build_phase: BuildPhase = BuildPhase("compile")):
     default_build_phase = build_phase
 
     def _impl(ctx: AnalysisContext) -> list[Provider]:
-        attrs = {
-            key: getattr(ctx.attrs, key)
-            for key in feature_attrs
-        }
+        attrs = {key: getattr(ctx.attrs, key) for key in feature_attrs}
         build_phase = map_val(BuildPhase, attrs.pop("build_phase", None)) or default_build_phase
 
         return [
@@ -170,21 +171,16 @@ def data_only_feature_rule(
         attrs = feature_attrs | {"plugin": attrs.label()},
     )
 
-def new_feature_rule(
-        *,
-        impl,
-        attrs: dict[str, Attr]):
+def new_feature_rule(*, impl, attrs: dict[str, Attr]):
     return rule(
         impl = impl,
         attrs = {
             "plugin": native.attrs.label(),
-        } | attrs,
+        }
+        | attrs,
     )
 
-def with_phase_override(
-        feature: FeatureAnalysis,
-        *,
-        phase: BuildPhase) -> FeatureAnalysis:
+def with_phase_override(feature: FeatureAnalysis, *, phase: BuildPhase) -> FeatureAnalysis:
     kwargs = {k: getattr(feature, k) for k in dir(feature)}
     kwargs["build_phase"] = phase
     kwargs.pop("to_json", None)

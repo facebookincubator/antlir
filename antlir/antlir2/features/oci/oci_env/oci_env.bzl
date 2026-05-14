@@ -5,10 +5,7 @@
 
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature", "new_feature_rule")
 
-def oci_env(
-        *,
-        key: str,
-        value: str):
+def oci_env(*, key: str, value: str):
     """
     Set an environment variable in the OCI container configuration.
 
@@ -30,17 +27,21 @@ def oci_env(
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [
-        struct(
-            type = "antlir2_packager::oci::OciEnv",
-            # use the full KEY=VALUE pair as the fact key to detect conflicts
-            key = "=".join([ctx.attrs.key, ctx.attrs.value]),
-            value = struct(
-                key = ctx.attrs.key,
-                value = ctx.attrs.value,
+    fact_json = ctx.actions.write_json(
+        "facts.json",
+        [
+            struct(
+                type = "antlir2_packager::oci::OciEnv",
+                # use the full KEY=VALUE pair as the fact key to detect conflicts
+                key = "=".join([ctx.attrs.key, ctx.attrs.value]),
+                value = struct(
+                    key = ctx.attrs.key,
+                    value = ctx.attrs.value,
+                ),
             ),
-        ),
-    ], has_content_based_path = False)
+        ],
+        has_content_based_path = False,
+    )
 
     return [
         DefaultInfo(),

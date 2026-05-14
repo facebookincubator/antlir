@@ -19,23 +19,11 @@ load(
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo")
 
 def _plan_fn(
-        *,
-        ctx: AnalysisContext,
-        identifier: str,
-        feature: feature_record | typing.Any,
-        dnf_available_repos: list[Dependency],
-        resolve_cmd: RunInfo,
-        **kwargs) -> list[PlanInfo]:
+    *, ctx: AnalysisContext, identifier: str, feature: feature_record | typing.Any, dnf_available_repos: list[Dependency], resolve_cmd: RunInfo, **kwargs
+) -> list[PlanInfo]:
     items = ctx.actions.declare_output(identifier, "rpm/items.json", has_content_based_path = False)
     items = ctx.actions.write_json(items, feature.analysis.data.items, with_inputs = True)
-    res = plan(
-        ctx = ctx,
-        identifier = identifier,
-        items = items,
-        dnf_available_repos = dnf_available_repos,
-        resolve_cmd = resolve_cmd,
-        **kwargs
-    )
+    res = plan(ctx = ctx, identifier = identifier, items = items, dnf_available_repos = dnf_available_repos, resolve_cmd = resolve_cmd, **kwargs)
     return [plan_info(res)]
 
 # Turn the result of the 'plan' function into a PlanInfo
@@ -51,28 +39,32 @@ def plan_info(res: struct) -> PlanInfo:
     )
 
 def plan(
-        *,
-        ctx: AnalysisContext,
-        identifier: str,
-        rootless: bool,
-        items: Artifact | typing.Any,
-        label: Label,
-        flavor: FlavorInfo | typing.Any,
-        build_appliance: BuildApplianceInfo | typing.Any,
-        parent_layer_contents: LayerContents | None | typing.Any,
-        dnf_available_repos: list[Dependency],
-        dnf_versionlock: Artifact | None,
-        dnf_versionlock_extend: dict[str, str],
-        dnf_excluded_rpms: list[str],
-        target_arch: str,
-        resolve_cmd: RunInfo,
-        plan: Dependency,
-        versionlock_hard_enforce: bool) -> struct:
+    *,
+    ctx: AnalysisContext,
+    identifier: str,
+    rootless: bool,
+    items: Artifact | typing.Any,
+    label: Label,
+    flavor: FlavorInfo | typing.Any,
+    build_appliance: BuildApplianceInfo | typing.Any,
+    parent_layer_contents: LayerContents | None | typing.Any,
+    dnf_available_repos: list[Dependency],
+    dnf_versionlock: Artifact | None,
+    dnf_versionlock_extend: dict[str, str],
+    dnf_excluded_rpms: list[str],
+    target_arch: str,
+    resolve_cmd: RunInfo,
+    plan: Dependency,
+    versionlock_hard_enforce: bool,
+) -> struct:
     tx = ctx.actions.declare_output(identifier, "rpm/transaction.json", has_content_based_path = False)
 
-    dnf_repodatas = ctx.actions.anon_target(repodata_only_local_repos, {
-        "repos": dnf_available_repos,
-    }).artifact("repodatas")
+    dnf_repodatas = ctx.actions.anon_target(
+        repodata_only_local_repos,
+        {
+            "repos": dnf_available_repos,
+        },
+    ).artifact("repodatas")
 
     # Run without root if either explicitly configured to do so, or there is no
     # parent layer that we may need permission to read from
@@ -84,7 +76,9 @@ def plan(
             plan[RunInfo],
             cmd_args(label, format = "--label={}"),
             "--rootless" if rootless else cmd_args(),
-            cmd_args(parent_layer_contents.subvol_symlink, format = "--parent-subvol-symlink={}") if parent_layer_contents and parent_layer_contents.subvol_symlink else cmd_args(),
+            cmd_args(parent_layer_contents.subvol_symlink, format = "--parent-subvol-symlink={}")
+            if parent_layer_contents and parent_layer_contents.subvol_symlink
+            else cmd_args(),
             cmd_args(build_appliance.dir, format = "--build-appliance={}"),
             cmd_args(dnf_repodatas, format = "--repodatas={}"),
             cmd_args(dnf_versionlock, format = "--versionlock={}") if dnf_versionlock else cmd_args(),

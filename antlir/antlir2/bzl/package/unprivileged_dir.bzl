@@ -12,10 +12,7 @@ load(":cfg.bzl", "package_cfg")
 load(":macro.bzl", "package_macro")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 
-def _unprivileged_dir_impl_with_layer(
-        layer: [Dependency, ProviderCollection],
-        *,
-        ctx: AnalysisContext) -> list[Provider]:
+def _unprivileged_dir_impl_with_layer(layer: [Dependency, ProviderCollection], *, ctx: AnalysisContext) -> list[Provider]:
     output_name = ctx.attrs.out or ctx.label.name
     package = ctx.actions.declare_output(output_name, dir = True, has_content_based_path = False)
 
@@ -24,9 +21,13 @@ def _unprivileged_dir_impl_with_layer(
         ctx.actions.write_json(encoded_path_mapping.as_output(), {})
     spec = ctx.actions.write_json(
         "spec.json",
-        {"unprivileged_dir": {
-            "base64_encoded_filenames": encoded_path_mapping.as_output(),
-        } if ctx.attrs.base64_encode_filenames else {}},
+        {
+            "unprivileged_dir": {
+                "base64_encoded_filenames": encoded_path_mapping.as_output(),
+            }
+            if ctx.attrs.base64_encode_filenames
+            else {}
+        },
         with_inputs = True,
         has_content_based_path = False,
     )
@@ -46,27 +47,35 @@ def _unprivileged_dir_impl_with_layer(
         identifier = "unprivileged_dir",
     )
 
-    return [DefaultInfo(package, sub_targets = {
-        "base64_encoded_path_mapping": [DefaultInfo(encoded_path_mapping)],
-    })]
+    return [
+        DefaultInfo(
+            package,
+            sub_targets = {
+                "base64_encoded_path_mapping": [DefaultInfo(encoded_path_mapping)],
+            },
+        )
+    ]
 
 def _unprivileged_dir_impl(ctx: AnalysisContext):
     if ctx.attrs.dot_meta:
-        return ctx.actions.anon_target(stamp_buildinfo_rule, {
-            "layer": ctx.attrs.layer,
-            "name": str(ctx.label.raw_target()),
-            "_analyze_feature": ctx.attrs._analyze_feature,
-            "_antlir2": ctx.attrs._antlir2,
-            "_dot_meta_feature": ctx.attrs._dot_meta_feature,
-            "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
-            "_run_container": ctx.attrs._run_container,
-        } | {
-            k: getattr(ctx.attrs, k)
-            for k in attrs_selected_by_cfg
-        }).promise.map(partial(
-            _unprivileged_dir_impl_with_layer,
-            ctx = ctx,
-        ))
+        return ctx.actions.anon_target(
+            stamp_buildinfo_rule,
+            {
+                "layer": ctx.attrs.layer,
+                "name": str(ctx.label.raw_target()),
+                "_analyze_feature": ctx.attrs._analyze_feature,
+                "_antlir2": ctx.attrs._antlir2,
+                "_dot_meta_feature": ctx.attrs._dot_meta_feature,
+                "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
+                "_run_container": ctx.attrs._run_container,
+            }
+            | {k: getattr(ctx.attrs, k) for k in attrs_selected_by_cfg},
+        ).promise.map(
+            partial(
+                _unprivileged_dir_impl_with_layer,
+                ctx = ctx,
+            )
+        )
     else:
         return _unprivileged_dir_impl_with_layer(
             layer = ctx.attrs.layer,

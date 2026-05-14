@@ -11,10 +11,7 @@ load("//antlir/bzl:types.bzl", "types")
 # antlir1 world so we need to keep it around for a while
 DefaultMountpointInfo = provider(fields = ["default_mountpoint"])
 
-def layer_mount(
-        *,
-        source: str | Select,
-        mountpoint: str | None = None):
+def layer_mount(*, source: str | Select, mountpoint: str | None = None):
     return ParseTimeFeature(
         feature_type = "mount",
         plugin = "antlir//antlir/antlir2/features/mount:mount",
@@ -29,11 +26,7 @@ def layer_mount(
         },
     )
 
-def host_mount(
-        *,
-        source: str,
-        is_directory: bool,
-        mountpoint: str | None = None):
+def host_mount(*, source: str, is_directory: bool, mountpoint: str | None = None):
     mountpoint = mountpoint or source
     return ParseTimeFeature(
         feature_type = "mount",

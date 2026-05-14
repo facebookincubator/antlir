@@ -15,15 +15,19 @@ def oci_stop_signal(*, signal: str):
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [
-        struct(
-            type = "antlir2_packager::oci::OciStopSignal",
-            key = ctx.attrs.stop_signal,
-            value = struct(
-                stop_signal = ctx.attrs.stop_signal,
+    fact_json = ctx.actions.write_json(
+        "facts.json",
+        [
+            struct(
+                type = "antlir2_packager::oci::OciStopSignal",
+                key = ctx.attrs.stop_signal,
+                value = struct(
+                    stop_signal = ctx.attrs.stop_signal,
+                ),
             ),
-        ),
-    ], has_content_based_path = False)
+        ],
+        has_content_based_path = False,
+    )
 
     return [
         DefaultInfo(),

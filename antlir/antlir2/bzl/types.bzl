@@ -7,23 +7,29 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl/image:mount_types.bzl", "mount_record")
 load("//antlir/antlir2/features:feature_info.bzl", "feature_record")
 
-FeatureInfo = provider(fields = [
-    # Transitive set of feature records deserializable by Antlir tools
-    "features",
-])
+FeatureInfo = provider(
+    fields = [
+        # Transitive set of feature records deserializable by Antlir tools
+        "features",
+    ]
+)
 
-FlavorInfo = provider(fields = [
-    "dnf_info",  # FlavorDnfInfo provider for dnf-based distros
-    "label",  # The buck label for this flavor
-])
+FlavorInfo = provider(
+    fields = [
+        "dnf_info",  # FlavorDnfInfo provider for dnf-based distros
+        "label",  # The buck label for this flavor
+    ]
+)
 
-FlavorDnfInfo = provider(fields = [
-    "default_excluded_rpms",  # The default set of rpms to exclude from all operations
-    "default_extra_repo_set",  # The default set of extra dnf repos available to images of this flavor
-    "default_repo_set",  # The default set of main dnf repos available to images of this flavor
-    "default_versionlock",  # JSON file mapping package name -> EVRA
-    "reflink_flavor",  # Key to identify rpm2extents output for a compatible version
-])
+FlavorDnfInfo = provider(
+    fields = [
+        "default_excluded_rpms",  # The default set of rpms to exclude from all operations
+        "default_extra_repo_set",  # The default set of extra dnf repos available to images of this flavor
+        "default_repo_set",  # The default set of main dnf repos available to images of this flavor
+        "default_versionlock",  # JSON file mapping package name -> EVRA
+        "reflink_flavor",  # Key to identify rpm2extents output for a compatible version
+    ]
+)
 
 # Eventually antlir2 hopes to support other storage formats, but for now only
 # local subvolumes are supported
@@ -59,9 +65,11 @@ LayerInfo = provider(
     },
 )
 
-BuildApplianceInfo = provider(fields = {
-    # For Build Appliance images, exact ownership and other fs metadata (aside
-    # from executable bits, which RE will preserve) doesn't matter, so we can
-    # directly use a plain directory as the build appliance.
-    "dir": Artifact,
-})
+BuildApplianceInfo = provider(
+    fields = {
+        # For Build Appliance images, exact ownership and other fs metadata (aside
+        # from executable bits, which RE will preserve) doesn't matter, so we can
+        # directly use a plain directory as the build appliance.
+        "dir": Artifact,
+    }
+)

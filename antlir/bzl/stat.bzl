@@ -61,7 +61,7 @@ def _parse_symbolic(symbolic):
                     fail("'{}' is not a recognized permission value".format(perm))
                 mode |= _MAKE_CLASS_MASK[cl](_PERM_BITS[perm])
                 if perm in ("s", "t"):
-                    mode |= (_EXTRA_PERMS.get((perm, cl), 0) << 9)
+                    mode |= _EXTRA_PERMS.get((perm, cl), 0) << 9
 
     return mode
 

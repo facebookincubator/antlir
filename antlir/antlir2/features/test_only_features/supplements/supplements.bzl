@@ -5,9 +5,7 @@
 
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature", "PlanInfo", "Planner")
 
-def supplements(
-        *,
-        msg: str):
+def supplements(*, msg: str):
     return ParseTimeFeature(
         feature_type = "test_only_features/supplements",
         plugin = "antlir//antlir/antlir2/features/test_only_features/supplements:supplements",
@@ -46,11 +44,7 @@ supplements_rule = rule(
     },
 )
 
-def _plan_fn(
-        *,
-        ctx: AnalysisContext,
-        msg: str,
-        **_kwargs) -> list[PlanInfo]:
+def _plan_fn(*, ctx: AnalysisContext, msg: str, **_kwargs) -> list[PlanInfo]:
     def _mutate_supplements(supplements: dict[str, typing.Any]) -> dict[str, typing.Any]:
         supplements["planner_msgs"] = list(supplements.get("planner_msgs", []))
         supplements["planner_msgs"].append(msg)

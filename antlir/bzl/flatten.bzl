@@ -30,9 +30,7 @@ def _typed_flattener(item_type) -> types.function:
 
     return _flatten
 
-def _flatten_with_inline_hint(
-        lst,
-        item_type: str | type | list[str | type] | None = None):
+def _flatten_with_inline_hint(lst, item_type: str | type | list[str | type] | None = None):
     if item_type:
         f = _typed_flattener(item_type)
         return f(lst)

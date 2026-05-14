@@ -10,6 +10,8 @@ _PACKAGE_MANAGER_SELECT = select({
     "//antlir/antlir2/os/package_manager:package_manager[none]": "none",
 })
 
-package_manager_selected_attr = attrs.default_only(attrs.string(
-    default = _PACKAGE_MANAGER_SELECT,
-))
+package_manager_selected_attr = attrs.default_only(
+    attrs.string(
+        default = _PACKAGE_MANAGER_SELECT,
+    )
+)

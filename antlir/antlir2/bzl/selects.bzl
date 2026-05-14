@@ -51,10 +51,7 @@ def _join(**selects):
     lst = list(selects.items())
 
     def _map_to_struct(resolved):
-        return struct(**{
-            lst_item[0]: res
-            for lst_item, res in zip(lst, resolved)
-        })
+        return struct(**{lst_item[0]: res for lst_item, res in zip(lst, resolved)})
 
     return _prelude_selects.apply(_tie_n(*[item[1] for item in lst]), _map_to_struct)
 

@@ -17,19 +17,28 @@ _select_value = select({
 
 def _binary_is_standalone(dep: Dependency) -> bool:
     dev = (
-        (DistInfo in dep) and (dep[DistInfo].shared_libs or dep[DistInfo].nondebug_runtime_files) or  # Rust/C++
-        ("standalone" in dep[DefaultInfo].sub_targets and dep[DefaultInfo].default_outputs != dep[DefaultInfo].sub_targets["standalone"][DefaultInfo].default_outputs)  # Python
+        (DistInfo in dep)
+        and (dep[DistInfo].shared_libs or dep[DistInfo].nondebug_runtime_files)  # Rust/C++
+        or (
+            "standalone" in dep[DefaultInfo].sub_targets
+            and dep[DefaultInfo].default_outputs != dep[DefaultInfo].sub_targets["standalone"][DefaultInfo].default_outputs
+        )  # Python
     )
     return not dev
 
 binaries_require_repo = struct(
     select_value = _select_value,
-    attr = attrs.default_only(attrs.bool(
-        default = _select_value,
-        doc = "buck2-built binaries require the repo to run (are not relocatable)",
-    )),
-    optional_attr = attrs.option(attrs.bool(
-        doc = "buck2-built binaries require the repo to run (are not relocatable)",
-    ), default = None),
+    attr = attrs.default_only(
+        attrs.bool(
+            default = _select_value,
+            doc = "buck2-built binaries require the repo to run (are not relocatable)",
+        )
+    ),
+    optional_attr = attrs.option(
+        attrs.bool(
+            doc = "buck2-built binaries require the repo to run (are not relocatable)",
+        ),
+        default = None,
+    ),
     is_standalone = _binary_is_standalone,
 )

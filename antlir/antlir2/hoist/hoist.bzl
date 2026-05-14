@@ -56,10 +56,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         )
 
     providers = [
-        DefaultInfo(default_output, sub_targets = {
-            path: [DefaultInfo(output)]
-            for path, output in (outputs | projected_outputs).items()
-        }),
+        DefaultInfo(default_output, sub_targets = {path: [DefaultInfo(output)] for path, output in (outputs | projected_outputs).items()}),
     ]
 
     if ctx.attrs.executable:

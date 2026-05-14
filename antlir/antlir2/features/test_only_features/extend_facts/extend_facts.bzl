@@ -5,9 +5,7 @@
 
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature", "PlanInfo", "Planner", "new_feature_rule")
 
-def extend_facts(
-        *,
-        msg: str):
+def extend_facts(*, msg: str):
     return ParseTimeFeature(
         feature_type = "test_only_features/extend_facts",
         plugin = "antlir//antlir/antlir2/features/test_only_features/extend_facts:extend_facts",
@@ -28,12 +26,14 @@ def _fact(msg: str) -> struct:
 def _plan_fn(*, ctx: AnalysisContext, identifier: str, msg: str, **_kwargs) -> list[PlanInfo]:
     out = ctx.actions.declare_output(identifier, "out", has_content_based_path = False)
     fact = ctx.actions.write_json(out, [_fact("planner: " + msg)])
-    return [PlanInfo(
-        id = "extend_facts",
-        hidden = [],
-        output = fact,
-        extend_facts_json = [fact],
-    )]
+    return [
+        PlanInfo(
+            id = "extend_facts",
+            hidden = [],
+            output = fact,
+            extend_facts_json = [fact],
+        )
+    ]
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     fact_json = ctx.actions.write_json("facts.json", [_fact(ctx.attrs.msg)], has_content_based_path = False)

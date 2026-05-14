@@ -19,16 +19,17 @@ load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 load(":unprivileged_dir.bzl", "unprivileged_dir")
 
 def _generic_impl_with_layer(
-        layer: [Dependency, ProviderCollection],
-        *,
-        ctx: AnalysisContext,
-        format: str,
-        rule_attr_keys: list[str],
-        can_be_partition: bool,
-        is_dir: bool,
-        sudo: bool,
-        force_extension: str | None,
-        uses_build_appliance: bool) -> list[Provider]:
+    layer: [Dependency, ProviderCollection],
+    *,
+    ctx: AnalysisContext,
+    format: str,
+    rule_attr_keys: list[str],
+    can_be_partition: bool,
+    is_dir: bool,
+    sudo: bool,
+    force_extension: str | None,
+    uses_build_appliance: bool,
+) -> list[Provider]:
     build_appliance = ctx.attrs.build_appliance
 
     output_name = ctx.attrs.out or ctx.label.name
@@ -82,40 +83,44 @@ def _generic_impl_with_layer(
     return providers
 
 def _generic_impl(
-        ctx: AnalysisContext,
-        format: str,
-        rule_attr_keys: list[str],
-        can_be_partition: bool,
-        is_dir: bool,
-        sudo: bool,
-        force_extension: str | None,
-        uses_build_appliance: bool):
+    ctx: AnalysisContext,
+    format: str,
+    rule_attr_keys: list[str],
+    can_be_partition: bool,
+    is_dir: bool,
+    sudo: bool,
+    force_extension: str | None,
+    uses_build_appliance: bool,
+):
     if ctx.attrs.dot_meta:
-        return ctx.actions.anon_target(stamp_buildinfo_rule, {
-            "layer": ctx.attrs.layer,
-            "name": str(ctx.label.raw_target()),
-            "_analyze_feature": ctx.attrs._analyze_feature,
-            "_antlir2": ctx.attrs._antlir2,
-            "_dot_meta_feature": ctx.attrs._dot_meta_feature,
-            "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
-            "_run_container": ctx.attrs._run_container,
-        } | {
-            k: getattr(ctx.attrs, k)
-            for k in attrs_selected_by_cfg
-            if k != "build_appliance"
-        } | {
-            "build_appliance": ctx.attrs._layer_build_appliance,
-        }).promise.map(partial(
-            _generic_impl_with_layer,
-            ctx = ctx,
-            format = format,
-            rule_attr_keys = rule_attr_keys,
-            can_be_partition = can_be_partition,
-            is_dir = is_dir,
-            sudo = sudo,
-            force_extension = force_extension,
-            uses_build_appliance = uses_build_appliance,
-        ))
+        return ctx.actions.anon_target(
+            stamp_buildinfo_rule,
+            {
+                "layer": ctx.attrs.layer,
+                "name": str(ctx.label.raw_target()),
+                "_analyze_feature": ctx.attrs._analyze_feature,
+                "_antlir2": ctx.attrs._antlir2,
+                "_dot_meta_feature": ctx.attrs._dot_meta_feature,
+                "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
+                "_run_container": ctx.attrs._run_container,
+            }
+            | {k: getattr(ctx.attrs, k) for k in attrs_selected_by_cfg if k != "build_appliance"}
+            | {
+                "build_appliance": ctx.attrs._layer_build_appliance,
+            },
+        ).promise.map(
+            partial(
+                _generic_impl_with_layer,
+                ctx = ctx,
+                format = format,
+                rule_attr_keys = rule_attr_keys,
+                can_be_partition = can_be_partition,
+                is_dir = is_dir,
+                sudo = sudo,
+                force_extension = force_extension,
+                uses_build_appliance = uses_build_appliance,
+            )
+        )
     else:
         return _generic_impl_with_layer(
             layer = ctx.attrs.layer,
@@ -131,17 +136,21 @@ def _generic_impl(
 
 # Create a new buck2 rule that implements a specific package format.
 def _new_package_rule(
-        *,
-        format: str,
-        rule_attrs: dict[str, Attr] = {},
-        dot_meta: bool = True,
-        can_be_partition: bool = False,
-        is_dir: bool = False,
-        sudo: bool = False,
-        force_extension: str | None = None,
-        uses_build_appliance: bool = False):
+    *,
+    format: str,
+    rule_attrs: dict[str, Attr] = {},
+    dot_meta: bool = True,
+    can_be_partition: bool = False,
+    is_dir: bool = False,
+    sudo: bool = False,
+    force_extension: str | None = None,
+    uses_build_appliance: bool = False,
+):
     kwargs = {
-        "attrs": default_attrs | common_attrs | rule_attrs | {
+        "attrs": default_attrs
+        | common_attrs
+        | rule_attrs
+        | {
             "dot_meta": attrs.bool(default = dot_meta),
         },
         "impl": partial(
@@ -161,38 +170,34 @@ def _new_package_rule(
             # Because this can instantiate an implicit layer, it must also
             # depend on the feature plugins
             uses_plugins = [FeaturePluginPluginKind],
-            **kwargs
+            **kwargs,
         ),
         anon_rule(
             artifact_promise_mappings = {
                 "package": lambda x: ensure_single_output(x),
             },
-            **kwargs
+            **kwargs,
         ),
     )
 
-def _compressed_impl(
-        ctx: AnalysisContext,
-        uncompressed: typing.Callable,
-        rule_attr_keys: list[str],
-        compressor: str) -> list[Provider]:
+def _compressed_impl(ctx: AnalysisContext, uncompressed: typing.Callable, rule_attr_keys: list[str], compressor: str) -> list[Provider]:
     src = ctx.actions.anon_target(
         uncompressed,
-        {key: getattr(ctx.attrs, key) for key in default_attrs.keys()} |
-        {
+        {key: getattr(ctx.attrs, key) for key in default_attrs.keys()}
+        | {
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
             "out": "uncompressed",
             "_plugins": ctx.plugins[FeaturePluginPluginKind],
-        } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys} | (
-            {"dot_meta": ctx.attrs.dot_meta} if ctx.attrs.dot_meta != None else {}
-        ),
+        }
+        | {key: getattr(ctx.attrs, key) for key in rule_attr_keys}
+        | ({"dot_meta": ctx.attrs.dot_meta} if ctx.attrs.dot_meta != None else {}),
     ).artifact("package")
     package = ctx.actions.declare_output(ctx.label.name, has_content_based_path = False)
 
     if compressor == "gzip":
         compress_cmd = cmd_args(
-            "compressor=\"$(which pigz || which gzip)\"",
+            'compressor="$(which pigz || which gzip)"',
             cmd_args(
                 "$compressor",
                 cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
@@ -234,15 +239,16 @@ def _compressed_impl(
         category = "compress",
         identifier = compressor,
     )
-    return [DefaultInfo(package, sub_targets = {
-        "uncompressed": [DefaultInfo(src)],
-    })]
+    return [
+        DefaultInfo(
+            package,
+            sub_targets = {
+                "uncompressed": [DefaultInfo(src)],
+            },
+        )
+    ]
 
-def _new_compressed_package_rule(
-        compressor: str,
-        uncompressed: typing.Callable,
-        default_compression_level: int,
-        rule_attrs: dict[str, Attr] = {}):
+def _new_compressed_package_rule(compressor: str, uncompressed: typing.Callable, default_compression_level: int, rule_attrs: dict[str, Attr] = {}):
     return rule(
         impl = partial(
             _compressed_impl,
@@ -250,7 +256,10 @@ def _new_compressed_package_rule(
             rule_attr_keys = list(rule_attrs.keys()),
             compressor = compressor,
         ),
-        attrs = default_attrs | common_attrs | rule_attrs | {
+        attrs = default_attrs
+        | common_attrs
+        | rule_attrs
+        | {
             "compression_level": attrs.int(default = default_compression_level),
             "dot_meta": attrs.option(attrs.bool(), default = None),
         },

@@ -159,10 +159,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         if unnamed_deps_or_srcs:
             anon_kwargs["unnamed_deps_or_srcs"] = unnamed_deps_or_srcs
 
-        anon_features.append(ctx.actions.anon_target(
-            _anon_rules[feature_type],
-            anon_kwargs,
-        ))
+        anon_features.append(
+            ctx.actions.anon_target(
+                _anon_rules[feature_type],
+                anon_kwargs,
+            )
+        )
 
     def _with_anon_features(anon_features: list[ProviderCollection]) -> list[Provider]:
         flat = []
@@ -341,11 +343,7 @@ def feature_attrs(features) -> dict[str, typing.Any]:
         "features": features,
     }
 
-def feature(
-        name: str,
-        features,
-        visibility = None,
-        **kwargs):
+def feature(name: str, features, visibility = None, **kwargs):
     """
     Create a target representing a collection of one or more image features.
 
@@ -369,11 +367,7 @@ def feature(
     if native.host_info().arch.is_aarch64:
         kwargs.setdefault("exec_compatible_with", ["ovr_config//cpu:arm64"])
 
-    return feature_rule(
-        name = name,
-        visibility = visibility,
-        **kwargs
-    )
+    return feature_rule(name = name, visibility = visibility, **kwargs)
 
 def reduce_features(features: list[feature_record | typing.Any]) -> list[feature_record | typing.Any]:
     """

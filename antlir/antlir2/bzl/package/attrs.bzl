@@ -27,9 +27,11 @@ default_attrs_base = {
     "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_packager:antlir2-packager")),
     "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
     "_run_container": attrs.exec_dep(default = "antlir//antlir/antlir2/container_subtarget:run"),
-    "_target_arch": attrs.default_only(attrs.string(
-        default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
-    )),
+    "_target_arch": attrs.default_only(
+        attrs.string(
+            default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
+        )
+    ),
 } | {k: v for k, v in attrs_selected_by_cfg.items() if k != "build_appliance"}
 
 # Attrs that are not expected for users to pass (includes packager build_appliance)

@@ -23,12 +23,8 @@ load(
 )
 
 def analyze_features(
-        *,
-        ctx: AnalysisContext,
-        plugins: dict[str, FeaturePluginInfo | typing.Any],
-        features: list[feature_record | typing.Any],
-        identifier: str,
-        phase: BuildPhase) -> list[Artifact]:
+    *, ctx: AnalysisContext, plugins: dict[str, FeaturePluginInfo | typing.Any], features: list[feature_record | typing.Any], identifier: str, phase: BuildPhase
+) -> list[Artifact]:
     deduped_features = []
     analyzed_features = []
     for idx, feature in enumerate(features):
@@ -73,14 +69,15 @@ def analyze_features(
     return analyzed_features
 
 def build_depgraph(
-        *,
-        ctx: AnalysisContext,
-        plugins: dict[str, FeaturePluginInfo | typing.Any],
-        parent: Artifact | None,
-        features: list[feature_record | typing.Any],
-        extend_facts: list[Artifact],
-        identifier: str,
-        phase: BuildPhase) -> (Artifact, Artifact):
+    *,
+    ctx: AnalysisContext,
+    plugins: dict[str, FeaturePluginInfo | typing.Any],
+    parent: Artifact | None,
+    features: list[feature_record | typing.Any],
+    extend_facts: list[Artifact],
+    identifier: str,
+    phase: BuildPhase,
+) -> (Artifact, Artifact):
     db_output = ctx.actions.declare_output(identifier, "depgraph", has_content_based_path = False)
     topo_features = ctx.actions.declare_output(identifier, "topo_features.json", has_content_based_path = False)
 

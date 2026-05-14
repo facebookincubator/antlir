@@ -14,10 +14,7 @@ types.lint_noop(feature_record)
 def _mountpoint(mount: mount_record) -> str:
     return mount.layer.mountpoint if mount.layer else mount.host.mountpoint
 
-def all_mounts(
-        *,
-        features: list[feature_record | typing.Any] | None,
-        parent_layer: LayerInfo | Provider | None) -> list[mount_record]:
+def all_mounts(*, features: list[feature_record | typing.Any] | None, parent_layer: LayerInfo | Provider | None) -> list[mount_record]:
     """
     Find all the mounts that would need to be directly applied to this layer
     based on these features. This expands nested layer mounts so that they can
@@ -34,39 +31,49 @@ def all_mounts(
             # Layer mounts may lead to nested mounts
             if hasattr(mount, "layer"):
                 layer_mount = feat.analysis.buck_only_data
-                mounts.append(mount_record(
-                    layer = layer_mount_record(
-                        mountpoint = mount.layer.mountpoint,
-                        subvol_symlink = layer_mount.layer[LayerInfo].contents.subvol_symlink,
-                    ),
-                    host = None,
-                ))
+                mounts.append(
+                    mount_record(
+                        layer = layer_mount_record(
+                            mountpoint = mount.layer.mountpoint,
+                            subvol_symlink = layer_mount.layer[LayerInfo].contents.subvol_symlink,
+                        ),
+                        host = None,
+                    )
+                )
 
                 # However, we only need to propagate up a flat list of mounts,
                 # since any necessary recursion will already have been expanded
                 # at the previous layer
                 for nested in layer_mount.layer[LayerInfo].mounts:
                     new_mountpoint = paths.join(mount.layer.mountpoint, _mountpoint(nested).lstrip("/"))
-                    mounts.append(mount_record(
-                        layer = layer_mount_record(
-                            mountpoint = new_mountpoint,
-                            subvol_symlink = nested.layer.subvol_symlink,
-                        ) if nested.layer else None,
-                        host = host_mount_record(
-                            mountpoint = new_mountpoint,
-                            src = nested.host.src,
-                            is_directory = nested.host.is_directory,
-                        ) if nested.host else None,
-                    ))
+                    mounts.append(
+                        mount_record(
+                            layer = layer_mount_record(
+                                mountpoint = new_mountpoint,
+                                subvol_symlink = nested.layer.subvol_symlink,
+                            )
+                            if nested.layer
+                            else None,
+                            host = host_mount_record(
+                                mountpoint = new_mountpoint,
+                                src = nested.host.src,
+                                is_directory = nested.host.is_directory,
+                            )
+                            if nested.host
+                            else None,
+                        )
+                    )
             elif hasattr(mount, "host"):
-                mounts.append(mount_record(
-                    host = host_mount_record(
-                        mountpoint = mount.host.mountpoint,
-                        src = mount.host.src,
-                        is_directory = mount.host.is_directory,
-                    ),
-                    layer = None,
-                ))
+                mounts.append(
+                    mount_record(
+                        host = host_mount_record(
+                            mountpoint = mount.host.mountpoint,
+                            src = mount.host.src,
+                            is_directory = mount.host.is_directory,
+                        ),
+                        layer = None,
+                    )
+                )
             else:
                 fail("no other mount types exist")
 

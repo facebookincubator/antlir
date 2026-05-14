@@ -102,12 +102,7 @@ DEFAULT_APPLETS = [
     "yes",
 ]
 
-def _install(
-        *,
-        src = "antlir//antlir/bzl/linux:busybox-src",
-        applets: list[str] = DEFAULT_APPLETS,
-        install_dir = "/usr/bin",
-        src_path = "/usr/sbin/busybox"):
+def _install(*, src = "antlir//antlir/bzl/linux:busybox-src", applets: list[str] = DEFAULT_APPLETS, install_dir = "/usr/bin", src_path = "/usr/sbin/busybox"):
     """
     Generate features to install a statically linked `busybox` binary
     from the supplied `src` layer into an `install_dir` (default `/usr/bin`)

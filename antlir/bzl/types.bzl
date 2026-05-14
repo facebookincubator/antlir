@@ -102,7 +102,6 @@ types = struct(
     #   "InlineFeatureInfo", I have not found references to it
     #   "ParseTimeFeature", which cannot be used easily because of import cycle
     antlir_feature = [struct, str, native.typing.Any],
-
     # TODO: when we're all buck2, this can enforce the presence of providers.
     # For now it's just a human-readable hint that only enforces on a string.
     layer_source = str,
@@ -117,5 +116,5 @@ types = struct(
     # runtime type checking
     is_none = _is_none,
     is_autodeps_magicmock = _is_autodeps_magicmock,
-    **structs.to_dict(_prelude_reexport)
+    **structs.to_dict(_prelude_reexport),
 )

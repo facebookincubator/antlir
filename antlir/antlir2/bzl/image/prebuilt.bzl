@@ -15,10 +15,12 @@ load("//antlir/antlir2/bzl/package:oci.bzl", "OciLayersInfo", "oci_arch")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
-PrebuiltImageInfo = provider(fields = [
-    "format",  # format of the image file
-    "source",  # source file of the image
-])
+PrebuiltImageInfo = provider(
+    fields = [
+        "format",  # format of the image file
+        "source",  # source file of the image
+    ]
+)
 
 def _receive_common_outputs(ctx: AnalysisContext) -> (Artifact, Artifact):
     subvol_symlink = ctx.actions.declare_output("subvol_symlink", has_content_based_path = False)
@@ -40,17 +42,26 @@ def _layer_providers(ctx: AnalysisContext, subvol_symlink: Artifact, facts_db: A
             mounts = [],
             parent = None,
             flavor = ctx.attrs.flavor,
-            phase_contents = [(
-                BuildPhase("compile"),
-                contents,
-            )],
+            phase_contents = [
+                (
+                    BuildPhase("compile"),
+                    contents,
+                )
+            ],
             supplements = {},
         ),
-        DefaultInfo(subvol_symlink, sub_targets = {
-            "debug": [DefaultInfo(sub_targets = {
-                "facts": [DefaultInfo(facts_db)],
-            })],
-        }),
+        DefaultInfo(
+            subvol_symlink,
+            sub_targets = {
+                "debug": [
+                    DefaultInfo(
+                        sub_targets = {
+                            "facts": [DefaultInfo(facts_db)],
+                        }
+                    )
+                ],
+            },
+        ),
     ]
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -159,7 +170,9 @@ _prebuilt = rule(
         "src": attrs.source(doc = "source file of the image"),
         "_btrfs": attrs.option(attrs.exec_dep(), default = None),
         "_rootless": rootless_cfg.is_rootless_attr,
-    } | cfg_attrs() | attrs_selected_by_cfg,
+    }
+    | cfg_attrs()
+    | attrs_selected_by_cfg,
     cfg = layer_cfg,
 )
 
@@ -212,7 +225,9 @@ _oci_prebuilt = rule(
         "oci_ref": attrs.option(attrs.string(), default = None),
         "src": attrs.source(doc = "source file of the OCI layout"),
         "_rootless": rootless_cfg.is_rootless_attr,
-    } | cfg_attrs() | attrs_selected_by_cfg,
+    }
+    | cfg_attrs()
+    | attrs_selected_by_cfg,
     cfg = layer_cfg,
 )
 
@@ -230,9 +245,12 @@ def prebuilt(*args, **kwargs):
     # prebuilt layers are basically useless on their own, so let's just force
     # that an os is configured for them by an rdep
     kwargs.setdefault("compatible_with", [os.select_key for os in OSES])
-    kwargs.setdefault("exec_compatible_with", [
-        "prelude//platforms:may_run_local",
-    ])
+    kwargs.setdefault(
+        "exec_compatible_with",
+        [
+            "prelude//platforms:may_run_local",
+        ],
+    )
 
     if format == "oci":
         _oci_prebuilt_macro(*args, **kwargs)
@@ -244,5 +262,5 @@ def prebuilt(*args, **kwargs):
                 oss = None,
             ),
             *args,
-            **kwargs
+            **kwargs,
         )

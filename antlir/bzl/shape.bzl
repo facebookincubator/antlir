@@ -155,19 +155,13 @@ def _field(typ, optional = False, default = _NO_DEFAULT) -> _shape_field:
 def _dict(key_type, val_type, **field_kwargs):
     typ = dict[_normalize_type(key_type), _normalize_type(val_type)]
     if field_kwargs:
-        return _field(
-            typ = typ,
-            **field_kwargs
-        )
+        return _field(typ = typ, **field_kwargs)
     return typ
 
 def _list(item_type, **field_kwargs):
     typ = list[_normalize_type(item_type)]
     if field_kwargs:
-        return _field(
-            typ = typ,
-            **field_kwargs
-        )
+        return _field(typ = typ, **field_kwargs)
     return typ
 
 def _union(*union_types, __thrift = None):
@@ -202,21 +196,18 @@ def _shape(__thrift = None, **fields):
     for name, f in fields.items():
         # Avoid colliding with `__shape__`. Also, in Python, `_name` is "private".
         if name.startswith("_"):
-            fail("Shape field name {} must not start with _: {}".format(
-                name,
-            ))
+            fail(
+                "Shape field name {} must not start with _: {}".format(
+                    name,
+                )
+            )
 
         # transparently convert fields that are just a type have no options to
         # the rich field type for internal use
         if not isinstance(f, _shape_field):
             f = _field(f)
 
-        fields[name] = field(
-            f.ty,
-            **(
-                {"default": f.default} if f.default != _NO_DEFAULT else {}
-            )
-        )
+        fields[name] = field(f.ty, **({"default": f.default} if f.default != _NO_DEFAULT else {}))
 
     if __thrift != None:
         thrift_names = _uniq(__thrift.values())
@@ -230,16 +221,15 @@ def _shape(__thrift = None, **fields):
 
     return record(**fields)
 
-ShapeInfo = provider(fields = {
-    "ir": provider_field(Artifact),
-})
+ShapeInfo = provider(
+    fields = {
+        "ir": provider_field(Artifact),
+    }
+)
 
 def _shape_rule_impl(ctx: AnalysisContext) -> list[Provider]:
     ir = ctx.actions.declare_output("ir.json", has_content_based_path = False)
-    deps = {
-        dep.label.raw_target(): dep[ShapeInfo].ir
-        for dep in ctx.attrs.deps
-    }
+    deps = {dep.label.raw_target(): dep[ShapeInfo].ir for dep in ctx.attrs.deps}
     deps.update({
         # TODO(T191003667): assuming everything is in one cell is pretty much OK for
         # how we actually use shapes, but it's not technically "correct"
@@ -278,13 +268,12 @@ def _shape_rule_impl(ctx: AnalysisContext) -> list[Provider]:
         )
         generated_srcs[lang] = src
     return [
-        DefaultInfo(sub_targets = {
-            "ir": [DefaultInfo(ir)],
-            "src": [DefaultInfo(sub_targets = {
-                lang: [DefaultInfo(src)]
-                for lang, src in generated_srcs.items()
-            })],
-        }),
+        DefaultInfo(
+            sub_targets = {
+                "ir": [DefaultInfo(ir)],
+                "src": [DefaultInfo(sub_targets = {lang: [DefaultInfo(src)] for lang, src in generated_srcs.items()})],
+            }
+        ),
         ShapeInfo(
             ir = ir,
         ),
@@ -311,14 +300,7 @@ _shape_rule = rule(
     },
 )
 
-def _impl(
-        *,
-        name,
-        deps = (),
-        languages = (),
-        visibility = None,
-        test_only_rc_bzl2_ir: bool = False,
-        **kwargs):  # pragma: no cover
+def _impl(*, name, deps = (), languages = (), visibility = None, test_only_rc_bzl2_ir: bool = False, **kwargs):  # pragma: no cover
     if not name.endswith(".shape"):
         fail("shape.impl target must be named with a .shape suffix")
 
@@ -330,14 +312,7 @@ def _impl(
 
     visibility = get_visibility(visibility)
 
-    _shape_rule(
-        name = name,
-        deps = deps,
-        bzl = name + ".bzl",
-        visibility = visibility,
-        _bzl2ir = bzl2ir,
-        **default_target_platform_kwargs()
-    )
+    _shape_rule(name = name, deps = deps, bzl = name + ".bzl", visibility = visibility, _bzl2ir = bzl2ir, **default_target_platform_kwargs())
 
     if "python" in languages:
         python_library(
@@ -346,14 +321,15 @@ def _impl(
             base_module = native.package_name() + "." + name.replace(".shape", ""),
             deps = ["antlir//antlir:shape"] + ["{}-python".format(d) for d in deps],
             visibility = visibility,
-            **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
+            **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")},
         )
     if "rust" in languages:
         rust_library(
             name = "{}-rust".format(name),
-            crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
+            crate = kwargs.pop("rust_crate", name[: -len(".shape")]),
             mapped_srcs = {":{}[src][rust]".format(name): "src/lib.rs"},
-            deps = ["{}-rust".format(d) for d in deps] + [
+            deps = ["{}-rust".format(d) for d in deps]
+            + [
                 "antlir//antlir/bzl/shape2:shape",
                 "anyhow",
                 "fbthrift",
@@ -364,7 +340,7 @@ def _impl(
             visibility = visibility,
             unittests = False,
             allow_unused_crate_dependencies = True,
-            **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
+            **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")},
         )
 
 def _json_string(instance):
@@ -391,19 +367,10 @@ def _render_template(name, **kwargs):  # pragma: no cover
     """
     Render the given Jinja2 template with the shape instance data to a file.
     """
-    render(
-        name = name,
-        **kwargs
-    )
+    render(name = name, **kwargs)
     return normalize_target(":" + name)
 
-def _python_data(
-        name,
-        instance,
-        shape_impl,
-        type_name,
-        module = None,
-        **python_library_kwargs):  # pragma: no cover
+def _python_data(name, instance, shape_impl, type_name, module = None, **python_library_kwargs):  # pragma: no cover
     """
     Codegen a static shape data structure that can be directly 'import'ed by
     Python. The object is available under the name "data". A common use case
@@ -447,9 +414,11 @@ def _python_data(
             echo {json} >> $OUT
             echo '""")' >> $OUT
         '''.format(
-            data_start = shell.quote('data = {classname}.parse_raw("""'.format(
-                classname = type_name,
-            )),
+            data_start = shell.quote(
+                'data = {classname}.parse_raw("""'.format(
+                    classname = type_name,
+                )
+            ),
             json = shell.quote(_json_string(instance)),
             module = shape_module,
             type_name = type_name,
@@ -465,7 +434,7 @@ def _python_data(
         deps = [shape_impl + "-python"],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
-        **python_library_kwargs
+        **python_library_kwargs,
     )
     return normalize_target(":" + name)
 

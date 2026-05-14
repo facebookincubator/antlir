@@ -49,17 +49,14 @@ _deb_names_test = rule(
         "layer": attrs.dep(providers = [LayerInfo]),
         "names": attrs.list(attrs.string()),
         "not_installed": attrs.bool(default = False),
-    } | cfg_attrs(),
+    }
+    | cfg_attrs(),
     cfg = layer_cfg,
 )
 
 _deb_names_test_macro = rule_with_default_target_platform(_deb_names_test)
 
-def image_test_deb_names(
-        *,
-        default_os: str | None = None,
-        rootless: bool | None = None,
-        **kwargs):
+def image_test_deb_names(*, default_os: str | None = None, rootless: bool | None = None, **kwargs):
     rootless = rootless if rootless != None else get_antlir2_rootless()
     labels = kwargs.pop("labels", [])
     if not rootless:
@@ -68,9 +65,4 @@ def image_test_deb_names(
         "compatible_with",
         ["antlir//antlir/antlir2/os/package_manager:package_manager[apt]"],
     )
-    _deb_names_test_macro(
-        default_os = default_os or get_default_os_for_package(),
-        rootless = rootless,
-        labels = labels,
-        **kwargs
-    )
+    _deb_names_test_macro(default_os = default_os or get_default_os_for_package(), rootless = rootless, labels = labels, **kwargs)

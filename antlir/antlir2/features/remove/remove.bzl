@@ -6,11 +6,7 @@
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
-def remove(
-        *,
-        path: str,
-        must_exist: bool = True,
-        must_be_empty: bool = False):
+def remove(*, path: str, must_exist: bool = True, must_be_empty: bool = False):
     """
     Recursively remove a file or directory
 

@@ -22,27 +22,37 @@ load("//antlir/bzl:internal_external.bzl", "is_facebook")
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 
 def cfg_attrs():
-    return {
-        "default_os": attrs.option(attrs.string(), default = None, doc = """
+    return (
+        {
+            "default_os": attrs.option(
+                attrs.string(),
+                default = None,
+                doc = """
             Reconfigure the layer when no antlir2 os has been set yet, so that
             each intermediate layer can be passed to `buck build` and give a
             reasonable default.
             For more details, see:
             https://www.internalfb.com/intern/staticdocs/antlir2/docs/recipes/multi-os-images/
-        """),
-        "exec_mode": attrs.option(
-            attrs.enum(["force-local", "force-remote", "prefer-local"]),
-            default = None,
-        ),
-        "working_format": attrs.option(
-            attrs.enum(["btrfs", "cad-stack"]),
-            default = None,
-            doc = "Underlying on-disk format for the layer build",
-        ),
-    } | (
-        # @oss-disable[end= ]: fb_cfg_attrs
-        {} # @oss-enable
-    ) | rootless_cfg.attrs | systemd_cfg.attrs | llvm_cfg.attrs
+        """,
+            ),
+            "exec_mode": attrs.option(
+                attrs.enum(["force-local", "force-remote", "prefer-local"]),
+                default = None,
+            ),
+            "working_format": attrs.option(
+                attrs.enum(["btrfs", "cad-stack"]),
+                default = None,
+                doc = "Underlying on-disk format for the layer build",
+            ),
+        }
+        | (
+            # @oss-disable[end= ]: fb_cfg_attrs
+            {} # @oss-enable
+        )
+        | rootless_cfg.attrs
+        | systemd_cfg.attrs
+        | llvm_cfg.attrs
+    )
 
 attrs_selected_by_cfg = {
     "build_appliance": attrs.exec_dep(
@@ -53,19 +63,23 @@ attrs_selected_by_cfg = {
         providers = [FlavorInfo],
         default = select({os.select_key: os.flavor for os in OSES}),
     ),
-    "_exec_mode": attrs.default_only(attrs.string(
-        default = select({
-            "DEFAULT": "prefer-local",
-            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": "force-local",
-            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": "force-remote",
-            "antlir//antlir/antlir2/cfg:exec_mode[prefer-local]": "prefer-local",
-        }),
-    )),
+    "_exec_mode": attrs.default_only(
+        attrs.string(
+            default = select({
+                "DEFAULT": "prefer-local",
+                "antlir//antlir/antlir2/cfg:exec_mode[force-local]": "force-local",
+                "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": "force-remote",
+                "antlir//antlir/antlir2/cfg:exec_mode[prefer-local]": "prefer-local",
+            }),
+        )
+    ),
     "_package_manager": package_manager_selected_attr,
     "_rootless": rootless_cfg.is_rootless_attr,
-    "_selected_target_arch": attrs.default_only(attrs.string(
-        default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
-    )),
+    "_selected_target_arch": attrs.default_only(
+        attrs.string(
+            default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
+        )
+    ),
     "_working_format": attrs.string(
         default = select({
             "DEFAULT": "btrfs",
@@ -139,9 +153,14 @@ layer_cfg = transition(
         "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:package_manager[dnf]",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
-    } | (
+    }
+    | (
         # @oss-disable[end= ]: fb_refs
         {} # @oss-enable
-    ) | os_transition_refs() | rootless_cfg.refs | systemd_cfg.refs | llvm_cfg.refs,
+    )
+    | os_transition_refs()
+    | rootless_cfg.refs
+    | systemd_cfg.refs
+    | llvm_cfg.refs,
     attrs = cfg_attrs().keys(),
 )

@@ -15,15 +15,19 @@ def oci_working_dir(*, working_dir: str):
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [
-        struct(
-            type = "antlir2_packager::oci::OciWorkingDir",
-            key = ctx.attrs.working_dir,
-            value = struct(
-                working_dir = ctx.attrs.working_dir,
+    fact_json = ctx.actions.write_json(
+        "facts.json",
+        [
+            struct(
+                type = "antlir2_packager::oci::OciWorkingDir",
+                key = ctx.attrs.working_dir,
+                value = struct(
+                    working_dir = ctx.attrs.working_dir,
+                ),
             ),
-        ),
-    ], has_content_based_path = False)
+        ],
+        has_content_based_path = False,
+    )
 
     return [
         DefaultInfo(),

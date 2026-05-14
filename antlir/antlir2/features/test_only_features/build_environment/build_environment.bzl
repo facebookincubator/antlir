@@ -5,9 +5,7 @@
 
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
-def build_environment(
-        *,
-        path: str):
+def build_environment(*, path: str):
     return ParseTimeFeature(
         feature_type = "test_only_features/build_environment",
         plugin = "antlir//antlir/antlir2/features/test_only_features/build_environment:build_environment",

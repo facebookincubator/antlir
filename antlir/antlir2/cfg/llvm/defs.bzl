@@ -8,16 +8,9 @@ load(":versions.bzl", "ANTLIR_LLVM_VERSIONS")
 
 _llvm_refs = {"llvm_setting": "antlir//antlir/antlir2/cfg/llvm:llvm-version"} | {"llvm." + v: "antlir//antlir/antlir2/cfg/llvm:llvm-version[" + v + "]" for v in ANTLIR_LLVM_VERSIONS} # @oss-enable
 
-def _transition(
-        *,
-        constraints,
-        refs: struct,
-        attrs: struct,
-        overwrite: bool = False):
+def _transition(*, constraints, refs: struct, attrs: struct, overwrite: bool = False):
     setting = refs.llvm_setting[ConstraintSettingInfo]
-    if attrs.default_llvm_version and (
-        (setting.label not in constraints) or overwrite
-    ):
+    if attrs.default_llvm_version and ((setting.label not in constraints) or overwrite):
         constraint = getattr(refs, "llvm." + attrs.default_llvm_version)[ConstraintValueInfo]
         constraints[setting.label] = constraint
     return constraints

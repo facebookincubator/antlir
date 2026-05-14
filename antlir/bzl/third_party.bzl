@@ -24,11 +24,14 @@ def _build(name, features, script, src, deps = None, **kwargs):
     buck_genrule(
         name = name + "__build_script",
         out = "out",
-        cmd = selects.apply(selects.join(
-            script_prepare = script.prepare,
-            script_build = script.build,
-            script_install = script.install,
-        ), lambda sels: ("""
+        cmd = selects.apply(
+            selects.join(
+                script_prepare = script.prepare,
+                script_build = script.build,
+                script_install = script.install,
+            ),
+            lambda sels: (
+                """
 cat > $TMP/out << 'EOF'
 #!/bin/bash
 
@@ -53,15 +56,17 @@ export MAKEFLAGS=-j
 EOF
 mv $TMP/out $OUT
 chmod +x $OUT
-        """).format(
-            prepare = sels.script_prepare if sels.script_prepare else "",
-            build = sels.script_build,
-            install = sels.script_install,
-            deps_dir = DEPS_DIR,
-            patches_dir = PATCHES_DIR,
-            src_dir = SRC_DIR,
-            output_dir = OUTPUT_DIR,
-        )),
+        """
+            ).format(
+                prepare = sels.script_prepare if sels.script_prepare else "",
+                build = sels.script_build,
+                install = sels.script_install,
+                deps_dir = DEPS_DIR,
+                patches_dir = PATCHES_DIR,
+                src_dir = SRC_DIR,
+                output_dir = OUTPUT_DIR,
+            ),
+        ),
     )
 
     image.layer(
@@ -70,7 +75,8 @@ chmod +x $OUT
             fb = "antlir//antlir/third-party:build-base",
             oss = "//third-party/antlir:build-base",
         ),
-        features = features + [
+        features = features
+        + [
             feature.ensure_dirs_exist(dirs = DEPS_DIR),
             feature.ensure_dirs_exist(dirs = OUTPUT_DIR),
             feature.ensure_dirs_exist(dirs = PATCHES_DIR),
@@ -84,7 +90,8 @@ chmod +x $OUT
                 dst = "/build.sh",
                 mode = "a+x",
             ),
-        ] + [
+        ]
+        + [
             [
                 feature.ensure_dirs_exist(
                     dirs = paths.join(DEPS_DIR, dep.name),
@@ -98,22 +105,22 @@ chmod +x $OUT
                 ),
             ]
             for dep in deps
-        ] + ([
-            feature.install(src = i, dst = paths.join(PATCHES_DIR, i.split(":")[1]))
-            for i in script.patches
-        ] if script.patches else []),
+        ]
+        + ([feature.install(src = i, dst = paths.join(PATCHES_DIR, i.split(":")[1])) for i in script.patches] if script.patches else []),
     )
 
     image.layer(
         name = name + "__build_layer",
         parent_layer = ":" + name + "__setup_layer",
         visibility = ["//antlir/..."],
-        features = [feature.genrule(
-            user = "root",
-            cmd = [
-                "/build.sh",
-            ],
-        )],
+        features = [
+            feature.genrule(
+                user = "root",
+                cmd = [
+                    "/build.sh",
+                ],
+            )
+        ],
     )
 
     image.layer(
@@ -125,7 +132,7 @@ chmod +x $OUT
                 dst_path = "/",
             ),
         ],
-        **kwargs
+        **kwargs,
     )
 
 def _new_script(**kwargs):
@@ -150,10 +157,8 @@ third_party = struct(
     # operations (these are similar to gnu make concepts)
     # See //antlir/third-party subfolders for usage examples.
     build = _build,
-
     # This method constructs a build script to be used with build
     script = _new_script,
-
     # In order to specify build dependencies that were built with build,
     # the library call can be used. By default it will present the "include" and
     # "lib" folder from the target.
@@ -162,7 +167,6 @@ third_party = struct(
     # PKG_CONFIG_PATH and most prepare scripts should work.
     # See //antlir/third-party subfolders for usage examples.
     library = _library,
-
     # Convienence to provide a path to the third-party source tree via the existing
     # shim. This makes this `third_party.bzl` API the entry point.
     source = third_party_shim.source,

@@ -64,18 +64,8 @@ _test_that_should_fail = rule(
 # Collection of helpers to create the inner test implicitly, and hide it from
 # TestPilot
 
-def test_that_should_fail(
-        test_rule,
-        name: str,
-        stdout_re: str | None = None,
-        stderr_re: str | None = None,
-        labels: list[str] | None = None,
-        **kwargs):
-    test_rule(
-        name = name + "_failing_inner_test",
-        labels = _HIDE_TEST_LABELS,
-        **kwargs
-    )
+def test_that_should_fail(test_rule, name: str, stdout_re: str | None = None, stderr_re: str | None = None, labels: list[str] | None = None, **kwargs):
+    test_rule(name = name + "_failing_inner_test", labels = _HIDE_TEST_LABELS, **kwargs)
     labels = list(labels) if labels else []
 
     # @oss-disable[end= ]: if fully_qualified_test_name_rollout.use_fully_qualified_name():
@@ -92,7 +82,7 @@ def test_that_should_fail(
         # resolve to the host platform where the test is actually going to
         # execute
         exec_compatible_with = ["prelude//platforms:may_run_local"],
-        **default_target_platform_kwargs()
+        **default_target_platform_kwargs(),
     )
 
 cpp_test_that_should_fail = partial(

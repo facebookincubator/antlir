@@ -38,21 +38,22 @@ transition_to_distro_platform = enum("no", "yes", "yes-without-rpm-deps")
 _transition_to_distro_platform_enum = transition_to_distro_platform
 
 def install(
-        *,
-        src: str | Select,
-        dst: str | Select,
-        mode: int | str | Select | None = None,
-        user: str | int | Select = "root",
-        group: str | int | Select = "root",
-        xattrs: dict[str, str] | Select = {},
-        never_use_dev_binary_symlink: bool | Select = False,
-        split_debuginfo: bool = True,
-        strip_all: bool = False,
-        always_use_gnu_debuglink: bool = False,
-        setcap: str | None = None,
-        default_permissions: default_permissions = default_permissions(),
-        ignore_symlink_tree: bool | Select = False,
-        transition_to_distro_platform: transition_to_distro_platform | str | bool = False):
+    *,
+    src: str | Select,
+    dst: str | Select,
+    mode: int | str | Select | None = None,
+    user: str | int | Select = "root",
+    group: str | int | Select = "root",
+    xattrs: dict[str, str] | Select = {},
+    never_use_dev_binary_symlink: bool | Select = False,
+    split_debuginfo: bool = True,
+    strip_all: bool = False,
+    always_use_gnu_debuglink: bool = False,
+    setcap: str | None = None,
+    default_permissions: default_permissions = default_permissions(),
+    ignore_symlink_tree: bool | Select = False,
+    transition_to_distro_platform: transition_to_distro_platform | str | bool = False,
+):
     """
     Install a file or directory into the image.
 
@@ -105,7 +106,10 @@ def install(
     mode = stat.mode(mode) if mode != None else None
 
     if setcap:
-        selects.apply(never_use_dev_binary_symlink, lambda v: None if v else fail("setcap does not work on dev mode binaries. You must set never_use_dev_binary_symlink=True"))
+        selects.apply(
+            never_use_dev_binary_symlink,
+            lambda v: None if v else fail("setcap does not work on dev mode binaries. You must set never_use_dev_binary_symlink=True"),
+        )
 
     if always_use_gnu_debuglink and not split_debuginfo:
         fail("always_use_gnu_debuglink requires split_debuginfo=True")
@@ -178,13 +182,14 @@ def install(
     )
 
 def install_text(
-        *,
-        text: str | Select,
-        dst: str | Select,
-        mode: int | str | Select | None = None,
-        user: str | int | Select = "root",
-        group: str | int | Select = "root",
-        xattrs: dict[str, str] | Select = {}):
+    *,
+    text: str | Select,
+    dst: str | Select,
+    mode: int | str | Select | None = None,
+    user: str | int | Select = "root",
+    group: str | int | Select = "root",
+    xattrs: dict[str, str] | Select = {},
+):
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
     mode = stat.mode(mode) if mode != None else None
@@ -232,13 +237,14 @@ implicit_resources_record = record(
 )
 
 def _python_outplace_features(
-        ctx: AnalysisContext,
-        installed_name: str,
-        mode: int,
-        binary_info: binary_record | None,
-        shared_libraries: shared_libraries_record | None,
-        required_artifacts: list[Artifact],
-        required_run_infos: list[RunInfo]):
+    ctx: AnalysisContext,
+    installed_name: str,
+    mode: int,
+    binary_info: binary_record | None,
+    shared_libraries: shared_libraries_record | None,
+    required_artifacts: list[Artifact],
+    required_run_infos: list[RunInfo],
+):
     # "outplace" is like "inplace" but generates a PAR with copied files instead of linked.
     # antlir needs this because otherwise the chroot ends up with a bunch of broken symlinks.
     par = ctx.attrs.src[DefaultInfo].sub_targets["outplace"]
@@ -307,7 +313,8 @@ def _python_outplace_features(
                 "/usr/local/libexec",
                 "/usr/local/libexec/python_outplace",
             ]
-        ] + [
+        ]
+        + [
             FeatureAnalysis(
                 feature_type = "ensure_file_symlink",
                 data = struct(
@@ -371,10 +378,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             for soname, so_subtarget in src_subtargets["shared-libraries"][DefaultInfo].sub_targets.items():
                 so_info = so_subtarget[DefaultInfo]
                 so_out = ensure_single_output(so_info)
-                so_targets.append(shared_library_record(
-                    soname = soname,
-                    target = so_out,
-                ))
+                so_targets.append(
+                    shared_library_record(
+                        soname = soname,
+                        target = so_out,
+                    )
+                )
                 required_artifacts.append(so_out)
 
             shared_libraries = shared_libraries_record(
@@ -469,10 +478,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
 
     features = None
     if src_is_python and ctx.attrs._mac_signer:
-        python_outplace_par = (
-            ctx.attrs._python_outplace_par_override or
-            rollout.check_base_path(PYTHON_OUTPLACE_PAR_ROLLOUT, ctx.attrs.src.label.package)
-        )
+        python_outplace_par = ctx.attrs._python_outplace_par_override or rollout.check_base_path(PYTHON_OUTPLACE_PAR_ROLLOUT, ctx.attrs.src.label.package)
         if python_outplace_par:
             features = _python_outplace_features(
                 ctx,

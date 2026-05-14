@@ -22,15 +22,19 @@ def oci_user(*, user: str):
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [
-        struct(
-            type = "antlir2_packager::oci::OciUser",
-            key = ctx.attrs.user,
-            value = struct(
-                user = ctx.attrs.user,
+    fact_json = ctx.actions.write_json(
+        "facts.json",
+        [
+            struct(
+                type = "antlir2_packager::oci::OciUser",
+                key = ctx.attrs.user,
+                value = struct(
+                    user = ctx.attrs.user,
+                ),
             ),
-        ),
-    ], has_content_based_path = False)
+        ],
+        has_content_based_path = False,
+    )
 
     return [
         DefaultInfo(),

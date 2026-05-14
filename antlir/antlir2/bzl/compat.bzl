@@ -5,10 +5,7 @@
 
 load("//antlir/bzl:types.bzl", "types")
 
-def _from_antlir1_flavor(
-        flavor: str | typing.Any,
-        *,
-        strip_rou: bool = False) -> str | None:
+def _from_antlir1_flavor(flavor: str | typing.Any, *, strip_rou: bool = False) -> str | None:
     if not flavor:
         return None
     if not types.is_string(flavor):

@@ -65,10 +65,13 @@ def dir_snapshot_test(**kwargs):
 
 def _file_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
     inputs = ctx.actions.declare_output("inputs", dir = True, has_content_based_path = False)
-    ctx.actions.copied_dir(inputs, {
-        "actual": ctx.attrs.actual,
-        "snapshot": ctx.attrs.snapshot,
-    })
+    ctx.actions.copied_dir(
+        inputs,
+        {
+            "actual": ctx.attrs.actual,
+            "snapshot": ctx.attrs.snapshot,
+        },
+    )
 
     extra_args = []
     if not ctx.attrs.mode:

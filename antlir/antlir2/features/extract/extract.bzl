@@ -37,9 +37,7 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 _EXTRACT_PLUGIN = "antlir//antlir/antlir2/features/extract:extract"
 _EXTRACT_ANALYZE = "antlir//antlir/antlir2/features/extract:extract-analyze"
 
-def extract_from_layer(
-        layer: str | Select,
-        binaries: list[str | Select] | Select):
+def extract_from_layer(layer: str | Select, binaries: list[str | Select] | Select):
     """
     Extract a binary and all of its runtime dependencies from `layer` into the
     target layer.
@@ -77,10 +75,7 @@ def extract_from_layer(
         },
     )
 
-def extract_buck_binary(
-        src: str | Select,
-        dst: str | Select,
-        strip: bool | Select = True):
+def extract_buck_binary(src: str | Select, dst: str | Select, strip: bool | Select = True):
     """
     Extract a buck-built binary and all of its runtime dependencies into the
     target layer.

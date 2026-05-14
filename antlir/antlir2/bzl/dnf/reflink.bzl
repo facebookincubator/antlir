@@ -8,13 +8,7 @@ REFLINK_FLAVORS = {
     # @oss-disable[end= ]: "centos9": "antlir//antlir/antlir2/facebook/images/build_appliance/centos9:rpm2extents",
 }
 
-def rpm2extents(
-        *,
-        ctx: AnalysisContext,
-        appliance: Dependency,
-        rpm: Artifact,
-        extents: Artifact,
-        identifier: str | None = None):
+def rpm2extents(*, ctx: AnalysisContext, appliance: Dependency, rpm: Artifact, extents: Artifact, identifier: str | None = None):
     ctx.actions.run(
         cmd_args(
             appliance[RunInfo],

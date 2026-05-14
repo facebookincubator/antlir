@@ -7,29 +7,25 @@ load("//antlir/bzl:internal_external.bzl", "internal_external", "is_facebook")
 load(":defs.bzl", "OsVersionInfo")
 load(":oses.bzl", "OSES")
 
-_OS_REFS = {
-    "os." + os.name: os.target
-    for os in OSES
-} | {
-    "os_constraint": "antlir//antlir/antlir2/os:os",
-    "os_family_constraint": "antlir//antlir/antlir2/os/family:family",
-    "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
-} | internal_external(
-    fb = {
-        "rou_constraint": "antlir//antlir/antlir2/os/facebook:rou",  # @
-    },
-    oss = {},
+_OS_REFS = (
+    {"os." + os.name: os.target for os in OSES}
+    | {
+        "os_constraint": "antlir//antlir/antlir2/os:os",
+        "os_family_constraint": "antlir//antlir/antlir2/os/family:family",
+        "package_manager_constraint": "antlir//antlir/antlir2/os/package_manager:package_manager",
+    }
+    | internal_external(
+        fb = {
+            "rou_constraint": "antlir//antlir/antlir2/os/facebook:rou",  # @
+        },
+        oss = {},
+    )
 )
 
 def os_transition_refs():
     return _OS_REFS
 
-def os_transition(
-        *,
-        default_os: str,
-        constraints,
-        refs: struct,
-        overwrite: bool = False):
+def os_transition(*, default_os: str, constraints, refs: struct, overwrite: bool = False):
     os = getattr(refs, "os." + default_os)[OsVersionInfo]
     os_constraint = os.constraint[ConstraintValueInfo]
     family = os.family[ConstraintValueInfo]

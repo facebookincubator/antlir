@@ -13,10 +13,7 @@ load(":build_defs_impl.bzl", "shim")
 load(":internal_external.bzl", "is_facebook")
 
 def _third_party_libraries(names, platform = None):
-    return [
-        shim.third_party.library(name, platform = platform)
-        for name in names
-    ]
+    return [shim.third_party.library(name, platform = platform) for name in names]
 
 def _ensure_dep_is_public(dep: str):
     package = native.package_name()
@@ -69,10 +66,9 @@ def _rust_common(rule, **kwargs):
         kwargs.pop("fb_test_deps", None)
 
     deps = selects.apply(kwargs.pop("deps", []), lambda deps: [_normalize_rust_dep(d) for d in deps])
-    named_deps = selects.apply(kwargs.pop("named_deps", {}), lambda named_deps: {
-        key: _normalize_rust_dep(_ensure_dep_is_public(d))
-        for key, d in (named_deps or {}).items()
-    })
+    named_deps = selects.apply(
+        kwargs.pop("named_deps", {}), lambda named_deps: {key: _normalize_rust_dep(_ensure_dep_is_public(d)) for key, d in (named_deps or {}).items()}
+    )
     rule(deps = deps, named_deps = named_deps, **kwargs)
 
 def rust_python_extension(**kwargs):

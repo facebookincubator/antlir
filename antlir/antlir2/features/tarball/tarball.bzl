@@ -10,12 +10,7 @@ load(
     "new_feature_rule",
 )
 
-def tarball(
-        *,
-        src: str,
-        into_dir: str,
-        force_root_ownership: bool = False,
-        strip_components: int = 0):
+def tarball(*, src: str, into_dir: str, force_root_ownership: bool = False, strip_components: int = 0):
     return ParseTimeFeature(
         feature_type = "tarball",
         plugin = "antlir//antlir/antlir2/features/tarball:tarball",

@@ -15,15 +15,19 @@ def oci_cmd(*, cmd: list[str]):
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [
-        struct(
-            type = "antlir2_packager::oci::OciCmd",
-            key = "\t".join(ctx.attrs.cmd),
-            value = struct(
-                cmd = ctx.attrs.cmd,
+    fact_json = ctx.actions.write_json(
+        "facts.json",
+        [
+            struct(
+                type = "antlir2_packager::oci::OciCmd",
+                key = "\t".join(ctx.attrs.cmd),
+                value = struct(
+                    cmd = ctx.attrs.cmd,
+                ),
             ),
-        ),
-    ], has_content_based_path = False)
+        ],
+        has_content_based_path = False,
+    )
 
     return [
         DefaultInfo(),

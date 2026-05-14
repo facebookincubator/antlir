@@ -58,10 +58,12 @@ def _strip_configuration_alias_impl(ctx: AnalysisContext) -> list[Provider]:
         "antlir/antlir2/cfg/strip_configuration/tests",
         # @oss-disable[end= ]: "ti/platform/edgeos/base_image/rootfs/features/root_password",
     ]:
-        fail("""
+        fail(
+            """
             target is in {} which is not an allowed package.
             You MUST talk to twimage to get an exception to this rule
-        """.format(ctx.label.package))
+        """.format(ctx.label.package)
+        )
     return ctx.attrs.actual.providers
 
 strip_configuration_alias = rule(

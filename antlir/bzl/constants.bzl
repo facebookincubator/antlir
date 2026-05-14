@@ -43,8 +43,5 @@ REPO_CFG = repo_config_t(
     host_mounts_for_repo_artifacts = _get_str_list_cfg(
         "host_mounts_for_repo_artifacts",
     ),
-    rc_targets = [
-        (t if t == "all" else normalize_target(t))
-        for t in _get_str_list_cfg("rc_targets", separator = ",")
-    ],
+    rc_targets = [(t if t == "all" else normalize_target(t)) for t in _get_str_list_cfg("rc_targets", separator = ",")],
 )

@@ -60,7 +60,9 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
                 "append": append,
                 "initrd": ctx.attrs.initrd,
                 "kernel": ctx.attrs.kernel,
-            } if ctx.attrs.initrd else None,
+            }
+            if ctx.attrs.initrd
+            else None,
             "num_nics": ctx.attrs.num_nics,
             "output_dirs": ctx.attrs.output_dirs,
             "qemu_binary": cmd_args(ctx.attrs.qemu_binary, delimiter = ""),
@@ -138,7 +140,8 @@ _vm_host = rule(
             doc = "arch dependent name of the console device",
         ),
         "use_tpm": attrs.bool(default = False, doc = "enable software TPM"),
-    } | {
+    }
+    | {
         # Non-hardware parameters for the VM
         "append": attrs.option(
             attrs.string(),
@@ -148,9 +151,9 @@ _vm_host = rule(
         "extra_qemu_args": attrs.list(
             attrs.arg(),
             default = [],
-            doc = "additional raw QEMU arguments appended after all generated arguments. " +
-                  "Useful for custom devices, chardevs, netdevs, etc. that are not natively " +
-                  "supported by the VM framework (e.g., fbnic PCI devices, io_uring test setups).",
+            doc = "additional raw QEMU arguments appended after all generated arguments. "
+            + "Useful for custom devices, chardevs, netdevs, etc. that are not natively "
+            + "supported by the VM framework (e.g., fbnic PCI devices, io_uring test setups).",
         ),
         "initrd": attrs.option(
             attrs.source(),
@@ -160,8 +163,8 @@ _vm_host = rule(
         "input_dirs": attrs.list(
             attrs.arg(),
             default = [],
-            doc = "additional read-only host directories to bind-mount into the VM container. " +
-                  "Useful when extra_qemu_args references paths outside the repo.",
+            doc = "additional read-only host directories to bind-mount into the VM container. "
+            + "Useful when extra_qemu_args references paths outside the repo.",
         ),
         "kernel": attrs.option(
             attrs.source(),
@@ -170,8 +173,7 @@ _vm_host = rule(
         ),
         "machine_type": attrs.string(
             default = arch_select(x86_64 = "pc", aarch64 = "virt"),
-            doc = "QEMU machine type (e.g., 'q35', 'virt', 'microvm'). " +
-                  "Defaults to 'pc' for x86_64 and 'virt' for aarch64.",
+            doc = "QEMU machine type (e.g., 'q35', 'virt', 'microvm'). " + "Defaults to 'pc' for x86_64 and 'virt' for aarch64.",
         ),
         "mount_platform": attrs.bool(
             default = True,
@@ -180,8 +182,8 @@ _vm_host = rule(
         "output_dirs": attrs.list(
             attrs.arg(),
             default = [],
-            doc = "additional read-write host directories to bind-mount into the VM container. " +
-                  "Useful when extra_qemu_args references paths outside the repo.",
+            doc = "additional read-write host directories to bind-mount into the VM container. "
+            + "Useful when extra_qemu_args references paths outside the repo.",
         ),
         # Must be an arg() because it needs to accept locations.
         "qemu_binary": attrs.arg(
@@ -189,8 +191,8 @@ _vm_host = rule(
                 x86_64 = "qemu-system-x86_64",
                 aarch64 = "qemu-system-aarch64",
             ),
-            doc = "path to a QEMU binary. Use $(location) or $(exe) to reference buck targets. " +
-                  "Defaults to 'qemu-system-x86_64' for x86_64 and 'qemu-system-aarch64' for aarch64.",
+            doc = "path to a QEMU binary. Use $(location) or $(exe) to reference buck targets. "
+            + "Defaults to 'qemu-system-x86_64' for x86_64 and 'qemu-system-aarch64' for aarch64.",
         ),
         "sidecar_services": attrs.list(
             attrs.arg(),
@@ -208,7 +210,8 @@ _vm_host = rule(
             default = None,
             doc = "total allowed execution time for the VM",
         ),
-    } | {
+    }
+    | {
         # VM runtime. Generally shouldn't be overwritten
         # TODO: exec_deps really are not safe to propagate to rdeps of this
         # target, but because vmtest is unique in *requiring* local-only
@@ -236,7 +239,6 @@ vm = struct(
     rust_test = vm_rust_test,
     sh_test = vm_sh_test,
     run_command = vm_run_command,
-
     # Various pre-built targets useful for building VM or writing tests
     artifacts = struct(
         # Pre-built VMs for `vm_host` of tests

@@ -3,17 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-def _transition(
-        *,
-        constraints,
-        refs: struct,
-        attrs: struct,
-        overwrite: bool = False):
+def _transition(*, constraints, refs: struct, attrs: struct, overwrite: bool = False):
     setting = refs.systemd_setting[ConstraintSettingInfo]
-    if (
-        (setting.label not in constraints) or
-        overwrite
-    ):
+    if (setting.label not in constraints) or overwrite:
         if attrs.systemd == "cd":
             constraints[setting.label] = refs.systemd_cd[ConstraintValueInfo]
         elif attrs.systemd == "stable":

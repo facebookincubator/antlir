@@ -18,13 +18,8 @@ def _product(*iterables):
         products.append(tuple(prod))
     return products
 
-def test_variants(
-        *,
-        test_rule,
-        lang: str,
-        layer: str = ":base",
-        **kwargs):
-    for (boot, user, rootless, os) in _product(
+def test_variants(*, test_rule, lang: str, layer: str = ":base", **kwargs):
+    for boot, user, rootless, os in _product(
         (True, False, "wait-default"),
         ("root", "nobody"),
         (True, False),
@@ -59,5 +54,5 @@ def test_variants(
             rootless = rootless,
             default_os = os,
             visibility = ["PUBLIC"],
-            **kwargs
+            **kwargs,
         )

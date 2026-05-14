@@ -6,12 +6,8 @@
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 
 def _download_packages_indexes_impl(
-        actions: AnalysisActions,
-        arch: str,
-        release_json: ArtifactValue,
-        packages_indexes: dict[str, typing.Any],
-        suite_baseurl: str,
-        metadata_run_info: RunInfo):
+    actions: AnalysisActions, arch: str, release_json: ArtifactValue, packages_indexes: dict[str, typing.Any], suite_baseurl: str, metadata_run_info: RunInfo
+):
     release = release_json.read_json()
 
     for component_name, (txt, json) in packages_indexes.items():
@@ -69,13 +65,8 @@ ComponentPackages = record(
 )
 
 def download_component_package_indexes(
-        *,
-        actions: AnalysisActions,
-        components: list[str],
-        arch: str,
-        suite_baseurl: str,
-        release_json: Artifact,
-        metadata_run_info: RunInfo) -> dict[str, ComponentPackages]:
+    *, actions: AnalysisActions, components: list[str], arch: str, suite_baseurl: str, release_json: Artifact, metadata_run_info: RunInfo
+) -> dict[str, ComponentPackages]:
     # Pre-declare one output per component for the decompressed
     # Packages index files, namespaced by arch to allow multiple arches
     components = {
@@ -92,10 +83,7 @@ def download_component_package_indexes(
             metadata_run_info = metadata_run_info,
             suite_baseurl = suite_baseurl,
             release_json = release_json,
-            packages_indexes = {
-                component_name: (out.txt.as_output(), out.json.as_output())
-                for component_name, out in components.items()
-            },
+            packages_indexes = {component_name: (out.txt.as_output(), out.json.as_output()) for component_name, out in components.items()},
         ),
     )
     return components

@@ -36,10 +36,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         default_out = out
         if ctx.attrs.default_out:
             default_out = out.project(ctx.attrs.default_out)
-        default_info = DefaultInfo(default_out, sub_targets = {
-            name: [DefaultInfo(out.project(path))]
-            for name, path in ctx.attrs.outs.items()
-        })
+        default_info = DefaultInfo(default_out, sub_targets = {name: [DefaultInfo(out.project(path))] for name, path in ctx.attrs.outs.items()})
     else:
         fail("out or outs is required")
 
@@ -69,9 +66,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             ),
             local_only = (
                 # btrfs subvolumes can only exist locally
-                layer_fmt == "btrfs" or
+                layer_fmt == "btrfs"
+                or
                 # no sudo access on remote execution
-                not ctx.attrs._rootless or
+                not ctx.attrs._rootless
+                or
                 # no aarch64 emulation on remote execution
                 ctx.attrs._selected_target_arch == "aarch64"
             ),
@@ -90,19 +89,20 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     elif ctx.attrs.layer_is_prepped:
         return _with_anon_layer(ctx.attrs.layer)
     else:
-        return ctx.actions.anon_target(layer_rule, {
-            "antlir2": ctx.attrs._layer_antlir2,
-            "name": "genrule_layer//{}:{}".format(ctx.label.package, ctx.label.name),
-            "parent_layer": ctx.attrs.layer,
-            "rootless": ctx.attrs._rootless,
-            "_analyze_feature": ctx.attrs._layer_analyze_feature,
-            "_feature_features": [ctx.attrs._prep_feature],
-            "_plugins": ctx.plugins[FeaturePluginPluginKind],
-            "_run_container": None,
-        } | {
-            k: getattr(ctx.attrs, k)
-            for k in attrs_selected_by_cfg
-        }).promise.map(_with_anon_layer)
+        return ctx.actions.anon_target(
+            layer_rule,
+            {
+                "antlir2": ctx.attrs._layer_antlir2,
+                "name": "genrule_layer//{}:{}".format(ctx.label.package, ctx.label.name),
+                "parent_layer": ctx.attrs.layer,
+                "rootless": ctx.attrs._rootless,
+                "_analyze_feature": ctx.attrs._layer_analyze_feature,
+                "_feature_features": [ctx.attrs._prep_feature],
+                "_plugins": ctx.plugins[FeaturePluginPluginKind],
+                "_run_container": None,
+            }
+            | {k: getattr(ctx.attrs, k) for k in attrs_selected_by_cfg},
+        ).promise.map(_with_anon_layer)
 
 _genrule_in_image = rule(
     impl = _impl,
@@ -131,7 +131,9 @@ _genrule_in_image = rule(
         "_layer_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
         "_layer_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
         "_prep_feature": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/genrule_in_image:prep", pulls_plugins = [FeaturePluginPluginKind])),
-    } | attrs_selected_by_cfg | cfg_attrs(),
+    }
+    | attrs_selected_by_cfg
+    | cfg_attrs(),
     cfg = layer_cfg,
     # Because this can instantiate an implicit layer, it must also
     # depend on the feature plugins
@@ -140,12 +142,7 @@ _genrule_in_image = rule(
 
 _genrule_in_image_macro = rule_with_default_target_platform(_genrule_in_image)
 
-def genrule_in_image(
-        *,
-        name: str,
-        default_os: str | None = None,
-        rootless: bool | None = None,
-        **kwargs):
+def genrule_in_image(*, name: str, default_os: str | None = None, rootless: bool | None = None, **kwargs):
     default_os = default_os or get_default_os_for_package()
     if rootless == None:
         rootless = get_antlir2_rootless()
@@ -155,10 +152,5 @@ def genrule_in_image(
         labels = selects.apply(labels, lambda labels: list(labels or []) + ["uses_sudo"])
 
     _genrule_in_image_macro(
-        name = name,
-        default_os = default_os,
-        rootless = rootless,
-        labels = labels,
-        exec_compatible_with = ["prelude//platforms:may_run_local"],
-        **kwargs
+        name = name, default_os = default_os, rootless = rootless, labels = labels, exec_compatible_with = ["prelude//platforms:may_run_local"], **kwargs
     )

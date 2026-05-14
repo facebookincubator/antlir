@@ -14,10 +14,12 @@ OciLayer = record(
     tar_zst = Artifact,
 )
 
-OciLayersInfo = provider(fields = {
-    "layers": list[OciLayer],
-    "oci_layers_dir": Artifact | None,
-})
+OciLayersInfo = provider(
+    fields = {
+        "layers": list[OciLayer],
+        "oci_layers_dir": Artifact | None,
+    }
+)
 
 def oci_arch(arch: str) -> str:
     if arch == "x86_64":
@@ -34,17 +36,16 @@ def _oci_layer_delta(layer: OciLayer, name: str) -> dict:
     }
 
 def _oci_layer_sub_targets(layer: OciLayer) -> list[Provider]:
-    return [DefaultInfo(sub_targets = {
-        "tar": [DefaultInfo(layer.tar)],
-        "tar.zst": [DefaultInfo(layer.tar_zst)],
-    })]
+    return [
+        DefaultInfo(
+            sub_targets = {
+                "tar": [DefaultInfo(layer.tar)],
+                "tar.zst": [DefaultInfo(layer.tar_zst)],
+            }
+        )
+    ]
 
-def _make_layer_tar(
-        *,
-        ctx: AnalysisContext,
-        identifier: str,
-        parent: LayerContents | None,
-        child_subvol: LayerContents) -> OciLayer:
+def _make_layer_tar(*, ctx: AnalysisContext, identifier: str, parent: LayerContents | None, child_subvol: LayerContents) -> OciLayer:
     tar = ctx.actions.declare_output(identifier, "layer.tar", has_content_based_path = False)
     ctx.actions.run(
         cmd_args(
@@ -89,12 +90,14 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
         # Produce a single layer from the final contents against empty,
         # ignoring all parent layers and phase breakdowns.
         last_phase, _last_contents = layer.phase_contents[-1]
-        oci_layers.append(_make_layer_tar(
-            ctx = ctx,
-            identifier = last_phase.value,
-            parent = None,
-            child_subvol = layer.contents,
-        ))
+        oci_layers.append(
+            _make_layer_tar(
+                ctx = ctx,
+                identifier = last_phase.value,
+                parent = None,
+                child_subvol = layer.contents,
+            )
+        )
     else:
         layers = list(layer.phase_contents)
         if layer.parent:
@@ -104,12 +107,14 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
         for parent, (child_phase, child_contents) in zip(layers, layers[1:]):
             if parent:
                 parent = parent[1]  # parent phase info doesn't matter, throw it away
-            oci_layers.append(_make_layer_tar(
-                ctx = ctx,
-                identifier = child_phase.value,
-                parent = parent,
-                child_subvol = child_contents,
-            ))
+            oci_layers.append(
+                _make_layer_tar(
+                    ctx = ctx,
+                    identifier = child_phase.value,
+                    parent = parent,
+                    child_subvol = child_contents,
+                )
+            )
 
     return [
         DefaultInfo(),
@@ -164,10 +169,12 @@ def _impl(ctx: AnalysisContext) -> Promise:
             multi_layer_subtargets = {}
             layer_label = str(layers[i][LayerInfo].label)
             for layer in multi_layer[OciLayersInfo].layers:
-                deltas.append(_oci_layer_delta(
-                    layer,
-                    "{}[{}]".format(layer_label, layer.identifier),
-                ))
+                deltas.append(
+                    _oci_layer_delta(
+                        layer,
+                        "{}[{}]".format(layer_label, layer.identifier),
+                    )
+                )
                 multi_layer_subtargets[layer.identifier] = _oci_layer_sub_targets(layer)
             sub_targets_layers[str(i)] = [DefaultInfo(sub_targets = multi_layer_subtargets)]
 
@@ -233,23 +240,38 @@ def _impl(ctx: AnalysisContext) -> Promise:
 oci_attrs = {
     "collapse_into_one_layer": attrs.bool(default = False, doc = "If True, collapse all layers into a single layer containing the final filesystem state"),
     "entrypoint": attrs.list(attrs.string(), doc = "Command to run as the main process"),
-    "image_labels": attrs.dict(attrs.string(), attrs.string(), default = {}, doc = "OCI image labels applied after inherited and packager-generated labels, so these values override duplicate labels."),
+    "image_labels": attrs.dict(
+        attrs.string(),
+        attrs.string(),
+        default = {},
+        doc = "OCI image labels applied after inherited and packager-generated labels, so these values override duplicate labels.",
+    ),
     "ref": attrs.string(
         default = native.read_config("build_info", "revision", "local"),
         doc = "Ref name for OCI image",
     ),
-    "retain_paths": attrs.list(attrs.regex(), default = [], doc = "List of regexes matched against absolute paths in the image; any path that does NOT match is excluded from the OCI layer tar"),
-    "strip_paths": attrs.list(attrs.regex(), default = [], doc = "List of regexes matched against absolute paths in the image; any matching path is excluded from the OCI layer tar"),
+    "retain_paths": attrs.list(
+        attrs.regex(),
+        default = [],
+        doc = "List of regexes matched against absolute paths in the image; any path that does NOT match is excluded from the OCI layer tar",
+    ),
+    "strip_paths": attrs.list(
+        attrs.regex(), default = [], doc = "List of regexes matched against absolute paths in the image; any matching path is excluded from the OCI layer tar"
+    ),
     "zstd_chunked": attrs.bool(
         default = False,
         doc = "If True, re-materialize the OCI layout with zstd:chunked-compressed layers via skopeo",
     ),
-    "_build_info_revision": attrs.default_only(attrs.string(
-        default = native.read_config("build_info", "revision", "local"),
-    )),
-    "_build_info_time_iso8601": attrs.default_only(attrs.string(
-        default = native.read_config("build_info", "time_iso8601", ""),
-    )),
+    "_build_info_revision": attrs.default_only(
+        attrs.string(
+            default = native.read_config("build_info", "revision", "local"),
+        )
+    ),
+    "_build_info_time_iso8601": attrs.default_only(
+        attrs.string(
+            default = native.read_config("build_info", "time_iso8601", ""),
+        )
+    ),
     "_make_oci_layer": attrs.default_only(
         attrs.exec_dep(
             default = "antlir//antlir/antlir2/antlir2_packager/make_oci_layer:make-oci-layer",

@@ -64,37 +64,19 @@ _vm_disk = rule(
 )
 vm_disk = rule_with_default_target_platform(_vm_disk)
 
-def _create_disk_from_package(
-        *,
-        name: str,
-        image: str,
-        **kwargs):
+def _create_disk_from_package(*, name: str, image: str, **kwargs):
     """This functions take image targets and wrap them with desired properties
     to create a VM disk target that can be used by VM. `image` is expected to
     be in a disk file format that can be directly consumed by qemu. It will be
     optionally expanded by `free_mib` if requested. The rule here does
     not change the images themselves, but supply other parameters that could
-    affect how the disk image is used by the VM.  """
-    vm_disk(
-        name = name,
-        base_image = image,
-        **kwargs
-    )
+    affect how the disk image is used by the VM."""
+    vm_disk(name = name, base_image = image, **kwargs)
     return ":" + name
 
-def _create_empty_disk(
-        *,
-        name: str,
-        size_mib: int,
-        **kwargs):
+def _create_empty_disk(*, name: str, size_mib: int, **kwargs):
     """Create an empty disk of `size` MiB"""
-    _create_disk_from_package(
-        name = name,
-        image = "antlir//antlir:empty",
-        free_mib = size_mib,
-        bootable = False,
-        **kwargs
-    )
+    _create_disk_from_package(name = name, image = "antlir//antlir:empty", free_mib = size_mib, bootable = False, **kwargs)
     return ":" + name
 
 disk = struct(

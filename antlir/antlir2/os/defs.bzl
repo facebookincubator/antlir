@@ -5,11 +5,13 @@
 
 load("@prelude//:rules.bzl", "config_setting", "constraint_value")
 
-OsVersionInfo = provider(fields = [
-    "constraint",
-    "family",
-    "package_manager",
-])
+OsVersionInfo = provider(
+    fields = [
+        "constraint",
+        "family",
+        "package_manager",
+    ]
+)
 
 def _os_version_rule_impl(ctx: AnalysisContext) -> list[Provider]:
     return [
@@ -46,10 +48,7 @@ _os_version_rule = rule(
     },
 )
 
-def os_version(
-        name: str,
-        family: str,
-        package_manager: str):
+def os_version(name: str, family: str, package_manager: str):
     constraint_value(
         name = name + ".constraint",
         constraint_setting = "//antlir/antlir2/os:os",

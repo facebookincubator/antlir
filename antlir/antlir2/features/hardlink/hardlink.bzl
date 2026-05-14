@@ -5,10 +5,7 @@
 
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
-def hardlink(
-        *,
-        link: str | Select,
-        target: str | Select):
+def hardlink(*, link: str | Select, target: str | Select):
     """
     Create a hardlink to a file.
     """

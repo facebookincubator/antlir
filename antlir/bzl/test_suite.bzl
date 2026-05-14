@@ -5,11 +5,7 @@
 
 load("@fbcode_macros//build_defs:native_rules.bzl", "buck_sh_test", _test_suite = "test_suite")
 
-def _test_aggregate_packages_coverage(
-        *,
-        name: str,
-        package_tests: list[str],
-        package_includes: list[str]):
+def _test_aggregate_packages_coverage(*, name: str, package_tests: list[str], package_includes: list[str]):
     args = ["test_aggregate_packages_coverage"]
     for i in package_tests:
         args += ["--package-test", i]
@@ -23,19 +19,12 @@ def _test_aggregate_packages_coverage(
         exec_compatible_with = ["prelude//platforms:runs_only_local"],
     )
 
-def _aggregate_package_tests(
-        *,
-        name: str,
-        package_tests: list[str],
-        package_includes: list[str],
-        **kwargs):
+def _aggregate_package_tests(*, name: str, package_tests: list[str], package_includes: list[str], **kwargs):
     package_tests = [i + ":package-tests" for i in package_tests]
     _test_aggregate_packages_coverage(name = name, package_tests = package_tests, package_includes = package_includes)
     _test_suite(name = name, tests = package_tests, **kwargs)
 
-def _test_package_tests_converage(
-        *,
-        tests: list[str]):
+def _test_package_tests_converage(*, tests: list[str]):
     args = ["test_package_tests_coverage", "--package", native.package_name()]
     for i in tests:
         args += ["--test", i]
@@ -47,10 +36,7 @@ def _test_package_tests_converage(
         exec_compatible_with = ["prelude//platforms:runs_only_local"],
     )
 
-def _package_tests(
-        *,
-        tests: list[str],
-        **kwargs):
+def _package_tests(*, tests: list[str], **kwargs):
     _test_package_tests_converage(tests = tests)
     _test_suite(name = "package-tests", tests = tests, **kwargs)
 

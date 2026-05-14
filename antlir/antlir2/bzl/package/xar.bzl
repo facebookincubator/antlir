@@ -11,19 +11,22 @@ load(":macro.bzl", "package_macro")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     out = ctx.actions.declare_output(ctx.label.name, has_content_based_path = False)
-    squash = ctx.actions.anon_target(squashfs_anon, {
-        k: getattr(ctx.attrs, k)
-        for k in list(layer_attrs) + list(common_attrs) + list(default_attrs)
-    } | {
-        "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
-    }).artifact("package")
+    squash = ctx.actions.anon_target(
+        squashfs_anon,
+        {k: getattr(ctx.attrs, k) for k in list(layer_attrs) + list(common_attrs) + list(default_attrs)}
+        | {
+            "_plugins": ctx.attrs._plugins + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []),
+        },
+    ).artifact("package")
     spec = ctx.actions.write_json(
         "spec.json",
-        {"xar": {
-            "executable": ctx.attrs.executable,
-            "squashfs": squash,
-            "target_name": ctx.label.name,
-        }},
+        {
+            "xar": {
+                "executable": ctx.attrs.executable,
+                "squashfs": squash,
+                "target_name": ctx.label.name,
+            }
+        },
         with_inputs = True,
         has_content_based_path = False,
     )
@@ -47,7 +50,10 @@ _xar = rule(
     impl = _impl,
     attrs = {
         "executable": attrs.string(doc = "Executable within the XAR root that serves as the entrypoint"),
-    } | layer_attrs | default_attrs | common_attrs,
+    }
+    | layer_attrs
+    | default_attrs
+    | common_attrs,
     cfg = package_cfg,
     # Because this can instantiate an implicit layer, it must also
     # depend on the feature plugins

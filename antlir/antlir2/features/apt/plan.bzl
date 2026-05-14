@@ -17,13 +17,7 @@ load(
 load("//antlir/antlir2/package_managers/deb:suite.bzl", "DebSuiteInfo")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 
-def _plan_fn(
-        *,
-        ctx: AnalysisContext,
-        identifier: str,
-        feature: feature_record | typing.Any,
-        resolve_cmd: RunInfo,
-        **kwargs) -> list[PlanInfo]:
+def _plan_fn(*, ctx: AnalysisContext, identifier: str, feature: feature_record | typing.Any, resolve_cmd: RunInfo, **kwargs) -> list[PlanInfo]:
     # rootless is always passed by layer.bzl but not needed since we never
     # access a parent layer subvolume
     kwargs.pop("rootless", None)
@@ -37,14 +31,7 @@ def _plan_fn(
         supplements = ctx.attrs.parent_layer[LayerInfo].supplements
         parent_dpkg_status = supplements.get("apt_dpkg_status")
 
-    res = plan(
-        ctx = ctx,
-        identifier = identifier,
-        items = items,
-        resolve_cmd = resolve_cmd,
-        parent_dpkg_status = parent_dpkg_status,
-        **kwargs
-    )
+    res = plan(ctx = ctx, identifier = identifier, items = items, resolve_cmd = resolve_cmd, parent_dpkg_status = parent_dpkg_status, **kwargs)
     return [plan_info(res)]
 
 def plan_info(res: struct) -> PlanInfo:
@@ -65,17 +52,18 @@ def plan_info(res: struct) -> PlanInfo:
     )
 
 def plan(
-        *,
-        ctx: AnalysisContext,
-        identifier: str,
-        items: Artifact | typing.Any,
-        label: Label,
-        build_appliance: BuildApplianceInfo | typing.Any,
-        target_arch: str,
-        resolve_cmd: RunInfo,
-        plan: Dependency,
-        suite: Dependency,
-        parent_dpkg_status: Artifact | None = None) -> struct:
+    *,
+    ctx: AnalysisContext,
+    identifier: str,
+    items: Artifact | typing.Any,
+    label: Label,
+    build_appliance: BuildApplianceInfo | typing.Any,
+    target_arch: str,
+    resolve_cmd: RunInfo,
+    plan: Dependency,
+    suite: Dependency,
+    parent_dpkg_status: Artifact | None = None,
+) -> struct:
     tx = ctx.actions.declare_output(identifier, "apt/transaction.json", has_content_based_path = False)
     dpkg_status_out = ctx.actions.declare_output(identifier, "apt/dpkg_status.txt", has_content_based_path = False)
     debs_dir = ctx.actions.declare_output(identifier, "apt/debs", dir = True, has_content_based_path = False)
@@ -129,11 +117,7 @@ def plan(
         dpkg_status_out = dpkg_status_out,
     )
 
-def _download_debs_impl(
-        actions: AnalysisActions,
-        archive_url: str,
-        tx: ArtifactValue,
-        debs_dir: OutputArtifact) -> list[Provider]:
+def _download_debs_impl(actions: AnalysisActions, archive_url: str, tx: ArtifactValue, debs_dir: OutputArtifact) -> list[Provider]:
     transaction = tx.read_json()
     install_pkgs = transaction.get("install", [])
 

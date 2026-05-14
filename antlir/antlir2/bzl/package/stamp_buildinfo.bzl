@@ -11,37 +11,36 @@ load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
 
 def _impl(ctx: AnalysisContext) -> Promise:
-    return ctx.actions.anon_target(layer_rule, {
-        "antlir2": ctx.attrs._antlir2,
-        "name": str(ctx.label.raw_target()),
-        "parent_layer": ctx.attrs.layer,
-        "_analyze_feature": ctx.attrs._analyze_feature,
-        "_feature_features": [ctx.attrs._dot_meta_feature],
-        "_plugins": ctx.attrs._plugins,
-        "_run_container": ctx.attrs._run_container,
-    } | {
-        k: getattr(ctx.attrs, k)
-        for k in attrs_selected_by_cfg
-    }).promise.map(lambda l: [l[LayerInfo], l[DefaultInfo]])
+    return ctx.actions.anon_target(
+        layer_rule,
+        {
+            "antlir2": ctx.attrs._antlir2,
+            "name": str(ctx.label.raw_target()),
+            "parent_layer": ctx.attrs.layer,
+            "_analyze_feature": ctx.attrs._analyze_feature,
+            "_feature_features": [ctx.attrs._dot_meta_feature],
+            "_plugins": ctx.attrs._plugins,
+            "_run_container": ctx.attrs._run_container,
+        }
+        | {k: getattr(ctx.attrs, k) for k in attrs_selected_by_cfg},
+    ).promise.map(lambda l: [l[LayerInfo], l[DefaultInfo]])
 
 stamp_buildinfo_rule = rule(
     impl = _impl,
     attrs = {
-                "layer": attrs.dep(providers = [LayerInfo]),
-                "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
-                "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
-                "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
-                "_plugins": attrs.list(
-                    attrs.dep(providers = [FeaturePluginInfo]),
-                    default = [],
-                    doc = "Used as a way to pass plugins to anon layer targets",
-                ),
-                "_run_container": attrs.exec_dep(default = "antlir//antlir/antlir2/container_subtarget:run"),
-            } |
-            {
-                "_feature_" + key: val
-                for key, val in shared_features_attrs.items()
-            } | attrs_selected_by_cfg,
+        "layer": attrs.dep(providers = [LayerInfo]),
+        "_analyze_feature": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2_depgraph_if:analyze"),
+        "_antlir2": attrs.exec_dep(default = "antlir//antlir/antlir2/antlir2:antlir2"),
+        "_dot_meta_feature": attrs.dep(default = "antlir//antlir/antlir2/bzl/package:dot-meta", pulls_plugins = [FeaturePluginPluginKind]),
+        "_plugins": attrs.list(
+            attrs.dep(providers = [FeaturePluginInfo]),
+            default = [],
+            doc = "Used as a way to pass plugins to anon layer targets",
+        ),
+        "_run_container": attrs.exec_dep(default = "antlir//antlir/antlir2/container_subtarget:run"),
+    }
+    | {"_feature_" + key: val for key, val in shared_features_attrs.items()}
+    | attrs_selected_by_cfg,
     doc = """
     Stamp build info into a layer that is about to be packaged up.
     """,

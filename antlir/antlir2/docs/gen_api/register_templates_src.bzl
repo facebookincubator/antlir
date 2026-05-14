@@ -8,10 +8,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     pub(crate) fn register_templates(tera: &mut ::tera::Tera) -> ::tera::Result<()> {
         tera.add_raw_templates(vec![
     """
-    src += ",".join([
-        "(\"{}\", include_str!(\"../{}\"))".format(f.short_path, f.short_path)
-        for f in ctx.attrs.templates
-    ])
+    src += ",".join(['("{}", include_str!("../{}"))'.format(f.short_path, f.short_path) for f in ctx.attrs.templates])
     src += "])}"
     src = ctx.actions.write("register_templates_src.rs", src, has_content_based_path = False)
     return [DefaultInfo(src)]

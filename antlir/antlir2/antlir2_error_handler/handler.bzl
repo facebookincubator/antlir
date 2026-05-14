@@ -13,17 +13,21 @@ def antlir2_error_handler(ctx: ActionErrorCtx) -> list[ActionSubError]:
             locs = err.pop("locations", [])
 
             if len(locs) == 0:
-                errors.append(ctx.new_sub_error(
-                    category = err["category"],
-                    message = err.get("message", None),
-                ))
-            else:
-                for loc in locs:
-                    errors.append(ctx.new_sub_error(
+                errors.append(
+                    ctx.new_sub_error(
                         category = err["category"],
                         message = err.get("message", None),
-                        file = loc["file"],
-                        lnum = loc.get("line", None),
-                    ))
+                    )
+                )
+            else:
+                for loc in locs:
+                    errors.append(
+                        ctx.new_sub_error(
+                            category = err["category"],
+                            message = err.get("message", None),
+                            file = loc["file"],
+                            lnum = loc.get("line", None),
+                        )
+                    )
 
     return errors

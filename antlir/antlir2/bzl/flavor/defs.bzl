@@ -37,9 +37,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             label = ctx.label,
         ),
-        DefaultInfo(sub_targets = {
-            "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
-        }),
+        DefaultInfo(
+            sub_targets = {
+                "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
+            }
+        ),
     # @oss-disable[end= ]: ] + fb_extract_rou(ctx.attrs.default_dnf_repo_set[RepoSetInfo])
     ] # @oss-enable
 

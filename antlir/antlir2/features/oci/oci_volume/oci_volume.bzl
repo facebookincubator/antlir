@@ -15,15 +15,19 @@ def oci_volume(*, path: str):
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [
-        struct(
-            type = "antlir2_packager::oci::OciVolume",
-            key = ctx.attrs.path,
-            value = struct(
-                path = ctx.attrs.path,
+    fact_json = ctx.actions.write_json(
+        "facts.json",
+        [
+            struct(
+                type = "antlir2_packager::oci::OciVolume",
+                key = ctx.attrs.path,
+                value = struct(
+                    path = ctx.attrs.path,
+                ),
             ),
-        ),
-    ], has_content_based_path = False)
+        ],
+        has_content_based_path = False,
+    )
 
     return [
         DefaultInfo(),

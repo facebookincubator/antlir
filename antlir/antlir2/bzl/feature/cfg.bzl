@@ -40,5 +40,6 @@ feature_cfg = transition(
     attrs = ["default_os"],
     refs = {
         "package_manager_dnf": "antlir//antlir/antlir2/os/package_manager:package_manager[dnf]",
-    } | os_transition_refs(),
+    }
+    | os_transition_refs(),
 )

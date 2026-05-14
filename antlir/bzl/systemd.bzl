@@ -31,8 +31,8 @@ _ALLOWED_UNIT_SUFFIXES = (
 )
 
 def _fail_if_path(thing, monkeymsg):
-    """ If thing is a path do a big ole fail and prepend the monkey message for
-        helping the human with some context in the fail message.
+    """If thing is a path do a big ole fail and prepend the monkey message for
+    helping the human with some context in the fail message.
     """
     if "/" in thing:
         fail(monkeymsg + "({}) is a path, that is not allowed".format(thing))
@@ -46,13 +46,14 @@ def _assert_unit_suffix(unit):
 
 # Generate an image feature that masks the specified systemd units/configs
 def _mask_impl(
-        # List of things (i.e. full unit names or config names) to mask
-        items,
-        # The root directory of where each item's symlink will reside
-        root,
-        # Informational string that describes what is being masked. Prepended
-        # to an error message on path verification failure.
-        description):
+    # List of things (i.e. full unit names or config names) to mask
+    items,
+    # The root directory of where each item's symlink will reside
+    root,
+    # Informational string that describes what is being masked. Prepended
+    # to an error message on path verification failure.
+    description,
+):
     symlink_actions = []
 
     for item in items:
@@ -67,23 +68,26 @@ def _mask_impl(
     return symlink_actions
 
 def _mask_tmpfiles(
-        # List of tmpfiles.d configs to disable. This should be in the full form
-        # of the base name of the config, ie: dbus.conf, portables.conf, etc.
-        configs):
+    # List of tmpfiles.d configs to disable. This should be in the full form
+    # of the base name of the config, ie: dbus.conf, portables.conf, etc.
+    configs,
+):
     return _mask_impl(configs, TMPFILES_ROOT, "Mask tmpfiles.d config")
 
 def _mask_units(
-        # List of systemd units to mask (e.g. sshd.service). This should be in
-        # the full form of the service, ie: unit.service, unit.mount,
-        # unit.socket, etc..
-        units):
+    # List of systemd units to mask (e.g. sshd.service). This should be in
+    # the full form of the service, ie: unit.service, unit.mount,
+    # unit.socket, etc..
+    units,
+):
     return _mask_impl(units, ADMIN_ROOT, "Mask Unit")
 
 def _unmask_units(
-        # list of systemd units to unmask (e.g. sshd.service). This should be in
-        # the full form of the service, ie: unit.service, unit.mount,
-        # unit.socket, etc..
-        units):
+    # list of systemd units to unmask (e.g. sshd.service). This should be in
+    # the full form of the service, ie: unit.service, unit.mount,
+    # unit.socket, etc..
+    units,
+):
     remove_actions = []
     for unit in units:
         _fail_if_path(unit, "Unmask Unit")
@@ -98,9 +102,10 @@ def _unmask_units(
 
 # Format the link target name for setting up dependencies
 def _deps_link_target(
-        # The name of the systemd unit to enable or disable.  This should be in the
-        # full form of the service, ie:  unit.service, unit.mount, unit.socket, etc..
-        unit: str):
+    # The name of the systemd unit to enable or disable.  This should be in the
+    # full form of the service, ie:  unit.service, unit.mount, unit.socket, etc..
+    unit: str,
+):
     num_template_seps = unit.count("@")
     if num_template_seps == 0:
         link_target = unit
@@ -117,19 +122,20 @@ def _deps_link_target(
 
 # Generate an image feature that enables a unit in the specified systemd target.
 def _enable_impl(
-        # The name of the systemd unit to enable.  This should be in the
-        # full form of the service, ie:  unit.service, unit.mount, unit.socket, etc..
-        unit,
-        # The systemd target to enable the unit in.
-        target,
-        # Dependency type to create.
-        dep_type,
-        # The dir the systemd unit was installed in.  In most cases this doesn't need
-        # to be changed.
-        installed_root,
-        # Informational string that describes what is being enabled. Prepended
-        # to an error message on path verification failure.
-        description):
+    # The name of the systemd unit to enable.  This should be in the
+    # full form of the service, ie:  unit.service, unit.mount, unit.socket, etc..
+    unit,
+    # The systemd target to enable the unit in.
+    target,
+    # Dependency type to create.
+    dep_type,
+    # The dir the systemd unit was installed in.  In most cases this doesn't need
+    # to be changed.
+    installed_root,
+    # Informational string that describes what is being enabled. Prepended
+    # to an error message on path verification failure.
+    description,
+):
     _fail_if_path(unit, description)
     _assert_unit_suffix(unit)
     if dep_type not in ("wants", "requires"):
@@ -149,28 +155,25 @@ def _enable_impl(
     ]
 
 # Image feature to enable a system unit
-def _enable_unit(
-        unit,
-        target = "default.target",
-        dep_type = "wants",
-        installed_root = PROVIDER_ROOT):
+def _enable_unit(unit, target = "default.target", dep_type = "wants", installed_root = PROVIDER_ROOT):
     return _enable_impl(unit, target, dep_type, installed_root, "Enable System Unit")
 
 # Generate an image feature that removes `targets`' dependency on `unit`
 def _remove_dependency_impl(
-        # The name of the systemd unit.  This should be in the full form of the
-        # service, ie:  unit.service, unit.mount, unit.socket, etc..
-        unit,
-        # The systemd targets to remove dependency from
-        targets,
-        # Dependency type to remove.
-        dep_type,
-        # The dir the systemd unit was installed in.  In most cases this doesn't need
-        # to be changed.
-        installed_root,
-        # Informational string that describes what is being enabled. Prepended
-        # to an error message on path verification failure.
-        description):
+    # The name of the systemd unit.  This should be in the full form of the
+    # service, ie:  unit.service, unit.mount, unit.socket, etc..
+    unit,
+    # The systemd targets to remove dependency from
+    targets,
+    # Dependency type to remove.
+    dep_type,
+    # The dir the systemd unit was installed in.  In most cases this doesn't need
+    # to be changed.
+    installed_root,
+    # Informational string that describes what is being enabled. Prepended
+    # to an error message on path verification failure.
+    description,
+):
     _fail_if_path(unit, description)
     _assert_unit_suffix(unit)
     if dep_type not in ("wants", "requires"):
@@ -186,11 +189,7 @@ def _remove_dependency_impl(
     ]
 
 # Image feature to remove `targets`' dependence on a system `unit`
-def _remove_dependency(
-        unit: str,
-        targets: list[str] = ["default.target"],
-        dep_type: str = "wants",
-        installed_root: str = PROVIDER_ROOT):
+def _remove_dependency(unit: str, targets: list[str] = ["default.target"], dep_type: str = "wants", installed_root: str = PROVIDER_ROOT):
     return _remove_dependency_impl(
         unit,
         targets,
@@ -200,26 +199,24 @@ def _remove_dependency(
     )
 
 def _install_impl(
-        # The source for the unit to be installed. This can be one of:
-        #   - A Buck target definition, ie: //some/dir:target or :local-target.
-        #   - A filename relative to the current TARGETS file.
-        source,
-
-        # The destination service name.  This should be only a single filename,
-        # not a path.  The dir the source file is installed into is determinted by
-        # the `install_root` parameter.
-        dest,
-
-        # The dir to install the systemd unit into.  In most cases this doesn't need
-        # to be changed.
-        install_root,
-
-        # Informational string that describes what is being installed. Prepended
-        # to an error message on path verification failure.
-        description,
-        # Remove an existing file that conflicts, if one exists
-        force = False,
-        mode: int | str | None = None):
+    # The source for the unit to be installed. This can be one of:
+    #   - A Buck target definition, ie: //some/dir:target or :local-target.
+    #   - A filename relative to the current TARGETS file.
+    source,
+    # The destination service name.  This should be only a single filename,
+    # not a path.  The dir the source file is installed into is determinted by
+    # the `install_root` parameter.
+    dest,
+    # The dir to install the systemd unit into.  In most cases this doesn't need
+    # to be changed.
+    install_root,
+    # Informational string that describes what is being installed. Prepended
+    # to an error message on path verification failure.
+    description,
+    # Remove an existing file that conflicts, if one exists
+    force = False,
+    mode: int | str | None = None,
+):
     # We haven't been provided an explicit dest so let's try and derive one from the
     # source
     if dest == None:
@@ -244,34 +241,36 @@ def _install_impl(
             dst = paths.join(install_root, dest),
             mode = mode,
         ),
-    ] + ([feature.remove(
-        path = paths.join(install_root, dest),
-        must_exist = False,
-    )] if force else [])
+    ] + (
+        [
+            feature.remove(
+                path = paths.join(install_root, dest),
+                must_exist = False,
+            )
+        ]
+        if force
+        else []
+    )
 
 # Image feature to install a system unit
-def _install_unit(
-        source,
-        dest = None,
-        install_root = PROVIDER_ROOT,
-        force = False,
-        mode: int | str | None = None):
+def _install_unit(source, dest = None, install_root = PROVIDER_ROOT, force = False, mode: int | str | None = None):
     return _install_impl(source, dest, install_root, "Install System Unit", force = force, mode = mode)
 
 def _install_dropin(
-        # The source for the unit to be installed. This can be one of:
-        #   - A Buck target definition, ie: //some/dir:target or :local-target.
-        #   - A filename relative to the current TARGETS file.
-        source,
-        # The unit that this dropin should affect.
-        unit,
-        # The destination config name. This should only be a single filename, not a full path.
-        dest = None,
-        # The dir to install the dropin into. In most cases this doesn't need
-        # to be changed.
-        install_root = PROVIDER_ROOT,
-        # Remove an existing file that conflicts, if one exists
-        force = False):
+    # The source for the unit to be installed. This can be one of:
+    #   - A Buck target definition, ie: //some/dir:target or :local-target.
+    #   - A filename relative to the current TARGETS file.
+    source,
+    # The unit that this dropin should affect.
+    unit,
+    # The destination config name. This should only be a single filename, not a full path.
+    dest = None,
+    # The dir to install the dropin into. In most cases this doesn't need
+    # to be changed.
+    install_root = PROVIDER_ROOT,
+    # Remove an existing file that conflicts, if one exists
+    force = False,
+):
     _assert_unit_suffix(unit)
 
     # We haven't been provided an explicit dest so let's try and derive one from the
@@ -311,17 +310,20 @@ def _install_dropin(
         ),
     ]
     if force:
-        features.append(feature.remove(
-            path = dst_path,
-            must_exist = False,
-        ))
+        features.append(
+            feature.remove(
+                path = dst_path,
+                must_exist = False,
+            )
+        )
     return features
 
 def _set_default_target(
-        # An existing systemd target to be set as the default
-        target,
-        # Delete any default target that may already exist
-        force = False):
+    # An existing systemd target to be set as the default
+    target,
+    # Delete any default target that may already exist
+    force = False,
+):
     features = [
         feature.ensure_file_symlink(
             link = paths.join(PROVIDER_ROOT, "default.target"),
@@ -329,10 +331,12 @@ def _set_default_target(
         ),
     ]
     if force:
-        features.append(feature.remove(
-            path = paths.join(PROVIDER_ROOT, "default.target"),
-            must_exist = False,
-        ))
+        features.append(
+            feature.remove(
+                path = paths.join(PROVIDER_ROOT, "default.target"),
+                must_exist = False,
+            )
+        )
     return features
 
 def _alias(unit, alias):

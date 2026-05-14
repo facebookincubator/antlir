@@ -65,17 +65,14 @@ _rpm_names_test = rule(
         "names": attrs.option(attrs.list(attrs.string()), default = None),
         "not_installed": attrs.bool(default = False),
         "src": attrs.option(attrs.source(), default = None),
-    } | cfg_attrs(),
+    }
+    | cfg_attrs(),
     cfg = layer_cfg,
 )
 
 _rpm_names_test_macro = rule_with_default_target_platform(_rpm_names_test)
 
-def image_test_rpm_names(
-        *,
-        default_os: str | None = None,
-        rootless: bool | None = None,
-        **kwargs):
+def image_test_rpm_names(*, default_os: str | None = None, rootless: bool | None = None, **kwargs):
     rootless = rootless if rootless != None else get_antlir2_rootless()
     labels = kwargs.pop("labels", [])
     if not rootless:
@@ -89,19 +86,21 @@ def image_test_rpm_names(
         # resolve to the host platform where the test is actually going to
         # execute
         exec_compatible_with = ["prelude//platforms:may_run_local"],
-        **kwargs
+        **kwargs,
     )
 
 def _rpm_integrity_test_impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         DefaultInfo(),
-        RunInfo(cmd_args(
-            ctx.attrs.image_rpms_test[RunInfo],
-            "integrity",
-            cmd_args(ctx.attrs.ignored_files, format = "--ignored-file={}"),
-            cmd_args(ctx.attrs.ignored_rpms, format = "--ignored-rpm={}"),
-            "--layer=/layer",
-        )),
+        RunInfo(
+            cmd_args(
+                ctx.attrs.image_rpms_test[RunInfo],
+                "integrity",
+                cmd_args(ctx.attrs.ignored_files, format = "--ignored-file={}"),
+                cmd_args(ctx.attrs.ignored_rpms, format = "--ignored-rpm={}"),
+                "--layer=/layer",
+            )
+        ),
     ]
 
 _rpm_integrity_test = rule(
@@ -116,13 +115,14 @@ _rpm_integrity_test = rule(
 _rpm_integrity_test_macro = rule_with_default_target_platform(_rpm_integrity_test)
 
 def image_test_rpm_integrity(
-        name: str,
-        layer: str,
-        ignored_files: list[str] | Select = [],
-        ignored_rpms: list[str] | Select = [],
-        default_os: str | None = None,
-        rootless: bool | None = None,
-        **kwargs):
+    name: str,
+    layer: str,
+    ignored_files: list[str] | Select = [],
+    ignored_rpms: list[str] | Select = [],
+    default_os: str | None = None,
+    rootless: bool | None = None,
+    **kwargs,
+):
     """
     Verify the integrity of all installed RPMs to ensure that any changes done
     by an image will not be undone by any runtime rpm installation.
@@ -152,5 +152,5 @@ def image_test_rpm_integrity(
         test = ":{}--script".format(name),
         default_os = default_os or get_default_os_for_package(),
         rootless = rootless,
-        **kwargs
+        **kwargs,
     )

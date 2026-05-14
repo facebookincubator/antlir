@@ -14,14 +14,16 @@ def package_href(nevra: str, id: str) -> str:
     """
     return "Packages/{id}/{nevra}.rpm".format(id = id, nevra = nevra)
 
-RpmInfo = provider(fields = [
-    "extents",  # .rpm transformed by rpm2extents
-    "name",  # Name component of NEVRA
-    "nevra",  # RPM NEVRA
-    "pkgid",  # checksum (sha256 or sha1, usually sha256)
-    "raw_rpm",  # .rpm file artifact
-    "xml",  # combined xml chunks
-])
+RpmInfo = provider(
+    fields = [
+        "extents",  # .rpm transformed by rpm2extents
+        "name",  # Name component of NEVRA
+        "nevra",  # RPM NEVRA
+        "pkgid",  # checksum (sha256 or sha1, usually sha256)
+        "raw_rpm",  # .rpm file artifact
+        "xml",  # combined xml chunks
+    ]
+)
 
 def _make_xml(ctx: AnalysisContext, rpm: Artifact, href: str) -> Artifact:
     out = ctx.actions.declare_output("xml.json", has_content_based_path = False)
@@ -72,13 +74,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     )
 
 def common_impl(
-        ctx: AnalysisContext,
-        name: str,
-        nevra: str,
-        rpm: Artifact,
-        xml: Artifact,
-        pkgid: str,
-        reflink_flavors: dict[str, Dependency]) -> list[Provider]:
+    ctx: AnalysisContext, name: str, nevra: str, rpm: Artifact, xml: Artifact, pkgid: str, reflink_flavors: dict[str, Dependency]
+) -> list[Provider]:
     # Produce an rpm2extents artifact for each flavor. This is tied specifically
     # to the version of `rpm` being used in the build appliance, and should be
     # broadly compatible in practice, especially within os versions (eg if we
@@ -90,10 +87,7 @@ def common_impl(
     # anonymous targets, but since we don't know the full depgraph of rpms, it's
     # too late at that point, and it's a huge efficiency win to only build them
     # once per reflink flavor that we put it directly onto the provider
-    extents = {
-        flavor: ctx.actions.declare_output("{}_extents.rpm".format(flavor), has_content_based_path = False)
-        for flavor in reflink_flavors
-    }
+    extents = {flavor: ctx.actions.declare_output("{}_extents.rpm".format(flavor), has_content_based_path = False) for flavor in reflink_flavors}
     for flavor, appliance in reflink_flavors.items():
         rpm2extents(
             ctx = ctx,
@@ -103,13 +97,13 @@ def common_impl(
             identifier = flavor,
         )
     return [
-        DefaultInfo(default_outputs = [rpm], sub_targets = {
-            "extents": [DefaultInfo(sub_targets = {
-                key: [DefaultInfo(artifact)]
-                for key, artifact in extents.items()
-            })],
-            "xml": [DefaultInfo(xml)],
-        }),
+        DefaultInfo(
+            default_outputs = [rpm],
+            sub_targets = {
+                "extents": [DefaultInfo(sub_targets = {key: [DefaultInfo(artifact)] for key, artifact in extents.items()})],
+                "xml": [DefaultInfo(xml)],
+            },
+        ),
         RpmInfo(
             name = name,
             nevra = nevra,

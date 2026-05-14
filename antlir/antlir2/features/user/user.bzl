@@ -19,14 +19,15 @@ SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
 
 def user_add(
-        *,
-        username: str | Select,
-        primary_group: str | Select,
-        home_dir: str | Select,
-        uidmap: str = "default",
-        shell: str | Select = SHELL_NOLOGIN,
-        supplementary_groups: list[str | Select] | Select = [],
-        comment: str | None = None):
+    *,
+    username: str | Select,
+    primary_group: str | Select,
+    home_dir: str | Select,
+    uidmap: str = "default",
+    shell: str | Select = SHELL_NOLOGIN,
+    supplementary_groups: list[str | Select] | Select = [],
+    comment: str | None = None,
+):
     """
     Add a user entry to /etc/passwd.
 
@@ -72,12 +73,8 @@ def user_add(
     )
 
 def standard_user(
-        username: str,
-        groupname: str,
-        uidmap: str = "default",
-        home_dir: str | None = None,
-        shell: str = SHELL_BASH,
-        supplementary_groups: list[str] = []):
+    username: str, groupname: str, uidmap: str = "default", home_dir: str | None = None, shell: str = SHELL_BASH, supplementary_groups: list[str] = []
+):
     """
     A convenient function that wraps `group_add`, `user_add`,
     and home dir creation logic.

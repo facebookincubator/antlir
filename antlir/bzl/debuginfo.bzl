@@ -10,14 +10,15 @@ load(":build_defs.bzl", "target_utils")
 load(":target_helpers.bzl", "normalize_target")
 
 def _split(
-        layer: str,
-        stripped_name: str | None = None,
-        debuginfo_name: str | None = None,
-        default_os: str | None = None,
-        visibility: list[str] | None = None,
-        rootless: bool | None = None,
-        metadata = None,
-        target_compatible_with = None) -> struct:
+    layer: str,
+    stripped_name: str | None = None,
+    debuginfo_name: str | None = None,
+    default_os: str | None = None,
+    visibility: list[str] | None = None,
+    rootless: bool | None = None,
+    metadata = None,
+    target_compatible_with = None,
+) -> struct:
     """
     Given an OS-like image layer, split it into two images, one of which
     contains the original layer minus any debug symbols and the other _only_ the

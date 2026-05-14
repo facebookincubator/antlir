@@ -11,20 +11,21 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
 def _release_file_dynamic_impl(
-        actions: AnalysisActions,
-        rev_time: ArtifactValue,
-        contents_out: OutputArtifact,
-        os_name: str,
-        os_id: str,
-        os_version: str,
-        os_version_id: str,
-        variant: str,
-        ansi_color: str,
-        api_versions: dict,
-        layer_raw_target: str,
-        vcs_rev: str | None,
-        package_name: str,
-        package_version: str):
+    actions: AnalysisActions,
+    rev_time: ArtifactValue,
+    contents_out: OutputArtifact,
+    os_name: str,
+    os_id: str,
+    os_version: str,
+    os_version_id: str,
+    variant: str,
+    ansi_color: str,
+    api_versions: dict,
+    layer_raw_target: str,
+    vcs_rev: str | None,
+    package_name: str,
+    package_version: str,
+):
     """
     Dynamic action implementation that reads the rev_time and generates
     the os-release file.
@@ -32,12 +33,10 @@ def _release_file_dynamic_impl(
     date, time = rev_time.read_string().strip().split(" ")
     rev_time_formatted = "{}T{}".format(date, time)
 
-    api_vers = [
-        "API_VER_{key}=\"{val}\"".format(key = key, val = val)
-        for key, val in api_versions.items()
-    ]
+    api_vers = ['API_VER_{key}="{val}"'.format(key = key, val = val) for key, val in api_versions.items()]
 
-    contents = """
+    contents = (
+        """
 NAME="{os_name}"
 ID="{os_id}"
 VERSION="{os_version}"
@@ -53,21 +52,23 @@ VARIANT_ID="{lower_variant}"
 ANSI_COLOR="{ansi_color}"
 {api_vers}
         """.format(
-        os_name = os_name,
-        os_id = os_id,
-        os_version = os_version,
-        os_version_id = os_version_id,
-        variant = variant,
-        lower_variant = variant.lower(),
-        ansi_color = ansi_color,
-        image_id = native.read_config("build_info", "target_path", "local"),
-        target = layer_raw_target,
-        rev = vcs_rev or "local",
-        rev_time = rev_time_formatted,
-        api_vers = "\n".join(api_vers),
-        IMAGE_PACKAGE_KEY = internal_external(fb = "IMAGE_FBPKG", oss = "IMAGE_PACKAGE"),
-        image_package = package_name + ":" + package_version,
-    ).strip() + "\n"
+            os_name = os_name,
+            os_id = os_id,
+            os_version = os_version,
+            os_version_id = os_version_id,
+            variant = variant,
+            lower_variant = variant.lower(),
+            ansi_color = ansi_color,
+            image_id = native.read_config("build_info", "target_path", "local"),
+            target = layer_raw_target,
+            rev = vcs_rev or "local",
+            rev_time = rev_time_formatted,
+            api_vers = "\n".join(api_vers),
+            IMAGE_PACKAGE_KEY = internal_external(fb = "IMAGE_FBPKG", oss = "IMAGE_PACKAGE"),
+            image_package = package_name + ":" + package_version,
+        ).strip()
+        + "\n"
+    )
 
     actions.write(contents_out, contents)
     return []
@@ -161,14 +162,16 @@ _release_file = rule(
                 if FOO_API is greater than 11"
             """,
         ),
-        "layer": attrs.label(doc = """
+        "layer": attrs.label(
+            doc = """
             Layer that the `os-release` file will be installed into. It is fully
             normalized and then inserted as the IMAGE_LAYER key.
 
             Note: the need to include this is an unfortunate wart in the current
             Antlir implementation mainly due to the way this target is a
             dependency of the image layer.
-        """),
+        """
+        ),
         "os_id": attrs.string(),
         "os_name": attrs.string(),
         "os_version": attrs.string(),
@@ -205,55 +208,57 @@ _release_file = rule(
     supports_incoming_transition = True,
 )
 
-def _release_file_macro(
-        name: str,
-        **kwargs):
+def _release_file_macro(name: str, **kwargs):
     kwargs.setdefault("ansi_color", "0;34")
 
-    kwargs.setdefault("os_id", selects.or_({
-        ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "centos",
-        "antlir//antlir/antlir2/os/family:family[debian]": "debian",
-        "antlir//antlir/antlir2/os:eln": "fedora",
-        "antlir//antlir/antlir2/os:none": "none",
-    }))
-    kwargs.setdefault("os_name", selects.or_({
-        ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "CentOS Stream",
-        "antlir//antlir/antlir2/os/family:family[debian]": "Debian GNU/Linux",
-        "antlir//antlir/antlir2/os:eln": "Fedora Linux",
-        "antlir//antlir/antlir2/os:none": "None",
-    }))
+    kwargs.setdefault(
+        "os_id",
+        selects.or_({
+            ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "centos",
+            "antlir//antlir/antlir2/os/family:family[debian]": "debian",
+            "antlir//antlir/antlir2/os:eln": "fedora",
+            "antlir//antlir/antlir2/os:none": "none",
+        }),
+    )
+    kwargs.setdefault(
+        "os_name",
+        selects.or_({
+            ("antlir//antlir/antlir2/os:centos9", "antlir//antlir/antlir2/os:centos10"): "CentOS Stream",
+            "antlir//antlir/antlir2/os/family:family[debian]": "Debian GNU/Linux",
+            "antlir//antlir/antlir2/os:eln": "Fedora Linux",
+            "antlir//antlir/antlir2/os:none": "None",
+        }),
+    )
     eln_version = "40"
-    kwargs.setdefault("os_version", select({
-        "antlir//antlir/antlir2/os:centos10": "10",
-        "antlir//antlir/antlir2/os:centos9": "9",
-        "antlir//antlir/antlir2/os:debian-trixie": "13 (Trixie)",
-        "antlir//antlir/antlir2/os:eln": eln_version,
-        "antlir//antlir/antlir2/os:none": "0",
-    }))
-    kwargs.setdefault("os_version_id", select({
-        "antlir//antlir/antlir2/os:centos10": "10",
-        "antlir//antlir/antlir2/os:centos9": "9",
-        "antlir//antlir/antlir2/os:debian-trixie": "13",
-        "antlir//antlir/antlir2/os:eln": eln_version,
-        "antlir//antlir/antlir2/os:none": "0",
-    }))
+    kwargs.setdefault(
+        "os_version",
+        select({
+            "antlir//antlir/antlir2/os:centos10": "10",
+            "antlir//antlir/antlir2/os:centos9": "9",
+            "antlir//antlir/antlir2/os:debian-trixie": "13 (Trixie)",
+            "antlir//antlir/antlir2/os:eln": eln_version,
+            "antlir//antlir/antlir2/os:none": "0",
+        }),
+    )
+    kwargs.setdefault(
+        "os_version_id",
+        select({
+            "antlir//antlir/antlir2/os:centos10": "10",
+            "antlir//antlir/antlir2/os:centos9": "9",
+            "antlir//antlir/antlir2/os:debian-trixie": "13",
+            "antlir//antlir/antlir2/os:eln": eln_version,
+            "antlir//antlir/antlir2/os:none": "0",
+        }),
+    )
 
     kwargs.setdefault("vcs_rev", native.read_config("build_info", "revision", "local"))
     kwargs.setdefault("vcs_rev_time", int(native.read_config("build_info", "revision_epochtime", 0)))
     kwargs.setdefault("package_name", native.read_config("build_info", "package_name", "<none>"))
     kwargs.setdefault("package_version", native.read_config("build_info", "package_version", "local"))
 
-    _release_file(
-        name = name,
-        **(default_target_platform_kwargs() | kwargs)
-    )
+    _release_file(name = name, **(default_target_platform_kwargs() | kwargs))
 
-def _install(
-        *,
-        layer,
-        variant,
-        path: str = "/etc/os-release",
-        **kwargs):
+def _install(*, layer, variant, path: str = "/etc/os-release", **kwargs):
     """
     Build an `os-release` file and install it at the provided `path` location.
     See https://www.freedesktop.org/software/systemd/man/os-release.html
@@ -306,7 +311,7 @@ def _install(
         compatible_with = [os.select_key for os in OSES],
         incoming_transition = "antlir//antlir/antlir2/os/transition:default-to-none",
         visibility = ["PUBLIC"],
-        **kwargs
+        **kwargs,
     )
 
     return [

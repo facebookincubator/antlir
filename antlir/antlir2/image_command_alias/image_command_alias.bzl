@@ -67,19 +67,14 @@ _image_command_alias = rule(
             """,
         ),
         "_command_alias": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/image_command_alias:command_alias")),
-    } | cfg_attrs(),
+    }
+    | cfg_attrs(),
     cfg = layer_cfg,
 )
 
 _image_command_alias_macro = rule_with_default_target_platform(_image_command_alias)
 
-def image_command_alias(
-        *,
-        name: str,
-        layer: str | None = None,
-        root: str | None = None,
-        rootless: bool | None = None,
-        **kwargs):
+def image_command_alias(*, name: str, layer: str | None = None, root: str | None = None, rootless: bool | None = None, **kwargs):
     if layer:
         if root:
             fail("'layer' and 'root' are mutually exclusive")
@@ -104,9 +99,12 @@ def image_command_alias(
         # This is always going to be used as an 'exec_dep' so we need this to
         # force the chosen execution platform to actually have a cpu
         # architecture so we know how to run the image
-        compatible_with = kwargs.pop("compatible_with", [
-            "ovr_config//cpu:arm64",
-            "ovr_config//cpu:x86_64",
-        ]),
-        **kwargs
+        compatible_with = kwargs.pop(
+            "compatible_with",
+            [
+                "ovr_config//cpu:arm64",
+                "ovr_config//cpu:x86_64",
+            ],
+        ),
+        **kwargs,
     )

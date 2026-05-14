@@ -5,11 +5,7 @@
 
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
-def requires(
-        *,
-        files: list[str] = [],
-        groups: list[str] = [],
-        users: list[str] = []):
+def requires(*, files: list[str] = [], groups: list[str] = [], users: list[str] = []):
     """
     Add rule-level requirements on image layers.
 

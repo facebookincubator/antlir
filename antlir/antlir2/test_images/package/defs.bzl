@@ -26,12 +26,7 @@ _feature_deps = {
     ],
 }
 
-def rust_test_attrs(
-        *,
-        stub: str,
-        deps: list[str] = [],
-        omit_features: list[package_feature] = [],
-        rust_features: list[str] = []):
+def rust_test_attrs(*, stub: str, deps: list[str] = [], omit_features: list[package_feature] = [], rust_features: list[str] = []):
     features = [package_feature(f) for f in package_feature.values()]
     for f in omit_features:
         features.remove(f)
@@ -52,14 +47,8 @@ def rust_test_attrs(
     }
 
 def test_in_layer(
-        *,
-        name: str,
-        stub: str,
-        layer_features,
-        omit_package_features = [],
-        deps: list[str] = [],
-        ephemeral: str | None = None,
-        also_remote: bool = True):
+    *, name: str, stub: str, layer_features, omit_package_features = [], deps: list[str] = [], ephemeral: str | None = None, also_remote: bool = True
+):
     image.layer(
         name = name + "-layer",
         features = [feature.rpms_install(rpms = ["basesystem"])] + layer_features,
@@ -72,7 +61,7 @@ def test_in_layer(
             stub = stub,
             deps = deps,
             omit_features = omit_package_features,
-        )
+        ),
     )
     if also_remote:
         antlir2_configured_alias(
@@ -81,9 +70,7 @@ def test_in_layer(
             working_format = "cad-stack",
         )
 
-def standard_features(
-        *,
-        prefix: str):
+def standard_features(*, prefix: str):
     return [
         feature.install(
             src = "//antlir/antlir2/test_images/package:antlir2-large-file-256M",

@@ -40,20 +40,21 @@ load(
 )
 
 def _compile(
-        *,
-        ctx: AnalysisContext,
-        identifier: str,
-        parent: LayerContents | typing.Any | None,
-        working_format: str,
-        logs: OutputArtifact,
-        rootless: bool,
-        target_arch: str,
-        plugins: list[FeaturePluginInfo | typing.Any],
-        topo_features: Artifact,
-        plans: typing.Any,
-        hidden_deps: typing.Any,
-        parent_facts_db: Artifact | None = None,
-        build_appliance: BuildApplianceInfo | Provider | None = None) -> (LayerContents, Artifact):
+    *,
+    ctx: AnalysisContext,
+    identifier: str,
+    parent: LayerContents | typing.Any | None,
+    working_format: str,
+    logs: OutputArtifact,
+    rootless: bool,
+    target_arch: str,
+    plugins: list[FeaturePluginInfo | typing.Any],
+    topo_features: Artifact,
+    plans: typing.Any,
+    hidden_deps: typing.Any,
+    parent_facts_db: Artifact | None = None,
+    build_appliance: BuildApplianceInfo | Provider | None = None,
+) -> (LayerContents, Artifact):
     """
     Compile features into a new image layer
     """
@@ -95,13 +96,15 @@ def _compile(
 
     local_only = (
         # btrfs subvolumes can only exist locally
-        working_format == "btrfs" or
+        working_format == "btrfs"
+        or
         # no sudo access on remote execution
-        not ctx.attrs._rootless or
+        not ctx.attrs._rootless
+        or
         # aarch64 can only run remotely on aarch64 RE workers, which
         # are selected by exec_compatible_with when force-remote is set
-        (target_arch == "aarch64" and ctx.attrs._exec_mode != "force-remote") or
-        ctx.attrs._exec_mode == "force-local"
+        (target_arch == "aarch64" and ctx.attrs._exec_mode != "force-remote")
+        or ctx.attrs._exec_mode == "force-local"
     )
 
     ctx.actions.run(
@@ -116,10 +119,7 @@ def _compile(
             cmd_args("--rootless") if rootless else cmd_args(),
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(ctx.attrs._package_manager, format = "--package-manager={}"),
-            [
-                cmd_args(plugin.plugin, format = "--plugin={}", hidden = [plugin.libs])
-                for plugin in plugins
-            ],
+            [cmd_args(plugin.plugin, format = "--plugin={}", hidden = [plugin.libs]) for plugin in plugins],
             cmd_args(topo_features, format = "--features={}"),
             cmd_args(plans, format = "--plans={}"),
             cmd_args(working_format, format = "--working-format={}"),
@@ -167,11 +167,8 @@ def _compile(
     return contents, facts_db_out
 
 def _container_sub_target(
-        binary: Dependency | None,
-        layer: LayerContents,
-        mounts: list[mount_record],
-        rootless: bool,
-        binaries_require_repo: bool | None) -> list[Provider]:
+    binary: Dependency | None, layer: LayerContents, mounts: list[mount_record], rootless: bool, binaries_require_repo: bool | None
+) -> list[Provider]:
     if not binary:
         return [DefaultInfo()]
     dev_mode_args = cmd_args()
@@ -182,14 +179,16 @@ def _container_sub_target(
         )
     return [
         DefaultInfo(),
-        RunInfo(cmd_args(
-            "sudo" if not rootless else cmd_args(),
-            binary[RunInfo],
-            "--rootless" if rootless else cmd_args(),
-            cmd_args(layer.subvol_symlink, format = "--subvol={}"),
-            cmd_args([container_mount_args(mount) for mount in mounts]),
-            dev_mode_args,
-        )),
+        RunInfo(
+            cmd_args(
+                "sudo" if not rootless else cmd_args(),
+                binary[RunInfo],
+                "--rootless" if rootless else cmd_args(),
+                cmd_args(layer.subvol_symlink, format = "--subvol={}"),
+                cmd_args([container_mount_args(mount) for mount in mounts]),
+                dev_mode_args,
+            )
+        ),
     ]
 
 def _impl(ctx: AnalysisContext) -> Promise:
@@ -212,10 +211,12 @@ def _extra_repo_name_to_repo(repo_name: str, flavor_info: FlavorInfo) -> Depende
         if repo[RepoInfo].logical_id == repo_name:
             return None
 
-    fail("Unknown extra repo: {}. Possible choices are {}".format(
-        repo_name,
-        [repo[RepoInfo].logical_id for repo in extra_repos],
-    ))
+    fail(
+        "Unknown extra repo: {}. Possible choices are {}".format(
+            repo_name,
+            [repo[RepoInfo].logical_id for repo in extra_repos],
+        )
+    )
 
 def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -> list[Provider]:
     flavor = None
@@ -251,9 +252,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     all_features = features[FeatureInfo].features
 
-    plugin_list = (ctx.attrs._plugins or []) + (
-        ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else []
-    )
+    plugin_list = (ctx.attrs._plugins or []) + (ctx.plugins[FeaturePluginPluginKind] if FeaturePluginPluginKind in ctx.plugins else [])
     all_plugins = {}
     for plugin in plugin_list:
         all_plugins[str(plugin.label.raw_target())] = plugin[FeaturePluginInfo]
@@ -290,10 +289,12 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             if repo[RepoInfo].logical_id == logical_id:
                 to_remove = repo
         if not to_remove:
-            fail("Logical id '{}' does not match any repo ({}), remove it".format(
-                logical_id,
-                [r[RepoInfo].logical_id for r in dnf_available_repos],
-            ))
+            fail(
+                "Logical id '{}' does not match any repo ({}), remove it".format(
+                    logical_id,
+                    [r[RepoInfo].logical_id for r in dnf_available_repos],
+                )
+            )
         dnf_available_repos.remove(to_remove)
 
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
@@ -374,7 +375,11 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         for feat in features:
             plugin = str(feat.plugin)
             if plugin not in all_plugins:
-                fail("{}: '{}' was not found in the list of plugins ({}), but it was used - this should be impossible".format(ctx.label, plugin, all_plugins.keys()))
+                fail(
+                    "{}: '{}' was not found in the list of plugins ({}), but it was used - this should be impossible".format(
+                        ctx.label, plugin, all_plugins.keys()
+                    )
+                )
             phase_plugins[plugin] = all_plugins[plugin]
 
         target_arch = ctx.attrs._selected_target_arch
@@ -429,26 +434,19 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                         fail("previous_phase_plan '{}' does not exist".format(id))
                     kwargs["previous_phase_plan_{}".format(id)] = previous_phase_plans[id]
 
-                plan_infos = planner.fn(
-                    ctx = ctx,
-                    identifier = identifier,
-                    rootless = ctx.attrs._rootless,
-                    feature = feature,
-                    **(kwargs | planner.kwargs)
-                )
+                plan_infos = planner.fn(ctx = ctx, identifier = identifier, rootless = ctx.attrs._rootless, feature = feature, **(kwargs | planner.kwargs))
                 for pi in plan_infos:
                     if pi.id in plans:
                         fail("plan ids should be unique, but got '{}' multiple times".format(pi.id))
                     plans[pi.id] = pi
                     compile_feature_hidden_deps.append(pi.hidden)
                     if pi.sub_artifacts:
-                        plan_sub_targets[pi.id] = [DefaultInfo(
-                            pi.output,
-                            sub_targets = {
-                                key: [DefaultInfo(artifact)]
-                                for key, artifact in pi.sub_artifacts.items()
-                            },
-                        )]
+                        plan_sub_targets[pi.id] = [
+                            DefaultInfo(
+                                pi.output,
+                                sub_targets = {key: [DefaultInfo(artifact)] for key, artifact in pi.sub_artifacts.items()},
+                            )
+                        ]
                     extend_facts.extend(pi.extend_facts_json)
                     if pi.mutate_supplements:
                         supplements = pi.mutate_supplements(supplements)
@@ -515,12 +513,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         debug_sub_targets[phase.value] = [
             DefaultInfo(
-                sub_targets = phase_sub_targets | {
+                sub_targets = phase_sub_targets
+                | {
                     "facts": [DefaultInfo(facts_db)],
-                    "logs": [DefaultInfo(all_logs, sub_targets = {
-                        key: [DefaultInfo(artifact)]
-                        for key, artifact in logs.items()
-                    })],
+                    "logs": [DefaultInfo(all_logs, sub_targets = {key: [DefaultInfo(artifact)] for key, artifact in logs.items()})],
                 },
             ),
         ]
@@ -649,10 +645,7 @@ _layer_attrs.update(cfg_attrs())
 _layer_attrs.update(attrs_selected_by_cfg)
 
 _layer_attrs.update(
-    {
-        "_feature_" + key: val
-        for key, val in shared_features_attrs.items()
-    },
+    {"_feature_" + key: val for key, val in shared_features_attrs.items()},
 )
 
 layer_rule = rule(
@@ -663,24 +656,25 @@ layer_rule = rule(
 )
 
 def layer(
-        *,
-        name: str,
-        # Features does not have a direct type hint, but it is still validated
-        # by a type hint inside feature.bzl. Feature targets or
-        # InlineFeatureInfo providers are accepted, at any level of nesting
-        features = [],
-        parent_layer: str | Select | None = None,
-        default_os: str | None = None,
-        default_rou: str | None = None,
-        rootless: bool | None = None,
-        compatible_with_os: list[str] | Select | None = None,
-        visibility: list[str] | None = None,
-        compatible_with = None,
-        # mark whether or not this was an implicit layer that must inherit its
-        # parent flavor configuration
-        implicit_layer_reason: str | None = None,
-        exec_compatible_with = None,
-        **kwargs):
+    *,
+    name: str,
+    # Features does not have a direct type hint, but it is still validated
+    # by a type hint inside feature.bzl. Feature targets or
+    # InlineFeatureInfo providers are accepted, at any level of nesting
+    features = [],
+    parent_layer: str | Select | None = None,
+    default_os: str | None = None,
+    default_rou: str | None = None,
+    rootless: bool | None = None,
+    compatible_with_os: list[str] | Select | None = None,
+    visibility: list[str] | None = None,
+    compatible_with = None,
+    # mark whether or not this was an implicit layer that must inherit its
+    # parent flavor configuration
+    implicit_layer_reason: str | None = None,
+    exec_compatible_with = None,
+    **kwargs,
+):
     """
     Create a new image layer
 
@@ -768,10 +762,7 @@ def layer(
         target_compatible_with = selects.apply(
             selects.join(
                 tcw = target_compatible_with,
-                oses = select({
-                    "//antlir/antlir2/os:" + os: ["//antlir/antlir2/os:" + os]
-                    for os in compatible_with_os
-                }),
+                oses = select({"//antlir/antlir2/os:" + os: ["//antlir/antlir2/os:" + os] for os in compatible_with_os}),
             ),
             lambda sels: sels.tcw,
         )
@@ -779,27 +770,31 @@ def layer(
     # We can assume that if the caller is passing this, they know what they're
     # doing and are voiding the antlir2 limited warranty
     if not exec_compatible_with:
-        exec_compatible_with = select({
-            "DEFAULT": ["prelude//platforms:may_run_local"],
-            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
-            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
-        }) + select({
-            "DEFAULT": [],
-            # When force-remote, the RE worker must match the target
-            # architecture since there is no cross-arch emulation on
-            # RE workers.
-            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": select({
-                "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
-                "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
-            }),
-        }) + select({
-            # arm images can be cross-built on x86_64 hosts (but not x86_64 RE
-            # workers) so we omit the CPU constraint for arm64. x86_64 targets
-            # always require an x86_64 execution platform (emulation does not
-            # work aarch64->x86_64).
-            "ovr_config//cpu:arm64": ["ovr_config//os:linux"],
-            "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64", "ovr_config//os:linux"],
-        })
+        exec_compatible_with = (
+            select({
+                "DEFAULT": ["prelude//platforms:may_run_local"],
+                "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
+                "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
+            })
+            + select({
+                "DEFAULT": [],
+                # When force-remote, the RE worker must match the target
+                # architecture since there is no cross-arch emulation on
+                # RE workers.
+                "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": select({
+                    "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+                    "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+                }),
+            })
+            + select({
+                # arm images can be cross-built on x86_64 hosts (but not x86_64 RE
+                # workers) so we omit the CPU constraint for arm64. x86_64 targets
+                # always require an x86_64 execution platform (emulation does not
+                # work aarch64->x86_64).
+                "ovr_config//cpu:arm64": ["ovr_config//os:linux"],
+                "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64", "ovr_config//os:linux"],
+            })
+        )
 
     return layer_rule(
         name = name,
@@ -812,5 +807,5 @@ def layer(
         _run_container = "antlir//antlir/antlir2/container_subtarget:run",
         _binaries_require_repo = binaries_require_repo.select_value,
         exec_compatible_with = exec_compatible_with,
-        **kwargs
+        **kwargs,
     )

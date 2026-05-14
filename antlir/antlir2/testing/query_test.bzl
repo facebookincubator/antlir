@@ -29,11 +29,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(
                 "echo 'targets that should not be present:'",
                 cmd_args(found_excludes, format = "echo '  {}'"),
-            ) if found_excludes else cmd_args(),
+            )
+            if found_excludes
+            else cmd_args(),
             cmd_args(
                 "echo 'targets that are missing:'",
                 cmd_args(missing_contains, format = "echo '  {}'"),
-            ) if missing_contains else cmd_args(),
+            )
+            if missing_contains
+            else cmd_args(),
             "echo 'full query results:'",
             cmd_args(query_labels.keys(), format = "echo '  {}'"),
             "exit 1" if not passed else cmd_args(),

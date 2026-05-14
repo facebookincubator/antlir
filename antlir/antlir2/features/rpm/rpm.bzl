@@ -35,12 +35,13 @@ def _looks_like_label(s: str) -> bool:
 VERSIONLOCK_HARD_ENFORCE_SELECT = False
 
 def _install_common(
-        action: str,
-        *,
-        rpms: list[str] = [],
-        subjects: list[str | Select] | Select = [],
-        deps: list[str | Select] | Select = [],
-        subjects_src: str | Select | None = None):
+    action: str,
+    *,
+    rpms: list[str] = [],
+    subjects: list[str | Select] | Select = [],
+    deps: list[str | Select] | Select = [],
+    subjects_src: str | Select | None = None,
+):
     """
     Install RPMs by identifier or .rpm src
 
@@ -77,7 +78,9 @@ def _install_common(
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         srcs = {
             "subjects_src": subjects_src,
-        } if subjects_src else None,
+        }
+        if subjects_src
+        else None,
         kwargs = {
             "action": action,
             "subjects": subjects,
@@ -93,11 +96,8 @@ def _install_common(
     )
 
 def rpms_install(
-        *,
-        rpms: list[str] = [],
-        subjects: list[str | Select] | Select = [],
-        deps: list[str | Select] | Select = [],
-        subjects_src: str | Select | None = None):
+    *, rpms: list[str] = [], subjects: list[str | Select] | Select = [], deps: list[str | Select] | Select = [], subjects_src: str | Select | None = None
+):
     """
     Install RPMs by identifier or .rpm src
 
@@ -118,11 +118,8 @@ def rpms_install(
     )
 
 def rpms_upgrade(
-        *,
-        rpms: list[str] = [],
-        subjects: list[str | Select] | Select = [],
-        deps: list[str | Select] | Select = [],
-        subjects_src: str | Select | None = None):
+    *, rpms: list[str] = [], subjects: list[str | Select] | Select = [], deps: list[str | Select] | Select = [], subjects_src: str | Select | None = None
+):
     """
     Force an upgrade (if possible, which includes respecting versionlock!) of
     these rpms.
@@ -210,10 +207,12 @@ def dnf_module_enable(*, name: str | Select, stream: str | Select):
         plugin = "antlir//antlir/antlir2/features/rpm:rpm",
         kwargs = {
             "action": "module_enable",
-            "subjects": [selects.apply(
-                selects.join(name = name, stream = stream),
-                lambda sels: ":".join([sels.name, sels.stream]),
-            )],
+            "subjects": [
+                selects.apply(
+                    selects.join(name = name, stream = stream),
+                    lambda sels: ":".join([sels.name, sels.stream]),
+                )
+            ],
             "versionlock_hard_enforce": VERSIONLOCK_HARD_ENFORCE_SELECT,
         },
         distro_platform_deps = {
@@ -320,8 +319,7 @@ def _reduce_rpm_features(left: feature_record | typing.Any, right: feature_recor
     f["analysis"]["planner"] = structs.to_dict(f["analysis"]["planner"])
     f["analysis"]["planner"]["kwargs"] = dict(f["analysis"]["planner"]["kwargs"])
     f["analysis"]["planner"]["kwargs"]["versionlock_hard_enforce"] = (
-        f["analysis"]["planner"]["kwargs"]["versionlock_hard_enforce"] and
-        right.analysis.planner.kwargs["versionlock_hard_enforce"]
+        f["analysis"]["planner"]["kwargs"]["versionlock_hard_enforce"] and right.analysis.planner.kwargs["versionlock_hard_enforce"]
     )
     f["analysis"]["planner"] = Planner(**f["analysis"]["planner"])
     f["analysis"] = FeatureAnalysis(**f["analysis"])

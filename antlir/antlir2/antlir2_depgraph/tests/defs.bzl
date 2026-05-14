@@ -52,20 +52,13 @@ _bad_depgraph_test_runner = rule(
     uses_plugins = [FeaturePluginPluginKind],
 )
 
-def bad_depgraph(
-        name: str,
-        features,
-        **kwargs):
+def bad_depgraph(name: str, features, **kwargs):
     feature.new(
         name = name + "--features",
         features = features,
         visibility = [":" + name],
     )
-    _bad_depgraph_test_runner(
-        name = name + "--test",
-        features = ":" + name + "--features",
-        **(default_target_platform_kwargs() | kwargs)
-    )
+    _bad_depgraph_test_runner(name = name + "--test", features = ":" + name + "--features", **(default_target_platform_kwargs() | kwargs))
     buck_sh_test(
         name = name,
         test = ":" + name + "--test",
@@ -97,11 +90,7 @@ _good_depgraph = rule(
 
 def good_depgraph(name, **kwargs):
     image.layer(name = name, **kwargs)
-    _good_depgraph(
-        name = name + "-test",
-        layer = ":" + name,
-        **default_target_platform_kwargs()
-    )
+    _good_depgraph(name = name + "-test", layer = ":" + name, **default_target_platform_kwargs())
 
 def _deterministic_depgraph_impl(ctx: AnalysisContext) -> list[Provider]:
     features_info = ctx.attrs.features[FeatureInfo]
@@ -193,20 +182,13 @@ _deterministic_depgraph_test_runner = rule(
     uses_plugins = [FeaturePluginPluginKind],
 )
 
-def deterministic_depgraph(
-        name: str,
-        features,
-        **kwargs):
+def deterministic_depgraph(name: str, features, **kwargs):
     feature.new(
         name = name + "--features",
         features = features,
         visibility = [":" + name],
     )
-    _deterministic_depgraph_test_runner(
-        name = name + "--test",
-        features = ":" + name + "--features",
-        **(default_target_platform_kwargs() | kwargs)
-    )
+    _deterministic_depgraph_test_runner(name = name + "--test", features = ":" + name + "--features", **(default_target_platform_kwargs() | kwargs))
     buck_sh_test(
         name = name,
         test = ":" + name + "--test",

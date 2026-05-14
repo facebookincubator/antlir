@@ -11,23 +11,24 @@ load("//antlir/bzl:types.bzl", "types")
 types.lint_noop()
 
 def test_rpm(
-        *,
-        name: str,
-        version: str,
-        release: str,
-        epoch: int = 0,
-        arch: str = "noarch",
-        license: str = "NONE",
-        requires: list[str] = [],
-        requires_post: list[str] = [],
-        provides: list[str] = [],
-        recommends: list[str] = [],
-        features = [],
-        parent_layer: str | None = None,
-        post_install_script: str | None = None,
-        transfiletriggerpostun_script: str | None = None,
-        transfiletriggerpostun_paths: list[str] = [],
-        changelog: str | None = None) -> str:
+    *,
+    name: str,
+    version: str,
+    release: str,
+    epoch: int = 0,
+    arch: str = "noarch",
+    license: str = "NONE",
+    requires: list[str] = [],
+    requires_post: list[str] = [],
+    provides: list[str] = [],
+    recommends: list[str] = [],
+    features = [],
+    parent_layer: str | None = None,
+    post_install_script: str | None = None,
+    transfiletriggerpostun_script: str | None = None,
+    transfiletriggerpostun_paths: list[str] = [],
+    changelog: str | None = None,
+) -> str:
     target_name = name + "-" + version + "-" + release + "." + arch
     image.layer(
         name = target_name + "--layer",

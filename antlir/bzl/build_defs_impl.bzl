@@ -159,23 +159,19 @@ def _python_library(**kwargs):
     kwargs["resources"] = _invert_dict(kwargs.pop("resources", []))
     _wrap_internal(native.python_library, [], kwargs)
 
-def _python_binary(
-        *,
-        name: str,
-        main_function: str | None = None,
-        main_module: str | None = None,
-        **kwargs):
-    _python_library(
-        name = name + "-library",
-        **kwargs
-    )
+def _python_binary(*, name: str, main_function: str | None = None, main_module: str | None = None, **kwargs):
+    _python_library(name = name + "-library", **kwargs)
 
-    _wrap_internal(native.python_binary, [], {
-        "deps": [":{}-library".format(name)],
-        "main_function": main_function,
-        "main_module": main_module,
-        "name": name,
-    })
+    _wrap_internal(
+        native.python_binary,
+        [],
+        {
+            "deps": [":{}-library".format(name)],
+            "main_function": main_function,
+            "main_module": main_module,
+            "name": name,
+        },
+    )
 
 def _python_unittest(*args, **kwargs):
     env = kwargs.get("env", {})

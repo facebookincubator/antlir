@@ -30,7 +30,7 @@ def new_python_t(
     return python_t(
         version_str = version_str or "CPython 3.12",
         constraint = constraint or "ovr_config//third-party/python/constraints:3.12",
-        interpreter = interpreter or "python3"
+        interpreter = interpreter or "python3",
     )
 
 os_t = record(
@@ -45,32 +45,35 @@ os_t = record(
 )
 
 def _new_os(name: str, **kwargs):
-    kwargs.setdefault("architectures", internal_external(
-        fb = [new_arch_t("x86_64"), new_arch_t("aarch64")],
-        oss = [new_arch_t("x86_64")],
-    ))
+    kwargs.setdefault(
+        "architectures",
+        internal_external(
+            fb = [new_arch_t("x86_64"), new_arch_t("aarch64")],
+            oss = [new_arch_t("x86_64")],
+        ),
+    )
     kwargs.setdefault("select_key", "antlir//antlir/antlir2/os:" + name)
     kwargs.setdefault(
         "flavor",
         internal_external(
             fb = "antlir//antlir/antlir2/facebook/flavor/",
             oss = "//flavor/",
-        ) + name + ":" + name,
+        )
+        + name
+        + ":"
+        + name,
     )
     kwargs.setdefault(
         "build_appliance",
         internal_external(
             fb = "antlir//antlir/antlir2/facebook/images/build_appliance/{}:build-appliance".format(name),
             oss = "antlir//flavor/{}:build-appliance".format(name),
-        )
+        ),
     )
     kwargs.setdefault("target", "antlir//antlir/antlir2/os:" + name)
     kwargs.setdefault("has_platform_toolchain", True)
     kwargs.setdefault("python", new_python_t())
-    return os_t(
-        name = name,
-        **kwargs
-    )
+    return os_t(name = name, **kwargs)
 
 OSES = [
     _new_os(
@@ -92,7 +95,7 @@ OSES = [
             "antlir//antlir/antlir2/facebook/flavor/centos9:corp": "antlir//antlir/antlir2/facebook/images/build_appliance/centos9_corp:build-appliance",
         }),
         # This points to the Meta-built third-party/python interpreter.
-        python = new_python_t(interpreter = "/usr/local/bin/python3.12")
+        python = new_python_t(interpreter = "/usr/local/bin/python3.12"),
     ),
     _new_os(
         name = "centos10",
@@ -101,12 +104,12 @@ OSES = [
             "antlir//antlir/antlir2/facebook/flavor/centos10:corp": "antlir//antlir/antlir2/facebook/images/build_appliance/centos10_corp:build-appliance",
         }),
         # TODO(T238134086): This should point to the third-party/python interpreter when we've verified this correctness.
-        python = new_python_t(interpreter = "/usr/bin/python3")
+        python = new_python_t(interpreter = "/usr/bin/python3"),
     ),
     _new_os(
         name = "debian-trixie",
         flavor = "antlir//antlir/antlir2/flavor/debian-trixie:debian-trixie",
-        has_platform_toolchain = False, # yikes, this will be a whole can of worms, hope we never need it...
+        has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
     ),
 ]
 

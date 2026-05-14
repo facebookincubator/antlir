@@ -10,17 +10,8 @@ def _hex_triple_to_b64_pair(i1, i2, i3):
     x = 256 * i1 + 16 * i2 + i3
     return _B64[x // 64] + _B64[x % 64]
 
-_HEX123_TO_B64 = {
-    h1 + h2 + h3: _hex_triple_to_b64_pair(i1, i2, i3)
-    for i1, h1 in _E16
-    for i2, h2 in _E16
-    for i3, h3 in _E16
-}
-_HEX123_TO_B64.update({
-    h1 + h2: _hex_triple_to_b64_pair(i1, i2, 0)
-    for i1, h1 in _E16
-    for i2, h2 in _E16
-})
+_HEX123_TO_B64 = {h1 + h2 + h3: _hex_triple_to_b64_pair(i1, i2, i3) for i1, h1 in _E16 for i2, h2 in _E16 for i3, h3 in _E16}
+_HEX123_TO_B64.update({h1 + h2: _hex_triple_to_b64_pair(i1, i2, 0) for i1, h1 in _E16 for i2, h2 in _E16})
 _HEX123_TO_B64.update({
     # The second b64 digit will always be `A` aka 0.
     h1: _hex_triple_to_b64_pair(i1, 0, 0)[0]
@@ -32,7 +23,7 @@ _HEX123_TO_B64.update({
 def hex_to_base64(x):
     chunks = []
     for i in range(0, len(x), 3):
-        chunks.append(_HEX123_TO_B64[x[i:i + 3].lower()])
+        chunks.append(_HEX123_TO_B64[x[i : i + 3].lower()])
     return "".join(chunks)
 
 # The return value has 6 bits per byte, except the last byte has 4 bits.

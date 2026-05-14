@@ -4,13 +4,19 @@
 # LICENSE file in the root directory of this source tree.
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    return [DefaultInfo(
-        ctx.actions.write_json("xml.json", {
-            "filelists": ctx.attrs.filelists,
-            "other": ctx.attrs.other,
-            "primary": ctx.attrs.primary,
-        }, has_content_based_path = False),
-    )]
+    return [
+        DefaultInfo(
+            ctx.actions.write_json(
+                "xml.json",
+                {
+                    "filelists": ctx.attrs.filelists,
+                    "other": ctx.attrs.other,
+                    "primary": ctx.attrs.primary,
+                },
+                has_content_based_path = False,
+            ),
+        )
+    ]
 
 xml = rule(
     impl = _impl,

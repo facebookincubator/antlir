@@ -23,31 +23,37 @@ expected_t = record(
 )
 
 def test_rpms(
-        name: str,
-        expected: expected_t,
-        features: list[typing.Any] = [],
-        parent_layer: str | None = None,
-        dnf_additional_repos: list[str] = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
-        dnf_available_repos: str | None = None,
-        dnf_versionlock: str | None = None,
-        dnf_versionlock_extend: dict[str, str] | None = None,
-        dnf_excluded_rpms: list[str] | None = None,
-        labels: list[str] | None = None,
-        also_eln_dnf5: bool = False,
-        build_appliance: str | None = None):
+    name: str,
+    expected: expected_t,
+    features: list[typing.Any] = [],
+    parent_layer: str | None = None,
+    dnf_additional_repos: list[str] = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
+    dnf_available_repos: str | None = None,
+    dnf_versionlock: str | None = None,
+    dnf_versionlock_extend: dict[str, str] | None = None,
+    dnf_excluded_rpms: list[str] | None = None,
+    labels: list[str] | None = None,
+    also_eln_dnf5: bool = False,
+    build_appliance: str | None = None,
+):
     buck_command_alias(
         name = name + "--script",
         exe = "//antlir/antlir2/features/rpm/tests:test-installed-rpms",
-        args = ["--expected", json.encode(expected), select({
-            "//antlir/antlir2/os/package_manager:package_manager[dnf5]": "--dnf-version=dnf5",
-            "//antlir/antlir2/os/package_manager:package_manager[dnf]": "--dnf-version=dnf4",
-            "DEFAULT": "none",
-        })],
+        args = [
+            "--expected",
+            json.encode(expected),
+            select({
+                "//antlir/antlir2/os/package_manager:package_manager[dnf5]": "--dnf-version=dnf5",
+                "//antlir/antlir2/os/package_manager:package_manager[dnf]": "--dnf-version=dnf4",
+                "DEFAULT": "none",
+            }),
+        ],
     )
     image.layer(
         name = name + "--layer",
         parent_layer = parent_layer,
-        features = features + [
+        features = features
+        + [
             feature.remove(path = "/etc/dnf/dnf.conf", must_exist = False),
             feature.install(src = "antlir//antlir:empty", dst = "/etc/dnf/dnf.conf"),
         ],

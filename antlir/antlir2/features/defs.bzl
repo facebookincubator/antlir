@@ -21,10 +21,12 @@ load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
 FeaturePluginPluginKind = plugins.kind()
 
-FeaturePluginInfo = provider(fields = [
-    "plugin",
-    "libs",
-])
+FeaturePluginInfo = provider(
+    fields = [
+        "plugin",
+        "libs",
+    ]
+)
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     # copy plugin so that it's RPATH configured below works
@@ -59,41 +61,44 @@ _feature_plugin = rule(
 feature_plugin = rule_with_default_target_platform(_feature_plugin)
 
 def feature_impl(
-        *,
-        name: str,
-        src: str | None = None,
-        extra_srcs: list[str] = [],
-        deps: list[str] | Select = [],
-        resources: dict[str, str | Select] | Select | None = None,
-        unstable_features: list[str] = [],
-        allow_unused_crate_dependencies: bool = False,
-        lib_visibility: list[str] | None = None,
-        plugin_visibility: list[str] | None = None,
-        visibility: list[str] | None = None,
-        rustc_flags: list[str] | Select | None = [],
-        features: list[str] | Select | None = [],
-        test_srcs: list[str] | Select | None = [],
-        test_deps: list[str] | Select | None = []):
-    lib_visibility = lib_visibility or visibility or [
-        "//antlir/antlir2/...",
-        "//metalos/os/facebook/classic/flavor/...",
-        "//tupperware/cm/antlir2/...",
-    ]
+    *,
+    name: str,
+    src: str | None = None,
+    extra_srcs: list[str] = [],
+    deps: list[str] | Select = [],
+    resources: dict[str, str | Select] | Select | None = None,
+    unstable_features: list[str] = [],
+    allow_unused_crate_dependencies: bool = False,
+    lib_visibility: list[str] | None = None,
+    plugin_visibility: list[str] | None = None,
+    visibility: list[str] | None = None,
+    rustc_flags: list[str] | Select | None = [],
+    features: list[str] | Select | None = [],
+    test_srcs: list[str] | Select | None = [],
+    test_deps: list[str] | Select | None = [],
+):
+    lib_visibility = (
+        lib_visibility
+        or visibility
+        or [
+            "//antlir/antlir2/...",
+            "//metalos/os/facebook/classic/flavor/...",
+            "//tupperware/cm/antlir2/...",
+        ]
+    )
     rust_library(
         name = name + ".lib",
         srcs = [src or name + ".rs"] + extra_srcs,
         crate = name,
         crate_root = src or name + ".rs",
-        rustc_flags = selects.apply(rustc_flags, lambda flags: flags + [
-            "-Zcrate-attr=feature({})".format(feat)
-            for feat in unstable_features
-        ]),
+        rustc_flags = selects.apply(rustc_flags, lambda flags: flags + ["-Zcrate-attr=feature({})".format(feat) for feat in unstable_features]),
         link_style = "static_pic",
         allow_unused_crate_dependencies = allow_unused_crate_dependencies,
         visibility = lib_visibility,
         deps = selects.apply(
             deps or [],
-            lambda deps: deps + [
+            lambda deps: deps
+            + [
                 "serde",
                 "tracing",
                 "//antlir/antlir2/antlir2_compile:antlir2_compile",

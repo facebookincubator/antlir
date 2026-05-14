@@ -12,10 +12,7 @@ load(
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
-def group_add(
-        *,
-        groupname: str | Select,
-        uidmap: str = "default"):
+def group_add(*, groupname: str | Select, uidmap: str = "default"):
     """
     Add a group entry to /etc/group
 

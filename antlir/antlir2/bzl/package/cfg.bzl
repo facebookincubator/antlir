@@ -78,14 +78,18 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
 
 package_cfg = transition(
     impl = _package_cfg_impl,
-    refs = os_transition_refs() | {
+    refs = os_transition_refs()
+    | {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
         "exec_mode": "antlir//antlir/antlir2/cfg:exec_mode",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
-    } | (
+    }
+    | (
         # @oss-disable[end= ]: fb_refs
         {} # @oss-enable
-    ) | rootless_cfg.refs | systemd_cfg.refs,
+    )
+    | rootless_cfg.refs
+    | systemd_cfg.refs,
     attrs = cfg_attrs().keys(),
 )

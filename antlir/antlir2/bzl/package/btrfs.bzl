@@ -17,21 +17,23 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     spec = ctx.actions.write_json(
         "spec.json",
-        {"btrfs": {
-            "build_appliance": build_appliance[BuildApplianceInfo].dir,
-            "compression_level": ctx.attrs.compression_level,
-            "default_subvol": ctx.attrs.default_subvol,
-            "free_mb": ctx.attrs.free_mb,
-            "label": ctx.attrs.label,
-            "seed_device": ctx.attrs.seed_device,
-            "subvols": {
-                path: {
-                    "layer": subvol["layer"][LayerInfo].contents.subvol_symlink,
-                    "writable": subvol.get("writable") or False,
-                }
-                for path, subvol in ctx.attrs.subvols.items()
-            },
-        }},
+        {
+            "btrfs": {
+                "build_appliance": build_appliance[BuildApplianceInfo].dir,
+                "compression_level": ctx.attrs.compression_level,
+                "default_subvol": ctx.attrs.default_subvol,
+                "free_mb": ctx.attrs.free_mb,
+                "label": ctx.attrs.label,
+                "seed_device": ctx.attrs.seed_device,
+                "subvols": {
+                    path: {
+                        "layer": subvol["layer"][LayerInfo].contents.subvol_symlink,
+                        "writable": subvol.get("writable") or False,
+                    }
+                    for path, subvol in ctx.attrs.subvols.items()
+                },
+            }
+        },
         with_inputs = True,
         has_content_based_path = False,
     )
@@ -82,15 +84,15 @@ _btrfs = rule(
             ),
             default = None,
         ),
-    } | cfg_attrs() | default_attrs,
+    }
+    | cfg_attrs()
+    | default_attrs,
     cfg = package_cfg,
 )
 
 btrfs = package_macro(_btrfs)
 
-def BtrfsSubvol(
-        layer: str | Select,
-        writable: bool | None = None):
+def BtrfsSubvol(layer: str | Select, writable: bool | None = None):
     return {
         "layer": layer,
         "writable": writable,

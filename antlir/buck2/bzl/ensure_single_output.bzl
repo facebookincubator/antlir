@@ -3,9 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-def ensure_single_output(
-        dep: Dependency | Artifact | DefaultInfo | ProviderCollection,
-        optional: bool = False) -> Artifact | None:
+def ensure_single_output(dep: Dependency | Artifact | DefaultInfo | ProviderCollection, optional: bool = False) -> Artifact | None:
     if isinstance(dep, Artifact):
         return dep
     elif isinstance(dep, DefaultInfo):

@@ -18,15 +18,8 @@ def _new_rule(*, impl, attrs, artifact_promise_mappings = None):
     # - antlir2 makes heavy use of anonymous targets and there are some rules
     # that get instantiated anonymously from many different rules.
     outer_attr_prefix = "_anon_default_" + repr(impl).replace(".", "_") + "_"
-    default_outer_attr_names = {
-        outer_attr_prefix + inner: inner
-        for inner, attr in attrs.items()
-        if "default=" in repr(attr)
-    }
-    default_outer_attrs = {
-        outer: native.attrs.default_only(attrs[inner])
-        for outer, inner in default_outer_attr_names.items()
-    }
+    default_outer_attr_names = {outer_attr_prefix + inner: inner for inner, attr in attrs.items() if "default=" in repr(attr)}
+    default_outer_attrs = {outer: native.attrs.default_only(attrs[inner]) for outer, inner in default_outer_attr_names.items()}
 
     def _anon_target(ctx: AnalysisContext, **kwargs):
         for outer, inner in default_outer_attr_names.items():

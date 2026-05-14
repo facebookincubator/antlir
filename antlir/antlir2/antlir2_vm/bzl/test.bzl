@@ -17,11 +17,7 @@ load("//antlir/bzl:oss_shim.bzl", "NAMING_ROLLOUT_LABEL", "tpx_labels", "fully_q
 load(":types.bzl", "VMHostInfo")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    inner_labels = [
-        label
-        for label in ctx.attrs.test[ExternalRunnerTestInfo].labels
-        if label not in HIDE_TEST_LABELS
-    ]
+    inner_labels = [label for label in ctx.attrs.test[ExternalRunnerTestInfo].labels if label not in HIDE_TEST_LABELS]
 
     # Extend tpx timeout to 100 minutes if we exceed the default 10 min plus buffer
     # @oss-disable[end= ]: if ctx.attrs.timeout_secs + 60 > 600:
@@ -103,17 +99,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs._static_list_wrapper:
         original = env.pop("STATIC_LIST_TESTS_BINARY", None)
         if original:
-            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
-                ctx.attrs._static_list_wrapper[RunInfo],
-                cmd_args(original, format = "--wrap={}"),
-            ))
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(
+                cmd_args(
+                    ctx.attrs._static_list_wrapper[RunInfo],
+                    cmd_args(original, format = "--wrap={}"),
+                )
+            )
         elif ctx.attrs._static_list_embeds_test_command:
             # (at least rust): no existing lister, use test_command --list
             # so need to pass the test_command down to the lister
-            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
-                ctx.attrs._static_list_wrapper[RunInfo],
-                ctx.attrs.test[ExternalRunnerTestInfo].command,
-            ))
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(
+                cmd_args(
+                    ctx.attrs._static_list_wrapper[RunInfo],
+                    ctx.attrs.test[ExternalRunnerTestInfo].command,
+                )
+            )
 
     return [
         DefaultInfo(
@@ -141,10 +141,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             local_resources = {
                 "vm_pool": ctx.attrs._vm_pool.label,
-            } if ctx.attrs._vm_pool != None else {},
+            }
+            if ctx.attrs._vm_pool != None
+            else {},
             required_local_resources = [
                 RequiredTestLocalResource("vm_pool", listing = False, execution = True),
-            ] if ctx.attrs._vm_pool != None else [],
+            ]
+            if ctx.attrs._vm_pool != None
+            else [],
         ),
     ]
 
@@ -159,8 +163,10 @@ _vm_test = rule(
             doc = "If true, VM is expected to timeout or fail early.",
         ),
         "first_boot_command": attrs.option(
-            attrs.arg(doc = "Command to execute on first boot. The test \
-            will be executed at the second boot."),
+            attrs.arg(
+                doc = "Command to execute on first boot. The test \
+            will be executed at the second boot."
+            ),
             default = None,
         ),
         "labels": attrs.list(attrs.string(), default = []),
@@ -205,7 +211,7 @@ _vm_test = rule(
 vm_test = rule_with_default_target_platform(_vm_test, local_only_exec = True)
 
 def _get_internal_labels(test_rule, run_as_bundle: bool) -> (list[str], list[str], list[str]):
-    """ Returns a set of labels (inner_labels, wrapper_labels, ci_labels)
+    """Returns a set of labels (inner_labels, wrapper_labels, ci_labels)
     inner_labels are for the inner test target we wrap with vm
     wrapper_labels are test labels for the vmtest target
     ci_labels are CI labels for the vmtest target
@@ -248,24 +254,25 @@ def _get_internal_labels(test_rule, run_as_bundle: bool) -> (list[str], list[str
     return inner_labels, wrapper_labels, ci_labels
 
 def _implicit_vm_test(
-        test_rule,
-        *,
-        name: str,
-        vm_host: str,
-        vm_pool: str | None = None,
-        run_as_bundle: bool = False,
-        timeout_secs: None | int | Select = None,
-        first_boot_command: None | str = None,
-        expect_failure: bool = False,
-        postmortem: bool = False,
-        labels: list[str] | None = None,
-        # @oss-disable[end= ]: vm_test_labels: list[str] | None = None,
-        output_dirs: list[str] | None = None,
-        systemd_credentials: dict[str, str] | None = None,
-        _add_outer_labels: list[str] = [],
-        _static_list_wrapper: str | None = None,
-        _static_list_embeds_test_command: bool = False,
-        **kwargs) -> list[str]:
+    test_rule,
+    *,
+    name: str,
+    vm_host: str,
+    vm_pool: str | None = None,
+    run_as_bundle: bool = False,
+    timeout_secs: None | int | Select = None,
+    first_boot_command: None | str = None,
+    expect_failure: bool = False,
+    postmortem: bool = False,
+    labels: list[str] | None = None,
+    # @oss-disable[end= ]: vm_test_labels: list[str] | None = None,
+    output_dirs: list[str] | None = None,
+    systemd_credentials: dict[str, str] | None = None,
+    _add_outer_labels: list[str] = [],
+    _static_list_wrapper: str | None = None,
+    _static_list_embeds_test_command: bool = False,
+    **kwargs,
+) -> list[str]:
     """Wraps a unit test rule to execute inside a VM. @vm_host must be a VM
     target constructed by `:defs.bzl::vm.host()`.
 
@@ -300,11 +307,7 @@ def _implicit_vm_test(
     # @oss-disable[end= ]: labels += vm_test_labels or []
 
     inner_test_name = name + "_vm_test_inner"
-    test_rule(
-        name = inner_test_name,
-        labels = inner_labels,
-        **kwargs
-    )
+    test_rule(name = inner_test_name, labels = inner_labels, **kwargs)
 
     vm_test(
         name = name,

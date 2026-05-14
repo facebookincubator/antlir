@@ -5,12 +5,7 @@
 
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
-def _symlink_feature(
-        *,
-        link: str | Select,
-        target: str | Select,
-        feature_type: str | Select,
-        unsafe_dangling_symlink: bool | Select):
+def _symlink_feature(*, link: str | Select, target: str | Select, feature_type: str | Select, unsafe_dangling_symlink: bool | Select):
     return ParseTimeFeature(
         feature_type = feature_type,
         plugin = "antlir//antlir/antlir2/features/symlink:symlink",
@@ -22,11 +17,7 @@ def _symlink_feature(
         },
     )
 
-def ensure_file_symlink(
-        *,
-        link: str | Select,
-        target: str | Select,
-        unsafe_dangling_symlink: bool = False):
+def ensure_file_symlink(*, link: str | Select, target: str | Select, unsafe_dangling_symlink: bool = False):
     """
     Create a symlink to a file.
 
@@ -34,11 +25,7 @@ def ensure_file_symlink(
     """
     return _symlink_feature(feature_type = "ensure_file_symlink", link = link, target = target, unsafe_dangling_symlink = unsafe_dangling_symlink)
 
-def ensure_dir_symlink(
-        *,
-        link: str | Select,
-        target: str | Select,
-        unsafe_dangling_symlink: bool = False):
+def ensure_dir_symlink(*, link: str | Select, target: str | Select, unsafe_dangling_symlink: bool = False):
     """
     Create a symlink to a directory.
 

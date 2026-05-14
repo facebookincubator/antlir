@@ -76,10 +76,7 @@ def _set(targets):
 
     # This does not currently escape double-quotes since Buck docs say they
     # cannot occur: https://buck.build/concept/build_target.html
-    return 'set("' + '" "'.join([
-        normalize_target(target)
-        for target in targets
-    ]) + '")'
+    return 'set("' + '" "'.join([normalize_target(target) for target in targets]) + '")'
 
 def _union(queries):
     """

@@ -7,15 +7,17 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/bzl:internal_external.bzl", "is_facebook")
 load(":rpm.bzl", "RpmInfo", "package_href")
 
-RepoInfo = provider(fields = [
-    "all_rpms",  # All RpmInfos contained in this repo
-    "logical_id",  # ID/Name of a Repo as in dnf.conf
-    "base_url",  # Optional upstream URL that was used to populate this target
-    "dnf_conf_json",  # JSON serialized dnf.conf KV for this repo
-    "gpg_keys",  # Optional artifact against which signatures will be checked
-    "id",  # Repo name
-    "repodata",  # Populated repodata/ directory
-])
+RepoInfo = provider(
+    fields = [
+        "all_rpms",  # All RpmInfos contained in this repo
+        "logical_id",  # ID/Name of a Repo as in dnf.conf
+        "base_url",  # Optional upstream URL that was used to populate this target
+        "dnf_conf_json",  # JSON serialized dnf.conf KV for this repo
+        "gpg_keys",  # Optional artifact against which signatures will be checked
+        "id",  # Repo name
+        "repodata",  # Populated repodata/ directory
+    ]
+)
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     rpm_infos = [rpm[RpmInfo] for rpm in ctx.attrs.rpms]
@@ -81,11 +83,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     dnf_conf_json = ctx.actions.write_json("dnf_conf.json", ctx.attrs.dnf_conf, has_content_based_path = False)
 
     return [
-        DefaultInfo(default_outputs = [repodata], sub_targets = {
-            "offline": [DefaultInfo(default_outputs = [offline])],
-            "plain_repodata": [DefaultInfo(default_outputs = [plain_repodata])],
-            "repodata": [DefaultInfo(default_outputs = [repodata])],
-        }),
+        DefaultInfo(
+            default_outputs = [repodata],
+            sub_targets = {
+                "offline": [DefaultInfo(default_outputs = [offline])],
+                "plain_repodata": [DefaultInfo(default_outputs = [plain_repodata])],
+                "repodata": [DefaultInfo(default_outputs = [repodata])],
+            },
+        ),
         RepoInfo(
             id = repo_id,
             logical_id = ctx.attrs.logical_id,
@@ -165,10 +170,7 @@ def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
 
     ctx.actions.copied_dir(
         combined_repodatas,
-        {
-            id: repo[RepoInfo].repodata
-            for id, repo in repos.items()
-        },
+        {id: repo[RepoInfo].repodata for id, repo in repos.items()},
     )
 
     return [
@@ -178,10 +180,7 @@ def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(
             combined_repodatas,
             sub_targets = {
-                "repo": [DefaultInfo(sub_targets = {
-                    repo[RepoInfo].logical_id or repo[RepoInfo].id: repo.providers
-                    for repo in repos.values()
-                })],
+                "repo": [DefaultInfo(sub_targets = {repo[RepoInfo].logical_id or repo[RepoInfo].id: repo.providers for repo in repos.values()})],
             },
         ),
     ]

@@ -8,20 +8,24 @@ load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":packages_index.bzl", "download_component_package_indexes")
 
-ComponentInfo = provider(fields = {
-    "arch": str,
-    "name": str,
-    "packages_json": Artifact,
-    "packages_txt": Artifact,
-})
+ComponentInfo = provider(
+    fields = {
+        "arch": str,
+        "name": str,
+        "packages_json": Artifact,
+        "packages_txt": Artifact,
+    }
+)
 
-DebSuiteInfo = provider(fields = {
-    "archive_dir": Artifact,
-    "archive_url": str,
-    "components": list[ComponentInfo],
-    "distribution": str,
-    "suite_baseurl": str,
-})
+DebSuiteInfo = provider(
+    fields = {
+        "archive_dir": Artifact,
+        "archive_url": str,
+        "components": list[ComponentInfo],
+        "distribution": str,
+        "suite_baseurl": str,
+    }
+)
 
 def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     archive_url = ctx.attrs.archive_url
@@ -116,21 +120,23 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     metadata_tree["archive"] = archive_dir
     metadata_tree = ctx.actions.symlinked_dir("snapshottable_metadata", metadata_tree, has_content_based_path = False)
 
-    all_packages_indexes = [
-        p.json
-        for arch_indexes in per_arch_indexes.values()
-        for p in arch_indexes.values()
-    ]
+    all_packages_indexes = [p.json for arch_indexes in per_arch_indexes.values() for p in arch_indexes.values()]
 
     return [
-        DefaultInfo(sub_targets = {
-            # TODO: remove all subtargets when I'm done using them for debugging
-            "debug_only": [DefaultInfo(sub_targets = {
-                "archive": [DefaultInfo(archive_dir)],
-                "components": [DefaultInfo(sub_targets = components_subtargets)],
-                "release.json": [DefaultInfo(release_json)],
-            })],
-        }),
+        DefaultInfo(
+            sub_targets = {
+                # TODO: remove all subtargets when I'm done using them for debugging
+                "debug_only": [
+                    DefaultInfo(
+                        sub_targets = {
+                            "archive": [DefaultInfo(archive_dir)],
+                            "components": [DefaultInfo(sub_targets = components_subtargets)],
+                            "release.json": [DefaultInfo(release_json)],
+                        }
+                    )
+                ],
+            }
+        ),
         DebSuiteInfo(
             archive_dir = archive_dir,
             archive_url = archive_url,
@@ -148,10 +154,13 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
 _suite = rule(
     impl = _suite_impl,
     attrs = {
-        "architectures": attrs.list(attrs.string(), default = select({
-            "ovr_config//cpu:arm64": ["arm64"],
-            "ovr_config//cpu:x86_64": ["amd64"],
-        })),
+        "architectures": attrs.list(
+            attrs.string(),
+            default = select({
+                "ovr_config//cpu:arm64": ["arm64"],
+                "ovr_config//cpu:x86_64": ["amd64"],
+            }),
+        ),
         "archive_url": attrs.string(),
         "components": attrs.list(attrs.string()),
         "distribution": attrs.option(attrs.string(), default = None),

@@ -15,13 +15,14 @@ load(
 load("//antlir/bzl:stat.bzl", "stat")
 
 def ensure_subdirs_exist(
-        *,
-        into_dir: str | Select,
-        subdirs_to_create: str | Select,
-        mode: int | str | Select = 0o755,
-        user: str | Select = "root",
-        group: str | Select = "root",
-        xattrs: dict[str, str] | Select = {}):
+    *,
+    into_dir: str | Select,
+    subdirs_to_create: str | Select,
+    mode: int | str | Select = 0o755,
+    user: str | Select = "root",
+    group: str | Select = "root",
+    xattrs: dict[str, str] | Select = {},
+):
     """
     Ensure directories exist in the image (analogous to `mkdir -p`).
 
@@ -51,12 +52,7 @@ def ensure_subdirs_exist(
         },
     )
 
-def ensure_dirs_exist(
-        *,
-        dirs: str | Select,
-        mode: int | str = 0o755,
-        user: str = "root",
-        group: str = "root"):
+def ensure_dirs_exist(*, dirs: str | Select, mode: int | str = 0o755, user: str = "root", group: str = "root"):
     """Equivalent to `ensure_subdirs_exist("/", dirs, ...)`."""
     return ensure_subdirs_exist(
         into_dir = "/",
@@ -73,20 +69,22 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     components = [c for c in ctx.attrs.subdirs_to_create.split("/") if c]
     for i, component in enumerate(components):
         dir = paths.join(dir, component)
-        is_leaf = (i == len(components) - 1)
+        is_leaf = i == len(components) - 1
 
-        features.append(FeatureAnalysis(
-            feature_type = "ensure_dir_exists",
-            data = struct(
-                dir = dir,
-                mode = mode,
-                user = ctx.attrs.user,
-                group = ctx.attrs.group,
-                xattrs = ctx.attrs.xattrs if is_leaf else {},
-            ),
-            plugin = ctx.attrs.plugin,
-            build_phase = BuildPhase(ctx.attrs.build_phase),
-        ))
+        features.append(
+            FeatureAnalysis(
+                feature_type = "ensure_dir_exists",
+                data = struct(
+                    dir = dir,
+                    mode = mode,
+                    user = ctx.attrs.user,
+                    group = ctx.attrs.group,
+                    xattrs = ctx.attrs.xattrs if is_leaf else {},
+                ),
+                plugin = ctx.attrs.plugin,
+                build_phase = BuildPhase(ctx.attrs.build_phase),
+            )
+        )
     return [
         DefaultInfo(),
         MultiFeatureAnalysis(

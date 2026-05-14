@@ -15,10 +15,7 @@ _needed_rpms = [
     "attr",
 ]
 
-def child_layer(
-        *,
-        name: str,
-        parent_layer: str):
+def child_layer(*, name: str, parent_layer: str):
     image.layer(
         name = name + "-mutate",
         parent_layer = parent_layer,

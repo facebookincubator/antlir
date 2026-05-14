@@ -6,14 +6,15 @@
 # @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
 
 def download(
-        *,
-        actions: AnalysisActions,
-        url: str,
-        metadata_run_info: RunInfo | None = None,
-        out_name: str | None = None,
-        out: OutputArtifact | None = None,
-        checksums: dict[str, str] = {},
-        allow_nondeterministic_downloads: bool = False) -> Artifact:
+    *,
+    actions: AnalysisActions,
+    url: str,
+    metadata_run_info: RunInfo | None = None,
+    out_name: str | None = None,
+    out: OutputArtifact | None = None,
+    checksums: dict[str, str] = {},
+    allow_nondeterministic_downloads: bool = False,
+) -> Artifact:
     # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
 
     if not allow_nondeterministic_downloads and not checksums:

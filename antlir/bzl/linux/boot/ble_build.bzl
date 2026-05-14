@@ -9,13 +9,7 @@ load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":boot_loader_entry.shape.bzl", "boot_loader_entry_t")
 
-def ble_build(
-        name,
-        kernels,
-        label,
-        args,
-        parent_layer,
-        efi_size_mb: int = 256):
+def ble_build(name, kernels, label, args, parent_layer, efi_size_mb: int = 256):
     args = args or []
     args.extend([
         "root=LABEL={}".format(label),

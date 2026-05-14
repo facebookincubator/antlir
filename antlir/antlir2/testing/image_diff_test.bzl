@@ -63,19 +63,15 @@ _image_diff_test = rule(
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
         "_rootless": rootless_cfg.is_rootless_attr,
-    } | cfg_attrs(),
+    }
+    | cfg_attrs(),
     doc = "Test that the only changes between a layer and it's parent is what you expect",
     cfg = layer_cfg,
 )
 
 _image_diff_test_macro = rule_with_default_target_platform(_image_diff_test)
 
-def image_diff_test(
-        *,
-        name: str,
-        default_os: str | None = None,
-        rootless: bool | None = None,
-        **kwargs):
+def image_diff_test(*, name: str, default_os: str | None = None, rootless: bool | None = None, **kwargs):
     rootless = rootless if rootless != None else get_antlir2_rootless()
     labels = kwargs.pop("labels", [])
     labels = list(labels)
@@ -92,5 +88,5 @@ def image_diff_test(
         # resolve to the host platform where the test is actually going to
         # execute
         exec_compatible_with = ["prelude//platforms:may_run_local"],
-        **kwargs
+        **kwargs,
     )

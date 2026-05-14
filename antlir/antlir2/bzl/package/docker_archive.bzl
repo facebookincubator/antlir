@@ -19,11 +19,13 @@ def _impl(ctx: AnalysisContext) -> Promise:
         oci = ensure_single_output(oci)
         spec = ctx.actions.write_json(
             "spec.json",
-            {"docker_archive": {
-                "build_appliance": build_appliance[BuildApplianceInfo].dir,
-                "oci": oci,
-                "repo_tags": ctx.attrs.repo_tags,
-            }},
+            {
+                "docker_archive": {
+                    "build_appliance": build_appliance[BuildApplianceInfo].dir,
+                    "oci": oci,
+                    "repo_tags": ctx.attrs.repo_tags,
+                }
+            },
             with_inputs = True,
             has_content_based_path = False,
         )
@@ -42,10 +44,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
             DefaultInfo(out, sub_targets = {"oci": [DefaultInfo(oci)]}),
         ]
 
-    all_attrs = {
-        k: getattr(ctx.attrs, k)
-        for k in list(oci_attrs) + list(layer_attrs) + list(common_attrs) + list(default_attrs) + ["_rootless"]
-    }
+    all_attrs = {k: getattr(ctx.attrs, k) for k in list(oci_attrs) + list(layer_attrs) + list(common_attrs) + list(default_attrs) + ["_rootless"]}
 
     return ctx.actions.anon_target(
         oci_rule,
@@ -56,7 +55,11 @@ _docker_archive = rule(
     impl = _impl,
     attrs = {
         "repo_tags": attrs.list(attrs.string(), default = []),
-    } | oci_attrs | layer_attrs | default_attrs | common_attrs,
+    }
+    | oci_attrs
+    | layer_attrs
+    | default_attrs
+    | common_attrs,
     cfg = package_cfg,
 )
 

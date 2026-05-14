@@ -74,10 +74,15 @@ _transition = transition(
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
         "working_format": "antlir//antlir/antlir2/cfg:working_format",
-    } | (
+    }
+    | (
         # @oss-disable[end= ]: fb_refs
         {} # @oss-enable
-    ) | os_transition_refs() | rootless_cfg.refs | systemd_cfg.refs | llvm_cfg.refs,
+    )
+    | os_transition_refs()
+    | rootless_cfg.refs
+    | systemd_cfg.refs
+    | llvm_cfg.refs,
     attrs = cfg_attrs().keys(),
 )
 
@@ -89,26 +94,15 @@ _configured_alias = rule(
     attrs = {
         "actual": attrs.transition_dep(cfg = _transition),
         "labels": attrs.list(attrs.string(), default = []),
-    } | cfg_attrs(),
+    }
+    | cfg_attrs(),
 )
 
 _antlir2_configured_alias_macro = rule_with_default_target_platform(_configured_alias)
 
-def antlir2_configured_alias(
-        *,
-        name: str,
-        default_os: str | Select | None = None,
-        rootless: bool | None = None,
-        visibility: list[str] | None = None,
-        **kwargs):
+def antlir2_configured_alias(*, name: str, default_os: str | Select | None = None, rootless: bool | None = None, visibility: list[str] | None = None, **kwargs):
     if rootless == None:
         rootless = get_antlir2_rootless()
     if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: list(labels) + ["uses_sudo"])
-    _antlir2_configured_alias_macro(
-        name = name,
-        default_os = default_os,
-        rootless = rootless,
-        visibility = get_visibility(visibility),
-        **kwargs
-    )
+    _antlir2_configured_alias_macro(name = name, default_os = default_os, rootless = rootless, visibility = get_visibility(visibility), **kwargs)

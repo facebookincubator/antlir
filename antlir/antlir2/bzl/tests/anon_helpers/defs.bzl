@@ -12,13 +12,15 @@ def _anon_impl(ctx):
 _anon, _anon_rule = anon_helpers.new_rule(
     impl = _anon_impl,
     attrs = {
-        "cpu": attrs.string(default = select(
-            {
-                "DEFAULT": "unknown",
-                "ovr_config//cpu:arm64": "arm64",
-                "ovr_config//cpu:x86_64": "x86_64",
-            },
-        )),
+        "cpu": attrs.string(
+            default = select(
+                {
+                    "DEFAULT": "unknown",
+                    "ovr_config//cpu:arm64": "arm64",
+                    "ovr_config//cpu:x86_64": "x86_64",
+                },
+            )
+        ),
         "int": attrs.int(default = 42),
         "str": attrs.string(default = "hello"),
     },
@@ -32,14 +34,12 @@ def _outer_impl(ctx):
     if ctx.attrs.cpu:
         kwargs["cpu"] = ctx.attrs.cpu
 
-    return _anon.anon_target(
-        ctx = ctx,
-        **kwargs
-    ).promise.map(_map)
+    return _anon.anon_target(ctx = ctx, **kwargs).promise.map(_map)
 
 outer = rule(
     impl = _outer_impl,
     attrs = {
         "cpu": attrs.option(attrs.string(), default = None),
-    } | _anon.default_outer_attrs,
+    }
+    | _anon.default_outer_attrs,
 )

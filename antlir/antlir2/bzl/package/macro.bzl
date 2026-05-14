@@ -13,16 +13,13 @@ load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 # @oss-disable[end= ]: load("//antlir/antlir2/os/facebook:package.bzl", "get_default_rou_for_package")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
 
-def package_macro(
-        buck_rule,
-        *,
-        always_needs_root: bool = False,
-        always_rootless: bool = False):
+def package_macro(buck_rule, *, always_needs_root: bool = False, always_rootless: bool = False):
     def _inner(
-            default_os: str | None = None,
-            rootless: bool | None = None,
-            # @oss-disable[end= ]: default_rou: str | None = None,
-            **kwargs):
+        default_os: str | None = None,
+        rootless: bool | None = None,
+        # @oss-disable[end= ]: default_rou: str | None = None,
+        **kwargs,
+    ):
         visibility = get_visibility(kwargs.pop("visibility", []))
 
         # get_default_os_for_package reads the closest PACKAGE file, it has
@@ -48,11 +45,14 @@ def package_macro(
         # Package actions use local_only=True, but add it as a constraint on the
         # exec platform too so that aarch64 devservers don't try to run it
         # remotely anyway
-        kwargs.setdefault("exec_compatible_with", select({
-            "DEFAULT": ["prelude//platforms:may_run_local"],
-            "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
-            "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
-        }))
+        kwargs.setdefault(
+            "exec_compatible_with",
+            select({
+                "DEFAULT": ["prelude//platforms:may_run_local"],
+                "antlir//antlir/antlir2/cfg:exec_mode[force-local]": ["prelude//platforms:runs_only_local"],
+                "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
+            }),
+        )
 
         buck_rule(
             default_os = default_os,
@@ -60,7 +60,7 @@ def package_macro(
             rootless = rootless,
             labels = labels,
             visibility = visibility,
-            **(default_target_platform_kwargs() | kwargs)
+            **(default_target_platform_kwargs() | kwargs),
         )
 
     return _inner

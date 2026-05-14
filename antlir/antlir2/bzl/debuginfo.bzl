@@ -6,15 +6,17 @@
 load("@prelude//cxx:cxx_toolchain_types.bzl", "CxxToolchainInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
-SplitBinaryInfo = provider(fields = [
-    "stripped",
-    "debuginfo",
-    "metadata",
-    "dwp",
-    "resources_stripped",
-    "resources_debuginfo",
-    "resources_metadata",
-])
+SplitBinaryInfo = provider(
+    fields = [
+        "stripped",
+        "debuginfo",
+        "metadata",
+        "dwp",
+        "resources_stripped",
+        "resources_debuginfo",
+        "resources_metadata",
+    ]
+)
 
 def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     objcopy = ctx.attrs.objcopy[RunInfo] if ctx.attrs.objcopy else ctx.attrs.cxx_toolchain[CxxToolchainInfo].binary_utilities_info.objcopy
@@ -100,15 +102,17 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
         resources_metadata = ctx.actions.symlinked_dir("resources_metadata_empty", {}, has_content_based_path = False)
 
     return [
-        DefaultInfo(sub_targets = {
-            "debuginfo": [DefaultInfo(debuginfo)],
-            "dwp": [DefaultInfo(dwp_out)],
-            "metadata": [DefaultInfo(metadata)],
-            "resources_debuginfo": [DefaultInfo(resources_debuginfo)],
-            "resources_metadata": [DefaultInfo(resources_metadata)],
-            "resources_stripped": [DefaultInfo(resources_stripped)],
-            "stripped": [DefaultInfo(stripped)],
-        }),
+        DefaultInfo(
+            sub_targets = {
+                "debuginfo": [DefaultInfo(debuginfo)],
+                "dwp": [DefaultInfo(dwp_out)],
+                "metadata": [DefaultInfo(metadata)],
+                "resources_debuginfo": [DefaultInfo(resources_debuginfo)],
+                "resources_metadata": [DefaultInfo(resources_metadata)],
+                "resources_stripped": [DefaultInfo(resources_stripped)],
+                "stripped": [DefaultInfo(stripped)],
+            }
+        ),
         SplitBinaryInfo(
             stripped = stripped,
             debuginfo = debuginfo,
@@ -142,13 +146,8 @@ split_binary = anon_rule(
 )
 
 def split_binary_anon(
-        *,
-        ctx: AnalysisContext,
-        src: Dependency,
-        objcopy: Dependency,
-        debuginfo_splitter: Dependency,
-        strip_all: bool = False,
-        resources_dir = None) -> AnonTarget:
+    *, ctx: AnalysisContext, src: Dependency, objcopy: Dependency, debuginfo_splitter: Dependency, strip_all: bool = False, resources_dir = None
+) -> AnonTarget:
     anon_attrs = {
         "debuginfo_splitter": debuginfo_splitter,
         "name": "debuginfo//" + src.label.package + ":" + src.label.name,

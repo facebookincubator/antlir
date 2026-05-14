@@ -15,15 +15,19 @@ def oci_exposed_port(*, port: str):
     )
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
-    fact_json = ctx.actions.write_json("facts.json", [
-        struct(
-            type = "antlir2_packager::oci::OciExposedPort",
-            key = ctx.attrs.port,
-            value = struct(
-                port = ctx.attrs.port,
+    fact_json = ctx.actions.write_json(
+        "facts.json",
+        [
+            struct(
+                type = "antlir2_packager::oci::OciExposedPort",
+                key = ctx.attrs.port,
+                value = struct(
+                    port = ctx.attrs.port,
+                ),
             ),
-        ),
-    ], has_content_based_path = False)
+        ],
+        has_content_based_path = False,
+    )
 
     return [
         DefaultInfo(),

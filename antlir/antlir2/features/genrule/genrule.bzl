@@ -7,12 +7,13 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature", "new_feature_rule")
 
 def genrule(
-        *,
-        cmd: list[str | Select] | Select | None = None,
-        bash: str | Select | None = None,
-        user: str | Select = "nobody",
-        bind_repo_ro: bool | Select = False,
-        mount_platform: bool | Select = False):
+    *,
+    cmd: list[str | Select] | Select | None = None,
+    bash: str | Select | None = None,
+    user: str | Select = "nobody",
+    bind_repo_ro: bool | Select = False,
+    mount_platform: bool | Select = False,
+):
     if int(bool(cmd)) + int(bool(bash)) != 1:
         fail("Must provide exactly one of `cmd` or `bash`")
     return ParseTimeFeature(
@@ -23,12 +24,14 @@ def genrule(
             "mount_platform": mount_platform,
             "user": user,
         },
-        args = {
-            "cmd_" + str(idx): cmd
-            for idx, cmd in enumerate(cmd or [])
-        } | ({
-            "bash": bash,
-        } if bash else {}),
+        args = {"cmd_" + str(idx): cmd for idx, cmd in enumerate(cmd or [])}
+        | (
+            {
+                "bash": bash,
+            }
+            if bash
+            else {}
+        ),
     )
 
 genrule_record = record(
@@ -45,18 +48,21 @@ def _genrule_impl(ctx: AnalysisContext) -> list[Provider]:
     else:
         cmd = {int(key.removeprefix("cmd_")): val for key, val in ctx.attrs.args.items() if key.startswith("cmd_")}
         cmd = [val for _key, val in sorted(cmd.items())]
-    return [DefaultInfo(), FeatureAnalysis(
-        feature_type = "genrule",
-        data = genrule_record(
-            cmd = cmd,
-            user = ctx.attrs.user,
-            # The repo is considered part of the platform
-            bind_repo_ro = ctx.attrs.bind_repo_ro or ctx.attrs.mount_platform,
-            mount_platform = ctx.attrs.mount_platform,
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "genrule",
+            data = genrule_record(
+                cmd = cmd,
+                user = ctx.attrs.user,
+                # The repo is considered part of the platform
+                bind_repo_ro = ctx.attrs.bind_repo_ro or ctx.attrs.mount_platform,
+                mount_platform = ctx.attrs.mount_platform,
+            ),
+            build_phase = BuildPhase("genrule"),
+            plugin = ctx.attrs.plugin,
         ),
-        build_phase = BuildPhase("genrule"),
-        plugin = ctx.attrs.plugin,
-    )]
+    ]
 
 genrule_rule = new_feature_rule(
     impl = _genrule_impl,

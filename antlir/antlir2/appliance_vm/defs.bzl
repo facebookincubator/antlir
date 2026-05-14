@@ -7,9 +7,11 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
-ApplianceVmInfo = provider(fields = {
-    "make_cmd_args": typing.Callable,
-})
+ApplianceVmInfo = provider(
+    fields = {
+        "make_cmd_args": typing.Callable,
+    }
+)
 
 def _appliance_vm_impl(ctx: AnalysisContext) -> list[Provider]:
     runner = ctx.attrs._runner[RunInfo]
@@ -17,11 +19,7 @@ def _appliance_vm_impl(ctx: AnalysisContext) -> list[Provider]:
     default_rootfs = ctx.attrs.default_rootfs
     default_kernel = ctx.attrs.default_kernel
 
-    def make_cmd_args(
-            *,
-            rootfs: Dependency | None = None,
-            kernel: Dependency | None = None,
-            timeout_ms: int | None = None) -> cmd_args:
+    def make_cmd_args(*, rootfs: Dependency | None = None, kernel: Dependency | None = None, timeout_ms: int | None = None) -> cmd_args:
         rootfs = rootfs or default_rootfs
         kernel = kernel or default_kernel
         timeout_ms = timeout_ms or 60000
