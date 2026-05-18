@@ -28,7 +28,7 @@ class Test(unittest.TestCase):
                 f"{path} should be owned by unprivileged user",
             )
             self.assertEqual(
-                path.stat().st_uid,
+                path.stat().st_gid,
                 os.getgid(),
                 f"{path} should be owned by unprivileged group",
             )

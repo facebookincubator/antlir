@@ -12,6 +12,8 @@ image.layer(
         feature.ensure_dirs_exist(dirs = "/single"),
         feature.install_text(
             dst = "/single/file",
+            # Set the mode excplictly. Default one is defferent for local and remote execution.
+            mode = "a+r",
             text = "single file\n",
         ),
         feature.ensure_dirs_exist(dirs = "/multi"),
