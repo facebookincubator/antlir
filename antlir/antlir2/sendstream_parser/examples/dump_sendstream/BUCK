@@ -1,0 +1,19 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "dump_sendstream",
+    srcs = ["main.rs"],
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
+    deps = [
+        "anyhow",
+        "clap",
+        "futures",
+        "tokio",
+        "//antlir/antlir2/sendstream_parser:sendstream_parser",
+        "//antlir/filesystem/stdio_path:stdio_path",
+    ],
+)
