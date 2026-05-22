@@ -6,4 +6,7 @@
  */
 
 mod checksums;
+mod package;
+
 pub use checksums::Checksums;
+pub use package::Package;

@@ -14,8 +14,8 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use serde::Serialize;
 use snapshot_common::Checksums;
+use snapshot_common::Package;
 
 #[derive(Parser, Debug)]
 pub(crate) struct ParsePackages {
@@ -23,28 +23,6 @@ pub(crate) struct ParsePackages {
     packages: PathBuf,
     /// Output path (or - for stdout)
     out: PathBuf,
-}
-
-/// A single binary package entry from a Packages index file.
-///
-/// Only the fields needed for indexing and downloading are extracted into
-/// dedicated struct fields.
-///
-/// See <https://wiki.debian.org/DebianRepository/Format#A.22Packages.22_Indices>
-#[derive(Debug, PartialEq, Serialize)]
-struct Package {
-    /// The name of the binary package.
-    package: String,
-    /// The package version string (may include epoch and debian revision).
-    version: String,
-    /// The Debian machine architecture (e.g. "amd64", "arm64", "all").
-    architecture: String,
-    /// The path to the .deb archive relative to the repository base directory.
-    /// Must be in canonical form without "." or ".." components.
-    filename: String,
-    /// Hash for verifying the .deb file integrity. Clients must require SHA-256
-    /// or SHA-512 and must not rely on MD5sum or SHA1.
-    checksums: Checksums,
 }
 
 /// Intermediate builder accumulating lines for a single stanza.

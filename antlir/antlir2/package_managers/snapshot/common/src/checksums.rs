@@ -18,7 +18,7 @@ use sha1::Sha1;
 use sha2::Digest;
 use sha2::Sha256;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub struct Checksums {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -58,13 +58,18 @@ impl Checksums {
             sha256: Some(hex::encode(sha256_hasher.finalize())),
         })
     }
-}
 
-impl Checksums {
     pub fn new_sha256(sha256: String) -> Self {
         Self {
             sha1: None,
             sha256: Some(sha256),
+        }
+    }
+
+    pub fn new_sha1(sha1: String) -> Self {
+        Self {
+            sha1: Some(sha1),
+            sha256: None,
         }
     }
 }

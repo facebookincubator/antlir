@@ -1,0 +1,15 @@
+load(":repo.bzl", "repo")
+
+oncall("antlir")
+
+repo(
+    name = "almalinux/10.1/BaseOS",
+    baseurl = "https://mirror.facebook.net/almalinux/10.1/BaseOS/{arch}/os",
+    visibility = ["PUBLIC"],
+)
+
+repo(
+    name = "centos-stream/10/BaseOS",
+    baseurl = "https://mirror.facebook.net/centos-composes/10/CentOS-Stream-10-20260226.0/compose/BaseOS/{arch}/os",
+    visibility = ["PUBLIC"],
+)

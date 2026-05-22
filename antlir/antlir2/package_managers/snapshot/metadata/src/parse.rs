@@ -10,6 +10,7 @@ use clap::Parser;
 use clap::Subcommand;
 
 mod deb;
+mod yum;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Parse {
@@ -19,6 +20,8 @@ pub(crate) struct Parse {
 
 #[derive(Debug, Subcommand)]
 enum Sub {
+    /// Parse metadata from yum repos
+    Yum(yum::Parse),
     /// Parse metadata from deb repos
     Deb(deb::Parse),
 }
@@ -26,6 +29,7 @@ enum Sub {
 impl Parse {
     pub(crate) fn run(&self) -> Result<()> {
         match &self.sub {
+            Sub::Yum(sub) => sub.run(),
             Sub::Deb(sub) => sub.run(),
         }
     }

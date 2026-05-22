@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- @generated antlir test case -->
+<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages="4">
+<package type="rpm">
+  <name>ModemManager</name>
+  <arch>x86_64</arch>
+  <version epoch="0" ver="1.18.0" rel="1.el9"/>
+  <checksum type="sha256" pkgid="YES">fdf8a5b8c7b0d6d52674489ce20991d963986efd404965b11a7213313b0cb4f8</checksum>
+  <summary>Mobile broadband modem management service</summary>
+  <description>The ModemManager service manages WWAN modems and provides a consistent API for
+interacting with these devices to client applications.</description>
+  <packager>builder@centos.org</packager>
+  <url>http://www.freedesktop.org/wiki/Software/ModemManager/</url>
+  <time file="1631703833" build="1631616240"/>
+  <size package="1193301" installed="4254854" archive="4285840"/>
+  <location href="Packages/ModemManager-1.18.0-1.el9.x86_64.rpm"/>
+  <format>
+    <rpm:license>GPLv2+</rpm:license>
+    <rpm:vendor>CentOS</rpm:vendor>
+    <rpm:group>Unspecified</rpm:group>
+    <rpm:buildhost>x86-06.stream.rdu2.redhat.com</rpm:buildhost>
+    <rpm:sourcerpm>ModemManager-1.18.0-1.el9.src.rpm</rpm:sourcerpm>
+    <rpm:header-range start="45344" end="87221"/>
+    <rpm:provides>
+      <rpm:entry name="ModemManager" flags="EQ" epoch="0" ver="1.18.0" rel="1.el9"/>
+      <rpm:entry name="ModemManager(x86-64)" flags="EQ" epoch="0" ver="1.18.0" rel="1.el9"/>
+      <rpm:entry name="libmm-shared-foxconn.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-icera.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-novatel.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-option.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-sierra.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-telit.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-xmm.so()(64bit)"/>
+    </rpm:provides>
+    <rpm:requires>
+      <rpm:entry name="/bin/sh" pre="1"/>
+      <rpm:entry name="/bin/sh"/>
+      <rpm:entry name="ModemManager-glib(x86-64)" flags="EQ" epoch="0" ver="1.18.0" rel="1.el9"/>
+      <rpm:entry name="libgcc_s.so.1()(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.0)(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.3.1)(64bit)"/>
+      <rpm:entry name="libgio-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libglib-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgmodule-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgobject-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgudev-1.0.so.0()(64bit)"/>
+      <rpm:entry name="libmbim-glib.so.4()(64bit)"/>
+      <rpm:entry name="libmbim-utils"/>
+      <rpm:entry name="libmm-glib.so.0()(64bit)"/>
+      <rpm:entry name="libpolkit-gobject-1.so.0()(64bit)"/>
+      <rpm:entry name="libqmi-glib.so.5()(64bit)"/>
+      <rpm:entry name="libqmi-utils"/>
+      <rpm:entry name="libsystemd.so.0()(64bit)"/>
+      <rpm:entry name="libsystemd.so.0(LIBSYSTEMD_209)(64bit)"/>
+      <rpm:entry name="polkit"/>
+      <rpm:entry name="rtld(GNU_HASH)"/>
+      <rpm:entry name="systemd" pre="1"/>
+      <rpm:entry name="systemd"/>
+      <rpm:entry name="libc.so.6(GLIBC_2.34)(64bit)"/>
+    </rpm:requires>
+    <rpm:conflicts>
+      <rpm:entry name="glib2(x86-64)" flags="LT" epoch="0" ver="2.68.4"/>
+      <rpm:entry name="libmbim(x86-64)" flags="LT" epoch="0" ver="1.26.0"/>
+      <rpm:entry name="libqmi(x86-64)" flags="LT" epoch="0" ver="1.30.2"/>
+    </rpm:conflicts>
+    <file>/etc/dbus-1/system.d/org.freedesktop.ModemManager1.conf</file>
+    <file>/usr/bin/mmcli</file>
+    <file>/usr/sbin/ModemManager</file>
+  </format>
+</package>
+<package type="rpm">
+  <name>ModemManager</name>
+  <arch>x86_64</arch>
+  <version epoch="0" ver="1.18.2" rel="1.el9"/>
+  <checksum type="sha256" pkgid="YES">4f376dbc093b4b34512a11457428e039b08d5c6cebc8bfc006a58fbbe30acfc4</checksum>
+  <summary>Mobile broadband modem management service</summary>
+  <description>The ModemManager service manages WWAN modems and provides a consistent API for
+interacting with these devices to client applications.</description>
+  <packager>builder@centos.org</packager>
+  <url>http://www.freedesktop.org/wiki/Software/ModemManager/</url>
+  <time file="1634629979" build="1633952762"/>
+  <size package="1193399" installed="4256782" archive="4287632"/>
+  <location href="Packages/ModemManager-1.18.2-1.el9.x86_64.rpm"/>
+  <format>
+    <rpm:license>GPLv2+</rpm:license>
+    <rpm:vendor>CentOS</rpm:vendor>
+    <rpm:group>Unspecified</rpm:group>
+    <rpm:buildhost>x86-06.stream.rdu2.redhat.com</rpm:buildhost>
+    <rpm:sourcerpm>ModemManager-1.18.2-1.el9.src.rpm</rpm:sourcerpm>
+    <rpm:header-range start="44968" end="86657"/>
+    <rpm:provides>
+      <rpm:entry name="ModemManager" flags="EQ" epoch="0" ver="1.18.2" rel="1.el9"/>
+      <rpm:entry name="ModemManager(x86-64)" flags="EQ" epoch="0" ver="1.18.2" rel="1.el9"/>
+      <rpm:entry name="libmm-shared-foxconn.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-icera.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-novatel.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-option.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-sierra.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-telit.so()(64bit)"/>
+      <rpm:entry name="libmm-shared-xmm.so()(64bit)"/>
+    </rpm:provides>
+    <rpm:requires>
+      <rpm:entry name="/bin/sh" pre="1"/>
+      <rpm:entry name="/bin/sh"/>
+      <rpm:entry name="ModemManager-glib(x86-64)" flags="EQ" epoch="0" ver="1.18.2" rel="1.el9"/>
+      <rpm:entry name="libgcc_s.so.1()(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.0)(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.3.1)(64bit)"/>
+      <rpm:entry name="libgio-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libglib-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgmodule-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgobject-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgudev-1.0.so.0()(64bit)"/>
+      <rpm:entry name="libmbim-glib.so.4()(64bit)"/>
+      <rpm:entry name="libmbim-utils"/>
+      <rpm:entry name="libmm-glib.so.0()(64bit)"/>
+      <rpm:entry name="libpolkit-gobject-1.so.0()(64bit)"/>
+      <rpm:entry name="libqmi-glib.so.5()(64bit)"/>
+      <rpm:entry name="libqmi-utils"/>
+      <rpm:entry name="libsystemd.so.0()(64bit)"/>
+      <rpm:entry name="libsystemd.so.0(LIBSYSTEMD_209)(64bit)"/>
+      <rpm:entry name="polkit"/>
+      <rpm:entry name="rtld(GNU_HASH)"/>
+      <rpm:entry name="systemd" pre="1"/>
+      <rpm:entry name="systemd"/>
+      <rpm:entry name="libc.so.6(GLIBC_2.34)(64bit)"/>
+    </rpm:requires>
+    <rpm:conflicts>
+      <rpm:entry name="glib2(x86-64)" flags="LT" epoch="0" ver="2.68.4"/>
+      <rpm:entry name="libmbim(x86-64)" flags="LT" epoch="0" ver="1.26.0"/>
+      <rpm:entry name="libqmi(x86-64)" flags="LT" epoch="0" ver="1.30.2"/>
+    </rpm:conflicts>
+    <file>/etc/dbus-1/system.d/org.freedesktop.ModemManager1.conf</file>
+    <file>/usr/bin/mmcli</file>
+    <file>/usr/sbin/ModemManager</file>
+  </format>
+</package>
+<package type="rpm">
+  <name>NetworkManager</name>
+  <arch>x86_64</arch>
+  <version epoch="1" ver="1.51.2" rel="1.el9"/>
+  <checksum type="sha256" pkgid="YES">ef3aa03f3f6b345b11732d34fa2b8bdd2db985a8836b6e201ad6a03bce1236f7</checksum>
+  <summary>Network connection manager and user applications</summary>
+  <description>NetworkManager is a system service that manages network interfaces and
+connections based on user or automatic configuration. It supports
+Ethernet, Bridge, Bond, VLAN, Team, InfiniBand, Wi-Fi, mobile broadband
+(WWAN), PPPoE and other devices, and supports a variety of different VPN
+services.</description>
+  <packager>builder@centos.org</packager>
+  <url>https://networkmanager.dev/</url>
+  <time file="1727799803" build="1727766086"/>
+  <size package="2435886" installed="6683510" archive="6697848"/>
+  <location href="Packages/NetworkManager-1.51.2-1.el9.x86_64.rpm"/>
+  <format>
+    <rpm:license>GPL-2.0-or-later AND LGPL-2.1-or-later</rpm:license>
+    <rpm:vendor>CentOS</rpm:vendor>
+    <rpm:group>System Environment/Base</rpm:group>
+    <rpm:buildhost>x86-02.stream.rdu2.redhat.com</rpm:buildhost>
+    <rpm:sourcerpm>NetworkManager-1.51.2-1.el9.src.rpm</rpm:sourcerpm>
+    <rpm:header-range start="22424" end="58241"/>
+    <rpm:provides>
+      <rpm:entry name="NetworkManager" flags="EQ" epoch="1" ver="1.51.2" rel="1.el9"/>
+      <rpm:entry name="NetworkManager(x86-64)" flags="EQ" epoch="1" ver="1.51.2" rel="1.el9"/>
+      <rpm:entry name="NetworkManager-dispatcher(x86-64)" flags="EQ" epoch="1" ver="1.51.2" rel="1.el9"/>
+      <rpm:entry name="bundled(systemd)" flags="EQ" epoch="0" ver="0"/>
+      <rpm:entry name="config(NetworkManager)" flags="EQ" epoch="1" ver="1.51.2" rel="1.el9"/>
+      <rpm:entry name="libnm-settings-plugin-ifcfg-rh.so()(64bit)"/>
+    </rpm:provides>
+    <rpm:requires>
+      <rpm:entry name="/bin/sh" pre="1"/>
+      <rpm:entry name="/bin/sh"/>
+      <rpm:entry name="/usr/sbin/update-alternatives" pre="1"/>
+      <rpm:entry name="/usr/sbin/update-alternatives"/>
+      <rpm:entry name="NetworkManager-libnm(x86-64)" flags="EQ" epoch="1" ver="1.51.2" rel="1.el9"/>
+      <rpm:entry name="dbus" flags="GE" epoch="0" ver="1.9.18"/>
+      <rpm:entry name="glib2" flags="GE" epoch="0" ver="2.68.4"/>
+      <rpm:entry name="ld-linux-x86-64.so.2()(64bit)"/>
+      <rpm:entry name="ld-linux-x86-64.so.2(GLIBC_2.3)(64bit)"/>
+      <rpm:entry name="libaudit.so.1()(64bit)"/>
+      <rpm:entry name="libcurl.so.4()(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1()(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.0)(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.3.1)(64bit)"/>
+      <rpm:entry name="libgio-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libglib-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgmodule-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgnutls.so.30()(64bit)"/>
+      <rpm:entry name="libgnutls.so.30(GNUTLS_3_4)(64bit)"/>
+      <rpm:entry name="libgobject-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libndp.so.0()(64bit)"/>
+      <rpm:entry name="libnm.so.0()(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_0_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_10_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_10_2)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_12_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_14_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_16_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_18_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_20_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_22_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_24_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_26_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_28_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_2_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_30_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_34_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_38_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_40_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_42_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_42_2)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_44_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_46_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_48_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_4_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_52_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_6_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_8_0)(64bit)"/>
+      <rpm:entry name="libreadline.so.8()(64bit)"/>
+      <rpm:entry name="libselinux.so.1()(64bit)"/>
+      <rpm:entry name="libselinux.so.1(LIBSELINUX_1.0)(64bit)"/>
+      <rpm:entry name="libsystemd.so.0()(64bit)"/>
+      <rpm:entry name="libsystemd.so.0(LIBSYSTEMD_209)(64bit)"/>
+      <rpm:entry name="libudev.so.1()(64bit)"/>
+      <rpm:entry name="libudev.so.1(LIBUDEV_183)(64bit)"/>
+      <rpm:entry name="rtld(GNU_HASH)"/>
+      <rpm:entry name="systemd" pre="1"/>
+      <rpm:entry name="systemd"/>
+      <rpm:entry name="systemd-udev" pre="1"/>
+      <rpm:entry name="libc.so.6(GLIBC_2.34)(64bit)"/>
+    </rpm:requires>
+    <rpm:conflicts>
+      <rpm:entry name="NetworkManager-openconnect" flags="LT" epoch="0" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="NetworkManager-openvpn" flags="LT" epoch="1" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="NetworkManager-pptp" flags="LT" epoch="1" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="NetworkManager-vpnc" flags="LT" epoch="1" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="kde-plasma-networkmanagement" flags="LT" epoch="1" ver="0.9" rel="0.49.20110527git.nm09"/>
+    </rpm:conflicts>
+    <rpm:obsoletes>
+      <rpm:entry name="NetworkManager" flags="LT" epoch="1" ver="0.9.9.95" rel="1"/>
+      <rpm:entry name="NetworkManager" flags="LT" epoch="1" ver="1.36.0" rel="0.6"/>
+      <rpm:entry name="NetworkManager" flags="LT" epoch="1" ver="1.5.3"/>
+      <rpm:entry name="NetworkManager-wimax" flags="LT" epoch="1" ver="1.2"/>
+    </rpm:obsoletes>
+    <file type="dir">/etc/NetworkManager</file>
+    <file>/etc/NetworkManager/NetworkManager.conf</file>
+    <file type="ghost">/etc/NetworkManager/VPN</file>
+    <file type="dir">/etc/NetworkManager/conf.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d/no-wait.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d/pre-down.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d/pre-up.d</file>
+    <file type="dir">/etc/NetworkManager/dnsmasq-shared.d</file>
+    <file type="dir">/etc/NetworkManager/dnsmasq.d</file>
+    <file type="dir">/etc/NetworkManager/system-connections</file>
+    <file type="dir">/etc/sysconfig/network-scripts</file>
+    <file>/etc/sysconfig/network-scripts/readme-ifcfg-rh.txt</file>
+    <file>/usr/bin/nm-online</file>
+    <file>/usr/bin/nmcli</file>
+    <file>/usr/sbin/NetworkManager</file>
+  </format>
+</package>
+<package type="rpm">
+  <name>NetworkManager</name>
+  <arch>x86_64</arch>
+  <version epoch="1" ver="1.51.2" rel="2.el9"/>
+  <checksum type="sha256" pkgid="YES">80db4f57cd9112294c1b60b74e34d04092d74625baae43dcf1ad7a0cbac31c69</checksum>
+  <summary>Network connection manager and user applications</summary>
+  <description>NetworkManager is a system service that manages network interfaces and
+connections based on user or automatic configuration. It supports
+Ethernet, Bridge, Bond, VLAN, Team, InfiniBand, Wi-Fi, mobile broadband
+(WWAN), PPPoE and other devices, and supports a variety of different VPN
+services.</description>
+  <packager>builder@centos.org</packager>
+  <url>https://networkmanager.dev/</url>
+  <time file="1728916161" build="1728659896"/>
+  <size package="2436113" installed="6683559" archive="6697892"/>
+  <location href="Packages/NetworkManager-1.51.2-2.el9.x86_64.rpm"/>
+  <format>
+    <rpm:license>GPL-2.0-or-later AND LGPL-2.1-or-later</rpm:license>
+    <rpm:vendor>CentOS</rpm:vendor>
+    <rpm:group>System Environment/Base</rpm:group>
+    <rpm:buildhost>x86-03.stream.rdu2.redhat.com</rpm:buildhost>
+    <rpm:sourcerpm>NetworkManager-1.51.2-2.el9.src.rpm</rpm:sourcerpm>
+    <rpm:header-range start="22344" end="58305"/>
+    <rpm:provides>
+      <rpm:entry name="NetworkManager" flags="EQ" epoch="1" ver="1.51.2" rel="2.el9"/>
+      <rpm:entry name="NetworkManager(x86-64)" flags="EQ" epoch="1" ver="1.51.2" rel="2.el9"/>
+      <rpm:entry name="NetworkManager-dispatcher(x86-64)" flags="EQ" epoch="1" ver="1.51.2" rel="2.el9"/>
+      <rpm:entry name="bundled(systemd)" flags="EQ" epoch="0" ver="0"/>
+      <rpm:entry name="config(NetworkManager)" flags="EQ" epoch="1" ver="1.51.2" rel="2.el9"/>
+      <rpm:entry name="libnm-settings-plugin-ifcfg-rh.so()(64bit)"/>
+    </rpm:provides>
+    <rpm:requires>
+      <rpm:entry name="/bin/sh" pre="1"/>
+      <rpm:entry name="/bin/sh"/>
+      <rpm:entry name="/usr/sbin/update-alternatives" pre="1"/>
+      <rpm:entry name="/usr/sbin/update-alternatives"/>
+      <rpm:entry name="NetworkManager-libnm(x86-64)" flags="EQ" epoch="1" ver="1.51.2" rel="2.el9"/>
+      <rpm:entry name="dbus" flags="GE" epoch="0" ver="1.9.18"/>
+      <rpm:entry name="glib2" flags="GE" epoch="0" ver="2.68.4"/>
+      <rpm:entry name="ld-linux-x86-64.so.2()(64bit)"/>
+      <rpm:entry name="ld-linux-x86-64.so.2(GLIBC_2.3)(64bit)"/>
+      <rpm:entry name="libaudit.so.1()(64bit)"/>
+      <rpm:entry name="libcurl.so.4()(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1()(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.0)(64bit)"/>
+      <rpm:entry name="libgcc_s.so.1(GCC_3.3.1)(64bit)"/>
+      <rpm:entry name="libgio-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libglib-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgmodule-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libgnutls.so.30()(64bit)"/>
+      <rpm:entry name="libgnutls.so.30(GNUTLS_3_4)(64bit)"/>
+      <rpm:entry name="libgobject-2.0.so.0()(64bit)"/>
+      <rpm:entry name="libndp.so.0()(64bit)"/>
+      <rpm:entry name="libnm.so.0()(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_0_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_10_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_10_2)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_12_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_14_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_16_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_18_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_20_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_22_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_24_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_26_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_28_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_2_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_30_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_34_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_38_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_40_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_42_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_42_2)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_44_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_46_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_48_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_4_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_52_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_6_0)(64bit)"/>
+      <rpm:entry name="libnm.so.0(libnm_1_8_0)(64bit)"/>
+      <rpm:entry name="libreadline.so.8()(64bit)"/>
+      <rpm:entry name="libselinux.so.1()(64bit)"/>
+      <rpm:entry name="libselinux.so.1(LIBSELINUX_1.0)(64bit)"/>
+      <rpm:entry name="libsystemd.so.0()(64bit)"/>
+      <rpm:entry name="libsystemd.so.0(LIBSYSTEMD_209)(64bit)"/>
+      <rpm:entry name="libudev.so.1()(64bit)"/>
+      <rpm:entry name="libudev.so.1(LIBUDEV_183)(64bit)"/>
+      <rpm:entry name="rtld(GNU_HASH)"/>
+      <rpm:entry name="systemd" pre="1"/>
+      <rpm:entry name="systemd"/>
+      <rpm:entry name="systemd-udev" pre="1"/>
+      <rpm:entry name="libc.so.6(GLIBC_2.34)(64bit)"/>
+    </rpm:requires>
+    <rpm:conflicts>
+      <rpm:entry name="NetworkManager-openconnect" flags="LT" epoch="0" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="NetworkManager-openvpn" flags="LT" epoch="1" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="NetworkManager-pptp" flags="LT" epoch="1" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="NetworkManager-vpnc" flags="LT" epoch="1" ver="0.7.0.99" rel="1"/>
+      <rpm:entry name="kde-plasma-networkmanagement" flags="LT" epoch="1" ver="0.9" rel="0.49.20110527git.nm09"/>
+    </rpm:conflicts>
+    <rpm:obsoletes>
+      <rpm:entry name="NetworkManager" flags="LT" epoch="1" ver="0.9.9.95" rel="1"/>
+      <rpm:entry name="NetworkManager" flags="LT" epoch="1" ver="1.36.0" rel="0.6"/>
+      <rpm:entry name="NetworkManager" flags="LT" epoch="1" ver="1.5.3"/>
+      <rpm:entry name="NetworkManager-wimax" flags="LT" epoch="1" ver="1.2"/>
+    </rpm:obsoletes>
+    <file type="dir">/etc/NetworkManager</file>
+    <file>/etc/NetworkManager/NetworkManager.conf</file>
+    <file type="ghost">/etc/NetworkManager/VPN</file>
+    <file type="dir">/etc/NetworkManager/conf.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d/no-wait.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d/pre-down.d</file>
+    <file type="dir">/etc/NetworkManager/dispatcher.d/pre-up.d</file>
+    <file type="dir">/etc/NetworkManager/dnsmasq-shared.d</file>
+    <file type="dir">/etc/NetworkManager/dnsmasq.d</file>
+    <file type="dir">/etc/NetworkManager/system-connections</file>
+    <file type="dir">/etc/sysconfig/network-scripts</file>
+    <file>/etc/sysconfig/network-scripts/readme-ifcfg-rh.txt</file>
+    <file>/usr/bin/nm-online</file>
+    <file>/usr/bin/nmcli</file>
+    <file>/usr/sbin/NetworkManager</file>
+  </format>
+</package>
+</metadata>
