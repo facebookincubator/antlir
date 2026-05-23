@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
+load("//antlir/antlir2/package_managers/snapshot:download_packages.bzl", "download_packages")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":repodata.bzl", "download_repodata")
 
@@ -68,6 +69,15 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
         },
     )
 
+    pkg_outputs = download_packages(
+        actions = ctx.actions,
+        packages_jsons = {"packages": repodata.packages_json},
+        baseurl = baseurl,
+        names = ctx.attrs.package_subtargets,
+        extension = ".rpm",
+    )
+    pkg_subtargets = {name + ".rpm": [DefaultInfo(out)] for name, out in pkg_outputs.items()}
+
     return [
         DefaultInfo(
             sub_targets = {
@@ -79,6 +89,7 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
                         }
                     )
                 ],
+                "packages": [DefaultInfo(sub_targets = pkg_subtargets)],
             }
         ),
         YumRepoInfo(
@@ -96,6 +107,7 @@ _repo = rule(
     impl = _repo_impl,
     attrs = {
         "baseurl": attrs.string(),
+        "package_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as subtargets"),
         "repomd_checksums": attrs.dict(attrs.string(), attrs.string(), default = {}),
         "_arch": attrs.default_only(
             attrs.string(

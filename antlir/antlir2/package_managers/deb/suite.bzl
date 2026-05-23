@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
+load("//antlir/antlir2/package_managers/snapshot:download_packages.bzl", "download_packages")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":packages_index.bzl", "download_component_package_indexes")
 
@@ -122,6 +123,15 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
 
     all_packages_indexes = [p.json for arch_indexes in per_arch_indexes.values() for p in arch_indexes.values()]
 
+    pkg_outputs = download_packages(
+        actions = ctx.actions,
+        packages_jsons = {arch + "/" + cname: p.json for arch, arch_indexes in per_arch_indexes.items() for cname, p in arch_indexes.items()},
+        baseurl = archive_url,
+        names = ctx.attrs.package_subtargets,
+        extension = ".deb",
+    )
+    pkg_subtargets = {name + ".deb": [DefaultInfo(out)] for name, out in pkg_outputs.items()}
+
     return [
         DefaultInfo(
             sub_targets = {
@@ -135,6 +145,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
                         }
                     )
                 ],
+                "packages": [DefaultInfo(sub_targets = pkg_subtargets)],
             }
         ),
         DebSuiteInfo(
@@ -165,6 +176,7 @@ _suite = rule(
         "components": attrs.list(attrs.string()),
         "distribution": attrs.option(attrs.string(), default = None),
         "inrelease_checksums": attrs.dict(attrs.string(), attrs.string(), default = {}),
+        "package_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as subtargets"),
         "_metadata_bin": attrs.default_only(
             attrs.exec_dep(
                 providers = [RunInfo],

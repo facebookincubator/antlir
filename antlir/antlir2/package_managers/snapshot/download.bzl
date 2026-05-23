@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
+load(":content_based_path.bzl", "should_use_content_based_path")
 
 def download(
     *,
@@ -24,14 +25,7 @@ def download(
     if filetype not in ("xz", "gz"):
         filetype = None
 
-    has_content_based_path = False
-    digest_config = actions.digest_config()
-    if digest_config.allows_sha1() and "sha1" in checksums:
-        has_content_based_path = True
-    if digest_config.allows_sha256() and "sha256" in checksums:
-        has_content_based_path = True
-    if not checksums and allow_nondeterministic_downloads:
-        has_content_based_path = True
+    has_content_based_path = should_use_content_based_path(actions, checksums) if checksums else allow_nondeterministic_downloads
 
     if not out:
         out = actions.declare_output(

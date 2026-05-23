@@ -5,6 +5,7 @@ oncall("antlir")
 repo(
     name = "almalinux/10.1/BaseOS",
     baseurl = "https://mirror.facebook.net/almalinux/10.1/BaseOS/{arch}/os",
+    package_subtargets = ["basesystem"],
     visibility = ["PUBLIC"],
 )
 
