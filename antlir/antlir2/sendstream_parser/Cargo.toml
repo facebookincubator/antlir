@@ -24,7 +24,7 @@ nom = "8"
 num_enum = "0.7.6"
 serde = { version = "1.0.219", features = ["derive", "rc"], optional = true }
 thiserror = "2.0.18"
-tokio = { version = "1.52.1", features = ["full", "test-util", "tracing"] }
+tokio = { version = "1.52.3", features = ["full", "test-util", "tracing"] }
 tokio-util = { version = "0.7.18", features = ["full"] }
 uuid = { version = "1.23.0", features = ["rng-getrandom", "serde", "v4", "v5", "v6", "v7", "v8"] }
 
