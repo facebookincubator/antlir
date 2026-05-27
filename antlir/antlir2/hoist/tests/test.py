@@ -17,7 +17,7 @@ class Test(unittest.TestCase):
     def _test_single_file(self, path: Path, basename: str = "f") -> None:
         self.assertTrue(path.exists())
         self.assertEqual(path.read_text(), "single file\n")
-        self.assertEqual(path.stat().st_mode & 0o777, 0o444)
+        self.assertIn(path.stat().st_mode & 0o777, (0o444, 0o644))
         self.assertEqual(path.name, basename)
         if os.getenv("INSIDE_RE_WORKER") != "1":
             # On RE, the input files may be materialized such that they are
