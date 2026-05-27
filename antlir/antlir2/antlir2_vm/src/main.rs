@@ -310,7 +310,13 @@ fn get_test_vm_args(
     }
     vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
-    vm_args.console_output_file = create_tpx_logs("console.txt", "console logs")?;
+    // Only auto-route the console to tpx artifacts if the caller didn't
+    // already specify --console-output-file. This lets `buck2 run` consumers
+    // (e.g. skycastle workflows) persist guest console output to an arbitrary
+    // path without being silently overridden.
+    if vm_args.console_output_file.is_none() {
+        vm_args.console_output_file = create_tpx_logs("console.txt", "console logs")?;
+    }
     if dump_eth0_traffic {
         vm_args.eth0_output_file = create_tpx_blobs("eth0.pcap", "eth0 traffic")?;
     }
