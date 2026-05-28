@@ -141,7 +141,7 @@ def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
         ),
         category = "extract_from_layer",
-        local_only = True,
+        local_only = True,  # needs local subvol
     )
 
     return [
@@ -195,9 +195,6 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             hidden = ctx.attrs.src[RunInfo],
         ),
         category = "extract_buck_binary",
-        # RE seems to not have aarch64 cross stuff set up, so for now just force
-        # aarch64 extracts to run locally
-        local_only = ctx.attrs.target_arch == "aarch64",
     )
 
     return [

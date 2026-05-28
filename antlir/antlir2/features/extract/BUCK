@@ -7,12 +7,10 @@ feature_impl(
     name = "extract",
     deps = [
         "anyhow",
+        "glob",
         "goblin",
-        "once_cell",
-        "regex",
         "serde_json",
         "twox-hash",
-        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_path:antlir2_path",
     ],
 )
@@ -24,14 +22,11 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "nix",
         "serde_json",
         "tracing",
         "tracing-subscriber",
         ":extract.lib",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
-        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_path:antlir2_path",
-        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
 )

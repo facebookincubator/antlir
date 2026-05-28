@@ -22,7 +22,6 @@ use extract::Manifest;
 use extract::ManifestEntry;
 use extract::ensure_usr;
 use extract::so_dependencies;
-use nix::unistd::Uid;
 use tracing::debug;
 
 #[derive(Debug, Parser)]
@@ -86,12 +85,12 @@ fn main() -> Result<()> {
 fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
     let default_interpreter = extract::default_interpreter(args.target_arch);
     let src = args.src.canonicalize()?;
-    let deps = so_dependencies(args.src.to_owned(), None, default_interpreter)?;
+    let deps = so_dependencies(src.clone(), None, default_interpreter)?;
 
     let mut entries = BTreeSet::new();
 
-    let main_relpath = PathBuf::from("__main");
     std::fs::create_dir_all(&args.libs_dir)?;
+    let main_relpath = PathBuf::from("__main");
     std::fs::copy(&src, args.libs_dir.join(&main_relpath))?;
     entries.insert(ManifestEntry::File {
         src_relpath: main_relpath,
@@ -134,14 +133,6 @@ fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
 }
 
 fn from_layer(args: FromLayerArgs) -> Result<()> {
-    // Set up namespace isolation so that so_dependencies can use unshare
-    // to run ld.so --list inside the layer's sysroot.
-    antlir2_rootless::init().context("while setting up antlir2_rootless")?;
-    if !Uid::effective().is_root() {
-        antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
-    }
-    antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
-
     let default_interpreter = extract::default_interpreter(args.target_arch);
     let src_layer = args
         .layer
