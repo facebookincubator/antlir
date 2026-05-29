@@ -31,22 +31,26 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         '"$@"',
         vm_args_suffix,
     )
-    run_script, _ = ctx.actions.write(
+    run_script, hidden = ctx.actions.write(
         "run_command.sh",
         cmd_args(
             "#!/bin/bash",
             cmd_args(script_cmd, delimiter = " \\\n  "),
             "\n",
         ),
+        # Absolute artifact paths so the script works regardless of cwd
+        # (skycastle runs it with cwd=fbcode; buck-out lives at fbsource root).
+        absolute = True,
         is_executable = True,
         allow_args = True,
+        # Materialize embedded artifacts when invoked via `buck2 run`.
+        with_inputs = True,
         has_content_based_path = False,
     )
-    # Wrap RunInfo with the script so `buck2 run :target -- <args>` honors
-    # the same `$@` forwarding as direct script invocation. Without this,
-    # `buck2 run` would append the user args after the inner `custom` command
-    # instead of treating them as antlir2_vm flags.
-    return [DefaultInfo(run_script), RunInfo(args = cmd_args(run_script))]
+    # Run the script (not the inner cmd_args) so `buck2 run :target -- <args>`
+    # gets the same `"$@"` forwarding as direct script invocation. `hidden`
+    # threads the script's input artifacts through RunInfo for materialization.
+    return [DefaultInfo(run_script), RunInfo(args = cmd_args(run_script, hidden = hidden))]
 
 _vm_run_command = rule(
     impl = _impl,
