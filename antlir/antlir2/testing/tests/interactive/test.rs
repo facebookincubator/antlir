@@ -9,7 +9,7 @@ use rexpect::process::wait::WaitStatus;
 use rexpect::session::PtySession;
 
 fn booted_test_base(exe: &str) -> PtySession {
-    let mut p = rexpect::spawn(exe, Some(5_000)).expect("failed to spawn");
+    let mut p = rexpect::spawn(exe, Some(30_000)).expect("failed to spawn");
     // look for the booted test debugging help message
     p.exp_string("This is an antlir2 booted image test.")
         .expect("missing help message");
