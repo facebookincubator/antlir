@@ -195,6 +195,7 @@ def _compressed_impl(ctx: AnalysisContext, uncompressed: typing.Callable, rule_a
     ).artifact("package")
     package = ctx.actions.declare_output(ctx.label.name, has_content_based_path = False)
 
+    extra_hidden = []
     if compressor == "gzip":
         compress_cmd = cmd_args(
             'compressor="$(which pigz || which gzip)"',
@@ -217,6 +218,20 @@ def _compressed_impl(ctx: AnalysisContext, uncompressed: typing.Callable, rule_a
             cmd_args(package.as_output(), format = "--stdout > {}"),
             delimiter = " \\\n",
         )
+    elif compressor == "lz4":
+        lz4 = ensure_single_output(ctx.attrs._lz4) if ctx.attrs._lz4 != None else "lz4"
+        if ctx.attrs._lz4 != None:
+            extra_hidden.append(lz4)
+        compress_cmd = cmd_args(
+            lz4,
+            "-l",  # Linux kernel legacy format for initramfs
+            "-z",
+            cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
+            "-c",
+            src,
+            cmd_args(package.as_output(), format = "> {}"),
+            delimiter = " \\\n",
+        )
     else:
         fail("unknown compressor '{}'".format(compressor))
 
@@ -234,7 +249,7 @@ def _compressed_impl(ctx: AnalysisContext, uncompressed: typing.Callable, rule_a
         cmd_args(
             "/bin/sh",
             script,
-            hidden = [package.as_output(), src],
+            hidden = [package.as_output(), src] + extra_hidden,
         ),
         category = "compress",
         identifier = compressor,
@@ -262,7 +277,17 @@ def _new_compressed_package_rule(compressor: str, uncompressed: typing.Callable,
         | {
             "compression_level": attrs.int(default = default_compression_level),
             "dot_meta": attrs.option(attrs.bool(), default = None),
-        },
+        }
+        | (
+            {
+                "_lz4": internal_external(
+                    fb = attrs.default_only(attrs.exec_dep(default = "fbcode//third-party-buck/projects/lz4:bin/lz4")),
+                    oss = attrs.option(attrs.exec_dep(), default = None),
+                ),
+            }
+            if compressor == "lz4"
+            else {}
+        ),
         cfg = package_cfg,
         # Because this can instantiate an implicit layer, it must also
         # depend on the feature plugins
@@ -285,6 +310,12 @@ _cpio_zst = _new_compressed_package_rule(
     default_compression_level = 15,
     uncompressed = _cpio_anon,
     compressor = "zstd",
+)
+
+_cpio_lz4 = _new_compressed_package_rule(
+    default_compression_level = 12,
+    uncompressed = _cpio_anon,
+    compressor = "lz4",
 )
 
 # @unused
@@ -458,6 +489,7 @@ package = struct(
     cad_stack = package_macro(_cad_stack, always_rootless = True),
     cpio = package_macro(_cpio),
     cpio_gz = package_macro(_cpio_gz),
+    cpio_lz4 = package_macro(_cpio_lz4),
     cpio_zst = package_macro(_cpio_zst),
     erofs = package_macro(_erofs),
     ext3 = package_macro(_ext3),

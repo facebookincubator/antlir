@@ -1,0 +1,36 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/test_images/package:defs.bzl", "package_feature", "test_in_layer")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
+
+oncall("antlir")
+
+package.cpio_lz4(
+    name = "test.cpio.lz4",
+    layer = "//antlir/antlir2/test_images/package:standard",
+)
+
+buck_sh_test(
+    name = "test-cpio-lz4-legacy-header",
+    args = [
+        "$(location :test.cpio.lz4)",
+    ],
+    test = "test-cpio-lz4-legacy-header.sh",
+)
+
+test_in_layer(
+    name = "test-cpio-lz4",
+    layer_features = [
+        feature.ensure_dirs_exist(dirs = "/package"),
+        feature.install(
+            src = ":test.cpio.lz4",
+            dst = "/package.cpio.lz4",
+        ),
+        feature.rpms_install(rpms = [
+            "cpio",
+            "lz4",
+        ]),
+    ],
+    omit_package_features = [package_feature("xattr")],
+    stub = "stub.rs",
+)
