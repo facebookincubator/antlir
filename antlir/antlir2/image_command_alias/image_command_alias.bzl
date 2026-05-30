@@ -66,7 +66,7 @@ _image_command_alias = rule(
                 good enough for what we're going to do (it usually is)
             """,
         ),
-        "_command_alias": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/image_command_alias:command_alias")),
+        "_command_alias": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/image_command_alias:command_alias")),
     }
     | cfg_attrs(),
     cfg = layer_cfg,
