@@ -35,6 +35,8 @@ pub enum Test {
         test: PathBuf,
         #[clap(long = "gtest_output", env = "GTEST_OUTPUT", require_equals = true)]
         output: Option<String>,
+        #[clap(long = "gtest_filter", env = "GTEST_FILTER", require_equals = true)]
+        filter: Option<String>,
         #[clap(long = "gtest_list_tests")]
         gtest_list_tests: bool,
         #[clap(allow_hyphen_values = true)]
@@ -68,6 +70,7 @@ impl Test {
             Self::Gtest {
                 test,
                 mut output,
+                mut filter,
                 mut gtest_list_tests,
                 mut test_cmd,
             } => {
@@ -79,6 +82,8 @@ impl Test {
                         gtest_list_tests = true;
                     } else if let Some(value) = arg_str.strip_prefix("--gtest_output=") {
                         output = Some(value.to_string());
+                    } else if let Some(value) = arg_str.strip_prefix("--gtest_filter=") {
+                        filter = Some(value.to_string());
                     } else {
                         cleaned_cmd.push(arg);
                     }
@@ -86,6 +91,7 @@ impl Test {
                 Self::Gtest {
                     test,
                     output,
+                    filter,
                     gtest_list_tests,
                     test_cmd: cleaned_cmd,
                 }
@@ -157,6 +163,7 @@ impl Test {
                 mut test_cmd,
                 gtest_list_tests,
                 output,
+                filter,
             } => {
                 test_cmd.insert(0, test.into());
                 if gtest_list_tests {
@@ -164,6 +171,9 @@ impl Test {
                 }
                 if let Some(out) = output {
                     test_cmd.push(format!("--gtest_output={out}").into());
+                }
+                if let Some(filter) = filter {
+                    test_cmd.push(format!("--gtest_filter={filter}").into());
                 }
                 test_cmd
             }
@@ -485,6 +495,67 @@ mod test {
                 "--gtest_list_tests",
                 "--gtest_output=json:/foo/bar"
             ]
+        );
+    }
+
+    #[test]
+    fn test_gtest_filter() {
+        // tpx delivers the per-shard case filter via the GTEST_FILTER env var
+        // (D105494507) instead of a --gtest_filter argv flag. clap captures it
+        // into the `filter` field (mirroring GTEST_OUTPUT). Because an antlir2
+        // image test runs the inner binary in an isolated environment that does
+        // not inherit the host env, into_inner_cmd must replay the filter as a
+        // --gtest_filter= argv flag (just like it replays --gtest_output=).
+        let test = Test::Gtest {
+            test: PathBuf::from("/path/to/the/test"),
+            output: None,
+            filter: Some("Suite.CaseA:Suite.CaseB".to_owned()),
+            gtest_list_tests: false,
+            test_cmd: vec![OsString::from("--gtest_catch_exceptions=0")],
+        };
+        assert_eq!(
+            test.into_inner_cmd(),
+            vec![
+                "/path/to/the/test",
+                "--gtest_catch_exceptions=0",
+                "--gtest_filter=Suite.CaseA:Suite.CaseB",
+            ],
+            "GTEST_FILTER must be replayed as a --gtest_filter argv flag for the inner test",
+        );
+
+        // Negative case: no filter -> no --gtest_filter flag emitted.
+        let test = Test::Gtest {
+            test: PathBuf::from("/path/to/the/test"),
+            output: None,
+            filter: None,
+            gtest_list_tests: false,
+            test_cmd: vec![OsString::from("--gtest_catch_exceptions=0")],
+        };
+        assert_eq!(
+            test.into_inner_cmd(),
+            vec!["/path/to/the/test", "--gtest_catch_exceptions=0"],
+            "absent filter must not add a --gtest_filter flag",
+        );
+
+        // A --gtest_filter that clap consumed into test_cmd (because it followed
+        // a user arg under allow_hyphen_values) is recovered into the `filter`
+        // field by fixup_gtest_args, then replayed by into_inner_cmd.
+        let arg = TestArgs::parse_from([
+            "test",
+            "gtest",
+            "/path/to/the/test",
+            "--gtest_catch_exceptions=0",
+            "--gtest_filter=Suite.CaseA",
+        ]);
+        let fixed = arg.test.fixup_gtest_args();
+        assert_eq!(
+            fixed.into_inner_cmd(),
+            vec![
+                "/path/to/the/test",
+                "--gtest_catch_exceptions=0",
+                "--gtest_filter=Suite.CaseA",
+            ],
+            "fixup_gtest_args should recover a consumed --gtest_filter into the filter field",
         );
     }
 
