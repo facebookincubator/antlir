@@ -83,6 +83,14 @@ image.layer(
 
 package.unprivileged_dir(
     name = "container-dir",
+    # systemd >= 259 ships templated units (e.g. systemd-mute-console@.service)
+    # whose auto-created slice directories have systemd-escaped names containing
+    # literal backslashes (e.g. `system-systemd\x2dmute\x2dconsole.slice`).
+    # buck2's FileName validation rejects backslashes when collecting this dir's
+    # outputs ("slashes in path"), failing the build. Base64-encode such names
+    # so they are legal in buck-out. The container is launched via unshare() and
+    # never boots systemd, so these inert unit files are never read by name.
+    base64_encode_filenames = True,
     layer = ":container-image",
     visibility = ["PUBLIC"],
 )
