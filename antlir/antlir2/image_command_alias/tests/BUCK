@@ -31,9 +31,11 @@ echo -n $@ > $out_file
 echo "$SUFFIX" >> $out_file
 """,
         ),
-        feature.rpms_install(rpms = [
-            "coreutils",  # Provides /bin/echo
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "coreutils",  # Provides /bin/echo
+            ]
+        ),
     ],
 )
 

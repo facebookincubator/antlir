@@ -22,7 +22,8 @@ image.layer(
             "/libexec",
             "/share/qemu",
         ]
-    ] + [
+    ]
+    + [
         feature.ensure_dirs_exist(dirs = "/share"),
         feature.clone(
             path = "/bin/swtpm",

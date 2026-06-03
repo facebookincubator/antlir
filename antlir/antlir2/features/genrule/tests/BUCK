@@ -43,12 +43,17 @@ image.layer(
             cmd = ["true"],
             user = "root",
         ),
-    ] + ([
-        feature.install(
-            src = "//antlir:empty",
-            dst = "/is-facebook",
-        ),
-    ] if is_facebook else []),
+    ]
+    + (
+        [
+            feature.install(
+                src = "//antlir:empty",
+                dst = "/is-facebook",
+            ),
+        ]
+        if is_facebook
+        else []
+    ),
 )
 
 image.layer(
@@ -226,7 +231,7 @@ image.layer(
             cmd = [
                 "/usr/bin/python3",
                 "-c",
-                "import multiprocessing.synchronize\nsl = multiprocessing.synchronize.Semaphore(ctx=None)\nwith sl:\n  print(\"locked\")",
+                'import multiprocessing.synchronize\nsl = multiprocessing.synchronize.Semaphore(ctx=None)\nwith sl:\n  print("locked")',
             ],
             user = "root",
         ),

@@ -8,11 +8,13 @@ image.layer(
     name = "bash-installed",
     default_os = "debian-trixie",
     features = [
-        feature.apt_install(packages = [
-            "bash",
-            "dash",
-            "dpkg",
-        ]),
+        feature.apt_install(
+            packages = [
+                "bash",
+                "dash",
+                "dpkg",
+            ]
+        ),
     ],
 )
 
@@ -30,9 +32,11 @@ image.layer(
     name = "bash-removed",
     default_os = "debian-trixie",
     features = [
-        feature.apt_remove(packages = [
-            "bash",
-        ]),
+        feature.apt_remove(
+            packages = [
+                "bash",
+            ]
+        ),
     ],
     parent_layer = ":bash-installed",
 )

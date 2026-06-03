@@ -47,11 +47,13 @@ image.layer(
 feature.new(
     name = "rootfs-features",
     features = [
-        feature.rpms_install(rpms = [
-            "busybox",
-            "/usr/bin/mount",
-            "/usr/bin/sh",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "busybox",
+                "/usr/bin/mount",
+                "/usr/bin/sh",
+            ]
+        ),
         feature.ensure_dirs_exist(dirs = "/__antlir2_appliance_vm__"),
         feature.install(
             src = "init",

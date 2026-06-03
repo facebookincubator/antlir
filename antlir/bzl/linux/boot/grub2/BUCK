@@ -6,16 +6,18 @@ oncall("antlir")
 image.layer(
     name = "deps",
     features = [
-        feature.rpms_install(subjects = select({
-            "ovr_config//cpu:arm64": [
-                "grub2-efi-aa64",
-                "grub2-efi-aa64-modules",
-            ],
-            "ovr_config//cpu:x86_64": [
-                "grub2-efi-x64",
-                "grub2-efi-x64-modules",
-            ],
-        })),
+        feature.rpms_install(
+            subjects = select({
+                "ovr_config//cpu:arm64": [
+                    "grub2-efi-aa64",
+                    "grub2-efi-aa64-modules",
+                ],
+                "ovr_config//cpu:x86_64": [
+                    "grub2-efi-x64",
+                    "grub2-efi-x64-modules",
+                ],
+            })
+        ),
     ],
     visibility = [],
 )
@@ -88,7 +90,8 @@ image.layer(
             src = "grub.cfg",
             dst = "/EFI/BOOT/grub.cfg",
         ),
-    ] + [
+    ]
+    + [
         feature.clone(
             dst_path = select({
                 "ovr_config//cpu:arm64": "/grub2/arm64-efi/{}.mod".format(i),

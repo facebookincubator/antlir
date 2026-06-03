@@ -12,19 +12,21 @@ third_party.build(
     name = "json-glib",
     src = third_party.source("json-glib"),
     features = [
-        feature.rpms_install(rpms = [
-            # build deps
-            "clang",
-            "meson",
-            # static deps
-            "glibc-static",
-            "glib2-static",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                # build deps
+                "clang",
+                "meson",
+                # static deps
+                "glibc-static",
+                "glib2-static",
+            ]
+        ),
     ],
     script = third_party.script(
         build = "meson compile -C _build",
         install = "meson install -C _build",
-        prepare = "meson _build . -Ddefault_library=static -Dprefix=\"${OUTPUT}\"",
+        prepare = 'meson _build . -Ddefault_library=static -Dprefix="${OUTPUT}"',
     ),
     visibility = [
         "//antlir/third-party/...",

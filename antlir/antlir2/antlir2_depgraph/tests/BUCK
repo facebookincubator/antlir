@@ -105,7 +105,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "conflict-with-installed-dir",
-    error_regex = "\"\\/foo\\/bar\".*is provided by multiple features.*",
+    error_regex = '"\\/foo\\/bar".*is provided by multiple features.*',
     features = [
         feature.install(
             src = ":dir",
@@ -160,7 +160,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "missing-dep",
-    error_regex = "\"/foo\"\\)? is required by ",
+    error_regex = '"/foo"\\)? is required by ',
     features = [
         feature.remove(
             must_exist = True,
@@ -201,7 +201,7 @@ bad_depgraph(
 
 bad_depgraph(
     name = "conflict-in-same-layer",
-    error_regex = "\"/foo\".*is provided by multiple features",
+    error_regex = '"/foo".*is provided by multiple features',
     features = [
         feature.install(
             src = "//antlir:empty",
@@ -272,7 +272,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "conflict-with-parent",
-    error_regex = "\"/foo\".*is provided by multiple features",
+    error_regex = '"/foo".*is provided by multiple features',
     features = [
         feature.install(
             src = "//antlir:empty",
@@ -285,7 +285,7 @@ bad_depgraph(
 
 bad_depgraph(
     name = "symlink-conflict-with-parent",
-    error_regex = "\"/foo\".*is provided by multiple features",
+    error_regex = '"/foo".*is provided by multiple features',
     features = [
         feature.ensure_file_symlink(
             link = "/foo",
@@ -303,10 +303,12 @@ good_depgraph(
             src = "//antlir:empty",
             dst = "/clone/src/dir/foo",
         ),
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
         # `ensure_file_symlink` doesn't allow relative symlinks
         feature.genrule(
             cmd = [
@@ -321,7 +323,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "clone-conflict-inside-dir",
-    error_regex = "^Path\\(Entry\\(FsEntry \\{ path: \"/cloned/foo\", file_type: File, mode: 33060 \\}\\)\\) is provided by multiple features",
+    error_regex = '^Path\\(Entry\\(FsEntry \\{ path: "/cloned/foo", file_type: File, mode: 33060 \\}\\)\\) is provided by multiple features',
     features = [
         feature.ensure_dirs_exist(dirs = "/cloned"),
         feature.clone(
@@ -354,7 +356,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "clone-with-missing-user",
-    error_regex = "^User\\(\"antlir\"\\) is required ",
+    error_regex = '^User\\("antlir"\\) is required ',
     features = [
         feature.clone(
             dst_path = "/dst",
@@ -519,7 +521,7 @@ image.layer(
 
 bad_depgraph(
     name = "conflicting-mounts",
-    error_regex = "\"\\/mnt\".*is provided by multiple features.*",
+    error_regex = '"\\/mnt".*is provided by multiple features.*',
     features = [
         feature.layer_mount(
             mountpoint = "/mnt",

@@ -117,8 +117,7 @@ repo(
         ":signed-with-wrong-key",
         ":signed-sha512",
     ],
-    visibility = [
-    ],
+    visibility = [],
 )
 
 image.layer(

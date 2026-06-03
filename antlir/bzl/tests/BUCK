@@ -18,10 +18,12 @@ export_file(name = "cheese-dropin.conf")
 image.layer(
     name = "systemd_feature-layer",
     features = [
-        feature.rpms_install(rpms = [
-            "python3",
-            "systemd",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "python3",
+                "systemd",
+            ]
+        ),
         # A target with a dest
         systemd.install_unit(
             ":cheese-export.service",
@@ -33,7 +35,6 @@ image.layer(
             "cheese-export-with-dest.service",
             dest = "cheese-dropin-with-dest.conf",
         ),
-
         # A target with no dest and enabled in a non-default target
         systemd.install_unit(":cheese-export.service"),
         systemd.enable_unit(
@@ -41,12 +42,10 @@ image.layer(
             target = "sysinit.target",
         ),
         systemd.install_dropin(":cheese-dropin.conf", "cheese-export.service"),
-
         # Local file syntax sugar with no dest
         systemd.install_unit("cheese-file.service"),
         systemd.enable_unit("cheese-file.service"),
         systemd.install_dropin("cheese-dropin.conf", "cheese-file.service"),
-
         # Enable in a target with Requires= dep type
         systemd.install_unit("cheese-requires.service"),
         systemd.enable_unit(
@@ -54,7 +53,6 @@ image.layer(
             dep_type = "requires",
             target = "example.target",
         ),
-
         # Image source with no path
         systemd.install_unit(":cheese-source.service"),
         systemd.install_dropin(
@@ -65,7 +63,6 @@ image.layer(
         systemd.mask_units(["cheese-source.service"]),
         # Mask a tmpfiles.d config
         systemd.mask_tmpfiles(["testconfig.conf"]),
-
         # Install and enable a template unit
         systemd.install_unit("cheese-template@.service"),
         systemd.enable_unit("cheese-template@foo.service"),

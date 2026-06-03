@@ -18,11 +18,13 @@ image.layer(
 image.layer(
     name = "parent",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-            "util-linux",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+                "util-linux",
+            ]
+        ),
         feature.ensure_dirs_exist(dirs = "/mount/in"),
         feature.layer_mount(
             mountpoint = "/mount/in/parent",

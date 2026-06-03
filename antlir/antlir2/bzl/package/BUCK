@@ -16,9 +16,11 @@ feature.new(
 image.layer(
     name = "skopeo-layer",
     features = [
-        feature.rpms_install(rpms = [
-            "skopeo",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "skopeo",
+            ]
+        ),
     ],
 )
 

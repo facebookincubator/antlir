@@ -37,10 +37,12 @@ rust_binary(
 feature.new(
     name = "vm-firmwares",
     features = [
-        feature.rpms_install(rpms = [
-            "edk2-ovmf",
-            "edk2-aarch64",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "edk2-ovmf",
+                "edk2-aarch64",
+            ]
+        ),
         # QEMU aarch64 expects the firmware to be exactly 64M, but the edk2
         # firwmare for aarch64 is not padded, so just extend it during the image
         # build instead of at runtime
@@ -58,19 +60,21 @@ feature.new(
 image.layer(
     name = "container-image",
     features = [
-        feature.rpms_install(rpms = [
-            "fb-xarexec",  # for @mode/opt python tests @oss-disable
-            "glib2",  # for qemu-img
-            "iproute",  # for NIC configuration
-            "numactl-libs",  # for qemu-system
-            "openssh-clients",  # for ssh shell
-            "qemu-system-x86",  # run a VM
-            "qemu-system-aarch64",  # run a VM
-            "qemu-img",  # manipulate disk images
-            "swtpm",  # emulate TPM in software
-            "systemd-container",  # for systemd-detect-virt
-            "virtiofsd",  # rust virtiofsd
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "fb-xarexec",  # for @mode/opt python tests @oss-disable
+                "glib2",  # for qemu-img
+                "iproute",  # for NIC configuration
+                "numactl-libs",  # for qemu-system
+                "openssh-clients",  # for ssh shell
+                "qemu-system-x86",  # run a VM
+                "qemu-system-aarch64",  # run a VM
+                "qemu-img",  # manipulate disk images
+                "swtpm",  # emulate TPM in software
+                "systemd-container",  # for systemd-detect-virt
+                "virtiofsd",  # rust virtiofsd
+            ]
+        ),
         # Don't let random configurations sneak in - we want this tightly
         # controlled since it's a very constrained environment and a somewhat
         # unique setup to just SSH into the local VM

@@ -9,9 +9,11 @@ oncall("antlir")
 image.layer(
     name = "base",
     features = [
-        feature.rpms_install(rpms = [
-            "systemd",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "systemd",
+            ]
+        ),
     ],
 )
 

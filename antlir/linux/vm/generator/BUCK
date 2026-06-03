@@ -6,10 +6,12 @@ oncall("antlir")
 # needed for testing images in vms.
 feature.new(
     name = "mounts",
-    features = [feature.install(
-        src = "//antlir/vm:mount-generator",
-        dst = "/usr/lib/systemd/system-generators/mount-generator",
-        mode = "a+rx",
-    )],
+    features = [
+        feature.install(
+            src = "//antlir/vm:mount-generator",
+            dst = "/usr/lib/systemd/system-generators/mount-generator",
+            mode = "a+rx",
+        )
+    ],
     visibility = ["PUBLIC"],
 )

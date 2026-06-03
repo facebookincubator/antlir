@@ -12,15 +12,17 @@ third_party.build(
     name = "libcrypto",
     src = third_party.source("openssl"),
     features = [
-        feature.rpms_install(rpms = [
-            # build deps
-            "autoconf",
-            "autoconf-archive",
-            "gcc",
-            "libtool",
-            "make",
-            "perl",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                # build deps
+                "autoconf",
+                "autoconf-archive",
+                "gcc",
+                "libtool",
+                "make",
+                "perl",
+            ]
+        ),
     ],
     script = third_party.script(
         build = "make",

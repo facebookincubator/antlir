@@ -8,11 +8,14 @@ load(":defs.bzl", "hello_world_build_test")
 
 oncall("antlir")
 
-[export_file(name = name) for name in [
-    "hello_world.c",
-    "00_patch",
-    "01_patch",
-]]
+[
+    export_file(name = name)
+    for name in [
+        "hello_world.c",
+        "00_patch",
+        "01_patch",
+    ]
+]
 
 buck_genrule(
     name = "hello_world.tar",

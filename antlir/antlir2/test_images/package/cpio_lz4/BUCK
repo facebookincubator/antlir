@@ -26,10 +26,12 @@ test_in_layer(
             src = ":test.cpio.lz4",
             dst = "/package.cpio.lz4",
         ),
-        feature.rpms_install(rpms = [
-            "cpio",
-            "lz4",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "cpio",
+                "lz4",
+            ]
+        ),
     ],
     omit_package_features = [package_feature("xattr")],
     stub = "stub.rs",

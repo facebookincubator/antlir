@@ -14,12 +14,14 @@ image.layer(
     name = "base",
     dnf_additional_repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
     features = [
-        feature.rpms_install(rpms = [
-            "foobar",
-            "python3",
-            "systemd",
-            "util-linux",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "foobar",
+                "python3",
+                "systemd",
+                "util-linux",
+            ]
+        ),
         systemd.install_unit("slow-unit.service"),
         systemd.enable_unit(
             "slow-unit.service",
@@ -181,7 +183,7 @@ image.layer(
 test_that_should_fail(
     name = "test-foo-rpm-integrity-removed-file",
     layer = ":foo-rpms-integrity-violated",
-    stderr_re = "\\/foo\\/bar\\/baz owned by \\{\"foobarbaz\"\\}: \\{Missing\\}",
+    stderr_re = '\\/foo\\/bar\\/baz owned by \\{"foobarbaz"\\}: \\{Missing\\}',
     test_rule = image_test_rpm_integrity,
 )
 

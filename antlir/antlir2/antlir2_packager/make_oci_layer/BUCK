@@ -30,11 +30,13 @@ rust_binary(
 image.layer(
     name = "parent-layer-with-permissions",
     features = [
-        feature.rpms_install(rpms = [
-            "attr",
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "attr",
+                "bash",
+                "coreutils",
+            ]
+        ),
         # Create files with specific permissions
         feature.install_text(
             dst = "/test_file.sh",
@@ -81,10 +83,12 @@ docker_archive(
 image.layer(
     name = "test-layer",
     features = [
-        feature.rpms_install(rpms = [
-            "podman",
-            "python3",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "podman",
+                "python3",
+            ]
+        ),
     ],
 )
 
@@ -110,10 +114,12 @@ image_python_test(
 image.layer(
     name = "parent-layer-with-content",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
         # Create files with specific permissions that will have content changes
         feature.install_text(
             dst = "/executable.sh",
@@ -183,11 +189,13 @@ image_python_test(
 image.layer(
     name = "parent-layer-with-directories",
     features = [
-        feature.rpms_install(rpms = [
-            "attr",
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "attr",
+                "bash",
+                "coreutils",
+            ]
+        ),
         # Create directories with initial permissions and ownership
         feature.ensure_dirs_exist(dirs = "/var/cache/testdir"),
         feature.ensure_dirs_exist(dirs = "/var/lib/testdata"),

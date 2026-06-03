@@ -17,10 +17,12 @@ image.layer(
             src = ":test.unprivileged_dir",
             dst = "/unprivileged_dir",
         ),
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
     ],
 )
 
@@ -68,10 +70,12 @@ image.layer(
             src = ":base64.unprivileged_dir",
             dst = "/unprivileged_dir",
         ),
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
     ],
 )
 

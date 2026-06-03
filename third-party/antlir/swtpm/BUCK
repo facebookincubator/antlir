@@ -20,30 +20,31 @@ third_party.build(
         "centos9",
     ],
     features = [
-        feature.rpms_install(rpms = [
-            # build deps
-            "autoconf",
-            "autoconf-archive",
-            "expect",
-            "file",
-            "findutils",
-            "gcc",
-            "libtasn1-devel",  # required but not for swtpm binary (ok with shared here)
-            "libtool",
-            "make",
-            "net-tools",
-            "openssl-devel",
-            "patch",
-            "rpm",
-            "socat",
-            "tpm-tools",
-
-            # static deps
-            "glibc-static",
-            "glib2-static",
-            "pcre-static",
-            "python3",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                # build deps
+                "autoconf",
+                "autoconf-archive",
+                "expect",
+                "file",
+                "findutils",
+                "gcc",
+                "libtasn1-devel",  # required but not for swtpm binary (ok with shared here)
+                "libtool",
+                "make",
+                "net-tools",
+                "openssl-devel",
+                "patch",
+                "rpm",
+                "socat",
+                "tpm-tools",
+                # static deps
+                "glibc-static",
+                "glib2-static",
+                "pcre-static",
+                "python3",
+            ]
+        ),
     ],
     script = third_party.script(
         build = """

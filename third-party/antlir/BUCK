@@ -13,15 +13,17 @@ image.layer(
     features = [
         # Install some common build deps that are going to be needed by almost
         # every use case
-        feature.rpms_install(rpms = [
-            "autoconf",
-            "clang",
-            "gcc",
-            "gzip",
-            "make",
-            "patch",
-            "tar",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "autoconf",
+                "clang",
+                "gcc",
+                "gzip",
+                "make",
+                "patch",
+                "tar",
+            ]
+        ),
     ],
     visibility = [
         "PUBLIC",

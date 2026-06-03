@@ -13,17 +13,17 @@ oncall("antlir")
 
 repo_set(
     name = "test-repo-set",
-    compatible_with = [
-        os.select_key
-        for os in OSES
-    ],
-    repo_sets = select({"DEFAULT": []} | {
-        os.select_key: internal_external(
-            fb = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:" + os.name],
-            oss = ["generated//snapshot/rpm/{}:repos".format(os.name)],
-        )
-        for os in OSES
-    }),
+    compatible_with = [os.select_key for os in OSES],
+    repo_sets = select(
+        {"DEFAULT": []}
+        | {
+            os.select_key: internal_external(
+                fb = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:" + os.name],
+                oss = ["generated//snapshot/rpm/{}:repos".format(os.name)],
+            )
+            for os in OSES
+        }
+    ),
     repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
     visibility = [
         "//antlir/antlir2/bzl/feature/tests/rpm:",
@@ -35,12 +35,14 @@ repo_set(
 feature.new(
     name = "test-deps",
     features = [
-        feature.rpms_install(rpms = [
-            "dnf",
-            "python3",
-            "rpm",
-            # @oss-disable[end= ]: "fb-xarexec",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "dnf",
+                "python3",
+                "rpm",
+                # @oss-disable[end= ]: "fb-xarexec",
+            ]
+        ),
     ],
     visibility = [
         "//antlir/antlir2/features/rpm/tests/...",
@@ -90,17 +92,21 @@ python_binary(
 test_rpms(
     name = "remove",
     also_eln_dnf5 = True,
-    expected = expected_t(not_installed = [
-        "foo",
-        # 'foobar' is not explicitly installed, so removing 'foo' will remove it
-        "foobar",
-        "foobarbaz",
-    ]),
-    features = [
-        feature.rpms_remove_if_exists(rpms = [
+    expected = expected_t(
+        not_installed = [
             "foo",
+            # 'foobar' is not explicitly installed, so removing 'foo' will remove it
+            "foobar",
             "foobarbaz",
-        ]),
+        ]
+    ),
+    features = [
+        feature.rpms_remove_if_exists(
+            rpms = [
+                "foo",
+                "foobarbaz",
+            ]
+        ),
     ],
     parent_layer = simple,
 )
@@ -118,9 +124,11 @@ test_rpms(
         ],
     ),
     features = [
-        feature.rpms_remove_if_exists(rpms = [
-            "foobarbaz",
-        ]),
+        feature.rpms_remove_if_exists(
+            rpms = [
+                "foobarbaz",
+            ]
+        ),
     ],
     parent_layer = simple,
 )
@@ -144,15 +152,19 @@ test_rpms(
         ],
     ),
     features = [
-        feature.rpms_install(rpms = [
-            # "foobar" has already been implicitly installed. But now we'll
-            # explicitly install it to make sure it gets marked as installed
-            # and isn't isn't implicitly removed.
-            "foobar",
-        ]),
-        feature.rpms_remove_if_exists(rpms = [
-            "foobarbaz",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                # "foobar" has already been implicitly installed. But now we'll
+                # explicitly install it to make sure it gets marked as installed
+                # and isn't isn't implicitly removed.
+                "foobar",
+            ]
+        ),
+        feature.rpms_remove_if_exists(
+            rpms = [
+                "foobarbaz",
+            ]
+        ),
     ],
     parent_layer = simple,
 )
@@ -300,9 +312,11 @@ test_rpms(
     also_eln_dnf5 = True,
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
-        feature.rpms_install(rpms = [
-            "//antlir/antlir2/features/rpm/tests/repo:foo-2-1.noarch",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "//antlir/antlir2/features/rpm/tests/repo:foo-2-1.noarch",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -335,14 +349,8 @@ test_rpms(
 
 alias(
     name = "flavor-versionlock",
-    actual = select({
-        os.select_key: os.flavor + "[default_versionlock]"
-        for os in OSES
-    }),
-    compatible_with = [
-        os.select_key
-        for os in OSES
-    ],
+    actual = select({os.select_key: os.flavor + "[default_versionlock]" for os in OSES}),
+    compatible_with = [os.select_key for os in OSES],
 )
 
 buck_genrule(
@@ -351,10 +359,7 @@ buck_genrule(
     cmd = """
         jq '.foo = "2-1"' < $(location :flavor-versionlock) > $OUT
     """,
-    compatible_with = [
-        os.select_key
-        for os in OSES
-    ],
+    compatible_with = [os.select_key for os in OSES],
 )
 
 test_rpms(
@@ -363,9 +368,11 @@ test_rpms(
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
-        feature.rpms_install(rpms = [
-            "foo",  # test rpm
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "foo",  # test rpm
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -376,14 +383,16 @@ test_rpms(
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
-        feature.rpms_install(rpms = [
-            # Only explicitly install 'foobar', which depends on 'foo'.
-            # Without versionlock (or if versionlock only worked on
-            # explicitly-requested packages), this would pull in 'foo-3-1', but
-            # when versionlock is applied to dependencies 'foo-2-1' will end up
-            # being installed.
-            "foobar",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                # Only explicitly install 'foobar', which depends on 'foo'.
+                # Without versionlock (or if versionlock only worked on
+                # explicitly-requested packages), this would pull in 'foo-3-1', but
+                # when versionlock is applied to dependencies 'foo-2-1' will end up
+                # being installed.
+                "foobar",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -394,9 +403,11 @@ test_rpms(
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-3-1"]),
     features = [
-        feature.rpms_install(rpms = [
-            "foo-3-1",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "foo-3-1",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -410,9 +421,11 @@ test_rpms(
     },
     expected = expected_t(installed = ["foo-1-1"]),
     features = [
-        feature.rpms_install(rpms = [
-            "foo",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "foo",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -422,9 +435,11 @@ protected_installed = test_rpms(
     also_eln_dnf5 = False,
     expected = expected_t(installed = ["dnf"]),
     features = [
-        feature.rpms_install(rpms = [
-            "dnf",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "dnf",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -434,9 +449,11 @@ test_rpms(
     also_eln_dnf5 = False,
     expected = expected_t(not_installed = ["dnf"]),
     features = [
-        feature.rpms_remove_if_exists(rpms = [
-            "dnf",
-        ]),
+        feature.rpms_remove_if_exists(
+            rpms = [
+                "dnf",
+            ]
+        ),
     ],
     parent_layer = protected_installed,
 )
@@ -452,13 +469,17 @@ test_rpms(
     # the newer version of dnf4 in eln fails the entire transaction if
     # scriptlets fail
     also_eln_dnf5 = False,
-    expected = expected_t(installed = [
-        "antlir2-failing-postscripts",
-    ]),
-    features = [
-        feature.rpms_install(rpms = [
+    expected = expected_t(
+        installed = [
             "antlir2-failing-postscripts",
-        ]),
+        ]
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "antlir2-failing-postscripts",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -466,14 +487,18 @@ test_rpms(
 test_rpms(
     name = "postscript-tmpdir",
     also_eln_dnf5 = True,
-    expected = expected_t(installed = [
-        "antlir2-postscript-tmpdir",
-    ]),
-    features = [
-        feature.rpms_install(rpms = [
+    expected = expected_t(
+        installed = [
             "antlir2-postscript-tmpdir",
-            "/usr/bin/umount",  # for the test
-        ]),
+        ]
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "antlir2-postscript-tmpdir",
+                "/usr/bin/umount",  # for the test
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -493,13 +518,17 @@ antlir2_configured_alias(
 test_rpms(
     name = "postscript-proc-self",
     also_eln_dnf5 = True,
-    expected = expected_t(installed = [
-        "antlir2-postscript-proc-self",
-    ]),
-    features = [
-        feature.rpms_install(rpms = [
+    expected = expected_t(
+        installed = [
             "antlir2-postscript-proc-self",
-        ]),
+        ]
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "antlir2-postscript-proc-self",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -513,13 +542,19 @@ image_python_test(
 test_binaries_with_file_capabilities_layer = test_rpms(
     name = "test-binaries-with-file-capabilities-layer",
     also_eln_dnf5 = True,
-    expected = expected_t(installed = [
-        "antlir2-with-capability",
-    ]),
-    features = [feature.rpms_install(rpms = [
-        "libcap",  # getcap cli
-        "antlir2-with-capability",
-    ])],
+    expected = expected_t(
+        installed = [
+            "antlir2-with-capability",
+        ]
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "libcap",  # getcap cli
+                "antlir2-with-capability",
+            ]
+        )
+    ],
     parent_layer = simple,
 )
 
@@ -533,13 +568,17 @@ test_rpms(
     name = "explicitly-install-excluded-rpm",
     also_eln_dnf5 = True,
     dnf_excluded_rpms = ["antlir2-excluded"],  # this would normally come from the flavor
-    expected = expected_t(installed = [
-        "antlir2-excluded",
-    ]),
-    features = [
-        feature.rpms_install(rpms = [
+    expected = expected_t(
+        installed = [
             "antlir2-excluded",
-        ]),
+        ]
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "antlir2-excluded",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -552,15 +591,19 @@ fail_on_file_trigger_parent = test_rpms(
     # the newer version of dnf4 in eln fails the entire transaction if
     # scriptlets fail
     also_eln_dnf5 = False,
-    expected = expected_t(installed = [
-        "antlir2-fail-on-file-trigger",
-        "foo-2",
-    ]),
-    features = [
-        feature.rpms_install(rpms = [
+    expected = expected_t(
+        installed = [
             "antlir2-fail-on-file-trigger",
             "foo-2",
-        ]),
+        ]
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "antlir2-fail-on-file-trigger",
+                "foo-2",
+            ]
+        ),
         ":test-deps",
     ],
 )
@@ -592,9 +635,11 @@ image.layer(
     name = "postscript-cgroup--layer",
     dnf_additional_repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
     features = [
-        feature.rpms_install(rpms = [
-            "antlir2-postscript-cgroup",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "antlir2-postscript-cgroup",
+            ]
+        ),
         ":test-deps",
     ],
 )

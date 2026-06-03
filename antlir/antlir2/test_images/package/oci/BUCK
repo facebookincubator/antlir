@@ -78,10 +78,12 @@ cat /to-be-deleted-and-recreated
         ),
         oci_features.exposed_port(port = "8080/tcp"),
         oci_features.exposed_port(port = "9090/udp"),
-        oci_features.cmd(cmd = [
-            "bar",
-            "baz",
-        ]),
+        oci_features.cmd(
+            cmd = [
+                "bar",
+                "baz",
+            ]
+        ),
         oci_features.stop_signal(signal = "SIGTERM"),
         oci_features.volume(path = "/cache"),
         oci_features.volume(path = "/logs"),
@@ -102,10 +104,12 @@ oci(
 image.layer(
     name = "test-layer",
     features = [
-        feature.rpms_install(rpms = [
-            "podman",
-            "python3",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "podman",
+                "python3",
+            ]
+        ),
     ],
 )
 

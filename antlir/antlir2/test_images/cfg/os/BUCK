@@ -32,17 +32,19 @@ image.layer(
     name = "root",
     dnf_additional_repos = [":repo"],
     features = [
-        feature.rpms_install(subjects = [
-            select({
-                "//antlir/antlir2/os/family:family[centos]": "centos-stream-release",
-                "//antlir/antlir2/os/family:family[fedora]": "fedora-release",
-            }),
-            "bash",
-            "coreutils",
-            "rpm",
-            # @oss-disable[end= ]: "fb-xarexec",
-            test_rpm_root,
-        ]),
+        feature.rpms_install(
+            subjects = [
+                select({
+                    "//antlir/antlir2/os/family:family[centos]": "centos-stream-release",
+                    "//antlir/antlir2/os/family:family[fedora]": "fedora-release",
+                }),
+                "bash",
+                "coreutils",
+                "rpm",
+                # @oss-disable[end= ]: "fb-xarexec",
+                test_rpm_root,
+            ]
+        ),
         write_os("/root.os"),
     ],
 )
@@ -164,8 +166,7 @@ image.layer(
                 "//antlir/antlir2/os:eln": "eln",
                 "DEFAULT": "default",
             }),
-            visibility = [
-            ],
+            visibility = [],
         ),
     ]
     for level in [
@@ -198,6 +199,5 @@ repo(
     name = "repo",
     compress = "none",
     rpms = all_rpms,
-    visibility = [
-    ],
+    visibility = [],
 )

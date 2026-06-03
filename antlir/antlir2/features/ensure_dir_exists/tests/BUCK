@@ -6,8 +6,7 @@ oncall("antlir")
 
 image.layer(
     name = "base",
-    features = [
-    ],
+    features = [],
 )
 
 image.layer(

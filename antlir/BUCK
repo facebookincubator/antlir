@@ -65,8 +65,7 @@ python_library(
         "//tupperware/image/scripts/...",
         "//tupperware/scripts/...",
     ],
-    deps = [
-    ],
+    deps = [],
 )
 
 antlir_rust_extension(

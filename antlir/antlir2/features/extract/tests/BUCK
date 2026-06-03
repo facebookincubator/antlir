@@ -11,10 +11,12 @@ image.layer(
     name = "base",
     features = [
         # dependencies of the test
-        feature.rpms_install(rpms = [
-            "bash",
-            "util-linux",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "util-linux",
+            ]
+        ),
     ],
 )
 

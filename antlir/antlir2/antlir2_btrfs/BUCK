@@ -31,10 +31,12 @@ rust_library(
 image.layer(
     name = "test-layer",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "btrfs-progs",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "btrfs-progs",
+            ]
+        ),
         feature.ensure_dirs_exist(
             dirs = "/work",
             mode = 0o777,

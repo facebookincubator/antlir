@@ -12,25 +12,27 @@ third_party.build(
     name = "libffi",
     src = third_party.source("libffi"),
     features = [
-        feature.rpms_install(rpms = [
-            # build deps
-            "autoconf",
-            "autoconf-archive",
-            "expect",
-            "gcc",
-            "libtool",
-            "make",
-            "net-tools",
-            "openssl-devel",
-            "sed",
-            "socat",
-            "texinfo",
-            "tpm-tools",
-            # static deps
-            "glibc-static",
-            "glib2-static",
-            "pcre-static",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                # build deps
+                "autoconf",
+                "autoconf-archive",
+                "expect",
+                "gcc",
+                "libtool",
+                "make",
+                "net-tools",
+                "openssl-devel",
+                "sed",
+                "socat",
+                "texinfo",
+                "tpm-tools",
+                # static deps
+                "glibc-static",
+                "glib2-static",
+                "pcre-static",
+            ]
+        ),
     ],
     script = third_party.script(
         build = "make",

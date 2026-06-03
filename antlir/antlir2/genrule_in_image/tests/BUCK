@@ -8,10 +8,12 @@ oncall("antlir")
 image.layer(
     name = "layer",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
     ],
 )
 

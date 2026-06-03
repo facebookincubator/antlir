@@ -104,10 +104,12 @@ all_rpms.extend([
 all_rpms.extend([
     test_rpm(
         name = "foo-recommends-me",
-        features = [feature.install(
-            src = "//antlir:empty",
-            dst = "/foo-recommends-me",
-        )],
+        features = [
+            feature.install(
+                src = "//antlir:empty",
+                dst = "/foo-recommends-me",
+            )
+        ],
         release = "1",
         version = str(version),
     )
@@ -117,10 +119,12 @@ all_rpms.extend([
 all_rpms.extend([
     test_rpm(
         name = "requires-any-foo",
-        features = [feature.install(
-            src = "//antlir:empty",
-            dst = "/foo-recommends-me",
-        )],
+        features = [
+            feature.install(
+                src = "//antlir:empty",
+                dst = "/foo-recommends-me",
+            )
+        ],
         release = "1",
         requires = ["foo"],
         version = str(version),
@@ -131,10 +135,12 @@ all_rpms.extend([
 all_rpms.append(
     test_rpm(
         name = "foo-not-reflinked",
-        features = [feature.install(
-            src = "//antlir:empty",
-            dst = "/foo-recommends-me",
-        )],
+        features = [
+            feature.install(
+                src = "//antlir:empty",
+                dst = "/foo-recommends-me",
+            )
+        ],
         release = "1",
         version = "1",
     ),

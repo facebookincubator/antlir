@@ -43,11 +43,13 @@ image.layer(
 image.layer(
     name = "some-mutation-base",
     features = [
-        feature.rpms_install(rpms = [
-            "attr",
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "attr",
+                "bash",
+                "coreutils",
+            ]
+        ),
     ],
     parent_layer = ":some",
 )

@@ -28,11 +28,13 @@ rust_library(
 image.layer(
     name = "isolated-root",
     features = [
-        feature.rpms_install(rpms = [
-            "coreutils",
-            "bash",
-            "/usr/bin/mount",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "coreutils",
+                "bash",
+                "/usr/bin/mount",
+            ]
+        ),
         feature.install_text(
             dst = "/foo",
             text = "foo\n",

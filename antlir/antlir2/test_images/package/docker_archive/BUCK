@@ -20,10 +20,12 @@ echo "Entrypoint!"
 stat --format="%a %u %g" /entrypoint.sh
 """,
         ),
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
     ],
 )
 
@@ -39,10 +41,12 @@ docker_archive(
 image.layer(
     name = "test-layer",
     features = [
-        feature.rpms_install(rpms = [
-            "podman",
-            "python3",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "podman",
+                "python3",
+            ]
+        ),
     ],
 )
 
@@ -68,10 +72,12 @@ image_python_test(
 image.layer(
     name = "parent-layer-with-custom-user",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
         feature.group_add(
             groupname = "foogroup",
             uidmap = "antlir",
@@ -107,10 +113,12 @@ image.layer(
             mode = "u+rwx,g+rx,o+rx",
             user = "foouser",
         ),
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
     ],
     parent_layer = ":parent-layer-with-custom-user",
 )

@@ -57,15 +57,17 @@ package.rpm(
     rpm_name = "add",
 )
 
-tcw = select(internal_external(
-    fb = {
-        "DEFAULT": ["ovr_config//:none"],
-        "ovr_config//build_mode:opt": [],
-    },
-    oss = {
-        "DEFAULT": ["ovr_config//:none"],
-    },
-))
+tcw = select(
+    internal_external(
+        fb = {
+            "DEFAULT": ["ovr_config//:none"],
+            "ovr_config//build_mode:opt": [],
+        },
+        oss = {
+            "DEFAULT": ["ovr_config//:none"],
+        },
+    )
+)
 
 image.layer(
     name = "test-layer",

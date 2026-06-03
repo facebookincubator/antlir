@@ -11,14 +11,16 @@ image.layer(
     ],
     features = [
         ":user",
-        feature.rpms_install(rpms = [
-            "foobar",
-            "foo-epoch",
-            "antlir2-changelog",
-            "coreutils",
-            "systemd",
-            "shadow-utils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "foobar",
+                "foo-epoch",
+                "antlir2-changelog",
+                "coreutils",
+                "systemd",
+                "shadow-utils",
+            ]
+        ),
         feature.install(
             src = "//antlir:empty",
             dst = "/feature/foo",

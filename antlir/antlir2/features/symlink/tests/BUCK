@@ -90,10 +90,12 @@ image_diff_test(
 image.layer(
     name = "features-under-symlinks-base",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "coreutils",
-        ]),
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
         feature.genrule(
             cmd = [
                 "/bin/bash",
