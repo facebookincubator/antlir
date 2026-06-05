@@ -97,14 +97,16 @@ def feature_impl(
         visibility = lib_visibility,
         deps = selects.apply(
             deps or [],
-            lambda deps: deps
-            + [
-                "serde",
-                "tracing",
-                "//antlir/antlir2/antlir2_compile:antlir2_compile",
-                "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
-                "//antlir/antlir2/antlir2_features:antlir2_features",
-            ],
+            lambda deps: (
+                deps
+                + [
+                    "serde",
+                    "tracing",
+                    "//antlir/antlir2/antlir2_compile:antlir2_compile",
+                    "//antlir/antlir2/antlir2_depgraph_if:antlir2_depgraph_if",
+                    "//antlir/antlir2/antlir2_features:antlir2_features",
+                ]
+            ),
         ),
         features = features,
         test_deps = test_deps,
