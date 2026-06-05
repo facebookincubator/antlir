@@ -65,10 +65,7 @@ def _test_aggregate_packages_coverage_impl(ctx) -> None:
             discovered_pkgs[path] = 1
     discovered_pkgs = sorted(discovered_pkgs.keys())
 
-    package_tests = [
-        i.replace(":package-tests", "")
-        for i in ctx.cli_args.package_test
-    ]
+    package_tests = [i.replace(":package-tests", "") for i in ctx.cli_args.package_test]
     missing_pkgs = [i for i in discovered_pkgs if i not in package_tests]
     extra_pkgs = [i for i in package_tests if i not in discovered_pkgs]
     if missing_pkgs == [] and extra_pkgs == []:
