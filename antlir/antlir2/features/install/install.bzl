@@ -46,7 +46,7 @@ def install(
     group: str | int | Select = "root",
     xattrs: dict[str, str] | Select = {},
     never_use_dev_binary_symlink: bool | Select = False,
-    split_debuginfo: bool = True,
+    split_debuginfo: bool | Select = True,
     strip_all: bool = False,
     always_use_gnu_debuglink: bool = False,
     setcap: str | None = None,
@@ -111,8 +111,11 @@ def install(
             lambda v: None if v else fail("setcap does not work on dev mode binaries. You must set never_use_dev_binary_symlink=True"),
         )
 
-    if always_use_gnu_debuglink and not split_debuginfo:
-        fail("always_use_gnu_debuglink requires split_debuginfo=True")
+    if always_use_gnu_debuglink:
+        selects.apply(
+            split_debuginfo,
+            lambda v: None if v else fail("always_use_gnu_debuglink requires split_debuginfo=True"),
+        )
 
     exec_deps = {
         "_debuginfo_splitter": "fbcode//antlir/antlir2/tools:debuginfo-splitter",
