@@ -52,7 +52,7 @@ def ensure_subdirs_exist(
         },
     )
 
-def ensure_dirs_exist(*, dirs: str | Select, mode: int | str = 0o755, user: str = "root", group: str = "root"):
+def ensure_dirs_exist(*, dirs: str | Select, mode: int | str = 0o755, user: str | Select = "root", group: str | Select = "root"):
     """Equivalent to `ensure_subdirs_exist("/", dirs, ...)`."""
     return ensure_subdirs_exist(
         into_dir = "/",
