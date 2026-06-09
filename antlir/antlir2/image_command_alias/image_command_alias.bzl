@@ -21,6 +21,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         cmd_args(env_json, format = "--env={}") if env_json else cmd_args(),
         cmd_args(ctx.attrs.pass_env, format = "--pass-env={}"),
         "--single-user-userns" if ctx.attrs.single_user_userns else cmd_args(),
+        "--readonly-root" if ctx.attrs.readonly else cmd_args(),
         "--",
         ctx.attrs.exe,
         cmd_args(ctx.attrs.args),
@@ -57,6 +58,16 @@ _image_command_alias = rule(
         "exe": attrs.arg(),
         "labels": attrs.list(attrs.string(), default = []),
         "pass_env": attrs.list(attrs.string(), default = []),
+        "readonly": attrs.bool(
+            default = False,
+            doc = """
+                If set, mount the root layer read-only instead of setting up an
+                ephemeral overlayfs on top of it. Defaults to False to continue
+                using an ephemeral overlayfs. Set this to True when the command
+                does not need to write into the root layer to avoid the need for
+                overlayfs.
+            """,
+        ),
         "root": attrs.source(allow_directory = True),
         "single_user_userns": attrs.bool(
             default = False,
