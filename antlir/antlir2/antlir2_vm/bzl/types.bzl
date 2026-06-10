@@ -5,17 +5,20 @@
 
 # Describes a writable disk for the VM. It can be built from some base image, or
 # start empty with a specified size.
+#
+# Interface-specific options are nested in optional structs:
+#   nvme: struct(num_namespaces)
 DiskInfo = provider(
     fields = [
         "free_mib",  # Grow the disk by specified size
         "base_image",  # Base image for the disk. If None, the disk will be empty
         "bootable",  # True if the disk is bootable
-        "interface",  # Interface of the disk
+        "interface",  # Interface of the disk: "virtio-blk", "nvme", or "ide-hd"
         "logical_block_size",  # Logical block size of the disk
         "physical_block_size",  # Physical block size of the disk
         "serial",  # Device serial override. By default it's automatically assigned
-        "nvme_num_namespaces",  # For NVME only: the number of namespaces to say that the disk/controller supports
-    ]
+        "nvme",  # struct(num_namespaces) for nvme interface, None otherwise
+    ],
 )
 
 # `VMHostInfo` is returned by the macro that constructs a VM target. It contains

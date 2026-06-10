@@ -35,7 +35,10 @@ pub(crate) trait QemuDevice {
     fn qemu_args(&self) -> Vec<OsString>;
 }
 
-/// Captures property of the disk specified by user to describe a writable disk
+/// Captures property of the disk specified by user to describe a writable disk.
+/// Deserialized from the machine spec JSON produced by Buck, where the
+/// `interface` field acts as the discriminant and interface-specific options
+/// live in a nested object (e.g. `"nvme": {"num_namespaces": 2}`).
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "interface", rename_all = "kebab-case")]
 pub(crate) enum QCow2DiskOpts {
@@ -44,7 +47,6 @@ pub(crate) enum QCow2DiskOpts {
     Nvme(QCow2DiskNvmeOpts),
 }
 
-/// Captures property of the disk specified by user to describe a writable disk
 #[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct QCow2DiskCommonOpts {
     /// Path to the base image file
@@ -60,11 +62,15 @@ pub(crate) struct QCow2DiskCommonOpts {
     pub(crate) serial: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub(crate) struct QCow2DiskNvmeOpts {
     #[serde(flatten)]
     pub(crate) common: QCow2DiskCommonOpts,
-    #[serde(rename = "nvme_num_namespaces")]
+    pub(crate) nvme: NvmeOpts,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct NvmeOpts {
     pub(crate) num_namespaces: usize,
 }
 

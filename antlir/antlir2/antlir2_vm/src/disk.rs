@@ -100,13 +100,12 @@ impl QCow2Disk {
     }
 
     fn disk_file_names(&self) -> NonEmpty<PathBuf> {
-        let num = match &self.opts {
-            QCow2DiskOpts::Nvme(nvme) => nvme.num_namespaces,
-            _ => 1,
+        let names: Vec<_> = match &self.opts {
+            QCow2DiskOpts::Nvme(nvme) => (0..nvme.nvme.num_namespaces)
+                .map(|n| self.state_dir.join(format!("{}_{n}.qcow2", self.name())))
+                .collect(),
+            _ => vec![self.state_dir.join(format!("{}_0.qcow2", self.name()))],
         };
-        let names = (0..num)
-            .map(|num| self.state_dir.join(format!("{}_{num}.qcow2", self.name())))
-            .collect::<Vec<_>>();
         NonEmpty::from_vec(names).expect("there is always at least one disk file for a disk")
     }
 
@@ -272,6 +271,7 @@ mod test {
     use std::ffi::OsStr;
 
     use super::*;
+    use crate::types::NvmeOpts;
     use crate::types::QCow2DiskNvmeOpts;
 
     fn build_test_qcow2disk(id: usize) -> QCow2Disk {
@@ -345,7 +345,7 @@ mod test {
         disk2.opts = match disk2.opts {
             QCow2DiskOpts::VirtioBlk(common) => QCow2DiskOpts::Nvme(QCow2DiskNvmeOpts {
                 common,
-                num_namespaces: 1,
+                nvme: NvmeOpts { num_namespaces: 1 },
             }),
             _ => panic!("Unexpected disk opts"),
         };
