@@ -123,6 +123,12 @@ pub(crate) struct VMArgs {
     /// Pass credentials to systemd pid1
     #[arg(long)]
     pub(crate) systemd_credential: Vec<KvPair>,
+    /// After the SSH command exits, wait for the VM process to exit on its
+    /// own within this many seconds. Useful for verifying that a
+    /// guest-initiated shutdown (e.g., `poweroff`) actually causes QEMU to
+    /// terminate via ACPI S5. Leave unset to disable.
+    #[clap(long)]
+    pub(crate) expect_vm_exit: Option<u32>,
     /// Operation for VM to carry out
     #[clap(flatten)]
     pub(crate) mode: VMModeArgs,
@@ -191,6 +197,10 @@ impl VMArgs {
             kv_str.push(OsStr::new("="));
             kv_str.push(pair.value.clone());
             args.push(kv_str);
+        }
+        if let Some(expect_vm_exit) = self.expect_vm_exit {
+            args.push("--expect-vm-exit".into());
+            args.push(expect_vm_exit.to_string().into());
         }
         if let Some(command) = &self.mode.command {
             command.iter().for_each(|c| args.push(c.clone()));

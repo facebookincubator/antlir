@@ -728,6 +728,50 @@ impl<S: Share> VM<S> {
                 return Err(VMError::SSHCommandResultError(status));
             }
         }
+
+        // If the test expects the VM to exit on its own (e.g., after guest
+        // poweroff), wait for the QEMU process to terminate. This verifies
+        // that guest-initiated ACPI shutdown actually works.
+        if let Some(expect_vm_exit) = self.args.expect_vm_exit {
+            let vm_exit_timeout = Duration::from_secs(expect_vm_exit as u64);
+            let wait_start = Instant::now();
+            info!(
+                "Waiting up to {}s for VM process to exit (expect_vm_exit)",
+                vm_exit_timeout.as_secs()
+            );
+            loop {
+                match vm_proc.try_wait() {
+                    Ok(Some(status)) => {
+                        info!(
+                            "VM process exited with {} after {}s (guest-initiated shutdown)",
+                            status,
+                            wait_start.elapsed().as_secs()
+                        );
+                        // Fall through to cleanup_vm so socket files and other
+                        // debris are still removed. It won't kill the VM since
+                        // the process has already exited.
+                        break;
+                    }
+                    Ok(None) if wait_start.elapsed() < vm_exit_timeout => {
+                        thread::sleep(Duration::from_millis(200));
+                    }
+                    Ok(None) => {
+                        return Err(VMError::RunError(format!(
+                            "VM did not exit within {}s after guest command completed — \
+                                guest-initiated shutdown (ACPI S5) may be broken",
+                            vm_exit_timeout.as_secs()
+                        )));
+                    }
+                    Err(err) => {
+                        return Err(VMError::CleanupError {
+                            desc: "Error waiting for VM process to exit".into(),
+                            err,
+                        });
+                    }
+                }
+            }
+        }
+
         self.cleanup_vm(vm_proc, &socket, cleanup_needed, start_ts)?;
         Ok(())
     }

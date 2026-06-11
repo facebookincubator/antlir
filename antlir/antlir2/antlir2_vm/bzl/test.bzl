@@ -41,6 +41,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         test_cmd = cmd_args(test_cmd, "--expect-failure")
     if ctx.attrs.postmortem:
         test_cmd = cmd_args(test_cmd, "--postmortem")
+    if ctx.attrs.expect_vm_exit != None:
+        test_cmd = cmd_args(test_cmd, "--expect-vm-exit", str(ctx.attrs.expect_vm_exit))
     if ctx.attrs.dump_eth0:
         test_cmd = cmd_args(test_cmd, "--dump-eth0-traffic")
 
@@ -162,6 +164,15 @@ _vm_test = rule(
         "expect_failure": attrs.bool(
             doc = "If true, VM is expected to timeout or fail early.",
         ),
+        "expect_vm_exit": attrs.option(
+            attrs.int(),
+            default = None,
+            doc = "After the SSH test command completes, wait this many seconds "
+            + "for the VM process to exit on its own. Useful for verifying "
+            + "guest-initiated shutdown (e.g., ACPI S5 via poweroff). "
+            + "Fails if QEMU does not terminate within the timeout. "
+            + "Leave unset to disable.",
+        ),
         "first_boot_command": attrs.option(
             attrs.arg(
                 doc = "Command to execute on first boot. The test \
@@ -263,6 +274,7 @@ def _implicit_vm_test(
     timeout_secs: None | int | Select = None,
     first_boot_command: None | str = None,
     expect_failure: bool = False,
+    expect_vm_exit: int | None = None,
     postmortem: bool = False,
     labels: list[str] | None = None,
     # @oss-disable[end= ]: vm_test_labels: list[str] | None = None,
@@ -317,6 +329,7 @@ def _implicit_vm_test(
         timeout_secs = timeout_secs,
         first_boot_command = first_boot_command,
         expect_failure = expect_failure,
+        expect_vm_exit = expect_vm_exit,
         postmortem = postmortem,
         output_dirs = output_dirs,
         systemd_credentials = systemd_credentials or {},
