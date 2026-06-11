@@ -297,6 +297,10 @@ pub(crate) struct MachineOpts {
     /// This is always set from Buck with architecture-specific defaults
     /// (pc for x86_64, virt for aarch64).
     pub(crate) machine_type: String,
+    /// Custom firmware binary path. When set, uses `-bios` instead of the
+    /// default OVMF pflash. Use for Stage0 or other non-UEFI firmware.
+    #[serde(default)]
+    pub(crate) firmware: Option<String>,
     /// Additional raw QEMU arguments appended after all generated arguments.
     /// Useful for custom devices, chardevs, netdevs, etc. that are not
     /// natively supported by the VM framework (e.g., fbnic PCIe devices).

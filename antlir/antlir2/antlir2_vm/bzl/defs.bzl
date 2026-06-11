@@ -51,6 +51,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             "cpus": ctx.attrs.cpus,
             "disks": [d[DiskInfo] for d in disks],
             "extra_qemu_args": ctx.attrs.extra_qemu_args,
+            "firmware": ctx.attrs.firmware,
             "input_dirs": ctx.attrs.input_dirs,
             "machine_type": ctx.attrs.machine_type,
             "max_combined_channels": ctx.attrs.max_combined_channels,
@@ -154,6 +155,13 @@ _vm_host = rule(
             doc = "additional raw QEMU arguments appended after all generated arguments. "
             + "Useful for custom devices, chardevs, netdevs, etc. that are not natively "
             + "supported by the VM framework (e.g., fbnic PCI devices, io_uring test setups).",
+        ),
+        "firmware": attrs.option(
+            attrs.source(),
+            default = None,
+            doc = "Custom firmware binary. Replaces the default OVMF pflash firmware. "
+            + "When set, uses -bios instead of -drive if=pflash. "
+            + "Use for Stage0 or other non-UEFI firmware.",
         ),
         "initrd": attrs.option(
             attrs.source(),

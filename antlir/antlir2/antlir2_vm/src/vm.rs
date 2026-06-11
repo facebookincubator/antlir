@@ -794,20 +794,29 @@ impl<S: Share> VM<S> {
                 ),
                 "-device",
                 "virtserialport,chardev=notify,name=notify-host",
-                // firmware
-                "-drive",
-                &format!(
-                    "if=pflash,format=raw,unit=0,file={},readonly=on",
-                    match self.machine.arch {
-                        CpuIsa::AARCH64 => "/usr/share/edk2/aarch64/QEMU_EFI.fd",
-                        CpuIsa::X86_64 => "/usr/share/edk2/ovmf/OVMF_CODE.fd",
-                    }
-                ),
             ]
             .iter()
             .map(|x| x.into())
             .collect(),
         );
+
+        // firmware
+        if let Some(fw) = &self.machine.firmware {
+            args.push("-bios".into());
+            args.push(fw.into());
+        } else {
+            args.push("-drive".into());
+            args.push(
+                format!(
+                    "if=pflash,format=raw,unit=0,file={},readonly=on",
+                    match self.machine.arch {
+                        CpuIsa::AARCH64 => "/usr/share/edk2/aarch64/QEMU_EFI.fd",
+                        CpuIsa::X86_64 => "/usr/share/edk2/ovmf/OVMF_CODE.fd",
+                    }
+                )
+                .into(),
+            );
+        }
         args.extend(self.arch_emulation_args(self.current_arch()));
 
         for (k, v) in self
