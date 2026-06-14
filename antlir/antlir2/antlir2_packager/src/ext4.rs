@@ -178,6 +178,30 @@ impl PackageFormat for Ext4 {
             }
         };
 
+        // Run e2fsck to clear residual fs state (journal replay, clean
+        // unmount flag, etc.) left by mkfs.ext4/resize2fs. Exit code 1
+        // means errors were found and corrected, which is the point of
+        // running this — accept it as success.
+        // Skip when fixed_metadata is on: e2fsck rewrites metadata in
+        // ways that depend on e2fsprogs version/timing and would defeat
+        // the byte-for-byte reproducibility the caller asked for.
+        if !self.fixed_metadata {
+            let mut fsck = isol.command("e2fsck")?;
+            fsck.arg("-fy").arg(MAPPED_OUTPUT);
+            let output = fsck
+                .output()
+                .with_context(|| format!("failed to run command: {fsck:?}"))?;
+            let code = output.status.code().unwrap_or(-1);
+            if code != 0 && code != 1 {
+                return Err(anyhow::anyhow!(
+                    "e2fsck failed ({:?}): {}\n{}",
+                    output.status,
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr),
+                ));
+            }
+        }
+
         Ok(())
     }
 }
