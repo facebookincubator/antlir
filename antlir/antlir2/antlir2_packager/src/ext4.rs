@@ -19,6 +19,7 @@ use walkdir::WalkDir;
 
 use crate::BuildAppliance;
 use crate::PackageFormat;
+use crate::pad_to_align;
 use crate::run_cmd;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -29,6 +30,8 @@ pub struct Ext4 {
     size_mb: Option<u64>,
     free_mb: u64,
     fixed_metadata: bool,
+    #[serde(default)]
+    align_bytes: Option<u64>,
 }
 
 const MAPPED_OUTPUT: &str = "/__antlir2__/out/ext4";
@@ -200,6 +203,10 @@ impl PackageFormat for Ext4 {
                     String::from_utf8_lossy(&output.stderr),
                 ));
             }
+        }
+
+        if let Some(align) = self.align_bytes {
+            pad_to_align(out, align).context("while aligning ext4 image")?;
         }
 
         Ok(())

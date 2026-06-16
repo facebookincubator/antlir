@@ -17,6 +17,7 @@ use serde::Deserialize;
 
 use crate::BuildAppliance;
 use crate::PackageFormat;
+use crate::pad_to_align;
 use crate::run_cmd;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -26,6 +27,8 @@ pub struct Squashfs {
     compressor: Option<String>,
     force_uid: Option<u32>,
     force_gid: Option<u32>,
+    #[serde(default)]
+    align_bytes: Option<u64>,
 }
 
 impl PackageFormat for Squashfs {
@@ -66,6 +69,10 @@ impl PackageFormat for Squashfs {
         }
 
         run_cmd(&mut mksquashfs).context("Failed to build squashfs")?;
+
+        if let Some(align) = self.align_bytes {
+            pad_to_align(out, align).context("while aligning squashfs image")?;
+        }
 
         Ok(())
     }

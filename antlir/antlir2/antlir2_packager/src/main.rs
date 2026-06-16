@@ -82,6 +82,36 @@ pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
     }
 }
 
+pub(crate) fn pad_to_align(path: &Path, align: u64) -> Result<()> {
+    use std::fs::OpenOptions;
+    let len = std::fs::metadata(path)
+        .with_context(|| format!("while getting size of {}", path.display()))?
+        .len();
+    let new = if align == 0 {
+        len
+    } else {
+        len.checked_next_multiple_of(align).with_context(|| {
+            format!(
+                "align_up overflow: cannot align {} to boundary {} while aligning {}",
+                len,
+                align,
+                path.display()
+            )
+        })?
+    };
+    if new <= len {
+        return Ok(());
+    }
+    let f = OpenOptions::new()
+        .write(true)
+        .open(path)
+        .with_context(|| format!("while opening {} for padding", path.display()))?;
+    // set_len creates a sparse hole on supporting filesystems, otherwise the file is extended with 0s
+    f.set_len(new)
+        .with_context(|| format!("while padding {} to {}", path.display(), new))?;
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args = PackageArgs::parse();
 

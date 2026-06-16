@@ -1,0 +1,34 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
+
+oncall("antlir")
+
+image.layer(
+    name = "base",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/test"),
+        feature.install_text(
+            dst = "/test/a",
+            text = "a",
+        ),
+    ],
+)
+
+package.ext4(
+    name = "aligned-ext4",
+    align_bytes = 2097152,
+    layer = ":base",
+)
+
+buck_sh_test(
+    name = "test-align-ext4",
+    args = ["$(location :aligned-ext4)"],
+    test = "check_align.sh",
+)

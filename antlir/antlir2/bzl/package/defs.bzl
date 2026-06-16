@@ -393,6 +393,9 @@ _vfat, _vfat_anon = _new_package_rule(
 
 _squashfs, squashfs_anon = _new_package_rule(
     rule_attrs = {
+        "align_bytes": attrs.option(
+            attrs.int(), default = None, doc = "Round final image size up to nearest multiple of this many bytes, e.g. 0x200000 for pmem 2MiB alignment"
+        ),
         "compressor": attrs.enum(["zstd", "gzip"], default = "zstd"),
         "force_gid": attrs.option(attrs.int(), default = None),
         "force_uid": attrs.option(attrs.int(), default = None),
@@ -429,6 +432,9 @@ tar_zst_rule = _new_compressed_package_rule(
 _ext3, _ext3_anon = _new_package_rule(
     format = "ext3",
     rule_attrs = {
+        "align_bytes": attrs.option(
+            attrs.int(), default = None, doc = "Round final image size up to nearest multiple of this many bytes, e.g. 0x200000 for pmem 2MiB alignment"
+        ),
         "free_mb": attrs.int(
             default = 0,
             doc = "include at least this much free space in the image",
@@ -449,6 +455,9 @@ _ext3, _ext3_anon = _new_package_rule(
 _ext4, _ext4_anon = _new_package_rule(
     format = "ext4",
     rule_attrs = {
+        "align_bytes": attrs.option(
+            attrs.int(), default = None, doc = "Round final image size up to nearest multiple of this many bytes, e.g. 0x200000 for pmem 2MiB alignment"
+        ),
         "fixed_metadata": attrs.bool(default = False, doc = "use a fixed timestamp and UUID for the image"),
         "free_mb": attrs.int(
             default = 0,
