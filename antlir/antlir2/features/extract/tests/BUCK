@@ -1,4 +1,5 @@
-load("@fbsource//tools/build_defs:testpilot_defs.bzl", "tpx_labels")
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "tpx_labels")
+load("//antlir/bzl:oss_shim.bzl", "tpx_labels") # @oss-enable
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")

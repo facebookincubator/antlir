@@ -200,6 +200,7 @@ def _cpp_python_extension(name: str, **_kwargs):
 def _rust_unittest(*args, **kwargs):
     kwargs.pop("nodefaultlibs", None)
     kwargs.pop("allocator", None)
+    kwargs.pop("proc_macro", None)
     _wrap_internal(native.rust_test, args, kwargs)
 
 def _rust_binary(*, name: str, **kwargs):

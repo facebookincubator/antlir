@@ -1,7 +1,8 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/facebook/images/build_appliance:defs.bzl", "build_appliance_from_dir")
+# @oss-disable[end= ]: load("//antlir/antlir2/facebook/images/build_appliance:defs.bzl", "build_appliance_from_dir")
+load("//antlir/antlir2/build_appliance:defs.bzl", "build_appliance_from_dir") # @oss-enable
 load("//antlir/bzl:build_defs.bzl", "alias", "rust_binary")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
