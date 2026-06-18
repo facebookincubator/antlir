@@ -3,15 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable[end= ]: load("@fbsource//tools/build_defs:buckconfig.bzl", "read_bool")
-# @oss-disable[end= ]: load("@fbsource//tools/build_defs:feature_rollout_utils.bzl", "rollout")
 load("@prelude//:paths.bzl", "paths")
 load("@prelude//dist:dist_info.bzl", "DistInfo")
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
-load("//antlir/antlir2/bzl:python_helpers.bzl", "PYTHON_OUTPLACE_PAR_ROLLOUT", "extract_par_elfs", "is_python_target", "is_python_xar_target")
+load("//antlir/antlir2/bzl:python_helpers.bzl", "extract_par_elfs", "is_outplace_python_target", "is_python_target", "is_python_xar_target")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load(
@@ -26,7 +24,6 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:types.bzl", "types")
-load("//antlir/bzl:oss_shim.bzl", "rollout", read_bool = "ret_false") # @oss-enable
 
 default_permissions = record(
     binary = field(int | None, default = None),
@@ -181,6 +178,10 @@ def install(
             "user": user,
             "xattrs": xattrs,
             "_binaries_require_repo": binaries_require_repo.select_value,
+            "_is_macos": select({
+                "DEFAULT": False,
+                "ovr_config//os:macos": True,
+            }),
         },
     )
 
@@ -252,17 +253,21 @@ def _python_outplace_features(
     # antlir needs this because otherwise the chroot ends up with a bunch of broken symlinks.
     par = ctx.attrs.src[DefaultInfo].sub_targets["outplace"]
     link_tree = par[DefaultInfo].sub_targets["link-tree"]
-    signed_link_tree = ctx.actions.declare_output("signed_link_tree", has_content_based_path = False)
-    ctx.actions.run(
-        cmd_args([
-            ctx.attrs._mac_signer[RunInfo],
-            ensure_single_output(link_tree),
-            signed_link_tree.as_output(),
-            cmd_args(["--sign-key", native.read_config("builder", "macsignkey", "fbios-debug")]),
-            cmd_args(["--disable-library-validation"]),
-        ]),
-        category = "sign",
-    )
+
+    if ctx.attrs._is_macos:
+        expect(ctx.attrs._mac_signer != None, "_mac_signer must be set when building for macOS")
+        signed_link_tree = ctx.actions.declare_output("signed_link_tree", has_content_based_path = False)
+        ctx.actions.run(
+            cmd_args([
+                ctx.attrs._mac_signer[RunInfo],
+                ensure_single_output(link_tree),
+                signed_link_tree.as_output(),
+                cmd_args(["--sign-key", native.read_config("builder", "macsignkey", "fbios-debug")]),
+                cmd_args(["--disable-library-validation"]),
+            ]),
+            category = "sign",
+        )
+        link_tree = signed_link_tree
 
     outplace_package_base = paths.join(
         "/usr/local/libexec/python_outplace",
@@ -271,7 +276,7 @@ def _python_outplace_features(
     outplace_base = paths.join(outplace_package_base, installed_name)
 
     # This will fail analysis if src does not have an outplace subtarget
-    srcs = {"link-tree": signed_link_tree, "par": par}
+    srcs = {"link-tree": link_tree, "par": par}
     features = [
         FeatureAnalysis(
             buck_only_data = struct(
@@ -480,18 +485,16 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             mode = 0o444
 
     features = None
-    if src_is_python and ctx.attrs._mac_signer:
-        python_outplace_par = ctx.attrs._python_outplace_par_override or rollout.check_base_path(PYTHON_OUTPLACE_PAR_ROLLOUT, ctx.attrs.src.label.package)
-        if python_outplace_par:
-            features = _python_outplace_features(
-                ctx,
-                paths.basename(ctx.attrs.dst),
-                mode,
-                binary_info,
-                shared_libraries,
-                required_artifacts,
-                required_run_infos,
-            )
+    if src_is_python and is_outplace_python_target(ctx.attrs.src):
+        features = _python_outplace_features(
+            ctx,
+            paths.basename(ctx.attrs.dst),
+            mode,
+            binary_info,
+            shared_libraries,
+            required_artifacts,
+            required_run_infos,
+        )
     if features == None:
         features = [
             FeatureAnalysis(
@@ -611,9 +614,9 @@ install_rule = new_feature_rule(
         "_binaries_require_repo": binaries_require_repo.optional_attr,
         "_debuginfo_splitter": attrs.option(attrs.exec_dep(), default = None),
         "_ensure_dir_exists_plugin": attrs.option(attrs.label(), default = None),
+        "_is_macos": attrs.option(attrs.bool(), default = None),
         "_mac_signer": attrs.option(attrs.exec_dep(), default = None),
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
-        "_python_outplace_par_override": attrs.bool(default = read_bool("antlir", "python_outplace_par", default = False)),
         "_python_pex_deps": attrs.option(attrs.dep(providers = [FeatureInfo]), default = None),
         "_python_xar_deps": attrs.option(attrs.dep(providers = [FeatureInfo]), default = None),
         "_rpm_driver": attrs.option(attrs.dep(providers = [RunInfo]), default = None),

@@ -167,6 +167,7 @@ python_binary(
     name = "true-py",
     srcs = ["true.py"],
     main_module = "antlir.antlir2.features.install.tests.true",
+    package_style = "outplace",
 )
 
 image.layer(

@@ -3,21 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable[end= ]: load("@fbsource//tools/build_defs:feature_rollout_utils.bzl", "rollout")
 load("@prelude//linking:shared_libraries.bzl", "traverse_shared_library_info")
 load("@prelude//python:python.bzl", "PythonLibraryInfo")
-load("//antlir/bzl:oss_shim.bzl", "rollout", read_bool = "ret_false") # @oss-enable
-
-PYTHON_OUTPLACE_PAR_ROLLOUT = rollout.create_feature(
-    {
-        # "example_opt_in": True,
-        "antlir/antlir2/features/install/tests": True,
-        "antlir/antlir2/features/install/tests/fb": False,
-        # @oss-disable[end= ]: "fblite/devx/fixmydevenv": True,
-        # @oss-disable[end= ]: "python/pylot": True,
-        # @oss-disable[end= ]: "registry/builder/rpm/bzl/mac_sign/tests": True,
-    },
-)
 
 def is_python_target(target) -> bool:
     return "library-info" in target[DefaultInfo].sub_targets and PythonLibraryInfo in target.sub_target("library-info")
@@ -29,6 +16,15 @@ def is_python_xar_target(target) -> bool:
     info = _extract_python_library_info(target)
     if info:
         return info.par_style == "xar"
+    return False
+
+def is_outplace_python_target(target) -> bool:
+    """
+    Returns whether the given target is a python outplace par
+    """
+    info = _extract_python_library_info(target)
+    if info:
+        return info.package_style == "outplace"
     return False
 
 def _extract_python_library_info(target) -> PythonLibraryInfo | None:
