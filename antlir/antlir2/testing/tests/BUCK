@@ -16,6 +16,10 @@ image.layer(
     features = [
         feature.rpms_install(
             rpms = [
+                # provides the system D-Bus bus (systemd no longer pulls it in
+                # as a hard dependency), without which systemd-logind and any
+                # non-root `systemctl` call cannot reach the manager
+                "dbus-broker",
                 "foobar",
                 "python3",
                 "systemd",
