@@ -254,6 +254,12 @@ def _python_outplace_features(
     par = ctx.attrs.src[DefaultInfo].sub_targets["outplace"]
     link_tree = par[DefaultInfo].sub_targets["link-tree"]
 
+    # The generated par wrapper resolves its link-tree by looking for a
+    # sibling directory with this exact name (its baked-in `LINKTREEDIR`), so
+    # the link-tree must be installed under its original basename rather than a
+    # renamed one, otherwise the installed binary cannot find its link-tree.
+    link_tree_dir_name = ensure_single_output(link_tree).basename
+
     if ctx.attrs._is_macos:
         expect(ctx.attrs._mac_signer != None, "_mac_signer must be set when building for macOS")
         signed_link_tree = ctx.actions.declare_output("signed_link_tree", has_content_based_path = False)
@@ -275,8 +281,13 @@ def _python_outplace_features(
     )
     outplace_base = paths.join(outplace_package_base, installed_name)
 
-    # This will fail analysis if src does not have an outplace subtarget
-    srcs = {"link-tree": link_tree, "par": par}
+    # This will fail analysis if src does not have an outplace subtarget. The
+    # link-tree is installed as a sibling of the par under its original
+    # basename so the par's baked-in `LINKTREEDIR` resolves correctly.
+    srcs = {
+        paths.join(outplace_package_base, link_tree_dir_name): link_tree,
+        outplace_base + "-outplace#par": par,
+    }
     features = [
         FeatureAnalysis(
             buck_only_data = struct(
@@ -286,7 +297,7 @@ def _python_outplace_features(
             build_phase = BuildPhase(ctx.attrs.build_phase),
             data = struct(
                 src = ensure_single_output(src),
-                dst = outplace_base + "-outplace#" + what,
+                dst = dst,
                 mode = mode,
                 user = ctx.attrs.user,
                 group = ctx.attrs.group,
@@ -300,7 +311,7 @@ def _python_outplace_features(
             required_run_infos = required_run_infos,
             plugin = ctx.attrs.plugin,
         )
-        for what, src in srcs.items()
+        for dst, src in srcs.items()
     ]
     features.extend(
         [

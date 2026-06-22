@@ -26,7 +26,8 @@ class TestInstalledBinary(unittest.TestCase):
     def test_runs(self) -> None:
         for lang in ["rs", "py"]:
             with self.subTest(lang):
-                subprocess.run([f"true-{lang}"], check=True)
+                result = subprocess.run([f"true-{lang}"], check=True)
+                self.assertEqual(result.returncode, 0)
 
     @skip_in_dev
     def test_gdb_loads_symbols(self) -> None:
@@ -58,7 +59,8 @@ class TestInstalledBinary(unittest.TestCase):
 
     @skip_in_dev
     def test_strip_all_binary_runs(self) -> None:
-        subprocess.run(["/usr/bin/true-rs.strip-all"], check=True)
+        result = subprocess.run(["/usr/bin/true-rs.strip-all"], check=True)
+        self.assertEqual(result.returncode, 0)
 
     @skip_in_dev
     def test_strip_all_has_no_symtab(self) -> None:
@@ -95,7 +97,7 @@ class TestInstalledBinary(unittest.TestCase):
     def test_outplace_par(self) -> None:
         self.assertTrue(
             os.path.isdir(
-                "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#link-tree"
+                "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/true-py#link-tree"
             )
         )
         self.assertTrue(os.path.islink("/usr/bin/true-py"))
