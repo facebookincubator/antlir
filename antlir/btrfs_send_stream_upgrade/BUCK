@@ -14,7 +14,6 @@ rust_library(
         "anyhow",
         "clap",
         "crc32c-hw",
-        "lazy_static",
         "maplit",
         "num",
         "num-derive",

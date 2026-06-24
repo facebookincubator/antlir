@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::mem::size_of_val;
+use std::sync::LazyLock;
 
-use lazy_static::lazy_static;
 use slog::debug;
 use slog::trace;
 
@@ -94,14 +94,20 @@ pub enum BtrfsSendAttributeType {
 
 pub const BTRFS_ENCODED_IO_COMPRESSION_ZSTD: u32 = 0x2;
 
-lazy_static! {
-    // As of v2, SEND_A_DATA can be compressed to SEND_A_DATA
-    static ref COMPRESSIBLE_ATTRIBUTE_TYPES: HashMap<BtrfsSendAttributeType, (SendVersion, BtrfsSendAttributeType)> = hashmap!{ BtrfsSendAttributeType::BTRFS_SEND_A_DATA => (SendVersion::SendVersion2, BtrfsSendAttributeType::BTRFS_SEND_A_DATA) };
-    // SEND_A_DATA doesn't support a size in v2
-    static ref SIZE_LESS_ATTRIBUTE_TYPES: HashMap<BtrfsSendAttributeType, SendVersion> = hashmap!{ BtrfsSendAttributeType::BTRFS_SEND_A_DATA => SendVersion::SendVersion2 };
-    // SEND_A_DATA requests can be appended
-    static ref APPENDABLE_ATTRIBUTE_TYPES: HashSet<BtrfsSendAttributeType> = hashset!{ BtrfsSendAttributeType::BTRFS_SEND_A_DATA };
-}
+// As of v2, SEND_A_DATA can be compressed to SEND_A_DATA
+static COMPRESSIBLE_ATTRIBUTE_TYPES: LazyLock<
+    HashMap<BtrfsSendAttributeType, (SendVersion, BtrfsSendAttributeType)>,
+> = LazyLock::new(
+    || hashmap! { BtrfsSendAttributeType::BTRFS_SEND_A_DATA => (SendVersion::SendVersion2, BtrfsSendAttributeType::BTRFS_SEND_A_DATA) },
+);
+// SEND_A_DATA doesn't support a size in v2
+static SIZE_LESS_ATTRIBUTE_TYPES: LazyLock<HashMap<BtrfsSendAttributeType, SendVersion>> =
+    LazyLock::new(
+        || hashmap! { BtrfsSendAttributeType::BTRFS_SEND_A_DATA => SendVersion::SendVersion2 },
+    );
+// SEND_A_DATA requests can be appended
+static APPENDABLE_ATTRIBUTE_TYPES: LazyLock<HashSet<BtrfsSendAttributeType>> =
+    LazyLock::new(|| hashset! { BtrfsSendAttributeType::BTRFS_SEND_A_DATA });
 
 #[derive(Eq, PartialEq)]
 pub struct SendAttributeHeader {

@@ -12,8 +12,8 @@ use std::fmt::Display;
 use std::mem::size_of_val;
 use std::ops::Bound::Excluded;
 use std::ops::Bound::Included;
+use std::sync::LazyLock;
 
-use lazy_static::lazy_static;
 use slog::debug;
 
 use crate::send_elements::send_version::SendVersion;
@@ -77,14 +77,19 @@ pub enum BtrfsSendCommandType {
      */
 }
 
-lazy_static! {
-    static ref COMPRESSIBLE_COMMAND_TYPES: HashMap<BtrfsSendCommandType, (SendVersion, BtrfsSendCommandType)> = hashmap! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE => (SendVersion::SendVersion2, BtrfsSendCommandType::BTRFS_SEND_C_ENCODED_WRITE) };
-    static ref UPGRADEABLE_COMMAND_TYPES: HashMap<BtrfsSendCommandType, BTreeSet<SendVersion>> = hashmap! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE => btreeset!{ SendVersion::SendVersion2 } };
-    static ref APPENDABLE_COMMAND_TYPES: HashSet<BtrfsSendCommandType> =
-        hashset! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE };
-    static ref PADDABLE_COMMAND_TYPES: HashSet<BtrfsSendCommandType> =
-        hashset! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE };
-}
+static COMPRESSIBLE_COMMAND_TYPES: LazyLock<
+    HashMap<BtrfsSendCommandType, (SendVersion, BtrfsSendCommandType)>,
+> = LazyLock::new(
+    || hashmap! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE => (SendVersion::SendVersion2, BtrfsSendCommandType::BTRFS_SEND_C_ENCODED_WRITE) },
+);
+static UPGRADEABLE_COMMAND_TYPES: LazyLock<HashMap<BtrfsSendCommandType, BTreeSet<SendVersion>>> =
+    LazyLock::new(
+        || hashmap! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE => btreeset!{ SendVersion::SendVersion2 } },
+    );
+static APPENDABLE_COMMAND_TYPES: LazyLock<HashSet<BtrfsSendCommandType>> =
+    LazyLock::new(|| hashset! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE });
+static PADDABLE_COMMAND_TYPES: LazyLock<HashSet<BtrfsSendCommandType>> =
+    LazyLock::new(|| hashset! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE });
 
 #[derive(Eq, PartialEq)]
 pub struct SendCommandHeader {
@@ -98,14 +103,12 @@ pub struct SendCommandHeader {
     sch_version: SendVersion,
 }
 
-lazy_static! {
-    static ref DUMMY_COMMAND_HEADER: SendCommandHeader = SendCommandHeader {
-        sch_size: Some(0),
-        sch_command_type: BtrfsSendCommandType::BTRFS_SEND_C_UNSPEC,
-        sch_crc32c: Some(0),
-        sch_version: SendVersion::SendVersion1
-    };
-}
+static DUMMY_COMMAND_HEADER: LazyLock<SendCommandHeader> = LazyLock::new(|| SendCommandHeader {
+    sch_size: Some(0),
+    sch_command_type: BtrfsSendCommandType::BTRFS_SEND_C_UNSPEC,
+    sch_crc32c: Some(0),
+    sch_version: SendVersion::SendVersion1,
+});
 
 impl Display for SendCommandHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
