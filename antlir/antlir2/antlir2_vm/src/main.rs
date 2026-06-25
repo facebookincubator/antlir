@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(once_cell_try)]
+
 mod disk;
 mod isolation;
 mod net;

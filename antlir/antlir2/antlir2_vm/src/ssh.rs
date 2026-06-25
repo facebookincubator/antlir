@@ -11,8 +11,8 @@ use std::net::Ipv6Addr;
 use std::process::Command;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::sync::OnceLock;
 
-use once_cell::sync::OnceCell;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 
@@ -33,7 +33,7 @@ pub(crate) struct GuestSSHCommand {
     privkey: Arc<NamedTempFile>,
 }
 
-static PRIVKEY: OnceCell<Arc<NamedTempFile>> = OnceCell::new();
+static PRIVKEY: OnceLock<Arc<NamedTempFile>> = OnceLock::new();
 
 impl GuestSSHCommand {
     /// Creates a new `GuestSSHCommand` with default options

@@ -6,11 +6,11 @@
  */
 
 use std::ffi::CString;
+use std::sync::OnceLock;
 
 use antlir2_userns::subid::IdMap;
 use nix::unistd::Gid;
 use nix::unistd::Uid;
-use once_cell::sync::OnceCell;
 use tracing::error;
 use tracing::trace;
 use tracing::warn;
@@ -43,7 +43,7 @@ pub struct Rootless {
     setgid: Option<Gid>,
 }
 
-static INSTANCE: OnceCell<Rootless> = OnceCell::new();
+static INSTANCE: OnceLock<Rootless> = OnceLock::new();
 
 impl Rootless {
     pub fn init() -> Result<Self> {

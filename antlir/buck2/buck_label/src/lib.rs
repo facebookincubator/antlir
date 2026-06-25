@@ -13,8 +13,8 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::Deref;
 use std::ops::Range;
+use std::sync::LazyLock;
 
-use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -24,12 +24,12 @@ use serde::ser::Serializer;
 use thiserror::Error;
 
 static ALLOWED_NAME_CHARSET: &str = r"[a-zA-Z0-9,.=\-/~@!+$_#]";
-static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
+static LABEL_PATTERN: LazyLock<String> = LazyLock::new(|| {
     format!(
         r"(.+?)//({ALLOWED_NAME_CHARSET}*?):({ALLOWED_NAME_CHARSET}*(?:\[{ALLOWED_NAME_CHARSET}+\])?)",
     )
 });
-static LABEL_WITH_CONFIG_RE: Lazy<Regex> = Lazy::new(|| {
+static LABEL_WITH_CONFIG_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(r"^{}(?:\s+\((.*)\))?$", *LABEL_PATTERN,)).expect("I know this works")
 });
 

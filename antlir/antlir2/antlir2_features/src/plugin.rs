@@ -8,17 +8,17 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str::FromStr;
+use std::sync::LazyLock;
 use std::sync::Mutex;
 
 use buck_label::Label;
 use libloading::Library;
-use once_cell::sync::Lazy;
 
 use crate::Error;
 use crate::Result;
 
-pub(crate) static REGISTRY: Lazy<Mutex<HashMap<Label, &'static Plugin>>> =
-    Lazy::new(Default::default);
+pub(crate) static REGISTRY: LazyLock<Mutex<HashMap<Label, &'static Plugin>>> =
+    LazyLock::new(Default::default);
 
 /// CLI arg "parser" that immediately loads the plugin libraries and leaks it to
 /// remain available for the rest of the process's lifetime

@@ -11,6 +11,7 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
+use std::sync::LazyLock;
 
 use anyhow::Context;
 use anyhow::Error;
@@ -18,10 +19,9 @@ use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::ensure;
 use clap::Parser;
-use once_cell::sync::Lazy;
 use regex::Regex;
 
-static RPM_VERIFY_RE: Lazy<Regex> = Lazy::new(|| {
+static RPM_VERIFY_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"^((?:missing)|(?:.{9}))(?:\s+(c|d|g|l|r))?\s+(.*)$"#)
         .expect("definitely compiles")
 });

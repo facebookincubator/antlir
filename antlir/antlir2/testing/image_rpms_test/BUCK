@@ -9,7 +9,6 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "once_cell",
         "regex",
         "similar-asserts",
         "tracing",

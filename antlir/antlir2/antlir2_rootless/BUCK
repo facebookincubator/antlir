@@ -14,7 +14,6 @@ rust_library(
     ],
     deps = [
         "nix",
-        "once_cell",
         "thiserror",
         "tracing",
         "//antlir/antlir2/antlir2_rootless/unshare_userns:unshare_userns",

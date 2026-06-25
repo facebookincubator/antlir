@@ -7,7 +7,6 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "libloading",
-        "once_cell",
         "serde",
         "serde_json",
         "thiserror",

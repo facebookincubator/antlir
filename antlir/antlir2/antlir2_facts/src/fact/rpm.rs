@@ -6,9 +6,9 @@
  */
 
 use std::collections::BTreeSet;
+use std::sync::LazyLock;
 
 use bon::Builder;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use serde::Serialize;
@@ -50,8 +50,8 @@ impl Fact for Rpm {
     }
 }
 
-static CVE_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\bCVE-[0-9]{4}-[0-9]+\b").expect("valid regex"));
+static CVE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\bCVE-[0-9]{4}-[0-9]+\b").expect("valid regex"));
 
 impl Rpm {
     pub fn name(&self) -> &str {

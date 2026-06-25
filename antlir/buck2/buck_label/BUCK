@@ -12,7 +12,6 @@ rust_library(
     ],
     visibility = ["PUBLIC"],
     deps = [
-        "once_cell",
         "regex",
         "serde",
         "thiserror",

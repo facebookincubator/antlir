@@ -9,12 +9,12 @@ use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use antlir2_isolate::IsolatedContext;
 use antlir2_isolate::IsolationContext;
 use antlir2_isolate::unshare;
 use image_test_lib::KvPair;
-use once_cell::sync::OnceCell;
 use thiserror::Error;
 use tracing::warn;
 
@@ -40,7 +40,7 @@ pub(crate) struct Platform {
 }
 
 /// Platform should be same once set. Enforce through OnceCell.
-static PLATFORM: OnceCell<Platform> = OnceCell::new();
+static PLATFORM: OnceLock<Platform> = OnceLock::new();
 
 impl Platform {
     /// Get repo root

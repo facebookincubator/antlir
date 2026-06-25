@@ -24,7 +24,6 @@ rust_library(
         "clap",
         "fxhash",
         "memfd",
-        "once_cell",
         "regex",
         "rusqlite",
         "serde",
