@@ -482,11 +482,15 @@ def driver(spec) -> None:
     cb = TransactionProgress(
         out, ignore_scriptlet_errors=spec["ignore_scriptlet_errors"]
     )
-    # If any known unsigned packages (see _UNSIGNED_RPMS) are in the
-    # transaction, disable RPM's package file verification during the
-    # transaction test. This is safe because we already verified GPG signatures
-    # for all packages in the loop above (unsigned packages from @commandline
-    # or repos without gpgkeys are explicitly skipped there).
+
+    # If the transaction legitimately contains unsigned packages, disable RPM's
+    # package file verification during the transaction test. A package is allowed
+    # to be unsigned if it is a known unsigned RPM (see _UNSIGNED_RPMS), it comes
+    # from @commandline (a local file the author chose to install), or it comes
+    # from a repo without a GPG key. This mirrors exactly the policy enforced by
+    # the GPG-check loop above, which only hard-fails unsigned packages that come
+    # from a repo that *does* have a GPG key (and which have therefore already
+    # been verified by this point).
     #
     # Newer RPM versions (e.g. in ELN) enforce signature verification during
     # transaction tests, rejecting unsigned packages regardless of the
@@ -494,9 +498,23 @@ def driver(spec) -> None:
     # verifyPackageFiles() is via setProbFilter(RPMPROB_FILTER_VERIFY).
     # RPMPROB_FILTER_IGNOREARCH is needed because we do cross-compile
     # for aarch64 in Sandcastle.
-    if any(pkg.name in _UNSIGNED_RPMS for pkg in base.transaction.install_set):
+    def _is_allowed_unsigned(pkg) -> bool:
+        return (
+            pkg.name in _UNSIGNED_RPMS
+            or pkg.reponame == hawkey.CMDLINE_REPO_NAME
+            or not pkg.repo.gpgkey
+        )
+
+    if any(_is_allowed_unsigned(pkg) for pkg in base.transaction.install_set):
         base._ts.ts.setVSFlags(librpm._RPMVSF_NOSIGNATURES | librpm._RPMVSF_NODIGESTS)
-        # getProbFilter() is not available in all RPM Python binding versions
+        # getProbFilter() is not available in all RPM Python binding versions.
+        # When it is missing we fall back to 0, which means setProbFilter below
+        # replaces (rather than augments) the filter dnf configured. To avoid
+        # regressing the package replacements that the resolver already decided
+        # on (downgrades and reinstalls), explicitly re-add OLDPACKAGE and
+        # REPLACEPKG. These only relax "package already installed"/"older
+        # package" problems for a transaction we have already resolved; genuine
+        # missing-dependency and file-conflict problems are still surfaced.
         current_filter = (
             base._ts.ts.getProbFilter() if hasattr(base._ts.ts, "getProbFilter") else 0
         )
@@ -504,6 +522,8 @@ def driver(spec) -> None:
             current_filter
             | librpm.RPMPROB_FILTER_VERIFY
             | librpm.RPMPROB_FILTER_IGNOREARCH
+            | librpm.RPMPROB_FILTER_OLDPACKAGE
+            | librpm.RPMPROB_FILTER_REPLACEPKG
         )
     try:
         base.do_transaction(cb)
