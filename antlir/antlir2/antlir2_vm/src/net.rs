@@ -84,18 +84,20 @@ impl VirtualNIC {
         format!("net{}", self.id)
     }
 
+    pub(crate) fn guest_mac_bytes(&self) -> [u8; 6] {
+        let val = (self.id + 1) as u64;
+        let bytes = val.to_be_bytes();
+        [bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]]
+    }
+
     /// MAC needs to be predicatable so the VM can pre-configure its network.
     /// The MAC address is formatted `self.id`.
     pub(crate) fn guest_mac(&self) -> String {
-        format!("{:012x}", self.id + 1)
-            .split("")
-            .filter(|x| !x.is_empty())
-            .enumerate()
-            .fold(String::new(), |acc, (i, c)| match i {
-                0 => c.to_string(),
-                _ if i % 2 == 0 => acc + ":" + c,
-                _ => acc + c,
-            })
+        self.guest_mac_bytes()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<Vec<_>>()
+            .join(":")
     }
 
     /// Set the file to dump interface traffic to.
@@ -111,7 +113,7 @@ impl VirtualNIC {
     }
 
     /// Host side IP address. It's fd00:<id>::1.
-    fn host_ipv6_addr(&self) -> Ipv6Addr {
+    pub(crate) fn host_ipv6_addr(&self) -> Ipv6Addr {
         let mut ip: u128 = 0xfd00 << (128 - 16);
         ip += ((self.id as u128) << (128 - 32)) + 1;
         Ipv6Addr::from(ip)

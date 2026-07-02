@@ -8,16 +8,19 @@
 #
 # Interface-specific options are nested in optional structs:
 #   nvme: struct(num_namespaces)
+# iSCSI disks have no build-time options; connection details are determined at
+# runtime by the VM's IscsiTargetDaemon.
 DiskInfo = provider(
     fields = [
         "free_mib",  # Grow the disk by specified size
         "base_image",  # Base image for the disk. If None, the disk will be empty
         "bootable",  # True if the disk is bootable
-        "interface",  # Interface of the disk: "virtio-blk", "nvme", or "ide-hd"
+        "interface",  # Interface of the disk: "virtio-blk", "nvme", "ide-hd", or "iscsi"
         "logical_block_size",  # Logical block size of the disk
         "physical_block_size",  # Physical block size of the disk
         "serial",  # Device serial override. By default it's automatically assigned
         "nvme",  # struct(num_namespaces) for nvme interface, None otherwise
+        "iscsi",  # struct(ibft) for iscsi interface, None otherwise
     ],
 )
 

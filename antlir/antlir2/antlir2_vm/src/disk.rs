@@ -68,6 +68,10 @@ impl QCow2DiskBuilder {
 impl QCow2Disk {
     /// Create a temporary disk with qemu-img inside state directory.
     fn create_temp_disk(&mut self) -> Result<()> {
+        if matches!(&self.opts, QCow2DiskOpts::Iscsi(_)) {
+            return self.create_iscsi_backing_file();
+        }
+
         for filename in self.disk_file_names() {
             let mut cmd = Command::new("qemu-img");
             cmd.arg("create")
@@ -95,8 +99,68 @@ impl QCow2Disk {
         Ok(())
     }
 
-    fn name(&self) -> String {
+    /// iSCSI disks need a raw backing file for tgtd to serve.
+    fn create_iscsi_backing_file(&self) -> Result<()> {
+        let filename = self.iscsi_backing_file();
+
+        if let Some(image) = &self.opts().base_image {
+            let mut cmd = Command::new("qemu-img");
+            cmd.arg("convert")
+                .arg("-f")
+                .arg("raw")
+                .arg("-O")
+                .arg("raw")
+                .arg(self.format_image_path(image)?)
+                .arg(&filename);
+            run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskCreationError)?;
+        } else {
+            let size_mib = self.opts().free_mib.unwrap_or(1024);
+            let mut cmd = Command::new("qemu-img");
+            cmd.arg("create")
+                .arg("-f")
+                .arg("raw")
+                .arg(&filename)
+                .arg(format!("{size_mib}M"));
+            run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskCreationError)?;
+        }
+
+        if let Some(size) = self.opts().free_mib {
+            if size != 0 && self.opts().base_image.is_some() {
+                let mut cmd = Command::new("qemu-img");
+                cmd.arg("resize").arg(&filename).arg(format!("+{size}M"));
+                run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskUpsizeError)?;
+            }
+        }
+
+        debug!(
+            "Created iSCSI backing file {} for {}",
+            filename.display(),
+            self.name()
+        );
+        Ok(())
+    }
+
+    fn iscsi_backing_file(&self) -> PathBuf {
+        self.state_dir.join(format!("{}.raw", self.name()))
+    }
+
+    pub(crate) fn name(&self) -> String {
         format!("{}{}", self.prefix, self.id)
+    }
+
+    pub(crate) fn id(&self) -> usize {
+        self.id
+    }
+
+    pub(crate) fn iscsi_backing_file_path(&self) -> Option<PathBuf> {
+        match &self.opts {
+            QCow2DiskOpts::Iscsi(_) => Some(self.iscsi_backing_file()),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn iscsi_ibft(&self) -> bool {
+        matches!(&self.opts, QCow2DiskOpts::Iscsi(iscsi) if iscsi.iscsi.ibft)
     }
 
     fn disk_file_names(&self) -> NonEmpty<PathBuf> {
@@ -133,6 +197,7 @@ impl QCow2Disk {
         match &self.opts {
             QCow2DiskOpts::IdeHd(opts) | QCow2DiskOpts::VirtioBlk(opts) => opts,
             QCow2DiskOpts::Nvme(nvme) => &nvme.common,
+            QCow2DiskOpts::Iscsi(iscsi) => &iscsi.common,
         }
     }
 
@@ -141,6 +206,7 @@ impl QCow2Disk {
             QCow2DiskOpts::IdeHd(_) => "ide-hd",
             QCow2DiskOpts::VirtioBlk(_) => "virtio-blk",
             QCow2DiskOpts::Nvme(_) => "nvme",
+            QCow2DiskOpts::Iscsi(_) => "iscsi",
         }
     }
 }
@@ -230,6 +296,10 @@ impl QemuDevice for QCow2Disk {
                     ).into());
                 }
             }
+            QCow2DiskOpts::Iscsi(_) => {
+                // iSCSI disks are served by tgtd over the network for the
+                // guest to connect to directly — no QEMU blockdev needed.
+            }
         }
         args
     }
@@ -257,6 +327,10 @@ impl QCow2Disks {
             })
             .collect();
         Ok(Self(disks?))
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &QCow2Disk> {
+        self.0.iter()
     }
 }
 

@@ -31,6 +31,10 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     if not boot_disks and not ctx.attrs.initrd:
         fail("No bootable media. Pass in either a bootable disk, or initrd and kernel")
 
+    ibft_disks = [d for d in ctx.attrs.disks if d[DiskInfo].iscsi and d[DiskInfo].iscsi.ibft]
+    if len(ibft_disks) > 1:
+        fail("At most one disk may have ibft=True.")
+
     if len(boot_disks) > 1:
         fail("Ambiguous boot requirement with more than one bootable disk.")
     elif len(boot_disks) == 1:

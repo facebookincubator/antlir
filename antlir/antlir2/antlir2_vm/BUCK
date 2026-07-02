@@ -76,6 +76,7 @@ image.layer(
                 "qemu-img",  # manipulate disk images
                 "systemd-container",  # for systemd-detect-virt
                 "virtiofsd",  # rust virtiofsd
+                "scsi-target-utils",  # host iscsi targets
             ]
         ),
         # The qemu-system emulator to run a VM. On x86_64 we also install the

@@ -8,6 +8,8 @@
 #![feature(once_cell_try)]
 
 mod disk;
+mod ibft;
+mod iscsi;
 mod isolation;
 mod net;
 mod pci;

@@ -45,6 +45,7 @@ pub(crate) enum QCow2DiskOpts {
     IdeHd(QCow2DiskCommonOpts),
     VirtioBlk(QCow2DiskCommonOpts),
     Nvme(QCow2DiskNvmeOpts),
+    Iscsi(QCow2DiskIscsiOpts),
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -72,6 +73,19 @@ pub(crate) struct QCow2DiskNvmeOpts {
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct NvmeOpts {
     pub(crate) num_namespaces: usize,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct QCow2DiskIscsiOpts {
+    #[serde(flatten)]
+    pub(crate) common: QCow2DiskCommonOpts,
+    pub(crate) iscsi: IscsiOpts,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct IscsiOpts {
+    #[serde(default)]
+    pub(crate) ibft: bool,
 }
 
 /// Required data if not booting from disk

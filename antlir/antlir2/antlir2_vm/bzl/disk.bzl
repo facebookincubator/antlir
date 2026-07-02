@@ -34,7 +34,7 @@ def _validate_has_image_or_size(ctx):
             An empty disk of zero size is invalid.",
         )
 
-def _common_disk_info(ctx, *, interface, nvme = None):
+def _common_disk_info(ctx, *, interface, nvme = None, iscsi = None):
     return DiskInfo(
         base_image = ctx.attrs.base_image,
         free_mib = ctx.attrs.free_mib,
@@ -44,6 +44,7 @@ def _common_disk_info(ctx, *, interface, nvme = None):
         bootable = ctx.attrs.bootable,
         serial = ctx.attrs.serial,
         nvme = nvme,
+        iscsi = iscsi,
     )
 
 # virtio-blk disk
@@ -99,8 +100,37 @@ _nvme_disk = rule(
 )
 nvme_disk = rule_with_default_target_platform(_nvme_disk)
 
+# iSCSI disk: the VM infrastructure starts a local tgtd daemon that exports the
+# backing file. Connection details (portal, target IQN, LUN) are determined at
+# runtime, so this rule only carries the common backing-storage attrs.
+
+def _iscsi_disk_impl(ctx: AnalysisContext) -> list[Provider]:
+    return [
+        _common_disk_info(
+            ctx,
+            interface = "iscsi",
+            iscsi = struct(
+                ibft = ctx.attrs.ibft,
+            ),
+        ),
+        DefaultInfo(),
+    ]
+
+_iscsi_disk = rule(
+    impl = _iscsi_disk_impl,
+    attrs = _COMMON_DISK_ATTRS
+    | {
+        "ibft": attrs.bool(
+            default = False,
+            doc = "Advertise this iSCSI disk via an iBFT ACPI table. At most one disk may set this.",
+        ),
+    },
+)
+iscsi_disk = rule_with_default_target_platform(_iscsi_disk)
+
 _INTERFACE_RULES = {
     "ide-hd": ide_hd_disk,
+    "iscsi": iscsi_disk,
     "nvme": nvme_disk,
     "virtio-blk": virtio_blk_disk,
 }

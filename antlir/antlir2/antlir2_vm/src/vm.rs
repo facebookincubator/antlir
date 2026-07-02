@@ -13,6 +13,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
+use std::net::Ipv6Addr;
 use std::net::Shutdown;
 use std::os::unix::net::UnixStream;
 use std::path::Path;
@@ -36,6 +37,12 @@ use uuid::Uuid;
 
 use crate::disk::QCow2DiskError;
 use crate::disk::QCow2Disks;
+use crate::ibft::IbftError;
+use crate::ibft::IbftNic;
+use crate::ibft::IbftTable;
+use crate::ibft::IbftTarget;
+use crate::iscsi::IscsiError;
+use crate::iscsi::IscsiTargetDaemon;
 use crate::isolation::IsolationError;
 use crate::isolation::Platform;
 use crate::net::VirtualNICError;
@@ -78,6 +85,9 @@ pub(crate) struct VM<S: Share> {
     sidecar_handles: Vec<JoinHandle<Result<ExitStatus>>>,
     /// TPM device
     tpm: Option<TPMDevice>,
+    #[expect(dead_code, reason = "Drop kills tgtd; must outlive the QEMU process")]
+    iscsi_daemon: Option<IscsiTargetDaemon>,
+    ibft: Option<IbftTable>,
     /// Uuid for this VM. Randomly generated to aid debugging when multiple VMs are running
     identifier: String,
 }
@@ -100,6 +110,10 @@ pub(crate) enum VMError {
     TPMError(#[from] TPMError),
     #[error(transparent)]
     TypeError(#[from] TypeError),
+    #[error(transparent)]
+    IbftError(#[from] IbftError),
+    #[error(transparent)]
+    IscsiError(#[from] IscsiError),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
     #[error("Failed to open output file: {path}: {err}")]
@@ -170,6 +184,54 @@ impl<S: Share> VM<S> {
             true => Some(TPMDevice::new(&state_dir, machine.arch)?),
             false => None,
         };
+
+        let iscsi_disks: Vec<_> = disks
+            .iter()
+            .filter_map(|d| d.iscsi_backing_file_path().map(|p| (d.id(), p)))
+            .collect();
+        let iscsi_daemon = if !iscsi_disks.is_empty() {
+            let mut daemon = IscsiTargetDaemon::start(&state_dir)?;
+            for (id, backing_file) in &iscsi_disks {
+                daemon.add_target(*id, backing_file)?;
+            }
+            Some(daemon)
+        } else {
+            None
+        };
+
+        let ibft_disk = disks.iter().find(|d| d.iscsi_ibft());
+        let ibft = if let (Some(disk), true) = (ibft_disk, nics.len() > 0) {
+            let first_id = disk.id();
+            let host_ip = nics[0].host_ipv6_addr();
+            let guest_ip = Ipv6Addr::from(u128::from(host_ip) + 1);
+            let mac_str = nics[0].guest_mac();
+            let mac_bytes: Vec<u8> = mac_str
+                .split(':')
+                .map(|b| u8::from_str_radix(b, 16).expect("valid MAC byte"))
+                .collect();
+            let mut mac = [0u8; 6];
+            mac.copy_from_slice(&mac_bytes);
+
+            Some(IbftTable::generate(
+                &state_dir,
+                "iqn.2024-01.com.meta.vmtest:initiator",
+                &IbftTarget {
+                    iqn: crate::iscsi::target_iqn(first_id),
+                    portal_ip: host_ip,
+                    portal_port: 3260,
+                    lun: crate::iscsi::ISCSI_LUN as u64,
+                },
+                &IbftNic {
+                    ip: guest_ip,
+                    prefix: 64,
+                    gateway: host_ip,
+                    mac,
+                },
+            )?)
+        } else {
+            None
+        };
+
         let identifier = Uuid::new_v4().to_string();
 
         Ok(VM {
@@ -182,6 +244,8 @@ impl<S: Share> VM<S> {
             state_dir,
             sidecar_handles: vec![],
             tpm,
+            iscsi_daemon,
+            ibft,
             identifier,
         })
     }
@@ -452,6 +516,9 @@ impl<S: Share> VM<S> {
         args.extend(self.nics.qemu_args());
         if let Some(tpm) = &self.tpm {
             args.extend(tpm.qemu_args());
+        }
+        if let Some(ibft) = &self.ibft {
+            args.extend(ibft.qemu_args());
         }
         args.extend(self.extra_qemu_args());
 
@@ -967,6 +1034,8 @@ mod test {
             state_dir: state_dir.path().to_path_buf(),
             sidecar_handles: vec![],
             tpm: None,
+            iscsi_daemon: None,
+            ibft: None,
             identifier: "one".to_string(),
         };
         (vm, state_dir)
