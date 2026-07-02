@@ -74,6 +74,7 @@ image.layer(
                 "numactl-libs",  # for qemu-system
                 "openssh-clients",  # for ssh shell
                 "qemu-img",  # manipulate disk images
+                "swtpm",  # emulate TPM in software
                 "systemd-container",  # for systemd-detect-virt
                 "virtiofsd",  # rust virtiofsd
                 "scsi-target-utils",  # host iscsi targets
