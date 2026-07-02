@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
@@ -58,6 +59,12 @@ feature.new(
 # with tools we need for VM tests.
 image.layer(
     name = "container-image",
+    default_os = "centos10",
+    dnf_versionlock_extend = {
+        # This is the same hyperscale version used for qemu-common, ensure that
+        # qemu-kvm-common is covered too
+        "qemu-kvm-common": "10.1.2-1.4.hs+fb.el10"
+    },
     features = [
         feature.rpms_install(
             rpms = [
@@ -66,13 +73,22 @@ image.layer(
                 "iproute",  # for NIC configuration
                 "numactl-libs",  # for qemu-system
                 "openssh-clients",  # for ssh shell
-                "qemu-system-x86",  # run a VM
-                "qemu-system-aarch64",  # run a VM
                 "qemu-img",  # manipulate disk images
-                "swtpm",  # emulate TPM in software
                 "systemd-container",  # for systemd-detect-virt
                 "virtiofsd",  # rust virtiofsd
             ]
+        ),
+        # The qemu-system emulator to run a VM. On x86_64 we also install the
+        # aarch64 emulator since aarch64 VM tests are executed on x86_64 hosts.
+        # On aarch64 we only install the native emulator: qemu-system-x86 there
+        # pulls in qemu-system-x86-core, whose seabios-bin/seavgabios-bin deps
+        # aren't published in the aarch64 repos, and x86-on-aarch64 emulation is
+        # not currently used.
+        feature.rpms_install(
+            subjects = arch_select(
+                aarch64 = ["qemu-system-aarch64"],
+                x86_64 = ["qemu-system-x86", "qemu-system-aarch64"],
+            ),
         ),
         # Don't let random configurations sneak in - we want this tightly
         # controlled since it's a very constrained environment and a somewhat
@@ -94,6 +110,7 @@ package.unprivileged_dir(
     # so they are legal in buck-out. The container is launched via unshare() and
     # never boots systemd, so these inert unit files are never read by name.
     base64_encode_filenames = True,
+    default_os = "centos10",
     layer = ":container-image",
     visibility = ["PUBLIC"],
 )

@@ -784,12 +784,23 @@ impl<S: Share> VM<S> {
     // Some args depending on whether the execution platform is same as the
     // platform being emulated.
     fn arch_emulation_args(&self, current_arch: CpuIsa) -> Vec<OsString> {
-        let args = if current_arch == self.machine.arch {
-            vec!["-cpu", "host", "-enable-kvm"]
-        } else {
-            vec!["-cpu", "max"]
+        if current_arch == self.machine.arch {
+            return ["-cpu", "host", "-enable-kvm"]
+                .into_iter()
+                .map(|x| x.into())
+                .collect();
+        }
+
+        // Without KVM, qemu emulates the guest CPU via TCG with "-cpu max". On
+        // aarch64, qemu's "max" enables FEAT_LPA2 (52-bit physical addressing),
+        // which hangs the edk2 firmware's PEI memory setup under TCG so the guest
+        // never boots (this is how aarch64 VM tests run on x86_64 hosts). Disable
+        // just that feature; the rest of "max" is kept.
+        let cpu = match self.machine.arch {
+            CpuIsa::AARCH64 => "max,lpa2=off",
+            CpuIsa::X86_64 => "max",
         };
-        args.into_iter().map(|x| x.into()).collect()
+        ["-cpu", cpu].into_iter().map(|x| x.into()).collect()
     }
 
     fn common_qemu_args(&self) -> Result<Vec<OsString>> {
@@ -969,7 +980,12 @@ mod test {
             vm.arch_emulation_args(CpuIsa::AARCH64),
             vec!["-cpu", "host", "-enable-kvm"],
         );
-        assert_eq!(vm.arch_emulation_args(CpuIsa::X86_64), vec!["-cpu", "max"]);
+        // Emulating an aarch64 guest under TCG: "max" minus FEAT_LPA2, which
+        // otherwise hangs the edk2 firmware's memory setup.
+        assert_eq!(
+            vm.arch_emulation_args(CpuIsa::X86_64),
+            vec!["-cpu", "max,lpa2=off"],
+        );
 
         vm.machine.arch = CpuIsa::X86_64;
         assert_eq!(vm.arch_emulation_args(CpuIsa::AARCH64), vec!["-cpu", "max"]);
