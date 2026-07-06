@@ -367,6 +367,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     dst_is_dir = ctx.attrs.dst.endswith("/")
 
     src_is_python = False
+    is_outplace = False
     if isinstance(src, Dependency):
         is_executable = RunInfo in src
         expect(LayerInfo not in src, "Layers ({}) cannot be used as install `src`, consider using feature.mount instead".format(src.label))
@@ -386,6 +387,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             # dependencies of this binary are made available on the local
             # machine
             required_run_infos.append(src[RunInfo])
+
+        src_is_python = is_python_target(ctx.attrs.src)
+        is_outplace = src_is_python and is_outplace_python_target(ctx.attrs.src)
 
         src_subtargets = ctx.attrs.src[DefaultInfo].sub_targets
         if "rpath-tree" in src_subtargets and not ctx.attrs.ignore_symlink_tree:
@@ -438,7 +442,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         # Non-standalone (aka dev-mode) binaries don't get stripped, they just
         # get symlinked. The split action does not (currently) support directory
         # sources, so just skip it
-        if not dst_is_dir and ctx.attrs.split_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink):
+        if not dst_is_dir and not is_outplace and ctx.attrs.split_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink):
             split_anon_target = split_binary_anon(
                 ctx = ctx,
                 src = src,
@@ -478,15 +482,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             src = ensure_single_output(src)
             binary_info = None
             if is_executable:
-                if not standalone:
+                if not standalone and not is_outplace:
                     binary_info = binary_record(dev = True)
                 if ctx.attrs.never_use_dev_binary_symlink:
                     binary_info = None
             elif ctx.attrs.setcap:
                 fail("install src {} is not a binary, setcap should not be used".format(ctx.attrs.src))
-
-        if is_python_target(ctx.attrs.src):
-            src_is_python = True
     elif isinstance(src, Artifact):
         # If the source is an artifact, that means it was given as an
         # `attrs.source()`, and is thus not a dependency.
@@ -496,7 +497,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             mode = 0o444
 
     features = None
-    if src_is_python and is_outplace_python_target(ctx.attrs.src):
+    if is_outplace:
         features = _python_outplace_features(
             ctx,
             paths.basename(ctx.attrs.dst),

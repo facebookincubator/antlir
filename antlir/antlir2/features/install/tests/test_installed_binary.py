@@ -93,15 +93,13 @@ class TestInstalledBinary(unittest.TestCase):
         # address, e.g. 'Symbol "main" is at 0x... in a file compiled ...'
         self.assertIn('Symbol "main"', result.stdout)
 
-    @skip_in_dev
     def test_outplace_par(self) -> None:
-        self.assertTrue(
-            os.path.isdir(
-                "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/true-py#link-tree"
-            )
+        path = (
+            "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/"
         )
+        par = os.path.join(path, "true-py-outplace#par")
+        self.assertTrue(os.path.isfile(par))
+        self.assertFalse(os.path.islink(par))
+        self.assertTrue(os.path.isdir(os.path.join(path, "true-py#link-tree")))
         self.assertTrue(os.path.islink("/usr/bin/true-py"))
-        self.assertEqual(
-            os.path.realpath("/usr/bin/true-py"),
-            "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/true-py-outplace#par",
-        )
+        self.assertEqual(os.path.realpath("/usr/bin/true-py"), par)
