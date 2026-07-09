@@ -1,0 +1,45 @@
+load("//antlir/bzl:build_defs.bzl", "export_file", "rust_library", "rust_unittest")
+
+oncall("antlir")
+
+rust_library(
+    name = "buck_targets",
+    srcs = glob(["src/**/*.rs"]),
+    test_deps = [
+        "maplit",
+        "rstest",
+        "serde_json",
+    ],
+    visibility = ["PUBLIC"],
+    deps = [
+        "bon",
+        "serde",
+        "serde_starlark",
+        "thiserror",
+        "typetag",
+        "//antlir/buck2/buck_label:buck_label",
+        "//antlir/signedsource:signedsource",
+    ],
+)
+
+export_file(
+    name = "load_targets.bxl",
+    visibility = ["PUBLIC"],
+)
+
+rust_unittest(
+    name = "roundtrip-test",
+    srcs = ["tests/roundtrip.rs"],
+    crate_root = "tests/roundtrip.rs",
+    # The test shells out to `buck2 bxl` against the real checkout, which can't
+    # run on RE.
+    remote_execution = "local",
+    deps = [
+        "maplit",
+        "serde",
+        "serde_json",
+        "typetag",
+        ":buck_targets",
+        "//antlir/buck2/buck_label:buck_label",
+    ],
+)

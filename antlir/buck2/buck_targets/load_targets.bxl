@@ -1,0 +1,75 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# @oss-disable
+"""
+Read every target in a package and dump it to JSON so it can be deserialized
+back into the strict rule types defined with the `buck_targets` rust crate.
+
+`select()`s are left UNRESOLVED: an unconfigured `uquery` is used, and any
+`select()` value is emitted as `{"__antlir_select__": {<condition>: <value>}}`,
+which matches the wire format the `Select<T>` type deserializes.
+
+Each target is emitted as a single-key object keyed by its (short) rule name,
+e.g. `{"my_rule": {"name": "foo", ...}}`, matching typetag's external tagging
+so the JSON array deserializes directly into `Vec<Box<dyn BuckTarget>>`.
+
+Targets whose `labels` carry a macro-expanded marker (see `macros.bzl`) are
+skipped: only top-level targets round-trip.
+
+    buck2 bxl <cell>//path/to:load_targets.bxl:main -- --package <cell>//path/to:
+"""
+
+load("//antlir/buck2/buck_targets:macros.bzl", "is_macro_expanded_label")
+
+def _to_json(value):
+    # Primitives and None pass straight through to print_json.
+    if value == None or isinstance(value, bool) or isinstance(value, int) or isinstance(value, str):
+        return value
+
+    if isinstance(value, list) or isinstance(value, tuple):
+        return [_to_json(v) for v in value]
+
+    if isinstance(value, dict):
+        return {str(k): _to_json(v) for k, v in value.items()}
+
+    # An unresolved `select({...})`.
+    if isinstance(value, bxl.SelectDict):
+        return {
+            "__antlir_select__": {str(k): _to_json(v) for k, v in value.select_items()},
+        }
+
+    # `["x"] + select({...})` style concatenation. Not modelled by `Select<T>`;
+    # emit a distinct marker so deserialization fails loudly rather than
+    # silently mis-parsing.
+    if isinstance(value, bxl.SelectConcat):
+        return {"__antlir_select_concat__": [_to_json(v) for v in value.select_iter()]}
+
+    # Everything else (dependency / target labels, artifacts, arg macros, ...)
+    # stringifies to its source form.
+    return str(value)
+
+def _impl(ctx):
+    out = []
+    for node in ctx.uquery().eval(ctx.cli_args.package):
+        # Skip macro-expanded auxiliary targets; only top-level targets
+        # round-trip.
+        labels = node.get_attr("labels")
+        if isinstance(labels, list) and any([is_macro_expanded_label(label) for label in labels]):
+            continue
+
+        # `rule_type` is the fully-qualified `cell//path:file.bzl:rule`; the
+        # rust side tags by the short rule name.
+        rule = node.rule_type.split(":")[-1]
+        attrs = {name: _to_json(val) for name, val in node.get_attrs().items()}
+        out.append({rule: attrs})
+    ctx.output.print_json(out)
+
+main = bxl_main(
+    impl = _impl,
+    cli_args = {
+        "package": cli_args.string(doc = "target pattern to read, e.g. //foo: or //foo/..."),
+    },
+)

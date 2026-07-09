@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(cow_is_borrowed)]
-
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
 use std::hash::Hash;
@@ -31,6 +29,9 @@ static LABEL_PATTERN: LazyLock<String> = LazyLock::new(|| {
 });
 static LABEL_WITH_CONFIG_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(r"^{}(?:\s+\((.*)\))?$", *LABEL_PATTERN,)).expect("I know this works")
+});
+static PACKAGE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(&format!(r"^(.+?)//({ALLOWED_NAME_CHARSET}*)$")).expect("known good")
 });
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -247,6 +248,108 @@ impl AsRef<std::ffi::OsStr> for Label {
     }
 }
 
+/// A buck package. Points to a directory (the cell + package path) without any
+/// target name, e.g. `cell//path/to/package`. Always fully qualified (with cell
+/// name).
+#[derive(Clone, Eq)]
+pub struct Package {
+    full: String,
+    cell: Range<usize>,
+    path: Range<usize>,
+}
+
+impl Package {
+    pub fn new(s: impl Into<String>) -> Result<Self, Error> {
+        let full: String = s.into();
+        match PACKAGE_RE.captures(&full) {
+            Some(cap) => {
+                let cell = cap.get(1).expect("cell must exist").range();
+                let path = cap.get(2).expect("path must exist").range();
+                Ok(Self { full, cell, path })
+            }
+            None => Err(Error::NoMatch(full, PACKAGE_RE.to_string())),
+        }
+    }
+
+    pub fn cell(&self) -> &str {
+        &self.full[self.cell.clone()]
+    }
+
+    pub fn path(&self) -> &str {
+        &self.full[self.path.clone()]
+    }
+}
+
+impl PartialEq<Package> for Package {
+    fn eq(&self, other: &Package) -> bool {
+        self.cell() == other.cell() && self.path() == other.path()
+    }
+}
+
+impl PartialOrd<Package> for Package {
+    fn partial_cmp(&self, other: &Package) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Package {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.cell(), self.path()).cmp(&(other.cell(), other.path()))
+    }
+}
+
+impl Hash for Package {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.cell().hash(state);
+        self.path().hash(state);
+    }
+}
+
+impl std::str::FromStr for Package {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Self::new(s.to_owned())
+    }
+}
+
+impl std::fmt::Debug for Package {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_tuple("Package").field(&self.to_string()).finish()
+    }
+}
+
+impl std::fmt::Display for Package {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}//{}", self.cell(), self.path())
+    }
+}
+
+impl<'de> Deserialize<'de> for Package {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Package::new(s).map_err(D::Error::custom)
+    }
+}
+
+impl Serialize for Package {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.full)
+    }
+}
+
+impl AsRef<str> for Package {
+    fn as_ref(&self) -> &str {
+        &self.full
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -255,6 +358,7 @@ mod tests {
     use super::*;
 
     assert_impl_all!(Label: Send, Sync);
+    assert_impl_all!(Package: Send, Sync);
 
     #[test]
     fn parse_label() {
@@ -373,6 +477,48 @@ mod tests {
         assert_eq!(
             r#""abc//path/to/target:label""#,
             serde_json::to_string(&label).expect("infallible")
+        );
+    }
+
+    #[test]
+    fn parse_package() {
+        let pkg = Package::new("abc//path/to/package").expect("valid package");
+        assert_eq!("abc", pkg.cell());
+        assert_eq!("path/to/package", pkg.path());
+    }
+
+    #[test]
+    fn parse_root_package() {
+        let pkg = Package::new("abc//").expect("valid root package");
+        assert_eq!("abc", pkg.cell());
+        assert_eq!("", pkg.path());
+    }
+
+    #[rstest]
+    #[case::no_cell("//path/to/package")]
+    #[case::no_slashes("abc/path/to/package")]
+    #[case::has_target("abc//path/to/package:target")]
+    fn bad_packages(#[case] s: &str) {
+        assert!(Package::new(s).is_err(), "'{}' should not have parsed", s);
+    }
+
+    /// The Display impl should reproduce a well-formed package string.
+    #[rstest]
+    #[case::nested("abc//path/to/package")]
+    #[case::root("abc//")]
+    fn package_display(#[case] s: &str) {
+        let pkg = Package::new(s).expect("well-formed");
+        assert_eq!(s, pkg.to_string());
+    }
+
+    #[test]
+    fn package_serde() {
+        let pkg: Package = serde_json::from_str(r#""abc//path/to/package""#).expect("well formed");
+        assert_eq!("abc", pkg.cell());
+        assert_eq!("path/to/package", pkg.path());
+        assert_eq!(
+            r#""abc//path/to/package""#,
+            serde_json::to_string(&pkg).expect("infallible")
         );
     }
 }
