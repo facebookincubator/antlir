@@ -1,0 +1,8 @@
+[Unit]
+Description=Another Cheesy Test Timer that is an explicit export_file
+
+[Timer]
+OnCalendar=*:0/5
+
+[Install]
+WantedBy=timers.target

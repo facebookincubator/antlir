@@ -64,6 +64,21 @@ unit_test_specs: List[SystemdUnitTestSpec] = [
         target_dep_type="wants",
         enabled_link_name="cheese-template@foo.service",
     ),
+    SystemdUnitTestSpec(
+        "cheese-batch1.service",
+        enabled_target="default.target",
+        target_dep_type="wants",
+    ),
+    SystemdUnitTestSpec(
+        "cheese-batch2.service",
+        enabled_target="multi-user.target",
+        target_dep_type="requires",
+    ),
+    SystemdUnitTestSpec(
+        "cheese-batch3.timer",
+        enabled_target="timers.target",
+        target_dep_type="wants",
+    ),
 ]
 
 

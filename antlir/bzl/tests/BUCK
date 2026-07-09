@@ -15,6 +15,10 @@ export_file(name = "cheese-source.service")
 
 export_file(name = "cheese-dropin.conf")
 
+export_file(name = "cheese-batch1.service")
+export_file(name = "cheese-batch2.service")
+export_file(name = "cheese-batch3.timer")
+
 image.layer(
     name = "systemd_feature-layer",
     features = [
@@ -66,6 +70,16 @@ image.layer(
         # Install and enable a template unit
         systemd.install_unit("cheese-template@.service"),
         systemd.enable_unit("cheese-template@foo.service"),
+        # Install batch units for enable_units test
+        systemd.install_unit("cheese-batch1.service"),
+        systemd.install_unit("cheese-batch2.service"),
+        systemd.install_unit("cheese-batch3.timer"),
+        # Test enable_units with mixed defaults, custom target, and dep_type
+        systemd.enable_units([
+            {"unit": "cheese-batch1.service"},
+            {"dep_type": "requires", "target": "multi-user.target", "unit": "cheese-batch2.service"},
+            {"target": "timers.target", "unit": "cheese-batch3.timer"},
+        ]),
     ],
 )
 

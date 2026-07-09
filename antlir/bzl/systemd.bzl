@@ -252,6 +252,22 @@ def _install_impl(
         else []
     )
 
+# Image feature to enable a list of system units.
+# Each entry is a dict with keys: "unit" (required), "target" (optional,
+# default "default.target"), "dep_type" (optional, default "wants").
+def _enable_units(units, installed_root = PROVIDER_ROOT):
+    features = []
+    allowed_keys = ["unit", "target", "dep_type"]
+    for entry in units:
+        for key in entry.keys():
+            if key not in allowed_keys:
+                fail("enable_units entry has unknown key '{}'; allowed keys are {}".format(key, ", ".join(allowed_keys)))
+        unit = entry["unit"]
+        target = entry.get("target", "default.target")
+        dep_type = entry.get("dep_type", "wants")
+        features.extend(_enable_impl(unit, target, dep_type, installed_root, "Enable System Unit"))
+    return features
+
 # Image feature to install a system unit
 def _install_unit(source, dest = None, install_root = PROVIDER_ROOT, force = False, mode: int | str | None = None):
     return _install_impl(source, dest, install_root, "Install System Unit", force = force, mode = mode)
@@ -445,6 +461,7 @@ def _kernel_modules_load(*modules):
 systemd = struct(
     alias = _alias,
     enable_unit = _enable_unit,
+    enable_units = _enable_units,
     escape = _escape,
     install_dropin = _install_dropin,
     install_unit = _install_unit,
