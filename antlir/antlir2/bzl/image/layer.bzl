@@ -12,10 +12,8 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerContents", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "reduce_features", "shared_features_attrs")
-
 load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-enable
 # @oss-disable[end= ]: load("//antlir/antlir2/bzl/image/facebook:fbpkg_mount_utils.bzl", "all_fbpkg_mounts")
-
 load("//antlir/bzl:oss_shim.bzl", fb_defaults = "empty_dict") # @oss-enable
 # @oss-disable[end= ]: load("//antlir/antlir2/bzl/image/facebook:layer.bzl", "fb_defaults")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo", "FeaturePluginPluginKind")
@@ -309,10 +307,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # anywhere, just exclude it
     if "aziot-identity-service" not in dnf_excluded_rpms:
         dnf_excluded_rpms.append("aziot-identity-service")
-
-    # https://fb.workplace.com/groups/upstreampackaging/posts/2218930438568048
-    if "mft" not in dnf_excluded_rpms:
-        dnf_excluded_rpms.append("mft")
 
     # The image build is split into phases based on features' `build_phase`
     # property.
