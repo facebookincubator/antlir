@@ -15,6 +15,11 @@ args = parser.parse_args()
 
 
 def _info_from_hdr(hdr):
+    # Packages with no source rpm (eg gpg-pubkey) report SOURCERPM as the string
+    # "(none)"; normalize that to a real null.
+    source_rpm = hdr[rpm.RPMTAG_SOURCERPM]
+    if not source_rpm or source_rpm == "(none)":
+        source_rpm = None
     return {
         "name": hdr[rpm.RPMTAG_NAME],
         "epoch": hdr[rpm.RPMTAG_EPOCH] or 0,
@@ -26,7 +31,7 @@ def _info_from_hdr(hdr):
         else None,
         "size": hdr[rpm.RPMTAG_SIZE],
         "os": hdr[rpm.RPMTAG_OS],
-        "source_rpm": hdr[rpm.RPMTAG_SOURCERPM],
+        "source_rpm": source_rpm,
     }
 
 
