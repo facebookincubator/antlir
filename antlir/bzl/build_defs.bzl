@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:selects.bzl", "selects")
-
 # This file redeclares (and potentially validates) JUST the part of the
 # fbcode macro API that is allowed within `antlir/`.  This way,
 # FB-internal contributors will be less likely to accidentally break
