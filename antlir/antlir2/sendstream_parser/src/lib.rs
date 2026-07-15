@@ -155,7 +155,7 @@ macro_rules! one_getter {
 }
 
 macro_rules! getters {
-    ($t:ident, [$(($f:ident, $ft:ident, $ref:tt)),+]) => {
+    ($t:ident, [$(($f:ident, $ft:ty, $ref:tt)),+]) => {
         impl $t {
             $(
                 one_getter!($f, $ft, $ref);
@@ -645,7 +645,15 @@ pub struct EncodedWrite {
     pub(crate) data: Data,
 }
 from_cmd!(EncodedWrite);
-getters! {EncodedWrite, [(path, Path, borrow), (offset, FileOffset, copy), (data, Data, borrow)]}
+getters! {EncodedWrite, [
+    (path, Path, borrow),
+    (offset, FileOffset, copy),
+    (unencoded_file_len, UnencodedFileLen, copy),
+    (unencoded_offset, UnencodedOffset, copy),
+    (compression, Compression, copy),
+    (encryption, Option<Encryption>, copy),
+    (data, Data, borrow)
+]}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, AsRef, Deref)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]

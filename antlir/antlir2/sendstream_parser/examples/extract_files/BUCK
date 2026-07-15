@@ -1,0 +1,23 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "extract_files",
+    srcs = [
+        "extract.rs",
+        "main.rs",
+    ],
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "futures",
+        "tokio",
+        "zstd",
+        "//antlir/antlir2/sendstream_parser:sendstream_parser",
+    ],
+)

@@ -19,6 +19,7 @@ rust_library(
     ],
     test_features = ["serde"],
     test_srcs = glob(["testdata/*"]),
+    visibility = ["PUBLIC"],
     deps = [
         "bytes",
         "derive_more",
