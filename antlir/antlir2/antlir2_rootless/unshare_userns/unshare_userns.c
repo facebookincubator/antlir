@@ -113,7 +113,7 @@ int unshare_userns(
               gid_map_outside_sub_start,
               gid_map_len,
               NULL};
-          if (execv("/usr/bin/newgidmap", args) == -1) {
+          if (execvp("newgidmap", args) == -1) {
             perror("exec newgidmap");
             exit(EXIT_FAILURE);
           }
@@ -142,7 +142,7 @@ int unshare_userns(
           uid_map_outside_sub_start,
           uid_map_len,
           NULL};
-      if (execv("/usr/bin/newuidmap", args) == -1) {
+      if (execvp("newuidmap", args) == -1) {
         perror("exec newuidmap");
         exit(EXIT_FAILURE);
       };
