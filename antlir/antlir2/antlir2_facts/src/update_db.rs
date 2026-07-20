@@ -159,6 +159,25 @@ fn populate_usergroups(tx: &mut Transaction, root: &Path) -> anyhow::Result<()> 
 
 const RPM_FACTS_SCRIPT: &str = include_str!("update_db/rpm_facts.py");
 
+/// Interpreter used to run the rpm fact-finder inside `layer`.
+///
+/// CentOS/RHEL ship `/usr/libexec/platform-python` as a guaranteed-present
+/// system interpreter and we keep using it there, since that is what those
+/// images have always been exercised with. No other distro creates that path
+/// (Fedora, Debian, ...), so fall back to resolving `python3` on $PATH inside
+/// the layer -- the same way the `rpm` invocation above is resolved.
+fn rpm_facts_interpreter(layer: &Path) -> &'static str {
+    const PLATFORM_PYTHON: &str = "/usr/libexec/platform-python";
+    // symlink_metadata, not exists(): platform-python is typically a symlink,
+    // and exists() would resolve its target against the *host* root rather
+    // than the layer.
+    if layer.join_abs(PLATFORM_PYTHON).symlink_metadata().is_ok() {
+        PLATFORM_PYTHON
+    } else {
+        "python3"
+    }
+}
+
 fn populate_rpms(
     tx: &mut Transaction,
     root: &Path,
@@ -190,7 +209,7 @@ fn populate_rpms(
                 warn!("rpm db does not exist in image {}", root.display());
                 return Ok(());
             }
-            let mut cmd = isol.command("/usr/libexec/platform-python")?;
+            let mut cmd = isol.command(rpm_facts_interpreter(build_appliance))?;
             cmd.arg("-").arg("--installroot").arg("/__antlir2__/root");
             cmd
         }
@@ -202,7 +221,7 @@ fn populate_rpms(
                     .build(),
             )
             .context("while preparing rpm unshare")?;
-            let mut cmd = isol.command("/usr/libexec/platform-python")?;
+            let mut cmd = isol.command(rpm_facts_interpreter(root))?;
             cmd.arg("-").arg("--installroot").arg("/");
             cmd
         }
