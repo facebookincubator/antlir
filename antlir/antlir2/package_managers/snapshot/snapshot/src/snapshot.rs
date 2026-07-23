@@ -11,8 +11,12 @@ use serde::Serialize;
 use snapshot_common::Checksums;
 
 pub(crate) mod blob_status;
+pub(crate) mod buck_files;
+pub(crate) mod buck_target;
 pub(crate) mod metadata;
 pub(crate) mod packages;
+pub(crate) mod progress;
+pub(crate) mod snapshot;
 pub(crate) mod storage;
 
 #[derive(Debug, Serialize)]

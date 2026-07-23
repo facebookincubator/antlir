@@ -295,6 +295,8 @@ impl ParseRelease {
 mod tests {
     use std::io::Cursor;
 
+    use hex_literal::hex;
+
     use super::*;
 
     #[test]
@@ -349,9 +351,9 @@ mod tests {
             BlobDl {
                 href: "contrib/binary-amd64/Packages.xz".into(),
                 size: 53848,
-                checksums: Checksums::new_sha256(
-                    "9979608b93622d99f0b8bd1143c8ba7039a5d23bd3fcebb8331a1b4b531c96d2".into(),
-                ),
+                checksums: Checksums::new_sha256(hex!(
+                    "9979608b93622d99f0b8bd1143c8ba7039a5d23bd3fcebb8331a1b4b531c96d2"
+                )),
                 filetype: "xz".into(),
             },
         );
@@ -362,9 +364,9 @@ mod tests {
             BlobDl {
                 href: "main/binary-amd64/Packages.xz".into(),
                 size: 9670308,
-                checksums: Checksums::new_sha256(
-                    "d103f0fd4603869384a7486be3682dd00de0ac665b86a44c3b550ad21306d23d".into(),
-                ),
+                checksums: Checksums::new_sha256(hex!(
+                    "d103f0fd4603869384a7486be3682dd00de0ac665b86a44c3b550ad21306d23d"
+                )),
                 filetype: "xz".into(),
             },
         );
@@ -375,9 +377,9 @@ mod tests {
             BlobDl {
                 href: "non-free/binary-amd64/Packages.xz".into(),
                 size: 100252,
-                checksums: Checksums::new_sha256(
-                    "873a1152a9641bbbd32ae06d9bea40c0eb9486caeea340a786d4ab84cb6de6c5".into(),
-                ),
+                checksums: Checksums::new_sha256(hex!(
+                    "873a1152a9641bbbd32ae06d9bea40c0eb9486caeea340a786d4ab84cb6de6c5"
+                )),
                 filetype: "xz".into(),
             },
         );
@@ -388,9 +390,9 @@ mod tests {
             BlobDl {
                 href: "non-free-firmware/binary-amd64/Packages.xz".into(),
                 size: 6884,
-                checksums: Checksums::new_sha256(
-                    "a05bfaf35b64eb8271e374f617b3b75b5ba24dacfa86fd7ddbec5a60d99a17da".into(),
-                ),
+                checksums: Checksums::new_sha256(hex!(
+                    "a05bfaf35b64eb8271e374f617b3b75b5ba24dacfa86fd7ddbec5a60d99a17da"
+                )),
                 filetype: "xz".into(),
             },
         );

@@ -9,8 +9,7 @@ use anyhow::Result;
 use clap::Parser;
 use clap::Subcommand;
 
-mod deb;
-mod yum;
+mod repomd;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Generate {
@@ -20,17 +19,15 @@ pub(crate) struct Generate {
 
 #[derive(Debug, Subcommand)]
 enum Sub {
-    /// Generate metadata for deb repos
-    Deb(deb::Generate),
-    /// Generate metadata for yum repos
-    Yum(yum::Generate),
+    /// Generate a canonical repomd.xml referencing the decompressed
+    /// repodata files with both sha1 and sha256 checksums.
+    Repomd(repomd::GenerateRepomd),
 }
 
 impl Generate {
     pub(crate) fn run(self) -> Result<()> {
         match self.sub {
-            Sub::Deb(sub) => sub.run(),
-            Sub::Yum(sub) => sub.run(),
+            Sub::Repomd(sub) => sub.run(),
         }
     }
 }

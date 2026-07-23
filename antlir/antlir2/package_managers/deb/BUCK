@@ -19,5 +19,10 @@ suite(
         "main",
         "contrib",
     ],
+    snapshot_storage = {
+        "api_key": "antlir_snapshots-key",
+        "bucket": "antlir_snapshots",
+        "type": "manifold",
+    },
     visibility = ["PUBLIC"],
 )

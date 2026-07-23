@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/package_managers/snapshot:content_based_path.bzl", "should_use_content_based_path_with_sha256")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 
 def _download_repodata_impl(
@@ -53,18 +54,22 @@ _download_repodata = dynamic_actions(
 def download_repodata(*, actions: AnalysisActions, repomd_json: Artifact, baseurl: str, metadata_run_info: RunInfo) -> struct:
     primary_xml = actions.declare_output(
         "primary.xml",
-        has_content_based_path = True,
+        has_content_based_path = should_use_content_based_path_with_sha256(actions),
     )
     filelists_xml = actions.declare_output(
         "filelists.xml",
-        has_content_based_path = True,
+        has_content_based_path = should_use_content_based_path_with_sha256(actions),
     )
     other_xml = actions.declare_output(
         "other.xml",
-        has_content_based_path = True,
+        has_content_based_path = should_use_content_based_path_with_sha256(actions),
     )
     packages_json = actions.declare_output(
         "packages.json",
+        # This one we will always either:
+        # * download but with a known sha1
+        # * generate
+        # So it is safe to always be content-based path
         has_content_based_path = True,
     )
 

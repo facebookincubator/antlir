@@ -18,7 +18,7 @@ load(":plan.bzl", "apt_planner")
 # Hardcoded trixie suite dep for now. We will figure out how to select the
 # correct suite per OS later.
 TRIXIE_SUITE = internal_external(
-    fb = "fbcode//bot_generated/antlir/deb/trixie:trixie",
+    fb = "fbcode//bot_generated/antlir/snapshot/antlir/antlir2/package_managers/deb/trixie:trixie",
     oss = "antlir//antlir/antlir2/package_managers/deb:trixie",
 )
 

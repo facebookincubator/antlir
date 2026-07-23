@@ -130,6 +130,8 @@ impl<'de> DeserializeAs<'de, Checksums> for PkgidChecksums {
 mod tests {
     use std::io::Cursor;
 
+    use hex_literal::hex;
+
     const PRIMARY_XML_TXT: &str = include_str!("../../../../testdata/primary.xml");
 
     use super::*;
@@ -146,9 +148,9 @@ mod tests {
                         ver: "1.18.0".into(),
                         rel: "1.el9".into(),
                     },
-                    pkgid: Checksums::new_sha256(
-                        "fdf8a5b8c7b0d6d52674489ce20991d963986efd404965b11a7213313b0cb4f8".into()
-                    ),
+                    pkgid: Checksums::new_sha256(hex!(
+                        "fdf8a5b8c7b0d6d52674489ce20991d963986efd404965b11a7213313b0cb4f8"
+                    )),
                     location: Location {
                         href: "Packages/ModemManager-1.18.0-1.el9.x86_64.rpm".into(),
                     },
@@ -161,9 +163,9 @@ mod tests {
                         ver: "1.18.2".into(),
                         rel: "1.el9".into(),
                     },
-                    pkgid: Checksums::new_sha256(
-                        "4f376dbc093b4b34512a11457428e039b08d5c6cebc8bfc006a58fbbe30acfc4".into()
-                    ),
+                    pkgid: Checksums::new_sha256(hex!(
+                        "4f376dbc093b4b34512a11457428e039b08d5c6cebc8bfc006a58fbbe30acfc4"
+                    )),
                     location: Location {
                         href: "Packages/ModemManager-1.18.2-1.el9.x86_64.rpm".into(),
                     },
@@ -176,9 +178,9 @@ mod tests {
                         ver: "1.51.2".into(),
                         rel: "1.el9".into(),
                     },
-                    pkgid: Checksums::new_sha256(
-                        "ef3aa03f3f6b345b11732d34fa2b8bdd2db985a8836b6e201ad6a03bce1236f7".into()
-                    ),
+                    pkgid: Checksums::new_sha256(hex!(
+                        "ef3aa03f3f6b345b11732d34fa2b8bdd2db985a8836b6e201ad6a03bce1236f7"
+                    )),
                     location: Location {
                         href: "Packages/NetworkManager-1.51.2-1.el9.x86_64.rpm".into(),
                     },
@@ -191,9 +193,9 @@ mod tests {
                         ver: "1.51.2".into(),
                         rel: "2.el9".into(),
                     },
-                    pkgid: Checksums::new_sha256(
-                        "80db4f57cd9112294c1b60b74e34d04092d74625baae43dcf1ad7a0cbac31c69".into()
-                    ),
+                    pkgid: Checksums::new_sha256(hex!(
+                        "80db4f57cd9112294c1b60b74e34d04092d74625baae43dcf1ad7a0cbac31c69"
+                    )),
                     location: Location {
                         href: "Packages/NetworkManager-1.51.2-2.el9.x86_64.rpm".into(),
                     },

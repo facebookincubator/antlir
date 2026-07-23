@@ -124,6 +124,8 @@ impl ParsePackages {
 mod tests {
     use std::io::Cursor;
 
+    use hex_literal::hex;
+
     use super::*;
 
     #[test]
@@ -141,9 +143,9 @@ mod tests {
         assert_eq!(p.filename, "pool/main/0/0ad/0ad_0.27.0-2+b1_amd64.deb");
         assert_eq!(
             p.checksums,
-            Checksums::new_sha256(
-                "704dae7df79a35ed1bd3a0a8d5d1b9ce7a4ecdef74ddff72114d9523d63710eb".into()
-            )
+            Checksums::new_sha256(hex!(
+                "704dae7df79a35ed1bd3a0a8d5d1b9ce7a4ecdef74ddff72114d9523d63710eb"
+            ))
         );
 
         // 0ad-data
@@ -154,9 +156,9 @@ mod tests {
         assert_eq!(p.filename, "pool/main/0/0ad-data/0ad-data_0.27.0-1_all.deb");
         assert_eq!(
             p.checksums,
-            Checksums::new_sha256(
-                "7a25d66175bdc75cbd6a90e98b71dcb0d76f7763c589bd71880503f1c6185e4c".into()
-            )
+            Checksums::new_sha256(hex!(
+                "7a25d66175bdc75cbd6a90e98b71dcb0d76f7763c589bd71880503f1c6185e4c"
+            ))
         );
 
         // 0ad-data-common
@@ -180,9 +182,9 @@ mod tests {
         );
         assert_eq!(
             p.checksums,
-            Checksums::new_sha256(
-                "1047cc7df5b50a3b3b2db16c6270da90ad91cdb2ba7e011c6938467ea1fb3f94".into()
-            )
+            Checksums::new_sha256(hex!(
+                "1047cc7df5b50a3b3b2db16c6270da90ad91cdb2ba7e011c6938467ea1fb3f94"
+            ))
         );
     }
 

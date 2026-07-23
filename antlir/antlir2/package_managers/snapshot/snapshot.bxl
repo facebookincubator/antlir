@@ -3,88 +3,139 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//utils:expect.bzl", "expect")
+# This BXL is a private implementation detail of the `snapshot` Rust binary.
+# Users should not invoke it directly; the binary spawns `buck2 bxl` against
+# it and consumes the produced config JSON.
+
+load("//antlir/antlir2/bzl:platform.bzl", "arch_to_platform")
+load("//antlir/antlir2/package_managers/deb:suite.bzl", "DebSuiteInfo")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
+load("//antlir/antlir2/package_managers/yum:repo.bzl", "YumRepoInfo")
 
-def _main(ctx: bxl.Context):
-    # Get the snapshot binary as an exec dependency
-    snapshot_bin = ctx.unconfigured_sub_targets("fbcode//antlir/antlir2/package_managers/snapshot:snapshot")
+_SNAPSHOT_ROOT = "fbcode/bot_generated/antlir/snapshot"
 
-    # Set up BXL actions with the snapshot binary
-    bxl_actions = ctx.bxl_actions(exec_deps = [snapshot_bin])
+def _buck_package(label, custom_path):
+    if custom_path:
+        if custom_path.startswith(_SNAPSHOT_ROOT + "/"):
+            path = custom_path
+        else:
+            stripped = custom_path.lstrip("/")
+            if stripped.endswith("/BUCK"):
+                path = _SNAPSHOT_ROOT + "/" + stripped
+            elif stripped.endswith("/"):
+                path = _SNAPSHOT_ROOT + "/" + stripped + "BUCK"
+            else:
+                path = _SNAPSHOT_ROOT + "/" + stripped
+                if not path.endswith("/BUCK"):
+                    path = path + "/BUCK"
+
+        if not path.startswith(_SNAPSHOT_ROOT + "/"):
+            fail("snapshot_buck_file must be under {}, got {}".format(_SNAPSHOT_ROOT, custom_path))
+        return path
+    else:
+        return "{}/{}/{}/BUCK".format(
+            _SNAPSHOT_ROOT,
+            label.package,
+            label.name,
+        )
+
+def _tree_prefix(kind, label, timestamp):
+    return "{}/{}/snap-{}".format(kind, label.package + "/" + label.name, timestamp)
+
+def _require_storage(snapshottable, target_label):
+    if not snapshottable.snapshot_storage:
+        fail("Target {} missing snapshot_storage".format(target_label))
+    return snapshottable.snapshot_storage
+
+def _prepare_impl(ctx: bxl.Context):
+    bxl_actions = ctx.bxl_actions()
     actions = bxl_actions.actions
-    snapshot_run_info = bxl_actions.exec_deps[snapshot_bin][RunInfo]
+    timestamp = ctx.cli_args.timestamp
 
-    target_labels = ctx.cli_args.target
-    expect(len(target_labels) == 1, "Only one target is supported at this time")
-    target = ctx.configured_targets(target_labels[0], modifiers = ctx.modifiers)
-    analysis = ctx.analysis(target)
-    snapshottable_info = analysis.providers()[SnapshottableInfo]
+    targets_config = []
 
-    ctx.output.stream("Preparing metadata tree to snapshot")
-    metadata_json = actions.declare_output("metadata.json", has_content_based_path = False)
-    logs = actions.declare_output("logs.txt", has_content_based_path = False)
-    actions.run(
-        cmd_args(
-            snapshot_run_info,
-            cmd_args(logs.as_output(), format = "--log={}"),
-            cmd_args(metadata_json.as_output(), format = "--out={}"),
-            cmd_args(ctx.cli_args.storage, format = "--storage={}"),
-            "metadata",
-            cmd_args(snapshottable_info.metadata_tree, format = "--tree={}"),
-        ),
-        category = "snapshot",
-        identifier = "metadata",
-        local_only = True,  # needs network access
-        allow_cache_upload = True,  # the result is deterministic
-    )
-    ctx.output.stream("Metadata snapshot:", ctx.output.ensure(metadata_json), wait_on = [ctx.output.ensure(metadata_json)])
+    flat_targets = [t for targets in ctx.cli_args.target for t in targets]
+    for target_label in flat_targets:
+        # Avoid stacking conflicting cpu modifiers: if ctx.modifiers already contains a cpu modifier,
+        # we need to handle yum arch modifier carefully.
+        base_modifiers = [m for m in ctx.modifiers if "cpu:" not in m]
 
-    # Check blob status (missing or expiring soon) in storage
-    blob_status_json = actions.declare_output("blob_status.json", has_content_based_path = False)
-    actions.run(
-        cmd_args(
-            snapshot_run_info,
-            cmd_args(blob_status_json.as_output(), format = "--out={}"),
-            cmd_args(ctx.cli_args.storage, format = "--storage={}"),
-            "blob-status",
-            cmd_args(snapshottable_info.packages_indexes, format = "--entries={}"),
-        ),
-        category = "snapshot",
-        identifier = "blob_status",
-        local_only = True,  # needs network access
-        # this result is non-deterministic unlike the other two that interact
-        # with the storage backend
-        allow_cache_upload = False,
-    )
-    ctx.output.stream("Blob statuses:", ctx.output.ensure(blob_status_json), wait_on = [ctx.output.ensure(blob_status_json)])
+        target = ctx.configured_targets(target_label, modifiers = base_modifiers)
+        analysis = ctx.analysis(target)
+        providers = analysis.providers()
+        snapshottable = providers[SnapshottableInfo]
+        storage = _require_storage(snapshottable, target_label)
 
-    # Download the missing packages and upload them to storage
-    ctx.output.stream("Snapshotting package blobs, this may take a while...", wait_on = [ctx.output.ensure(blob_status_json)])
-    uploaded_json = actions.declare_output("uploaded.json", has_content_based_path = False)
-    uploaded_logs = actions.declare_output("uploaded_logs.txt", has_content_based_path = False)
-    actions.run(
-        cmd_args(
-            snapshot_run_info,
-            cmd_args(uploaded_logs.as_output(), format = "--log={}"),
-            cmd_args(uploaded_json.as_output(), format = "--out={}"),
-            cmd_args(ctx.cli_args.storage, format = "--storage={}"),
-            "packages",
-            cmd_args(blob_status_json, format = "--blob-status={}"),
-            cmd_args(snapshottable_info.packages_indexes, format = "--all-entries={}"),
-            cmd_args(snapshottable_info.packages_baseurl, format = "--base-url={}"),
-        ),
-        category = "snapshot",
-        identifier = "packages",
-        local_only = True,  # needs network access
-        allow_cache_upload = False,  # downloads are non-deterministic
-    )
-    ctx.output.stream("Snapshotted packages:", ctx.output.ensure(uploaded_json), wait_on = [ctx.output.ensure(uploaded_json)])
+        if YumRepoInfo in providers:
+            # Yum: collect per-arch metadata in one grouped entry so Rust
+            # doesn't need to re-group by (package, name).
+            arches = []
+            for arch_name in snapshottable.arches:
+                modifier = arch_to_platform(arch_name)
+                arch_target = ctx.configured_targets(
+                    target_label,
+                    modifiers = base_modifiers + [modifier],
+                )
+                arch_snap = ctx.analysis(arch_target).providers()[SnapshottableInfo]
+                arches.append({
+                    "arch": arch_name,
+                    "arch_modifier": modifier,
+                    "metadata_tree": arch_snap.metadata_tree,
+                    "packages_baseurl": arch_snap.packages_baseurl,
+                    "packages_indexes": arch_snap.packages_indexes,
+                })
 
-main = bxl_main(
-    impl = _main,
+            targets_config.append({
+                "arches": arches,
+                "buck_package": _buck_package(target.label, snapshottable.snapshot_buck_file),
+                "kind": "yum",
+                "package_subtargets": snapshottable.package_subtargets,
+                "snapshot_storage": storage,
+                "source_label": str(target_label),
+                "target_name": target.label.name,
+                "tree_prefix": _tree_prefix("yum", target.label, timestamp),
+            })
+        elif DebSuiteInfo in providers:
+            deb_info = providers[DebSuiteInfo]
+            components = sorted({c.name: True for c in deb_info.components}.keys())
+
+            targets_config.append({
+                "architectures": snapshottable.arches,
+                "buck_package": _buck_package(target.label, snapshottable.snapshot_buck_file),
+                "components": components,
+                "distribution": deb_info.distribution,
+                "kind": "deb",
+                "metadata_tree": snapshottable.metadata_tree,
+                "package_subtargets": snapshottable.package_subtargets,
+                "packages_baseurl": snapshottable.packages_baseurl,
+                "packages_indexes": snapshottable.packages_indexes,
+                "snapshot_storage": storage,
+                "source_label": str(target_label),
+                "target_name": target.label.name,
+                "tree_prefix": _tree_prefix("deb", target.label, timestamp),
+            })
+        else:
+            fail("Target {} is neither yum nor deb".format(target_label))
+
+    config_json = actions.write_json("snapshot_config.json", {"targets": targets_config})
+
+    for tc in targets_config:
+        if tc["kind"] == "yum":
+            for arch in tc["arches"]:
+                ctx.output.ensure(arch["metadata_tree"])
+                for idx in arch["packages_indexes"]:
+                    ctx.output.ensure(idx)
+        else:
+            ctx.output.ensure(tc["metadata_tree"])
+            for idx in tc["packages_indexes"]:
+                ctx.output.ensure(idx)
+
+    ctx.output.print(ctx.output.ensure(config_json).abs_path())
+
+prepare = bxl_main(
+    impl = _prepare_impl,
     cli_args = {
-        "storage": cli_args.string(),
-        "target": cli_args.target_expr(),
+        "target": cli_args.list(cli_args.target_expr()),
+        "timestamp": cli_args.string(doc = "Timestamp string for the snapshot (e.g. 2026-05-21+15:00:00)"),
     },
 )

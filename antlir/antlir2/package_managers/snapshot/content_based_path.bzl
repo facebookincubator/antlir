@@ -10,3 +10,8 @@ def should_use_content_based_path(actions: AnalysisActions, checksums: dict[str,
     if digest_config.allows_sha256() and "sha256" in checksums:
         return True
     return False
+
+def should_use_content_based_path_with_sha256(actions: AnalysisActions) -> bool:
+    # If we don't know what checksums will be available but suspect a sha256
+    # only, then we need to check it directly
+    return actions.digest_config().allows_sha256()

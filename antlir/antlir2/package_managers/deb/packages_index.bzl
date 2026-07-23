@@ -67,8 +67,6 @@ ComponentPackages = record(
 def download_component_package_indexes(
     *, actions: AnalysisActions, components: list[str], arch: str, suite_baseurl: str, release_json: Artifact, metadata_run_info: RunInfo
 ) -> dict[str, ComponentPackages]:
-    # Pre-declare one output per component for the decompressed
-    # Packages index files, namespaced by arch to allow multiple arches
     components = {
         component: ComponentPackages(
             txt = actions.declare_output(arch + "/" + component, "Packages", has_content_based_path = False),

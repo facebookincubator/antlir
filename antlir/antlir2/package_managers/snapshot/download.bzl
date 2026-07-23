@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":content_based_path.bzl", "should_use_content_based_path")
 
 def download(
@@ -52,17 +53,25 @@ def download(
         # It sucks to have any nondeterministic actions, but sometimes we need
         # to get things up and running super quickly and we need a
         # non-deterministic entrypoint (for example if we are downloading
-        # upstrema artifacts that may change but give us deterministic data
+        # upstream artifacts that may change but give us deterministic data
         # after that initial entrypoint)
         actions.run(
             cmd_args(
                 "curl",
+                "--fail-with-body",
                 "-L",
                 url,
                 "-o",
                 dl_target.as_output(),
             ),
-            env = {"https_proxy": "fwdproxy:8080"},
+            env = internal_external(
+                fb = {
+                    "http_proxy": "fwdproxy:8080",
+                    "https_proxy": "fwdproxy:8080",
+                    "no_proxy": ".fbcdn.net,.facebook.com,.thefacebook.com,.tfbnw.net,.fb.com,.fburl.com,.facebook.net,.sb.fbsbx.com,.fbinfra.net,localhost,yum",
+                },
+                oss = {},
+            ),
             category = "curl_nondeterministic",
             identifier = out.short_path,
             # Must be able to hit network

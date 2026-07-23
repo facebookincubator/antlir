@@ -6,6 +6,8 @@
  */
 
 use std::collections::BTreeMap;
+use std::io::BufWriter;
+use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -13,10 +15,13 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
+use backoff::ExponentialBackoff;
+use backoff::ExponentialBackoffBuilder;
 use clap::Parser;
 use futures::stream;
 use futures::stream::StreamExt;
 use futures::stream::TryStreamExt;
+use json_arg::Json;
 use json_arg::JsonFile;
 use tempfile::NamedTempFile;
 use tokio::io::AsyncWriteExt;
@@ -27,16 +32,32 @@ use tracing::warn;
 use super::Out;
 use super::blob_status::BlobStatusOutput;
 use super::blob_status::Entry;
+use super::progress;
 use super::storage::BlobStatus;
 use super::storage::Storage;
+use super::storage::StorageConfig;
 use super::storage::UrlWithChecksums;
 
-const MAX_CONCURRENT: usize = 100;
-const MAX_RETRIES: usize = 5;
+pub(crate) const MAX_CONCURRENT: usize = 100;
+pub(crate) const MAX_CONCURRENT_SYMLINK: usize = 500;
 const INITIAL_BACKOFF: Duration = Duration::from_secs(1);
+const MAX_ELAPSED: Duration = Duration::from_secs(60);
+
+/// Exponential-backoff policy (with built-in jitter) for retrying transient
+/// network operations against the storage backend and upstream repos.
+pub(crate) fn retry_policy() -> ExponentialBackoff {
+    ExponentialBackoffBuilder::new()
+        .with_initial_interval(INITIAL_BACKOFF)
+        .with_max_elapsed_time(Some(MAX_ELAPSED))
+        .build()
+}
 
 #[derive(Parser, Debug)]
 pub(crate) struct Packages {
+    #[clap(long)]
+    out: PathBuf,
+    #[clap(long)]
+    storage: Json<StorageConfig>,
     /// JSON file containing the output of blob-status (missing + expiring_soon).
     #[clap(long)]
     blob_status: JsonFile<BlobStatusOutput>,
@@ -61,8 +82,10 @@ async fn download(client: &reqwest::Client, url: &str) -> Result<(NamedTempFile,
         .error_for_status()
         .with_context(|| format!("HTTP error downloading {url}"))?;
 
+    // NamedTempFile::new() does blocking filesystem I/O, so run it in spawn_blocking.
     let tmp = tokio::task::spawn_blocking(NamedTempFile::new)
-        .await?
+        .await
+        .context("spawn_blocking failed")?
         .context("failed to create temp file")?;
     let tmp_path = tmp.path().to_owned();
 
@@ -83,184 +106,237 @@ async fn download(client: &reqwest::Client, url: &str) -> Result<(NamedTempFile,
     Ok((tmp, tmp_path))
 }
 
-/// Upload a file from `path` to storage, creating both a flat content-addressed
-/// object and a tree symlink at `filename`.
-async fn upload(storage: &dyn Storage, path: &Path, filename: &str) -> Result<UrlWithChecksums> {
+/// Upload a file as a flat content-addressed object only, reusing checksums
+/// the caller already computed to avoid re-hashing the file.
+async fn upload_flat(
+    storage: &dyn Storage,
+    path: &Path,
+    checksums: &snapshot_common::Checksums,
+) -> Result<UrlWithChecksums> {
     storage
-        .store(path, filename)
+        .store_flat_with_checksums(path, checksums)
         .await
-        .with_context(|| format!("failed to upload {filename}"))
+        .with_context(|| format!("failed to upload flat {}", path.display()))
 }
 
-/// Download a package and upload it to storage, with progressive retries.
-/// If the download fails, the whole operation is retried. If the upload fails,
-/// only the upload is retried from the already-downloaded file.
+/// Download a package, verify its checksum against expected, then upload flat with retries.
 async fn download_and_upload(
     client: &reqwest::Client,
     storage: &dyn Storage,
     download_url: &str,
     filename: &str,
+    expected_checksums: &snapshot_common::Checksums,
 ) -> Result<UrlWithChecksums> {
-    let mut last_err: Option<anyhow::Error> = None;
+    let file_start = std::time::Instant::now();
 
-    for attempt in 0..MAX_RETRIES {
-        if attempt > 0 {
-            let backoff = INITIAL_BACKOFF * 2u32.pow(attempt as u32 - 1);
-            warn!(
-                filename,
-                attempt,
-                ?backoff,
-                "retrying download after failure"
-            );
-            tokio::time::sleep(backoff).await;
-        }
-
-        let (tmp, tmp_path) = match download(client, download_url).await {
-            Ok(result) => result,
-            Err(e) => {
-                warn!(filename, attempt, error = %e, "download failed");
-                last_err = Some(e);
-                continue;
-            }
-        };
-
-        // Upload with retries (reusing the downloaded file)
-        let mut upload_err: Option<anyhow::Error> = None;
-        for upload_attempt in 0..MAX_RETRIES {
-            if upload_attempt > 0 {
-                let backoff = INITIAL_BACKOFF * 2u32.pow(upload_attempt as u32 - 1);
-                warn!(
-                    filename,
-                    upload_attempt,
-                    ?backoff,
-                    "retrying upload after failure"
-                );
-                tokio::time::sleep(backoff).await;
+    // Download + verify as one retry unit: a corrupt download is recovered by
+    // re-downloading. Every failure here is transient and retried by the policy.
+    let (tmp, tmp_path, computed_checksums) = backoff::future::retry_notify(
+        retry_policy(),
+        || async {
+            let dl_start = std::time::Instant::now();
+            let (tmp, tmp_path) = download(client, download_url)
+                .await
+                .map_err(backoff::Error::transient)?;
+            let dl_elapsed = dl_start.elapsed();
+            if dl_elapsed > Duration::from_secs(30) {
+                warn!(filename, ?dl_elapsed, "slow download");
             }
 
-            match upload(storage, &tmp_path, filename).await {
-                Ok(result) => {
-                    drop(tmp);
-                    return Ok(result);
-                }
-                Err(e) => {
-                    warn!(filename, upload_attempt, error = %e, "upload failed");
-                    upload_err = Some(e);
-                }
+            // Verify checksums before upload (supply-chain integrity).
+            let computed = snapshot_common::Checksums::from_file_async(tmp_path.clone())
+                .await
+                .map_err(backoff::Error::transient)?;
+            expected_checksums
+                .verify_against(&computed)
+                .map_err(|e| backoff::Error::transient(anyhow::Error::from(e)))?;
+
+            Ok::<_, backoff::Error<anyhow::Error>>((tmp, tmp_path, computed))
+        },
+        |e, dur| warn!(filename, error = %e, ?dur, "retrying download after failure"),
+    )
+    .await?;
+
+    // Upload as a separate retry unit so a flaky upload doesn't force us to
+    // re-download the (already verified) file.
+    let result = backoff::future::retry_notify(
+        retry_policy(),
+        || async {
+            let up_start = std::time::Instant::now();
+            let result = upload_flat(storage, &tmp_path, &computed_checksums)
+                .await
+                .map_err(backoff::Error::transient)?;
+            let up_elapsed = up_start.elapsed();
+            if up_elapsed > Duration::from_secs(30) {
+                warn!(filename, ?up_elapsed, "slow upload");
             }
-        }
+            Ok::<_, backoff::Error<anyhow::Error>>(result)
+        },
+        |e, dur| warn!(filename, error = %e, ?dur, "retrying upload after failure"),
+    )
+    .await?;
 
-        // All upload retries exhausted — re-download and try again
-        drop(tmp);
-        last_err = upload_err;
-    }
-
-    Err(last_err.unwrap_or_else(|| anyhow::anyhow!("download_and_upload failed for {filename}")))
+    debug!(
+        filename,
+        total_elapsed = ?file_start.elapsed(),
+        "download+upload complete"
+    );
+    drop(tmp);
+    Ok(result)
 }
 
 impl Packages {
-    #[tracing::instrument(skip(self, storage), ret, err)]
-    pub(crate) async fn run(self, storage: Box<dyn Storage>) -> Result<Out> {
-        let storage: Arc<dyn Storage> = Arc::from(storage);
+    #[tracing::instrument(skip(self, fb), ret, err)]
+    pub(crate) async fn run(self, fb: fbinit::FacebookInit) -> Result<()> {
+        let storage = self.storage.into_inner().build(fb)?;
+        let storage: std::sync::Arc<dyn Storage> = storage.into();
         let blob_status = self.blob_status.into_inner();
         let all_entries: Vec<Entry> = self
             .all_entries
             .into_iter()
             .flat_map(JsonFile::into_inner)
             .collect();
-        let base_url = Arc::new(self.base_url);
-
-        let client = reqwest::Client::builder()
-            .build()
-            .context("failed to build HTTP client")?;
-        let client = Arc::new(client);
-
-        // Extend TTLs for blobs that exist but are expiring soon
-        info!(
-            "extending TTL for {} expiring-soon blobs",
-            blob_status.expiring_soon.len()
-        );
-        stream::iter(blob_status.expiring_soon.into_iter().map(|entry| {
-            let storage = Arc::clone(&storage);
-            async move {
-                debug!(filename = entry.filename, "extending TTL for expiring blob");
-                storage
-                    .extend_ttl(&entry.checksums)
-                    .await
-                    .with_context(|| format!("failed to extend TTL for {}", entry.filename))?;
-                Ok::<_, anyhow::Error>(())
-            }
-        }))
-        .buffer_unordered(MAX_CONCURRENT)
-        .try_collect::<Vec<_>>()
-        .await?;
-
-        let entries = blob_status.missing;
-        info!("downloading and uploading {} package blobs", entries.len());
-
-        let results: Vec<_> = stream::iter(entries.into_iter().map(|entry| {
-            let storage = Arc::clone(&storage);
-            let client = Arc::clone(&client);
-            let base_url = Arc::clone(&base_url);
-            async move {
-                // Check if the blob already exists in storage (race condition:
-                // another process may have uploaded it between blob-status and
-                // now). If it does, just extend its TTL instead of downloading.
-                let status = storage.blob_status(&entry.checksums).await?;
-                match status {
-                    BlobStatus::Fresh | BlobStatus::ExpiringSoon => {
-                        info!(
-                            filename = entry.filename,
-                            "blob already exists ({status:?}), extending its ttl",
-                        );
-                        storage.extend_ttl(&entry.checksums).await?;
-                        return Ok::<_, anyhow::Error>(None);
-                    }
-                    BlobStatus::Missing => {}
-                }
-
-                let download_url = format!("{}/{}", base_url, entry.filename);
-                debug!(
-                    filename = entry.filename,
-                    download_url, "downloading package blob"
-                );
-
-                let result =
-                    download_and_upload(&client, &*storage, &download_url, &entry.filename).await?;
-
-                Ok(Some((entry.filename, result)))
-            }
-        }))
-        .buffer_unordered(MAX_CONCURRENT)
-        .try_collect()
-        .await?;
-
-        let mut files = BTreeMap::new();
-        let mut checksums = BTreeMap::new();
-        for result in results {
-            if let Some((key, uwc)) = result {
-                let url = uwc.url.to_string();
-                checksums.insert(url.clone(), uwc.checksums);
-                files.insert(key, url);
-            }
-        }
-
-        // (Re)create tree symlinks for every known blob so the tree namespace
-        // is complete and has a fresh TTL.
-        info!("symlinking {} blobs into tree namespace", all_entries.len());
-        stream::iter(all_entries.into_iter().map(|entry| {
-            let storage = Arc::clone(&storage);
-            async move {
-                storage
-                    .symlink_flat_to_tree(&entry.checksums, &format!("archive/{}", &entry.filename))
-                    .await
-                    .with_context(|| format!("failed to symlink {} into tree", entry.filename))
-            }
-        }))
-        .buffer_unordered(MAX_CONCURRENT)
-        .try_collect::<Vec<_>>()
-        .await?;
-
-        Ok(Out { files, checksums })
+        let out = snapshot_packages(storage, blob_status, all_entries, &self.base_url).await?;
+        let mut outfile = BufWriter::new(stdio_path::create(&self.out)?);
+        serde_json::to_writer(&mut outfile, &out)?;
+        // BufWriter swallows flush errors on drop; flush explicitly so a
+        // disk-full / EIO surfaces instead of silently leaving a partial JSON.
+        outfile.flush().context("failed to flush packages output")?;
+        Ok(())
     }
+}
+
+pub(crate) async fn snapshot_packages(
+    storage: std::sync::Arc<dyn Storage>,
+    blob_status: BlobStatusOutput,
+    all_entries: Vec<Entry>,
+    base_url: &str,
+) -> Result<Out> {
+    let base_url = Arc::new(base_url.to_owned());
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(300))
+        .connect_timeout(Duration::from_secs(30))
+        .pool_max_idle_per_host(MAX_CONCURRENT)
+        .pool_idle_timeout(Duration::from_secs(30))
+        .build()
+        .context("failed to build HTTP client")?;
+    let client = Arc::new(client);
+
+    // Extend TTLs for blobs that exist but are expiring soon
+    let expiring_soon_len = blob_status.expiring_soon.len();
+    info!("extending TTL for {expiring_soon_len} expiring-soon blobs");
+    let expiring_pb = progress::bar(expiring_soon_len, "Extending TTL");
+    stream::iter(blob_status.expiring_soon.into_iter().map(|entry| {
+        let storage = Arc::clone(&storage);
+        let pb = expiring_pb.clone();
+        async move {
+            debug!(filename = entry.filename, "extending TTL for expiring blob");
+            let res = storage
+                .extend_ttl(&entry.checksums)
+                .await
+                .with_context(|| format!("failed to extend TTL for {}", entry.filename));
+            pb.inc(1);
+            res?;
+            Ok::<_, anyhow::Error>(())
+        }
+    }))
+    .buffer_unordered(MAX_CONCURRENT)
+    .try_collect::<Vec<_>>()
+    .await?;
+    expiring_pb.finish_with_message("Extended TTL");
+
+    let entries = blob_status.missing;
+    info!("downloading and uploading {} package blobs", entries.len());
+    let download_pb = progress::bar(entries.len(), "Downloading & uploading packages");
+
+    let results: Vec<_> = stream::iter(entries.into_iter().map(|entry| {
+        let storage = Arc::clone(&storage);
+        let client = Arc::clone(&client);
+        let base_url = Arc::clone(&base_url);
+        let pb = download_pb.clone();
+        async move {
+            // Check if the blob already exists in storage (race condition:
+            // another process may have uploaded it between blob-status and
+            // now). If it does, just extend its TTL instead of downloading.
+            let status = storage.blob_status(&entry.checksums).await?;
+            match status {
+                BlobStatus::Fresh | BlobStatus::ExpiringSoon => {
+                    info!(
+                        filename = entry.filename,
+                        "blob already exists ({status:?}), extending its ttl",
+                    );
+                    storage.extend_ttl(&entry.checksums).await?;
+                    pb.inc(1);
+                    return Ok::<_, anyhow::Error>(None);
+                }
+                BlobStatus::Missing => {}
+            }
+
+            let download_url = format!("{}/{}", base_url, entry.filename);
+            let tree_key = entry.filename.clone();
+            debug!(
+                filename = entry.filename,
+                download_url, tree_key, "downloading package blob"
+            );
+
+            let result = download_and_upload(
+                &client,
+                &*storage,
+                &download_url,
+                &tree_key,
+                &entry.checksums,
+            )
+            .await?;
+            pb.inc(1);
+
+            Ok(Some((entry.filename, result)))
+        }
+    }))
+    .buffer_unordered(MAX_CONCURRENT)
+    .try_collect()
+    .await?;
+    download_pb.finish_with_message("Downloaded packages");
+
+    let mut files = BTreeMap::new();
+    let mut checksums = BTreeMap::new();
+    for result in results {
+        if let Some((key, uwc)) = result {
+            let url = uwc.url.to_string();
+            checksums.insert(url.clone(), uwc.checksums);
+            files.insert(key, url);
+        }
+    }
+
+    // (Re)create tree symlinks for every known blob so the tree namespace
+    // is complete and has a fresh TTL.
+    info!("symlinking {} blobs into tree namespace", all_entries.len());
+
+    // Pre-create parent directories in bulk with bounded concurrency
+    let tree_keys_for_dirs: Vec<String> = all_entries.iter().map(|e| e.filename.clone()).collect();
+    storage
+        .ensure_tree_dirs(&tree_keys_for_dirs)
+        .await
+        .context("failed to pre-create tree parent directories")?;
+
+    let symlink_pb = progress::bar(all_entries.len(), "Linking packages into tree");
+    stream::iter(all_entries.into_iter().map(|entry| {
+        let storage = Arc::clone(&storage);
+        let pb = symlink_pb.clone();
+        async move {
+            let tree_key = entry.filename.clone();
+            let res = storage
+                .symlink_flat_to_tree(&entry.checksums, &tree_key)
+                .await
+                .with_context(|| format!("failed to symlink {} into tree", entry.filename));
+            pb.inc(1);
+            res
+        }
+    }))
+    .buffer_unordered(MAX_CONCURRENT_SYMLINK)
+    .try_collect::<Vec<_>>()
+    .await?;
+    symlink_pb.finish_with_message("Linked packages");
+
+    Ok(Out { files, checksums })
 }

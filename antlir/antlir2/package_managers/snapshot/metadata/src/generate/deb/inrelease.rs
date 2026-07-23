@@ -162,8 +162,7 @@ fn build_release_content(release: &ReleaseJson, entries: &[ComponentEntry]) -> R
             " {} {:>8} {}/binary-{}/Packages",
             entry
                 .checksums
-                .sha256
-                .as_ref()
+                .sha256_hex()
                 .with_context(|| format!("missing sha256 for {}", entry.name))?,
             entry.size,
             entry.name,
@@ -177,8 +176,7 @@ fn build_release_content(release: &ReleaseJson, entries: &[ComponentEntry]) -> R
             " {} {:>8} {}/binary-{}/Packages",
             entry
                 .checksums
-                .sha1
-                .as_ref()
+                .sha1_hex()
                 .with_context(|| format!("missing sha1 for {}", entry.name))?,
             entry.size,
             entry.name,

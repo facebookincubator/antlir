@@ -11,6 +11,11 @@ repo(
 
 repo(
     name = "centos-stream/10/BaseOS",
-    baseurl = "https://mirror.facebook.net/centos-composes/10/CentOS-Stream-10-20260226.0/compose/BaseOS/{arch}/os",
-    visibility = ["PUBLIC"],
+    baseurl = "https://mirror.facebook.net/centos-composes/10/CentOS-Stream-10-20260721.0/compose/BaseOS/{arch}/os",
+    package_subtargets = ["basesystem"],
+    snapshot_storage = {
+        "api_key": "antlir_snapshots-key",
+        "bucket": "antlir_snapshots",
+        "type": "manifold",
+    },
 )

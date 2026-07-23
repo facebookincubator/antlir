@@ -44,8 +44,8 @@ impl Parse {
 
 fn checksums_from_xml<E: serde::de::Error>(ty: &str, text: String) -> Result<Checksums, E> {
     match ty {
-        "sha1" => Ok(Checksums::new_sha1(text)),
-        "sha256" => Ok(Checksums::new_sha256(text)),
+        "sha1" => Checksums::new_sha1_hex(text).map_err(E::custom),
+        "sha256" => Checksums::new_sha256_hex(text).map_err(E::custom),
         _ => Err(E::custom(format!("unknown checksum type: {}", ty))),
     }
 }
