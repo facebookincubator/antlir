@@ -31,7 +31,12 @@ def _split(
     image.layer(
         name = stripped_name,
         features = [
+            # Strip the debug symbols but leave an empty /usr/lib/debug behind, so a
+            # layer built on top of this stripped image (e.g. a rootfs flavor built on
+            # a prebuilt stripped base) can itself be split -- debuginfo.split's clone
+            # of /usr/lib/debug below requires the directory to exist.
             feature.remove(path = "/usr/lib/debug", must_exist = False),
+            feature.ensure_dirs_exist(dirs = "/usr/lib/debug"),
         ],
         parent_layer = layer,
         visibility = visibility,
