@@ -284,6 +284,32 @@ image_diff_test(
     layer = ":deterministic-split-debuginfo",
 )
 
+# Test that discard_debuginfo strips the binary but does NOT add
+# anything to /usr/lib/debug. Re-uses the same deterministic binary
+# used for the split test, but expects no debug files.
+image.layer(
+    name = "deterministic-discard-debuginfo",
+    features = [
+        feature.install(
+            src = ":deterministic-binary",
+            discard_debuginfo = True,
+            dst = "/true",
+            never_use_dev_binary_symlink = True,
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-deterministic-discard-debuginfo",
+    diff = select({
+        "ovr_config//cpu:arm64": "deterministic-discard-debuginfo.aarch64.toml",
+        "ovr_config//cpu:x86_64": "deterministic-discard-debuginfo.x86_64.toml",
+    }),
+    diff_type = "file",
+    layer = ":deterministic-discard-debuginfo",
+)
+
 # debuginfo splitting should also work even if `src` is not explicitly listed as
 # executable, but contains an ELF binary
 image.layer(

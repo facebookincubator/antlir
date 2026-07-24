@@ -45,6 +45,7 @@ def install(
     never_use_dev_binary_symlink: bool | Select = False,
     split_debuginfo: bool | Select = True,
     strip_all: bool = False,
+    discard_debuginfo: bool | Select = False,
     always_use_gnu_debuglink: bool = False,
     setcap: str | None = None,
     default_permissions: default_permissions = default_permissions(),
@@ -82,6 +83,12 @@ def install(
             `.symtab` and `.strtab` sections, producing a significantly smaller
             binary. Useful for CLI tools that don't need symbolication.
 
+        discard_debuginfo: when True, strip debuginfo from the binary and
+            discard it instead of installing it to `/usr/lib/debug`. Useful for
+            initrd or other size-constrained images where debuginfo bloats the
+            image, mimicking the behavior of `extract_buck_binary` which
+            discards debuginfo. Implies stripping.
+
         setcap: add file capabilities to the installed file
 
             Specified in the form described in `cap_from_text(3)`.
@@ -113,6 +120,18 @@ def install(
             split_debuginfo,
             lambda v: None if v else fail("always_use_gnu_debuglink requires split_debuginfo=True"),
         )
+
+    selects.apply(
+        discard_debuginfo,
+        lambda v: (
+            None
+            if not v
+            else selects.apply(
+                always_use_gnu_debuglink,
+                lambda g: None if not g else fail("discard_debuginfo and always_use_gnu_debuglink are mutually exclusive"),
+            )
+        ),
+    )
 
     exec_deps = {
         "_debuginfo_splitter": "fbcode//antlir/antlir2/tools:debuginfo-splitter",
@@ -165,6 +184,7 @@ def install(
             "default_binary_mode": default_permissions.binary,
             "default_directory_mode": default_permissions.directory,
             "default_file_mode": default_permissions.file,
+            "discard_debuginfo": discard_debuginfo,
             "dst": dst,
             "group": group,
             "ignore_symlink_tree": ignore_symlink_tree,
@@ -442,7 +462,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         # Non-standalone (aka dev-mode) binaries don't get stripped, they just
         # get symlinked. The split action does not (currently) support directory
         # sources, so just skip it
-        if not dst_is_dir and not is_outplace and ctx.attrs.split_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink):
+        should_split_for_install = not dst_is_dir and not is_outplace and ctx.attrs.split_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink)
+        should_strip_and_discard = not dst_is_dir and not is_outplace and ctx.attrs.discard_debuginfo and (standalone or ctx.attrs.never_use_dev_binary_symlink)
+        if should_split_for_install or should_strip_and_discard:
             split_anon_target = split_binary_anon(
                 ctx = ctx,
                 src = src,
@@ -451,33 +473,48 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 strip_all = ctx.attrs.strip_all,
                 resources_dir = implicit_resources.resources_dir if implicit_resources else None,
             )
-            binary_info = binary_record(
-                installed = installed_binary(
-                    debuginfo = split_anon_target.artifact("debuginfo"),
-                    metadata = split_anon_target.artifact("metadata"),
-                    dwp = split_anon_target.artifact("dwp"),
-                    resources_debuginfo = split_anon_target.artifact("resources_debuginfo") if implicit_resources else None,
-                    resources_metadata = split_anon_target.artifact("resources_metadata") if implicit_resources else None,
-                ),
-            )
-            required_artifacts.extend([
-                binary_info.installed.debuginfo,
-                binary_info.installed.metadata,
-                binary_info.installed.dwp,
-            ])
-            if implicit_resources:
-                resources_stripped = split_anon_target.artifact("resources_stripped")
-                required_artifacts.extend([
-                    resources_stripped,
-                    binary_info.installed.resources_debuginfo,
-                    binary_info.installed.resources_metadata,
-                ])
-                implicit_resources = implicit_resources_record(
-                    resources_json = implicit_resources.resources_json,
-                    resources_dir = resources_stripped,
-                    resources_dir_name = implicit_resources.resources_dir_name,
+            if ctx.attrs.discard_debuginfo:
+                # Strip the binary but discard debuginfo entirely, mimicking
+                # extract_buck_binary's behavior which does not place debuginfo
+                # into /usr/lib/debug. This saves significant space in initrd.
+                binary_info = None
+                if implicit_resources:
+                    resources_stripped = split_anon_target.artifact("resources_stripped")
+                    required_artifacts.extend([resources_stripped])
+                    implicit_resources = implicit_resources_record(
+                        resources_json = implicit_resources.resources_json,
+                        resources_dir = resources_stripped,
+                        resources_dir_name = implicit_resources.resources_dir_name,
+                    )
+                src = split_anon_target.artifact("src")
+            else:
+                binary_info = binary_record(
+                    installed = installed_binary(
+                        debuginfo = split_anon_target.artifact("debuginfo"),
+                        metadata = split_anon_target.artifact("metadata"),
+                        dwp = split_anon_target.artifact("dwp"),
+                        resources_debuginfo = split_anon_target.artifact("resources_debuginfo") if implicit_resources else None,
+                        resources_metadata = split_anon_target.artifact("resources_metadata") if implicit_resources else None,
+                    ),
                 )
-            src = split_anon_target.artifact("src")
+                required_artifacts.extend([
+                    binary_info.installed.debuginfo,
+                    binary_info.installed.metadata,
+                    binary_info.installed.dwp,
+                ])
+                if implicit_resources:
+                    resources_stripped = split_anon_target.artifact("resources_stripped")
+                    required_artifacts.extend([
+                        resources_stripped,
+                        binary_info.installed.resources_debuginfo,
+                        binary_info.installed.resources_metadata,
+                    ])
+                    implicit_resources = implicit_resources_record(
+                        resources_json = implicit_resources.resources_json,
+                        resources_dir = resources_stripped,
+                        resources_dir_name = implicit_resources.resources_dir_name,
+                    )
+                src = split_anon_target.artifact("src")
         else:
             src = ensure_single_output(src)
             binary_info = None
@@ -593,6 +630,7 @@ install_rule = new_feature_rule(
         "default_binary_mode": attrs.option(attrs.int(), default = None),
         "default_directory_mode": attrs.option(attrs.int(), default = None),
         "default_file_mode": attrs.option(attrs.int(), default = None),
+        "discard_debuginfo": attrs.bool(default = False),
         "dst": attrs.string(),
         "group": attrs.one_of(
             attrs.string(),

@@ -1,0 +1,9 @@
+[file.true]
+op = "added"
+
+[file.true.diff]
+mode = "u+rx,g+rx,o+rx"
+file-type = "regular-file"
+user = "root"
+group = "root"
+content-hash = "259c762a7e91223aaab3119dabc5d00c"
