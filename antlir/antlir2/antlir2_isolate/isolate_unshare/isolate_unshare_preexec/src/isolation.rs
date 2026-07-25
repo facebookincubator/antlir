@@ -18,6 +18,7 @@ use anyhow::Result;
 use cap_std::fs::Dir;
 use cap_std::fs::OpenOptionsExt as _;
 use isolate_cfg::Ephemeral;
+use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
 use nix::mount::MsFlags;
 use nix::mount::mount;
@@ -231,6 +232,30 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
                     None::<&str>,
                 )
                 .with_context(|| format!("while mounting device node '{devname}'"))?;
+            }
+
+            // For an interactive booted container, systemd (as PID 1) provides
+            // a login shell bound to /dev/console. Bind the controlling
+            // terminal (inherited as stdin) onto /dev/console so console I/O
+            // flows back to the caller, mirroring what
+            // `systemd-nspawn --console=interactive` does.
+            // SAFETY: `isatty` merely queries whether the given fd refers to a
+            // terminal and has no preconditions or memory safety concerns.
+            let stdin_is_tty = unsafe { libc::isatty(0) } == 1;
+            if matches!(invocation_type, InvocationType::BootInteractive) && stdin_is_tty {
+                let tty = std::fs::read_link("/proc/self/fd/0")
+                    .context("while resolving controlling terminal for /dev/console")?;
+                let console = tmpfs
+                    .create("console")
+                    .context("while creating device file 'console'")?;
+                nix::mount::mount(
+                    Some(tty.as_path()),
+                    &console.abspath(),
+                    None::<&str>,
+                    MsFlags::MS_BIND | MS_NOSYMFOLLOW,
+                    None::<&str>,
+                )
+                .context("while mounting device node 'console'")?;
             }
 
             // Things like `sem_open` requires a usable `/dev/shm`.

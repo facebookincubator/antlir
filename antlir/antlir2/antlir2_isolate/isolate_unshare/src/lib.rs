@@ -11,7 +11,6 @@ compile_error!("only supported on linux");
 use std::ffi::OsStr;
 use std::process::Command;
 
-use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
 
 pub mod mount;
@@ -35,12 +34,6 @@ impl<'a> IsolatedContext<'a> {
     pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Result<Command> {
         if self.0.register {
             return Err(Error::UnsupportedSetting("register"));
-        }
-        // TODO: support this when we can bind the controlling terminal to
-        // /dev/console, otherwise don't lie about providing an interactive
-        // console
-        if self.0.invocation_type == InvocationType::BootInteractive {
-            return Err(Error::UnsupportedSetting("invocation_type=BootInteractive"));
         }
 
         let mut cmd = Command::new(

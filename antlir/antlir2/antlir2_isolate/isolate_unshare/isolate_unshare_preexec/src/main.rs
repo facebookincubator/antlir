@@ -17,6 +17,7 @@ use anyhow::Result;
 use anyhow::anyhow;
 use clap::Parser;
 use isolate_cfg::Ephemeral;
+use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
 use json_arg::Json;
 use nix::sched::CloneFlags;
@@ -98,6 +99,25 @@ fn do_main(args: Main) -> Result<()> {
         snapshot_dir = Some(snap_path.clone());
         ctx.layer = Cow::Owned(snap_path);
         ctx.ephemeral = None;
+    }
+
+    // For an interactive booted container, the login shell launched by systemd
+    // wants to acquire the container's console (/dev/console, which we bind to
+    // our inherited controlling terminal) as its controlling terminal. That
+    // terminal is owned by the parent user namespace, so the container cannot
+    // *steal* it (TIOCSCTTY force requires CAP_SYS_ADMIN in the owning
+    // namespace). Release it from our session here — while it is unowned, the
+    // container can acquire it cleanly without any capability.
+    //
+    // SAFETY: these libc calls only manipulate this process's controlling
+    // terminal / signal disposition and have no memory safety implications.
+    if ctx.invocation_type == InvocationType::BootInteractive && unsafe { libc::isatty(0) } == 1 {
+        unsafe {
+            // Ignore the SIGHUP that releasing the controlling terminal sends to
+            // our (foreground) process group, so it does not kill us.
+            libc::signal(libc::SIGHUP, libc::SIG_IGN);
+            libc::ioctl(0, libc::TIOCNOTTY);
+        }
     }
 
     let mut pid1 = Command::new(std::env::current_exe().context("while getting current exe")?);

@@ -40,7 +40,7 @@ struct Args {
     user: String,
     #[clap(long, conflicts_with_all = ["boot"])]
     pipe: bool,
-    #[clap(long, conflicts_with_all = ["pipe", "rootless"])]
+    #[clap(long, conflicts_with_all = ["pipe"])]
     boot: bool,
     #[clap(long)]
     chdir: Option<PathBuf>,
@@ -101,14 +101,13 @@ fn main() -> anyhow::Result<()> {
         .ephemeral(true)
         .tmpfs(Path::new("/tmp"))
         .enable_network(args.enable_network);
-    if !args.rootless {
-        cmd_builder.invocation_type(match (args.boot, args.pipe) {
-            (true, false) => InvocationType::BootInteractive,
-            (true, true) => unreachable!("--boot and --pipe are mutually exclusive"),
-            (false, true) => InvocationType::Pid2Pipe,
-            (false, false) => InvocationType::Pid2Interactive,
-        });
-    } else {
+    cmd_builder.invocation_type(match (args.boot, args.pipe) {
+        (true, false) => InvocationType::BootInteractive,
+        (true, true) => unreachable!("--boot and --pipe are mutually exclusive"),
+        (false, true) => InvocationType::Pid2Pipe,
+        (false, false) => InvocationType::Pid2Interactive,
+    });
+    if args.rootless {
         cmd_builder.devtmpfs(Path::new("/dev"));
     }
     if args.artifacts_require_repo {
@@ -133,6 +132,22 @@ fn main() -> anyhow::Result<()> {
             PathBuf::from("/run/systemd/system/container-subtarget.service"),
             container_subtarget_service,
         ));
+        // In rootless mode there is no `systemd-nspawn --boot` to locate and
+        // exec the init binary, so it must be invoked explicitly. In rooted
+        // mode systemd-nspawn interprets the trailing argument as a kernel
+        // command line and boots init itself.
+        if args.rootless {
+            // systemd mounts a fresh tmpfs over /run early in boot, which would
+            // otherwise mask the unit file bind-mounted above.
+            cmd_builder.tmpfs(Path::new("/run"));
+            // Provide a fake sysfs (with a cgroup2 hierarchy mounted underneath)
+            // so systemd does not mount the host's real sysfs. Otherwise
+            // systemd resolves /dev/console via /sys/class/tty/console/active to
+            // the host's console device (e.g. /dev/hvc0), which does not exist
+            // in the container.
+            cmd_builder.sysfs(Path::new("/sys"));
+            cmd.insert(0, "/usr/lib/systemd/systemd".into());
+        }
         cmd.push("systemd.unit=container-subtarget.service".into());
     }
     let mut cmd = cmd.into_iter();

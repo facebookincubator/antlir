@@ -77,3 +77,23 @@ fn test_rooted_boot_exit_code() {
         status => panic!("unexpected exit status: {status:?}"),
     }
 }
+
+#[test]
+fn test_rootless_boot_exit_code() {
+    let exe = std::env::var("ROOTLESS").expect("missing env var");
+    let mut p = rexpect::spawn(&format!("{exe} --boot --no-register"), TIMEOUT_MS)
+        .expect("failed to spawn");
+    p.exp_regex("[^\n\r](.*?)# ")
+        .expect("didn't get bash prompt");
+    p.send_line("systemctl is-system-running")
+        .expect("failed to write shell command line");
+    p.exp_regex("running")
+        .expect("didn't get 'running' response from systemctl is-system-running");
+    p.send_line("exit 42")
+        .expect("failed to write shell command line");
+    let status = p.process.wait().expect("failed to wait for process");
+    match status {
+        WaitStatus::Exited(_, real_code) => assert_eq!(42, real_code),
+        status => panic!("unexpected exit status: {status:?}"),
+    }
+}
