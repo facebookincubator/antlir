@@ -11,7 +11,6 @@ rust_library(
         "serde_json",
         "thiserror",
         "tracing",
-        "tracing-core",
         "//antlir/buck2/buck_label:buck_label",
     ],
 )

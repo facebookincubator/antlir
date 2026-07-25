@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use antlir2_depgraph_if::AnalyzedFeature;
 use antlir2_depgraph_if::RequiresProvides;
 use antlir2_features::Feature;
-use antlir2_features::plugin::Plugin;
+use antlir2_features::plugin::PluginArg;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -25,7 +25,7 @@ use plugin::FeatureWrapper;
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
-    plugin: Plugin,
+    plugin: PluginArg,
     #[clap(long)]
     feature: JsonFile<Feature>,
     #[clap(long)]
@@ -34,6 +34,9 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+    // Load the plugin explicitly rather than during clap parsing; see `PluginArg`.
+    let dispatch = tracing::Dispatch::default();
+    let _plugin = args.plugin.load(dispatch).context("while loading plugin")?;
     let feature = FeatureWrapper(&args.feature);
     let requires = feature
         .requires()

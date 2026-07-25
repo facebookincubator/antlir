@@ -17,6 +17,7 @@ use antlir2_facts::fact::dir_entry::DirEntry as DirEntryFact;
 use antlir2_facts::fact::subvolume::Subvolume as SubvolumeFact;
 use antlir2_features::Feature;
 use antlir2_features::plugin::Plugin;
+use antlir2_features::plugin::PluginArg;
 use antlir2_rootless::Rootless;
 use antlir2_working_volume::WorkingFormat;
 use antlir2_working_volume::WorkingVolume;
@@ -64,7 +65,7 @@ pub(crate) struct Compile {
 
     #[clap(long = "plugin")]
     /// Plugins that implement the features
-    plugins: Vec<Plugin>,
+    plugins: Vec<PluginArg>,
     #[clap(long)]
     /// Path to features to build into this image
     features: JsonFile<Vec<Feature>>,
@@ -105,7 +106,12 @@ impl WorkingLayer {
 
 impl Compile {
     #[tracing::instrument(name = "compile", skip_all, ret, err)]
-    pub(crate) fn run(self, rootless: Rootless) -> Result<()> {
+    pub(crate) fn run(mut self, rootless: Rootless) -> Result<()> {
+        // Load plugins now that the host tracing subscriber is installed; see `PluginArg`.
+        let host_dispatch = tracing::Dispatch::default();
+        let _loaded_plugins = Plugin::load_all(std::mem::take(&mut self.plugins), host_dispatch)
+            .context("while loading plugins")?;
+
         // this must happen before unshare
         let working_volume = match self.working_format {
             WorkingFormat::Btrfs => Some(WorkingVolume::ensure()?),
