@@ -65,6 +65,10 @@ fn test_rooted_boot_exit_code() {
         .expect("failed to spawn");
     p.exp_regex("[^\n\r](.*?)# ")
         .expect("didn't get bash prompt");
+    p.send_line("systemctl is-system-running")
+        .expect("failed to write shell command line");
+    p.exp_regex("running")
+        .expect("didn't get 'running' response from systemctl is-system-running");
     p.send_line("exit 42")
         .expect("failed to write shell command line");
     let status = p.process.wait().expect("failed to wait for process");
