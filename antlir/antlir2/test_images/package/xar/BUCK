@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:xar.bzl", "xar")
@@ -29,5 +30,6 @@ xar(
 python_unittest(
     name = "test-xar",
     srcs = ["test.py"],
+    network_access = network_access_utils.all(),
     resources = {":test.xar": "test.xar"},
 )

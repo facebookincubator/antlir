@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/features/test_only_features/supplements:supplements.bzl", "supplements")
 load("//antlir/bzl:build_defs.bzl", "python_unittest")
@@ -28,6 +29,7 @@ dump_supplements(
 python_unittest(
     name = "test-supplements",
     srcs = ["test_supplements.py"],
+    network_access = network_access_utils.all(),
     resources = {
         ":supplements.json": "supplements.json",
     },

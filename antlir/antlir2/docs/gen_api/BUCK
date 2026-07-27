@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_binary")
 load(":register_templates_src.bzl", "register_templates_src")
 
@@ -34,6 +35,7 @@ python_unittest(
     env = {
         "GEN_API": "$(exe :gen_api)",
     },
+    network_access = network_access_utils.all(),
     # These tests need to call `buck2 docs`, and so can't ever use RE.
     remote_execution = "local",
 )

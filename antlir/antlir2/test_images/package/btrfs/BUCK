@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/antlir2_vm/bzl:disk.bzl", "vm_disk")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -139,4 +140,5 @@ python_unittest(
         "SEED": "$(location :btrfs-seed)",
         "SIMPLE": "$(location :btrfs)",
     },
+    network_access = network_access_utils.all(),
 )

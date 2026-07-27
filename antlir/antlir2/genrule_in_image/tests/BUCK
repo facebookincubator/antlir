@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
@@ -12,7 +13,7 @@ image.layer(
             rpms = [
                 "bash",
                 "coreutils",
-            ]
+            ],
         ),
     ],
 )
@@ -185,4 +186,5 @@ python_unittest(
         "SINGLE_FILE": "$(location :single-file)",
         "WITH_MOUNT": "$(location :with-mount)",
     },
+    network_access = network_access_utils.all(),
 )

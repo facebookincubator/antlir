@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
@@ -37,6 +38,7 @@ package.tar(
 python_unittest(
     name = "test-with-packages.tar",
     srcs = ["test_with_packages_tar.py"],
+    network_access = network_access_utils.all(),
     resources = {
         ":with-packages.tar": "with-packages.tar",
     },

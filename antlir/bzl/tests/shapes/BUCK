@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 # @noautodeps
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest", "rust_unittest")
 load("//antlir/bzl:make_target_t.bzl", "make_target_t")
@@ -112,6 +113,7 @@ python_unittest(
     needed_coverage = [
         (100, "//antlir:shape"),
     ],
+    network_access = network_access_utils.all(),
     resources = {
         ":characters.json": "characters.json",
         shape.json_file(

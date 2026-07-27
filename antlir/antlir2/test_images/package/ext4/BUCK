@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
@@ -36,6 +37,7 @@ package.ext4(
 python_unittest(
     name = "test-sizing",
     srcs = ["test_sizing.py"],
+    network_access = network_access_utils.all(),
     resources = {
         ":default.ext4": "default.ext4",
         ":empty.ext4": "empty.ext4",

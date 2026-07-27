@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/appliance_vm:genrule_in_appliance_vm.bzl", "genrule_in_appliance_vm")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -56,4 +57,5 @@ python_unittest(
         "MULTIPLE_FOO": "$(location :named-outputs[foo])",
         "UNAME": "$(location :uname)",
     },
+    network_access = network_access_utils.all(),
 )

@@ -1,3 +1,4 @@
+load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/features/test_only_features/trace:trace.bzl", "trace")
 load("//antlir/bzl:build_defs.bzl", "python_unittest")
@@ -14,6 +15,7 @@ image.layer(
 python_unittest(
     name = "test-feature-trace-appears-in-logs",
     srcs = ["test_feature_trace_appears_in_logs.py"],
+    network_access = network_access_utils.all(),
     resources = {
         ":layer[debug][compile][logs][compile]": "logs",
     },
