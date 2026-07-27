@@ -16,7 +16,10 @@ def _systemd_build(
     # A list of additional name=value arguments to pass on the
     # kernel cmd line.
     args = None,
-    efi_size_mb: int = 256,
+    efi_size_mb: int | Select = select({
+        "DEFAULT": 256,
+        "ovr_config//build_mode:dev": 1024,
+    }),
 ):
     ble_build(
         name = name,
