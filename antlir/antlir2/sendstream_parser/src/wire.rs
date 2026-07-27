@@ -62,7 +62,7 @@ mod tests {
     #[tokio::test]
     async fn early_exit() {
         let make_parser = |truncate: Option<usize>| async move {
-            let src = include_bytes!("../../testdata/demo.sendstream");
+            let src = include_bytes!("wire/../../testdata/demo.sendstream");
             // only use simplex stream if we're going to truncate it
             // prematurely, otherwise use a Cursor on top of the static byte
             // slice so that the framed codec actually sees the EOF
