@@ -31,12 +31,6 @@ special_tags = struct(
     test_is_invisible_to_testpilot = "OSS_NO_OP",
 )
 
-fully_qualified_test_name_rollout = struct(
-    use_fully_qualified_name = lambda: False,
-)
-
-NAMING_ROLLOUT_LABEL = "OSS_NO_OP"
-
 rollout = struct(
     check_base_path = ret_false,
     create_feature = ret_false,

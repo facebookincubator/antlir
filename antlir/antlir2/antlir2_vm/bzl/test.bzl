@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable[end= ]: load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
 # @oss-disable[end= ]: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "tpx_labels")
 # @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("@prelude//utils:selects.bzl", "selects")
@@ -12,7 +11,7 @@ load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS", "env_from_wr
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 # @oss-disable[end= ]: load(":disable_dev_mode.bzl", "disable_dev_mode")
-load("//antlir/bzl:oss_shim.bzl", "NAMING_ROLLOUT_LABEL", "tpx_labels", "fully_qualified_test_name_rollout") # @oss-enable
+load("//antlir/bzl:oss_shim.bzl", "tpx_labels") # @oss-enable
 load(":types.bzl", "VMHostInfo")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -229,8 +228,6 @@ def _get_internal_labels(test_rule, run_as_bundle: bool) -> (list[str], list[str
     wrapper_labels = ["heavyweight"]
     if run_as_bundle:
         wrapper_labels.append(tpx_labels.run_as_bundle)
-    if fully_qualified_test_name_rollout.use_fully_qualified_name():
-        wrapper_labels = wrapper_labels + [NAMING_ROLLOUT_LABEL]
     wrapper_labels.append(tpx_labels.enable_artifact_reporting)
 
     inner_labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=8:vmtest")

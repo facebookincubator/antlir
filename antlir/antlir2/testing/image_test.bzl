@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable[end= ]: load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
 # @oss-disable[end= ]: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "tpx_labels")
 # @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("@prelude//utils:selects.bzl", "selects")
@@ -314,9 +313,6 @@ def _implicit_image_test(
         labels or [],
         lambda labels: labels + _add_outer_labels,
     )
-
-    # @oss-disable[end= ]: if fully_qualified_test_name_rollout.use_fully_qualified_name():
-        # @oss-disable[end= ]: labels = labels + [NAMING_ROLLOUT_LABEL]
 
     if rootless == None:
         rootless = get_antlir2_rootless()
