@@ -56,13 +56,17 @@ const OS_PACKAGE: &str = "antlir/antlir2/os";
 /// deserialization the concrete variant is reconstructed from the branch keys:
 /// the two `ovr_config//cpu` arch constraints become [`Select::Arch`], keys
 /// under `antlir//antlir/antlir2/os:` become [`Select::Os`], and anything else
-/// becomes [`Select::Other`].
+/// becomes [`Select::Other`]. A map containing only `DEFAULT` becomes
+/// [`Select::DefaultOnly`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Select<T> {
+    /// A `select()` containing only its `DEFAULT` branch.
+    DefaultOnly(T),
     /// `select()` on CPU architecture. At least one branch is set; a single
-    /// arch still expands to a `select()` on that one arch. `noarch` (mutually
-    /// exclusive with the per-arch branches) expands to a `DEFAULT` branch.
-    /// Build with [`Select::arch`].
+    /// arch still expands to a `select()` on that one arch. `noarch` expands to
+    /// a `DEFAULT` branch. Build with [`Select::arch`] when `noarch` is mutually
+    /// exclusive with per-arch branches, or [`Select::arch_with_noarch`] when
+    /// they may be combined.
     Arch {
         /// Value for `ovr_config//cpu:x86_64`.
         x86_64: Option<T>,
@@ -90,6 +94,11 @@ pub enum Select<T> {
 
 #[bon::bon]
 impl<T> Select<T> {
+    /// `select()` containing only a `DEFAULT` branch.
+    pub fn default_only(value: T) -> Self {
+        Self::DefaultOnly(value)
+    }
+
     /// `select()` over CPU architecture, via named parameters.
     ///
     /// All three branches are optional, but at least one must be set
@@ -114,6 +123,24 @@ impl<T> Select<T> {
         }
         if noarch.is_some() && (x86_64.is_some() || aarch64.is_some()) {
             return Err(ArchError::NoarchConflict);
+        }
+        Ok(Self::Arch {
+            x86_64,
+            aarch64,
+            noarch,
+        })
+    }
+
+    /// `select()` over CPU architecture that permits a `DEFAULT` branch
+    /// alongside architecture-specific branches.
+    #[builder]
+    pub fn arch_with_noarch(
+        x86_64: Option<T>,
+        aarch64: Option<T>,
+        noarch: Option<T>,
+    ) -> Result<Self, ArchError> {
+        if x86_64.is_none() && aarch64.is_none() && noarch.is_none() {
+            return Err(ArchError::Empty);
         }
         Ok(Self::Arch {
             x86_64,
@@ -157,6 +184,7 @@ impl<T> Select<T> {
     /// The `DEFAULT` branch, if any (for [`Select::Arch`] this is `noarch`).
     pub fn default_branch(&self) -> Option<&T> {
         match self {
+            Self::DefaultOnly(value) => Some(value),
             Self::Arch { noarch, .. } => noarch.as_ref(),
             Self::Os { default, .. } | Self::Other { default, .. } => default.as_deref(),
         }
@@ -177,6 +205,9 @@ where
         // matching the usual buck convention.
         let mut entries: BTreeMap<String, &T> = BTreeMap::new();
         match self {
+            Self::DefaultOnly(value) => {
+                entries.insert(DEFAULT.to_owned(), value);
+            }
             Self::Arch {
                 x86_64,
                 aarch64,
@@ -240,6 +271,12 @@ where
 
         let default = entries.remove(DEFAULT).map(Box::new);
 
+        if entries.is_empty()
+            && let Some(default) = default
+        {
+            return Ok(Self::DefaultOnly(*default));
+        }
+
         // Parse the remaining branch keys into labels so classification can be
         // cell-agnostic (buck canonicalizes cell aliases, e.g. it rewrites
         // `antlir//` to `fbcode//`, so matching on the package is robust).
@@ -249,15 +286,14 @@ where
             .collect::<Result<Vec<(Label, T)>, _>>()
             .map_err(D::Error::custom)?;
 
-        // Arch: every branch is a cpu constraint (one or both) and there is no
-        // DEFAULT (a `noarch` select has only DEFAULT and is read back as the
-        // `Other` variant, which re-serializes identically).
+        // Arch: every non-default branch is a cpu constraint. A DEFAULT-only
+        // select was handled above as `DefaultOnly`.
         let is_arch = !labeled.is_empty()
             && labeled.iter().all(|(label, _)| {
                 label.package() == CPU_PACKAGE
                     && (label.name() == CPU_X86_64 || label.name() == CPU_ARM64)
             });
-        if default.is_none() && is_arch {
+        if is_arch {
             let mut x86_64 = None;
             let mut aarch64 = None;
             for (label, value) in labeled {
@@ -270,7 +306,7 @@ where
             return Ok(Self::Arch {
                 x86_64,
                 aarch64,
-                noarch: None,
+                noarch: default.map(|value| *value),
             });
         }
 
@@ -358,6 +394,19 @@ mod tests {
     }
 
     #[test]
+    fn default_only_deserializes() {
+        let s: Select<Vec<String>> =
+            serde_json::from_value(wire(json!({"DEFAULT": ["n"]}))).expect("valid");
+        assert_eq!(s, Select::default_only(vec!["n".to_owned()]));
+        assert_eq!(
+            to_starlark(&s),
+            r#"select({
+    "DEFAULT": ["n"],
+})"#,
+        );
+    }
+
+    #[test]
     fn arch_requires_a_branch() {
         // No branch set -> error. Annotate the value type since nothing infers it.
         let err = Select::<Vec<String>>::arch()
@@ -374,6 +423,32 @@ mod tests {
             .call()
             .expect_err("noarch + per-arch");
         assert_eq!(err, ArchError::NoarchConflict);
+    }
+
+    #[test]
+    fn arch_with_noarch_serializes() {
+        let s = Select::arch_with_noarch()
+            .x86_64(vec!["x".to_owned()])
+            .aarch64(vec!["a".to_owned()])
+            .noarch(vec!["n".to_owned()])
+            .call()
+            .expect("valid mixed arch");
+        assert_eq!(
+            to_starlark(&s),
+            r#"select({
+    "DEFAULT": ["n"],
+    "ovr_config//cpu:arm64": ["a"],
+    "ovr_config//cpu:x86_64": ["x"],
+})"#,
+        );
+
+        let roundtrip: Select<Vec<String>> = serde_json::from_value(wire(json!({
+            "DEFAULT": ["n"],
+            "ovr_config//cpu:arm64": ["a"],
+            "ovr_config//cpu:x86_64": ["x"],
+        })))
+        .expect("mixed arch deserializes");
+        assert_eq!(roundtrip, s);
     }
 
     #[test]
@@ -499,26 +574,23 @@ mod tests {
         );
     }
 
-    /// Arch keys plus a DEFAULT cannot be the Arch variant (it has no default
-    /// branch), so it falls through to Other.
     #[test]
-    fn arch_with_default_is_other() {
+    fn arch_with_default_deserializes() {
         let v = wire(json!({
             "ovr_config//cpu:x86_64": ["x"],
             "ovr_config//cpu:arm64": ["a"],
             "DEFAULT": ["d"],
         }));
         let s: Select<Vec<String>> = serde_json::from_value(v).expect("valid");
-        match s {
-            Select::Other {
-                by_constraint,
-                default,
-            } => {
-                assert_eq!(by_constraint.len(), 2);
-                assert_eq!(default.as_deref(), Some(&vec!["d".to_owned()]));
-            }
-            other => panic!("expected Other, got {other:?}"),
-        }
+        assert_eq!(
+            s,
+            Select::arch_with_noarch()
+                .x86_64(vec!["x".to_owned()])
+                .aarch64(vec!["a".to_owned()])
+                .noarch(vec!["d".to_owned()])
+                .call()
+                .expect("valid mixed arch"),
+        );
     }
 
     /// Mixed os + non-os keys -> Other, not Os.
@@ -546,6 +618,9 @@ mod tests {
     #[case::other(json!({
         "ovr_config//os:linux": ["l"],
         "ovr_config//os:macos": ["m"],
+    }))]
+    #[case::default_only(json!({
+        "DEFAULT": ["d"],
     }))]
     fn round_trips(#[case] entries: serde_json::Value) {
         let first: Select<Vec<String>> = serde_json::from_value(wire(entries)).expect("valid");
