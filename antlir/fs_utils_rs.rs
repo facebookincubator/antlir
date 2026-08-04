@@ -70,20 +70,22 @@ impl<'py> IntoPyObject<'py> for AntlirPath {
     }
 }
 
-impl<'py> FromPyObject<'py> for AntlirPath {
-    fn extract_bound(p: &Bound<'py, PyAny>) -> PyResult<Self> {
+impl<'a, 'py> FromPyObject<'a, 'py> for AntlirPath {
+    type Error = PyErr;
+
+    fn extract(p: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
         // first attempt to get a raw bytes string, which most paths should
         // already be
-        if let Ok(bytes) = p.downcast::<PyBytes>() {
+        if let Ok(bytes) = (&*p).cast::<PyBytes>() {
             Ok(PathBuf::from(OsStr::from_bytes(bytes.as_bytes())).into())
         } else {
             // if it's not already `bytes`, then hopefully it's a `str`,
             // otherwise we are out of ideas and can't convert it
-            match p.downcast::<PyString>() {
+            match (&*p).cast::<PyString>() {
                 Ok(str) => Ok(Self(str.to_str()?.into())),
                 Err(_) => Err(PyTypeError::new_err(format!(
                     "{} is neither bytes nor str",
-                    p.repr()?
+                    (&*p).repr()?
                 ))),
             }
         }
