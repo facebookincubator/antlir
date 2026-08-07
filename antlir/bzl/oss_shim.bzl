@@ -24,7 +24,7 @@ empty_list = []
 
 none = None
 
-special_tags = struct(
+tpx_labels = struct(
     run_as_bundle = "OSS_NO_OP",
     enable_artifact_reporting = "OSS_NO_OP",
     disabled = "disabled",
