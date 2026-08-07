@@ -51,6 +51,6 @@ rust_library(
         "proc-macro-error2",
         "proc-macro2",
         "quote",
-        "syn2",
+        "syn",
     ],
 )
