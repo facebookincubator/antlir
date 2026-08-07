@@ -481,6 +481,7 @@ _erofs, _erofs_anon = _new_package_rule(
     sudo = True,
     rule_attrs = {
         "compression": attrs.option(attrs.string(), default = None),
+        "fixed_metadata": attrs.bool(default = False, doc = "use a fixed timestamp and UUID for the image"),
         "label": attrs.option(attrs.string(), default = None),
     },
     uses_build_appliance = True,

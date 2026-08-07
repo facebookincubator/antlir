@@ -1,12 +1,37 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/test_images/package:defs.bzl", "package_feature", "test_in_layer")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
 
 oncall("antlir")
 
 package.erofs(
     name = "standard.erofs",
     layer = "//antlir/antlir2/test_images/package:standard",
+)
+
+# Two separate targets so buck actually runs mkfs.erofs twice; the same target
+# built twice would just be served from cache and prove nothing. dot_meta is
+# off because that stamp embeds the package target label (and build_info
+# revision/package version) into the image, which differs between any two
+# targets by construction and would mask what this test is checking.
+[
+    package.erofs(
+        name = "reproducible-{}.erofs".format(i),
+        dot_meta = False,
+        fixed_metadata = True,
+        layer = "//antlir/antlir2/test_images/package:standard",
+    )
+    for i in ("a", "b")
+]
+
+buck_sh_test(
+    name = "test-erofs-reproducible",
+    args = [
+        "$(location :reproducible-a.erofs)",
+        "$(location :reproducible-b.erofs)",
+    ],
+    test = "test-erofs-reproducible.sh",
 )
 
 test_in_layer(
