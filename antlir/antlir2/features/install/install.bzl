@@ -288,7 +288,7 @@ def _python_outplace_features(
                 ctx.attrs._mac_signer[RunInfo],
                 ensure_single_output(link_tree),
                 signed_link_tree.as_output(),
-                cmd_args(["--sign-key", native.read_config("builder", "macsignkey", "fbios-debug")]),
+                cmd_args(["--sign-key", native.read_root_config("builder", "macsignkey", "fbios-debug")]),
                 cmd_args(["--disable-library-validation"]),
             ]),
             category = "sign",

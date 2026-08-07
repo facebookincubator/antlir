@@ -157,7 +157,7 @@ _vm_test = rule(
     attrs = {
         "dump_eth0": attrs.bool(
             doc = "If true, dumps the vm's eth0 traffic to a file. The file location is dictated by testX and uploaded as part of test result",
-            default = bool(read_config("antlir2", "dump_eth0", False)),
+            default = bool(read_root_config("antlir2", "dump_eth0", "")),
         ),
         "expect_failure": attrs.bool(
             doc = "If true, VM is expected to timeout or fail early.",
@@ -300,7 +300,7 @@ def _implicit_vm_test(
     timeout_secs = timeout_secs or arch_select(x86_64 = 300, aarch64 = 600)
 
     # try to apply a timeout multiplier if specified on the command line
-    timeout_multiplier = int(read_config("antlir2", "timeout_multiplier", 1))
+    timeout_multiplier = int(read_root_config("antlir2", "timeout_multiplier", "1"))
     timeout_secs = selects.apply(timeout_secs, lambda x: x * timeout_multiplier)
 
     wrapper_labels = list(labels) if labels else []

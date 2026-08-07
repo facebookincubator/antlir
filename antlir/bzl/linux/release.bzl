@@ -20,6 +20,7 @@ def _release_file_dynamic_impl(
     os_version_id: str,
     variant: str,
     ansi_color: str,
+    image_id: str,
     api_versions: dict,
     layer_raw_target: str,
     vcs_rev: str | None,
@@ -59,7 +60,7 @@ ANSI_COLOR="{ansi_color}"
             variant = variant,
             lower_variant = variant.lower(),
             ansi_color = ansi_color,
-            image_id = native.read_config("build_info", "target_path", "local"),
+            image_id = image_id,
             target = layer_raw_target,
             rev = vcs_rev or "local",
             rev_time = rev_time_formatted,
@@ -79,6 +80,7 @@ _release_file_dynamic = dynamic_actions(
         "ansi_color": dynattrs.value(str),
         "api_versions": dynattrs.value(dict),
         "contents_out": dynattrs.output(),
+        "image_id": dynattrs.value(str),
         "layer_raw_target": dynattrs.value(str),
         "os_id": dynattrs.value(str),
         "os_name": dynattrs.value(str),
@@ -125,6 +127,7 @@ def _release_file_impl(ctx: AnalysisContext) -> list[Provider]:
         _release_file_dynamic(
             rev_time = rev_time,
             contents_out = contents_out.as_output(),
+            image_id = native.read_root_config("build_info", "target_path", "local"),
             os_name = ctx.attrs.os_name,
             os_id = ctx.attrs.os_id,
             os_version = ctx.attrs.os_version,
@@ -251,10 +254,10 @@ def _release_file_macro(name: str, **kwargs):
         }),
     )
 
-    kwargs.setdefault("vcs_rev", native.read_config("build_info", "revision", "local"))
-    kwargs.setdefault("vcs_rev_time", int(native.read_config("build_info", "revision_epochtime", 0)))
-    kwargs.setdefault("package_name", native.read_config("build_info", "package_name", "<none>"))
-    kwargs.setdefault("package_version", native.read_config("build_info", "package_version", "local"))
+    kwargs.setdefault("vcs_rev", native.read_root_config("build_info", "revision", "local"))
+    kwargs.setdefault("vcs_rev_time", int(native.read_root_config("build_info", "revision_epochtime", "0")))
+    kwargs.setdefault("package_name", native.read_root_config("build_info", "package_name", "<none>"))
+    kwargs.setdefault("package_version", native.read_root_config("build_info", "package_version", "local"))
 
     _release_file(name = name, **(default_target_platform_kwargs() | kwargs))
 

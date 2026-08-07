@@ -247,7 +247,7 @@ oci_attrs = {
         doc = "OCI image labels applied after inherited and packager-generated labels, so these values override duplicate labels.",
     ),
     "ref": attrs.string(
-        default = native.read_config("build_info", "revision", "local"),
+        default = native.read_root_config("build_info", "revision", "local"),
         doc = "Ref name for OCI image",
     ),
     "retain_paths": attrs.list(
@@ -264,12 +264,12 @@ oci_attrs = {
     ),
     "_build_info_revision": attrs.default_only(
         attrs.string(
-            default = native.read_config("build_info", "revision", "local"),
+            default = native.read_root_config("build_info", "revision", "local"),
         )
     ),
     "_build_info_time_iso8601": attrs.default_only(
         attrs.string(
-            default = native.read_config("build_info", "time_iso8601", ""),
+            default = native.read_root_config("build_info", "time_iso8601", ""),
         )
     ),
     "_make_oci_layer": attrs.default_only(

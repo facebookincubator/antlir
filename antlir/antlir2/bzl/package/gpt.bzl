@@ -34,7 +34,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         fail("invalid block size: {}".format(ctx.attrs.block_size))
 
     # If we're building a fbpkg, put its uuid in the gpt header
-    disk_guid = ctx.attrs.disk_guid or native.read_config("build_info", "package_version")
+    disk_guid = ctx.attrs.disk_guid or native.read_root_config("build_info", "package_version")
 
     spec_json = ctx.actions.declare_output("spec.json", has_content_based_path = False)
     spec = ctx.actions.write_json(

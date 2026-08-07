@@ -10,9 +10,9 @@ def dot_meta(*, revision: [str, None] = None, package_name: [str, None] = None, 
     """
     Stamp build info into /.meta in the built layer
     """
-    revision = revision or native.read_config("build_info", "revision")
-    package_name = package_name or native.read_config("build_info", "package_name")
-    package_version = package_version or native.read_config("build_info", "package_version")
+    revision = revision or native.read_root_config("build_info", "revision")
+    package_name = package_name or native.read_root_config("build_info", "package_name")
+    package_version = package_version or native.read_root_config("build_info", "package_version")
     if int(bool(package_name)) ^ int(bool(package_version)):
         warning("Only one of {package_name, package_version} was set; package info will not be materialized into .meta")
 
