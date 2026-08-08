@@ -17,7 +17,7 @@ rust_library(
         "hex",
         "serde",
         "serde_with",
-        "sha1",
+        "sha1-010",
         "sha2",
         "thiserror",
         "tokio",
