@@ -92,16 +92,18 @@ impl<'a, 'py> FromPyObject<'a, 'py> for AntlirPath {
     }
 }
 
+/// Largely just useful for tests from Python, this will take the given
+/// input and attempt to round-trip it through [Path] and back into an
+/// `antlir.fs_utils.Path`
+#[pyfunction]
+#[pyo3(name = "Path")]
+fn path(p: &Bound<PyAny>) -> PyResult<AntlirPath> {
+    p.extract()
+}
+
 #[pymodule]
 pub fn fs_utils_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    /// Largely just useful for tests from Python, this will take the given
-    /// input and attempt to round-trip it through [Path] and back into an
-    /// `antlir.fs_utils.Path`
-    #[pyfn(m)]
-    #[pyo3(name = "Path")]
-    fn path(p: &Bound<PyAny>) -> PyResult<AntlirPath> {
-        p.extract()
-    }
+    m.add_function(wrap_pyfunction!(path, m)?)?;
 
     Ok(())
 }

@@ -25,23 +25,24 @@ fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResul
     }
 }
 
+/// find_repo_root($self, path_in_repo = None)
+/// --
+///
+/// Find the path of the VCS repository root.
+#[pyfunction]
+#[pyo3(signature = (path_in_repo=None))]
+fn find_repo_root(py: Python<'_>, path_in_repo: Option<AntlirPath>) -> PyResult<AntlirPath> {
+    let path_in_repo = ensure_path_in_repo(py, path_in_repo.map(|p| p.into()))?;
+    match find_root::find_repo_root(path_in_repo) {
+        Ok(path) => Ok(path.into()),
+        Err(e) => Err(SigilNotFound::new_err(e.to_string())),
+    }
+}
+
 #[pymodule]
 pub fn artifacts_dir(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("SigilNotFound", py.get_type::<SigilNotFound>())?;
-
-    /// find_repo_root($self, path_in_repo = None)
-    /// --
-    ///
-    /// Find the path of the VCS repository root.
-    #[pyfn(m)]
-    #[pyo3(signature = (path_in_repo=None))]
-    fn find_repo_root(py: Python<'_>, path_in_repo: Option<AntlirPath>) -> PyResult<AntlirPath> {
-        let path_in_repo = ensure_path_in_repo(py, path_in_repo.map(|p| p.into()))?;
-        match find_root::find_repo_root(path_in_repo) {
-            Ok(path) => Ok(path.into()),
-            Err(e) => Err(SigilNotFound::new_err(e.to_string())),
-        }
-    }
+    m.add_function(wrap_pyfunction!(find_repo_root, m)?)?;
 
     Ok(())
 }
