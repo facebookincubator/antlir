@@ -413,6 +413,36 @@ test_rpms(
 )
 
 test_rpms(
+    name = "local-file-install-overrides-versionlock",
+    also_eln_dnf5 = True,
+    dnf_versionlock = ":versionlock.json",
+    expected = expected_t(installed = ["foo-3-1"]),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "//antlir/antlir2/features/rpm/tests/repo:foo-3-1.noarch",
+            ]
+        ),
+        ":test-deps",
+    ],
+)
+
+test_rpms(
+    name = "local-file-upgrade-overrides-versionlock",
+    also_eln_dnf5 = True,
+    dnf_versionlock = ":versionlock.json",
+    expected = expected_t(installed = ["foo-3-1"]),
+    features = [
+        feature.rpms_upgrade(
+            rpms = [
+                "//antlir/antlir2/features/rpm/tests/repo:foo-3-1.noarch",
+            ]
+        ),
+        ":test-deps",
+    ],
+)
+
+test_rpms(
     name = "versionlock-extend",
     also_eln_dnf5 = True,
     dnf_versionlock = ":versionlock.json",

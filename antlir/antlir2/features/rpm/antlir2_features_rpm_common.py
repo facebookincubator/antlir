@@ -59,7 +59,7 @@ def compute_explicitly_installed_package_names(spec, local_rpms):
         else:
             raise AntlirError(f"none of {{subject,src}} not found in: {rpm}")
 
-        if action == "install":
+        if action in ("install", "upgrade"):
             if isinstance(source, dnf.package.Package):
                 explicitly_installed_package_names.add(source.name)
             else:
