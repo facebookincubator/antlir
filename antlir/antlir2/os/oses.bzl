@@ -168,11 +168,11 @@ else:
 
 # Syntax `tuple[str, ...]` is erroneously declared invalid
 # @lint-ignore BUCKFORMAT
-def _at_least_centos(release: int) -> tuple[str, ...]:
+def _at_least_centos(release: int, include_eln: bool = True) -> tuple[str, ...]:
     match = []
     for os in OSES:
-        if os.name == "eln":
-            # ELN is basically the newest centos, so it should always match
+        if os.name == "eln" and include_eln:
+            # ELN is logically the newest centos
             match.append(os.select_key)
         if os.name.startswith("centos"):
             this = int(os.name.removeprefix("centos"))
