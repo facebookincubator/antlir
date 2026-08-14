@@ -30,7 +30,7 @@ use starlark::eval::FileLoader;
 use starlark::starlark_module;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
-use starlark::values::OwnedFrozenValue;
+use starlark::values::OwnedFrozen;
 use starlark::values::Value;
 use starlark::values::none::NoneType;
 use test::TestFn;
@@ -157,13 +157,13 @@ impl TestModule {
             .module
             .names()
             .filter(|n| n.as_str().starts_with("test_"));
-        let tests: HashMap<String, OwnedFrozenValue> = test_names
+        let tests: HashMap<String, OwnedFrozen<Value<'static>>> = test_names
             .into_iter()
             .map(|name| {
                 (
                     name.as_str().to_string(),
                     self.module
-                        .get(&name)
+                        .get_owned(&name)
                         .expect("couldn't get test out of module"),
                 )
             })
@@ -193,7 +193,7 @@ impl TestModule {
                         let mut evaluator = Evaluator::new(&module);
                         evaluator.extra = Some(&fail_store);
                         evaluator
-                            .eval_function(heap.access_owned_frozen_value(&starlark_func), &[], &[])
+                            .eval_function(starlark_func.as_ref().add_to_heap(heap), &[], &[])
                             .expect("test function failed");
                         Ok(())
                     })
