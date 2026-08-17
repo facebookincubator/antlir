@@ -141,7 +141,7 @@ image.layer(
                     "centos-stream-release < 10",
                 ],
                 "//antlir/antlir2/os:eln": [
-                    "fedora-release-eln",
+                    "fedora-eln-release",
                 ],
                 "DEFAULT": [],
             }),

@@ -68,7 +68,7 @@ fn os_release_rpm() {
     let os = os_from_env();
     let os_release_package = match os {
         TestOs::Centos(_) => "centos-stream-release",
-        TestOs::Eln => "fedora-release-eln",
+        TestOs::Eln => "fedora-eln-release",
     };
     let proc = Command::new("rpm")
         .arg("-q")
