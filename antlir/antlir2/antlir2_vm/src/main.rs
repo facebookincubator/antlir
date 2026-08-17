@@ -46,6 +46,7 @@ use tracing_subscriber::prelude::*;
 use crate::isolation::Platform;
 use crate::isolation::isolated;
 use crate::share::VirtiofsShare;
+use crate::types::CONSOLE_LOG;
 use crate::types::MachineOpts;
 use crate::types::MountPlatformDecision;
 use crate::types::VMArgs;
@@ -53,6 +54,7 @@ use crate::utils::create_tpx_blobs;
 use crate::utils::create_tpx_logs;
 use crate::utils::env_names_to_kvpairs;
 use crate::utils::log_command;
+use crate::utils::tpx_artifacts_dir;
 use crate::vm::VM;
 use crate::vm::VMError;
 
@@ -119,15 +121,22 @@ fn run(args: &RunCmdArgs) -> Result<()> {
 
     let mut vm_args = args.vm_args.clone();
     if args.postmortem {
-        if args.vm_args.console_output_file.is_none() {
-            bail!("Console output file must be specified to run command after VM termination.");
+        if args.vm_args.logs_dir.is_none() {
+            bail!("logs_dir must be specified to run command after VM termination.");
         }
         if args.vm_args.mode.command.is_none() {
             bail!("Expected to run command after VM termination but no command specified.");
         }
-        // Don't run the test command inside the VM. Hijack it with our stub so we shut it down as
-        // soon as default target is reached.
-        vm_args.mode.command = Some(vec!["sh".into(), "-c".into(), "exit".into()]);
+        // A postmortem test runs on the host, so it must never be handed to the
+        // guest. Hijack the guest command with a stub that just returns, which
+        // leaves the VM at its default target for us to tear down - unless the
+        // test wants to observe a guest-initiated shutdown, in which case the
+        // stub has to arm ACPI S5 instead. `--no-block` is what lets the ssh
+        // session close cleanly before systemd starts shutting down.
+        vm_args.mode.command = Some(match vm_args.expect_vm_exit {
+            Some(_) => vec!["systemctl".into(), "poweroff".into(), "--no-block".into()],
+            None => vec!["sh".into(), "-c".into(), "exit".into()],
+        });
     }
 
     let machine_opts = args.machine_spec.clone().into_inner();
@@ -160,13 +169,15 @@ fn run(args: &RunCmdArgs) -> Result<()> {
         args.vm_args.command_envs.iter().for_each(|pair| {
             cmd.env(&pair.key, &pair.value);
         });
-        cmd.env(
-            "CONSOLE_OUTPUT",
-            args.vm_args
-                .console_output_file
-                .as_ref()
-                .expect("No console output file"),
-        );
+        let logs_dir = args
+            .vm_args
+            .logs_dir
+            .as_ref()
+            .expect("logs_dir is checked above for postmortem");
+        // Tests find per-process logs by binary name, e.g.
+        // $SIDECAR_LOGS_DIR/tgtd.log.
+        cmd.env("CONSOLE_OUTPUT", logs_dir.join(CONSOLE_LOG));
+        cmd.env("SIDECAR_LOGS_DIR", logs_dir);
         cmd_args.iter().skip(1).for_each(|arg| {
             cmd.arg(arg);
         });
@@ -192,12 +203,12 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
     let envs = env_names_to_kvpairs(args.passenv.clone());
     vm_args.command_envs = envs.clone();
 
-    // Let's always capture console output unless it's console mode
-    let _console_dir;
-    if !vm_args.mode.console && vm_args.console_output_file.is_none() {
-        let dir = tempdir().context("Failed to create temp dir for console output")?;
-        vm_args.console_output_file = Some(dir.path().join("console.txt"));
-        _console_dir = dir;
+    // Let's always capture logs unless it's console mode.
+    let _logs_dir;
+    if !vm_args.mode.console && vm_args.logs_dir.is_none() {
+        let dir = tempdir().context("Failed to create temp dir for logs")?;
+        vm_args.logs_dir = Some(dir.path().to_path_buf());
+        _logs_dir = dir;
     }
 
     antlir2_rootless::unshare_new_userns()?;
@@ -314,24 +325,20 @@ fn get_test_vm_args(
     }
     vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
-    // Only auto-route the console to tpx artifacts if the caller didn't
-    // already specify --console-output-file. This lets `buck2 run` consumers
-    // (e.g. skycastle workflows) persist guest console output to an arbitrary
-    // path without being silently overridden.
-    if vm_args.console_output_file.is_none() {
-        vm_args.console_output_file = create_tpx_logs("console.txt", "console logs")?;
+    // Collect logs straight into the tpx artifacts dir so that everything
+    // written there is uploaded and inspectable on failure.
+    if vm_args.logs_dir.is_none() {
+        create_tpx_logs(CONSOLE_LOG, "console logs")?;
+        vm_args.logs_dir = tpx_artifacts_dir();
     }
     if dump_eth0_traffic {
         vm_args.eth0_output_file = create_tpx_blobs("eth0.pcap", "eth0 traffic")?;
     }
-    if let Some(console_output_dir) = vm_args
-        .console_output_file
-        .as_ref()
-        .and_then(|f| f.parent())
-    {
-        vm_args
-            .output_dirs
-            .push(console_output_dir.to_owned().canonicalize()?);
+    if let Some(logs_dir) = &vm_args.logs_dir {
+        let canonical = logs_dir.canonicalize().unwrap_or_else(|_| logs_dir.clone());
+        if !vm_args.output_dirs.contains(&canonical) {
+            vm_args.output_dirs.push(canonical);
+        }
     }
     Ok(ValidatedVMArgs {
         inner: vm_args,
@@ -449,6 +456,13 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
         args.passenv.clone(),
         args.dump_eth0_traffic,
     )?;
+
+    // Annotate every host-side log up front so tpx uploads it even if the
+    // producing process never writes anything.
+    for log in machine_spec.host_log_files() {
+        create_tpx_logs(&log.name, &log.description)?;
+    }
+
     antlir2_rootless::unshare_new_userns()?;
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 

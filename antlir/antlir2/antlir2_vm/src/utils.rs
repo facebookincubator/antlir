@@ -7,6 +7,7 @@
 
 use std::collections::HashSet;
 use std::fs;
+use std::fs::OpenOptions;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -62,6 +63,23 @@ pub(crate) fn run_command_capture_output(command: &mut Command) -> Result<(), st
     Ok(())
 }
 
+/// Send a command's stdout and stderr to `path`, appending so that output from
+/// previous runs is not lost.
+pub(crate) fn redirect_output_to_file(
+    command: &mut Command,
+    path: &Path,
+) -> Result<(), std::io::Error> {
+    let file = OpenOptions::new().append(true).create(true).open(path)?;
+    command.stdout(file.try_clone()?);
+    command.stderr(file);
+    Ok(())
+}
+
+/// Directory tpx collects this test's artifacts from, if running under tpx.
+pub(crate) fn tpx_artifacts_dir() -> Option<PathBuf> {
+    std::env::var_os("TEST_RESULT_ARTIFACTS_DIR").map(PathBuf::from)
+}
+
 /// Return a path to record debugging data. When invoked under tpx, this will be
 /// uploaded as an artifact.
 pub(crate) fn create_tpx_artifacts(
@@ -71,9 +89,9 @@ pub(crate) fn create_tpx_artifacts(
 ) -> Result<Option<PathBuf>, std::io::Error> {
     // If tpx has provided this artifacts dir, put the logs there so they get
     // uploaded along with the test results
-    if let Some(artifacts_dir) = std::env::var_os("TEST_RESULT_ARTIFACTS_DIR") {
+    if let Some(artifacts_dir) = tpx_artifacts_dir() {
         fs::create_dir_all(&artifacts_dir)?;
-        let dst = Path::new(&artifacts_dir).join(filename);
+        let dst = artifacts_dir.join(filename);
         // The artifact metadata is set up before running the test so that it
         // still gets uploaded even in case of a timeout
         if let Some(annotations_dir) = std::env::var_os("TEST_RESULT_ARTIFACT_ANNOTATIONS_DIR") {

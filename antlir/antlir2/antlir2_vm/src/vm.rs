@@ -8,7 +8,6 @@
 use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs;
-use std::fs::OpenOptions;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
@@ -57,12 +56,14 @@ use crate::ssh::GuestSSHError;
 use crate::tpm::TPMDevice;
 use crate::tpm::TPMError;
 use crate::types::CpuIsa;
+use crate::types::ISCSI_LINGERING_CONNECTIONS_LOG;
 use crate::types::MachineOpts;
 use crate::types::QemuDevice;
 use crate::types::ShareOpts;
 use crate::types::TypeError;
 use crate::types::VMArgs;
 use crate::utils::log_command;
+use crate::utils::redirect_output_to_file;
 
 #[derive(Debug)]
 pub(crate) struct VM<S: Share> {
@@ -85,7 +86,8 @@ pub(crate) struct VM<S: Share> {
     sidecar_handles: Vec<JoinHandle<Result<ExitStatus>>>,
     /// TPM device
     tpm: Option<TPMDevice>,
-    #[expect(dead_code, reason = "Drop kills tgtd; must outlive the QEMU process")]
+    /// iSCSI target daemon. Dropping it kills tgtd, so it must outlive the
+    /// QEMU process.
     iscsi_daemon: Option<IscsiTargetDaemon>,
     ibft: Option<IbftTable>,
     /// Uuid for this VM. Randomly generated to aid debugging when multiple VMs are running
@@ -190,7 +192,7 @@ impl<S: Share> VM<S> {
             .filter_map(|d| d.iscsi_backing_file_path().map(|p| (d.id(), p)))
             .collect();
         let iscsi_daemon = if !iscsi_disks.is_empty() {
-            let mut daemon = IscsiTargetDaemon::start(&state_dir)?;
+            let mut daemon = IscsiTargetDaemon::start(&state_dir, args.logs_dir.as_deref())?;
             for (id, backing_file) in &iscsi_disks {
                 daemon.add_target(*id, backing_file)?;
             }
@@ -253,7 +255,7 @@ impl<S: Share> VM<S> {
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
         let start_ts = Instant::now();
-        self.sidecar_handles = self.spawn_sidecar_services();
+        self.sidecar_handles = self.spawn_sidecar_services()?;
         if self.args.first_boot_command.is_some() {
             info!("Booting VM for first boot command. It could take seconds to minutes...");
             let proc = self.spawn_vm()?;
@@ -400,7 +402,11 @@ impl<S: Share> VM<S> {
 
     /// The sidecar services will continue to run indefinitely until the outer
     /// container is torn down. Thus we just spawn them and forget.
-    fn spawn_sidecar_services(&self) -> Vec<JoinHandle<Result<ExitStatus>>> {
+    fn spawn_sidecar_services(&self) -> Result<Vec<JoinHandle<Result<ExitStatus>>>> {
+        // Fall back to the state dir when there is nowhere to upload logs from,
+        // so a sidecar's output never leaks into our own stdout.
+        let log_dir = self.args.logs_dir.as_deref().unwrap_or(&self.state_dir);
+
         self.machine
             .sidecar_services
             .iter()
@@ -409,17 +415,19 @@ impl<S: Share> VM<S> {
             // command to execute. This space splitting is not foolproof, but we
             // control sidecars so we can make it work.
             .flatten()
-            .map(|args| {
-                let args: Vec<&str> = args.split(' ').collect();
-                let mut command = Command::new(args[0]);
-                args.iter().skip(1).for_each(|c| {
-                    command.arg(c);
-                });
-                thread::spawn(move || -> Result<ExitStatus> {
+            .zip(self.machine.sidecar_logs())
+            .map(|(cmd_str, (_binary, log_name))| {
+                let mut args = cmd_str.split(' ');
+                let mut command = Command::new(args.next().unwrap_or(cmd_str));
+                command.args(args);
+                let path = log_dir.join(log_name);
+                redirect_output_to_file(&mut command, &path)
+                    .map_err(|err| VMError::FileOutputError { path, err })?;
+                Ok(thread::spawn(move || -> Result<ExitStatus> {
                     log_command(&mut command)
                         .status()
                         .map_err(VMError::SidecarError)
-                })
+                }))
             })
             .collect()
     }
@@ -465,20 +473,9 @@ impl<S: Share> VM<S> {
         if !self.args.mode.console {
             // Disable stdin as input will come from elsewhere.
             command.stdin(Stdio::null());
-            if let Some(path) = &self.args.console_output_file {
-                // Redirect stdout/err to a file if specified.
-                let map_err = |err| VMError::FileOutputError {
-                    path: path.to_owned(),
-                    err,
-                };
-                // Use append to not lose stdout/err from previous runs.
-                let file = OpenOptions::new()
-                    .append(true)
-                    .create(true)
-                    .open(path)
-                    .map_err(map_err)?;
-                command.stdout(file.try_clone().map_err(map_err)?);
-                command.stderr(file.try_clone().map_err(map_err)?);
+            if let Some(path) = self.args.console_output_file() {
+                redirect_output_to_file(&mut command, &path)
+                    .map_err(|err| VMError::FileOutputError { path, err })?;
             } else {
                 // Disable stdout/err if we neither need it on screen or in file.
                 command.stdout(Stdio::null());
@@ -730,11 +727,8 @@ impl<S: Share> VM<S> {
         // Connect to the notify socket. This starts the boot process.
         self.check_sidecar_services()?;
         if !self.args.mode.console {
-            if let Some(console_file) = &self.args.console_output_file {
-                info!(
-                    "Note: console output is redirected to {}",
-                    console_file.display()
-                );
+            if let Some(path) = self.args.console_output_file() {
+                info!("Note: console output is redirected to {}", path.display());
             }
         }
         let socket = UnixStream::connect(self.notify_file()).map_err(|err| VMError::BootError {
@@ -836,6 +830,17 @@ impl<S: Share> VM<S> {
                         });
                     }
                 }
+            }
+        }
+
+        // Dump connection state before tgtd is torn down, so a postmortem test
+        // can verify the guest logged out cleanly on shutdown.
+        if self.iscsi_daemon.is_some() {
+            if let Some(dir) = &self.args.logs_dir {
+                let conns = IscsiTargetDaemon::list_connections()?;
+                let path = dir.join(ISCSI_LINGERING_CONNECTIONS_LOG);
+                fs::write(&path, &conns).map_err(|err| VMError::FileOutputError { path, err })?;
+                info!("iSCSI connections after VM exit: {}", conns);
             }
         }
 
@@ -1345,7 +1350,9 @@ mod test {
             vec!["sleep".to_string(), "3".to_string()],
             vec!["sleep".to_string(), "5".to_string()],
         ];
-        vm.sidecar_handles = vm.spawn_sidecar_services();
+        vm.sidecar_handles = vm
+            .spawn_sidecar_services()
+            .expect("Failed to spawn sidecar services");
         assert!(vm.check_sidecar_services().is_ok());
     }
 
@@ -1353,7 +1360,9 @@ mod test {
     fn test_sidecar_services_early_finish() {
         let (mut vm, _state_dir) = get_vm_no_disk();
         vm.machine.sidecar_services = vec![vec!["command_does_not_exist".to_string()]];
-        vm.sidecar_handles = vm.spawn_sidecar_services();
+        vm.sidecar_handles = vm
+            .spawn_sidecar_services()
+            .expect("Failed to spawn sidecar services");
         thread::sleep(Duration::from_secs(1));
         assert!(vm.check_sidecar_services().is_err());
     }
