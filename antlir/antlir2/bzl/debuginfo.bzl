@@ -52,6 +52,7 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         category = "split",
         identifier = "stripped",
+        allow_cache_upload = True,
     )
 
     ctx.actions.run(
@@ -63,6 +64,7 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         category = "split",
         identifier = "debuginfo",
+        allow_cache_upload = True,
     )
 
     ctx.actions.run(
@@ -74,6 +76,7 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         category = "split",
         identifier = "metadata",
+        allow_cache_upload = True,
     )
 
     if ctx.attrs.resources_dir:
@@ -95,6 +98,7 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             ),
             category = "split",
             identifier = "resources",
+            allow_cache_upload = True,
         )
     else:
         resources_stripped = ctx.actions.symlinked_dir("resources_stripped_empty", {}, has_content_based_path = False)
