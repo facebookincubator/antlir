@@ -1,0 +1,24 @@
+[file."etc/passwd"]
+op = 'diff'
+
+[file."etc/passwd".diff]
+text-patch = '''
+--- parent
++++ child
+@@ -1 +1,2 @@
+ root:x:0:0:root:/root:/bin/bash
++antlir:x:1000:1000::/:/fakeshell
+'''
+
+[file."etc/shadow"]
+op = 'added'
+
+[file."etc/shadow".diff]
+mode = ''
+file-type = 'regular-file'
+user = 'root'
+group = 'root'
+text = '''
+root:*:::::::
+antlir:!!:::::::
+'''

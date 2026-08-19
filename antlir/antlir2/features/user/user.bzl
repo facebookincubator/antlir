@@ -26,6 +26,7 @@ def user_add(
     uidmap: str = "default",
     shell: str | Select = SHELL_NOLOGIN,
     supplementary_groups: list[str | Select] | Select = [],
+    add_primary_group_member: bool | Select = True,
     comment: str | None = None,
 ):
     """
@@ -54,6 +55,8 @@ def user_add(
     - If `username` or `uid` conflicts with existing entries, image build will
         fail.
     - `primary_group` and `supplementary_groups` are specified as groupnames.
+    - `add_primary_group_member` controls whether the user is also listed in
+        the primary group's `/etc/group` member list.
     - `home_dir` must exist
     """
     return ParseTimeFeature(
@@ -63,6 +66,7 @@ def user_add(
             "uidmap": ("antlir//antlir/uidmaps:" + uidmap) if ":" not in uidmap else uidmap,
         },
         kwargs = {
+            "add_primary_group_member": add_primary_group_member,
             "comment": comment,
             "home_dir": home_dir,
             "primary_group": primary_group,
@@ -111,6 +115,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         FeatureAnalysis(
             feature_type = "user",
             data = struct(
+                add_primary_group_member = ctx.attrs.add_primary_group_member,
                 comment = ctx.attrs.comment,
                 home_dir = ctx.attrs.home_dir,
                 primary_group = ctx.attrs.primary_group,
@@ -128,6 +133,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 user_rule = new_feature_rule(
     impl = _impl,
     attrs = {
+        "add_primary_group_member": attrs.bool(default = True),
         "comment": attrs.option(attrs.string(), default = None),
         "home_dir": attrs.string(),
         "primary_group": attrs.string(),

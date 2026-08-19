@@ -35,6 +35,7 @@ pub struct User {
     pub uidmap: BuckOutSource,
     pub primary_group: GroupName,
     pub supplementary_groups: Vec<GroupName>,
+    pub add_primary_group_member: bool,
     pub home_dir: PathInLayer,
     pub shell: PathInLayer,
     pub comment: Option<String>,
@@ -101,7 +102,7 @@ impl antlir2_compile::CompileFeature for User {
         for group in self
             .supplementary_groups
             .iter()
-            .chain(vec![&self.primary_group])
+            .chain(self.add_primary_group_member.then_some(&self.primary_group))
         {
             groups_db
                 .get_group_by_name_mut(group)

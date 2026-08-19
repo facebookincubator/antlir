@@ -50,6 +50,28 @@ image_diff_test(
 )
 
 image.layer(
+    name = "add-user-without-primary-group-member",
+    features = [
+        feature.user_add(
+            add_primary_group_member = False,
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            uidmap = "antlir",
+            username = "antlir",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "add-user-without-primary-group-member-test",
+    diff = "add-user-without-primary-group-member.toml",
+    diff_type = "file",
+    layer = ":add-user-without-primary-group-member",
+)
+
+image.layer(
     name = "base-with-shadow",
     features = [
         feature.install_text(
