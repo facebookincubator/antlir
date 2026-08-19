@@ -90,10 +90,19 @@ class TestUnprivilegedDir(TestCase):
         )
 
         # 2) an executable file is executable
+        # Only the executable bit survives a round trip through buck2's CAS, so
+        # the rest of the permission bits are not stable enough to assert on
+        # (they depend on whether the artifact was built locally or downloaded).
+        executable_mode = stat.S_IMODE(stats["default-dir/executable"].st_mode)
         self.assertEqual(
-            "-r-xr-xr-x",
-            stat.filemode(stats["default-dir/executable"].st_mode),
-            "executable is not actually executable",
+            0o111,
+            executable_mode & 0o111,
+            f"executable is not actually executable: {executable_mode:o}",
+        )
+        self.assertEqual(
+            0o444,
+            executable_mode & 0o444,
+            f"executable is not readable: {executable_mode:o}",
         )
 
         # 3) a symlink has the right target
