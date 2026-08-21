@@ -73,3 +73,9 @@ os_version(
     family = "//antlir/antlir2/os/family:family[debian]",
     package_manager = "//antlir/antlir2/os/package_manager:package_manager[apt]",
 )
+
+os_version(
+    name = "ubuntu-noble",
+    family = "//antlir/antlir2/os/family:family[debian]",
+    package_manager = "//antlir/antlir2/os/package_manager:package_manager[apt]",
+)

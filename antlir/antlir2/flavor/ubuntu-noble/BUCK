@@ -1,0 +1,11 @@
+load("//antlir/antlir2/bzl/flavor:defs.bzl", "flavor")
+
+oncall("antlir")
+
+flavor(
+    name = "ubuntu-noble",
+    # TODO(T256160849) flavor should not require dnf/rpm info now that we are starting to support debian
+    default_dnf_repo_set = "//antlir/antlir2/flavor:empty-repo-set",
+    rpm_reflink_flavor = None,
+    visibility = ["PUBLIC"],
+)

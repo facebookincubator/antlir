@@ -111,6 +111,13 @@ OSES = [
         flavor = "antlir//antlir/antlir2/flavor/debian-trixie:debian-trixie",
         has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
     ),
+    _new_os(
+        name = "ubuntu-noble",
+        flavor = "antlir//antlir/antlir2/flavor/ubuntu-noble:ubuntu-noble",
+        # Noble does not have aarch64 packages
+        architectures = [new_arch_t("x86_64")],
+        has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
+    ),
 ]
 
 if is_facebook:

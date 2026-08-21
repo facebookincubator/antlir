@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_debs_test.bzl", "image_test_deb_names")
@@ -26,6 +27,12 @@ image_test_deb_names(
         "dash",
         "dpkg",
     ],
+)
+
+antlir2_configured_alias(
+    name = "test-bash-installed-ubuntu-noble",
+    actual = ":test-bash-installed",
+    default_os = "ubuntu-noble",
 )
 
 image.layer(

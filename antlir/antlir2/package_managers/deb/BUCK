@@ -26,3 +26,23 @@ suite(
     },
     visibility = ["PUBLIC"],
 )
+
+suite(
+    name = "noble",
+    architectures = [
+        "amd64",
+        # Noble does not have aarch64 packages
+    ],
+    archive_url = "https://mirror.facebook.net/ubuntu",
+    components = [
+        "main",
+        "universe",
+    ],
+    distribution = "noble",
+    snapshot_storage = {
+        "api_key": "antlir_snapshots-key",
+        "bucket": "antlir_snapshots",
+        "type": "manifold",
+    },
+    visibility = ["PUBLIC"],
+)

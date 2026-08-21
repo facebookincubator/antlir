@@ -15,11 +15,14 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:structs.bzl", "structs")
 load(":plan.bzl", "apt_planner")
 
-# Hardcoded trixie suite dep for now. We will figure out how to select the
-# correct suite per OS later.
 TRIXIE_SUITE = internal_external(
     fb = "fbcode//bot_generated/antlir/snapshot/antlir/antlir2/package_managers/deb/trixie:trixie",
     oss = "antlir//antlir/antlir2/package_managers/deb:trixie",
+)
+
+NOBLE_SUITE = internal_external(
+    fb = "fbcode//bot_generated/antlir/snapshot/antlir/antlir2/package_managers/deb/noble:noble",
+    oss = "antlir//antlir/antlir2/package_managers/deb:noble",
 )
 
 def _common(action: str, *, packages: list[str | Select] | Select):
@@ -31,7 +34,10 @@ def _common(action: str, *, packages: list[str | Select] | Select):
             "subjects": packages,
         },
         deps = {
-            "suite": TRIXIE_SUITE,
+            "suite": select({
+                "antlir//antlir/antlir2/os:debian-trixie": TRIXIE_SUITE,
+                "antlir//antlir/antlir2/os:ubuntu-noble": NOBLE_SUITE,
+            }),
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/apt:driver",
