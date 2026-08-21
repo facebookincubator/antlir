@@ -346,7 +346,8 @@ fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
 
     std::fs::create_dir_all(&args.libs_dir)?;
     let main_relpath = PathBuf::from("__main");
-    std::fs::copy(&src, args.libs_dir.join(&main_relpath))?;
+    std::fs::copy(&src, args.libs_dir.join(&main_relpath))
+        .with_context(|| format!("while copying {}", src.display()))?;
     entries.insert(ManifestEntry::File {
         src_relpath: main_relpath,
         dst: args.dst.clone(),
@@ -379,7 +380,9 @@ fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
 
         let copy_path = args.libs_dir.join(&src_relpath);
         std::fs::create_dir_all(copy_path.parent().expect("always has parent"))?;
-        std::fs::copy(dep, copy_path)?;
+        std::fs::copy(dep, &copy_path).with_context(|| {
+            format!("while copying {} to {}", dep.display(), copy_path.display())
+        })?;
 
         entries.insert(ManifestEntry::File { src_relpath, dst });
     }

@@ -195,6 +195,10 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             hidden = ctx.attrs.src[RunInfo],
         ),
         category = "extract_buck_binary",
+        # The analyzer resolves shared libraries by reading the target arch's
+        # fbcode platform directory off the filesystem, and RE workers only have
+        # the native arch's platform installed.
+        local_only = ctx.attrs.target_arch == "aarch64",
     )
 
     return [
