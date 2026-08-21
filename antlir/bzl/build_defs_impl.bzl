@@ -3,6 +3,28 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# This file mirrors the internal `antlir/bzl/build_defs_impl.bzl`, but is
+# implemented on top of the standard Meta open-source shim cell instead of
+# `@fbcode_macros//`. Prefer proxying to a shim macro over calling a `native.`
+# rule directly: the shim wrappers apply the same dep translation and defaults
+# that other Meta OSS projects get.
+#
+# Some rules deliberately do NOT proxy, because the shim's version is lossy for
+# antlir. Each one is called out at its definition. Before switching one over,
+# check the shim implementation actually forwards what antlir passes.
+load("@shim//:shims.bzl", shim_cpp_binary = "cpp_binary", shim_cpp_library = "cpp_library")
+load("@shim//build_defs:export_files.bzl", shim_export_file = "export_file")
+load(
+    "@shim//build_defs:native_rules.bzl",
+    shim_alias = "alias",
+    shim_buck_filegroup = "buck_filegroup",
+    shim_buck_genrule = "buck_genrule",
+    shim_buck_sh_binary = "buck_sh_binary",
+    shim_buck_sh_test = "buck_sh_test",
+)
+load("@shim//build_defs:platform_utils.bzl", "platform_utils")
+load("@shim//tools/build_defs:fb_native_wrapper.bzl", "fb_native")
+
 def _third_party_library(project, rule = None, platform = None):
     """
     In FB land we want to find the correct build for a third-party target
@@ -95,17 +117,19 @@ def _wrap_internal(fn, args, kwargs):
 
     fn(*args, **kwargs)
 
+# NOT proxied: the shim's `buck_command_alias` is a no-op (`def
+# buck_command_alias(**_): pass`), which would silently drop the target.
 def _buck_command_alias(*args, **kwargs):
-    _wrap_internal(native.command_alias, args, kwargs)
+    _wrap_internal(fb_native.command_alias, args, kwargs)
 
 def _alias(*args, **kwargs):
-    _wrap_internal(native.alias, args, kwargs)
+    _wrap_internal(shim_alias, args, kwargs)
 
 def _toolchain_alias(*args, **kwargs):
-    native.toolchain_alias(*args, **kwargs)
+    fb_native.toolchain_alias(*args, **kwargs)
 
 def _buck_filegroup(*args, **kwargs):
-    _wrap_internal(native.filegroup, args, kwargs)
+    _wrap_internal(shim_buck_filegroup, args, kwargs)
 
 def _buck_genrule(*args, **kwargs):
     # This is unused in FB
@@ -119,51 +143,59 @@ def _buck_genrule(*args, **kwargs):
     # thus require root, which Pyre builds do not have
     if "no_pyre" not in existing_labels:
         kwargs["labels"] = existing_labels + ["no_pyre"]
-    _wrap_internal(native.genrule, args, kwargs)
+    _wrap_internal(shim_buck_genrule, args, kwargs)
 
 def _buck_sh_binary(*args, **kwargs):
-    _wrap_internal(native.sh_binary, args, kwargs)
+    _wrap_internal(shim_buck_sh_binary, args, kwargs)
 
 def _buck_sh_test(*args, **kwargs):
-    _wrap_internal(native.sh_test, args, kwargs)
+    _wrap_internal(shim_buck_sh_test, args, kwargs)
 
 def _cpp_binary(*args, **kwargs):
-    _wrap_internal(native.cxx_binary, args, kwargs)
+    _wrap_internal(shim_cpp_binary, args, kwargs)
 
 def _cpp_library(*args, **kwargs):
-    _wrap_internal(native.cxx_library, args, kwargs)
+    _wrap_internal(shim_cpp_library, args, kwargs)
 
+# NOT proxied: the shim's `cpp_unittest` injects `CPP_FOLLY_UNITTEST_DEPS` (or
+# `CPP_UNITTEST_DEPS`) into every test. Antlir's C++ tests bring their own deps
+# and do not depend on folly, so going through the shim would add a dependency
+# the repo does not have.
 def _cpp_unittest(*args, **kwargs):
     kwargs.pop("supports_static_listing", None)
-    _wrap_internal(native.cxx_test, args, kwargs)
+    _wrap_internal(fb_native.cxx_test, args, kwargs)
 
 def _cxx_genrule(*args, **kwargs):
-    _wrap_internal(native.cxx_genrule, args, kwargs)
+    _wrap_internal(fb_native.cxx_genrule, args, kwargs)
 
 def _export_file(*args, **kwargs):
-    _wrap_internal(native.export_file, args, kwargs)
+    _wrap_internal(shim_export_file, args, kwargs)
 
 def _http_file(*args, **kwargs):
-    native.http_file(*args, **kwargs)
+    fb_native.http_file(*args, **kwargs)
 
 def _http_archive(*args, **kwargs):
-    native.http_archive(*args, **kwargs)
+    fb_native.http_archive(*args, **kwargs)
 
 def _invert_dict(x):
     if type(x) != type({}):
         return x
     return {v: k for k, v in x.items()}
 
+# NOT proxied (python_library / python_binary / python_unittest): every shim
+# python wrapper takes `srcs` and discards it (`_unused = srcs`). Antlir passes
+# srcs as a dict and inverts it below, so routing through the shim would produce
+# python targets with no sources at all.
 def _python_library(**kwargs):
     kwargs["srcs"] = _invert_dict(kwargs.pop("srcs", []))
     kwargs["resources"] = _invert_dict(kwargs.pop("resources", []))
-    _wrap_internal(native.python_library, [], kwargs)
+    _wrap_internal(fb_native.python_library, [], kwargs)
 
 def _python_binary(*, name: str, main_function: str | None = None, main_module: str | None = None, **kwargs):
     _python_library(name = name + "-library", **kwargs)
 
     _wrap_internal(
-        native.python_binary,
+        fb_native.python_binary,
         [],
         {
             "deps": [":{}-library".format(name)],
@@ -189,18 +221,23 @@ def _python_unittest(*args, **kwargs):
 
     kwargs.pop("supports_static_listing", None)
 
-    _wrap_internal(native.python_test, args, kwargs)
+    _wrap_internal(fb_native.python_test, args, kwargs)
 
 def _cpp_python_extension(name: str, **_kwargs):
-    native.alias(
+    shim_alias(
         name = name,
         actual = "antlir//antlir:empty",
     )
 
+# NOT proxied (rust_library / rust_binary / rust_unittest): the shim's
+# `rust_library` swallows `named_deps`, `cpp_deps` and `cxx_bridge`
+# (`_unused = (...)`), and antlir/bzl/build_defs.bzl passes `named_deps` to
+# every rust rule. Antlir also generates its own implicit `-unittests` targets,
+# which the shim has no equivalent for.
 def _rust_unittest(*args, **kwargs):
     kwargs.pop("nodefaultlibs", None)
     kwargs.pop("allocator", None)
-    _wrap_internal(native.rust_test, args, kwargs)
+    _wrap_internal(fb_native.rust_test, args, kwargs)
 
 def _rust_binary(*, name: str, **kwargs):
     unittests = kwargs.pop("unittests", True)
@@ -209,7 +246,7 @@ def _rust_binary(*, name: str, **kwargs):
     kwargs["name"] = name
     kwargs.pop("allocator", None)
     kwargs.pop("nodefaultlibs", None)
-    _wrap_internal(native.rust_binary, [], kwargs)
+    _wrap_internal(fb_native.rust_binary, [], kwargs)
 
 def _rust_library(*, name: str, **kwargs):
     unittests = kwargs.pop("unittests", True)
@@ -218,8 +255,10 @@ def _rust_library(*, name: str, **kwargs):
     kwargs["name"] = name
     kwargs.pop("autocargo", None)
     kwargs.pop("link_style", None)
-    _wrap_internal(native.rust_library, [], kwargs)
+    _wrap_internal(fb_native.rust_library, [], kwargs)
 
+# NOT proxied: the shim's `rust_bindgen_library` is a no-op (`def
+# rust_bindgen_library(**kwargs): pass`).
 def _rust_bindgen_library(name: str, header: str, **kwargs):
     _buck_genrule(
         name = name + "--bindings.rs",
@@ -240,7 +279,7 @@ def _rust_bindgen_library(name: str, header: str, **kwargs):
     )
 
 def _rust_python_extension(name: str, **_kwargs):
-    native.alias(
+    shim_alias(
         name = name,
         actual = "antlir//antlir:empty",
     )
@@ -249,7 +288,7 @@ def _rust_python_extension(name: str, **_kwargs):
     print("TODO: rust_python_extension")
 
 def _write_file(*args, **kwargs):
-    _wrap_internal(native.write_file, args, kwargs)
+    _wrap_internal(fb_native.write_file, args, kwargs)
 
 ### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:target_utils.bzl)
 def _parse_target(target, default_repo = None, default_base_path = None):
@@ -309,7 +348,7 @@ shim = struct(
     #
     add_test_framework_label = lambda labels, add: labels + [add],
     config = struct(
-        get_platform_for_current_buildfile = lambda: struct(target_platform = None),
+        get_platform_for_current_buildfile = lambda: platform_utils.get_cxx_platform_for_base_path(native.package_name()),
     ),
     get_visibility = _get_visibility,
     target_utils = struct(

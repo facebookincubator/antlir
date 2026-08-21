@@ -11,12 +11,16 @@
     fbsource = none
     fbcode_macros = none
     buck = none
+    # .buckconfig.d/common.buckconfig (shipped by add_buck2_support) aliases
+    # `toolchains` at the shim cell. Antlir has its own toolchains cell, so
+    # re-assert it here -- .buckconfig takes precedence over .buckconfig.d.
+    toolchains = toolchains
 
 [external_cells]
     prelude = bundled
 
 [parser]
-    target_platform_detector_spec = target:antlir//...->prelude//platforms:default
+    target_platform_detector_spec = target:antlir//...->prelude//platforms:default target:shim//...->prelude//platforms:default
 
 [project]
     ignore = antlir2-out, .git, .sl
