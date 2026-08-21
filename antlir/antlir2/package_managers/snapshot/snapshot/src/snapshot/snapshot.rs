@@ -169,14 +169,7 @@ impl Snapshot {
                             "Snapshotting {} [{}]",
                             target.target_name, arch_cfg.arch
                         ));
-                        let ar = snapshot_yum_arch(
-                            arch_cfg,
-                            &target.tree_prefix,
-                            &target.snapshot_storage,
-                            &project_root,
-                            fb,
-                        )
-                        .await?;
+                        let ar = snapshot_yum_arch(arch_cfg, target, &project_root, fb).await?;
                         arch_pb.finish_with_message(format!(
                             "Snapshotted {} [{}]",
                             target.target_name, arch_cfg.arch
@@ -369,7 +362,7 @@ async fn snapshot_one(
     let packages_out = super::packages::snapshot_packages(
         storage.clone(),
         blob_status,
-        all_entries.clone(),
+        &all_entries,
         &req.packages_baseurl,
     )
     .await
@@ -433,7 +426,7 @@ async fn snapshot_one(
             let storage = storage.clone();
             let pb = checksum_pb.clone();
             async move {
-                let full = backoff::future::retry(super::packages::retry_policy(), || async {
+                let full = backoff::future::retry(super::storage::retry_policy(), || async {
                     storage
                         .get_file_checksums(&relpath)
                         .await
@@ -485,12 +478,11 @@ async fn snapshot_one(
 
 async fn snapshot_yum_arch(
     arch: &YumArchConfig,
-    base_tree_prefix: &str,
-    storage_config: &super::storage::StorageConfig,
+    target: &TargetConfig,
     project_root: &Path,
     fb: fbinit::FacebookInit,
 ) -> Result<ArchResult> {
-    let tree_prefix = format!("{}/{}", base_tree_prefix, arch.arch);
+    let tree_prefix = format!("{}/{}", target.tree_prefix, arch.arch);
     let metadata_tree = project_root.join(&arch.metadata_tree);
 
     let index_checksums = snapshot_one(
@@ -499,7 +491,7 @@ async fn snapshot_yum_arch(
             packages_indexes: arch.packages_indexes.clone(),
             packages_baseurl: arch.packages_baseurl.clone(),
             tree_prefix,
-            storage_config,
+            storage_config: &target.snapshot_storage,
         },
         project_root,
         fb,

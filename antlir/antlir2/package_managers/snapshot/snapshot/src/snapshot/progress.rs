@@ -39,29 +39,45 @@ pub(crate) fn tracing_writer() -> BoxMakeWriter {
     }
 }
 
-/// Create a progress bar with `total` items and an initial message.
-/// The bar is added to the global [`MultiProgress`] so that it is rendered
-/// alongside any other active bars and does not clash with tracing output.
-/// It is hidden automatically when stderr is not a tty (indicatif's default
-/// behaviour) and animates with a steady tick.
-pub(crate) fn bar(total: usize, msg: impl Into<String>) -> ProgressBar {
+/// Build a bar attached to the global [`MultiProgress`]. Hidden when there is
+/// nothing to count, and (via indicatif's default) when stderr is not a tty.
+fn styled_bar(total: u64, msg: impl Into<String>, template: &str, tick: Duration) -> ProgressBar {
     if total == 0 {
-        // Return a hidden bar so callers can unconditionally call inc/finish
-        // without branching.
+        // Hidden bar so callers can unconditionally inc/finish without branching.
         return ProgressBar::hidden();
     }
-    let mp = multi_progress();
-    let pb = mp.add(ProgressBar::new(total as u64));
+    let pb = multi_progress().add(ProgressBar::new(total));
     pb.set_style(
-        ProgressStyle::with_template(
-            "{spinner:.green} {msg} [{bar:40.cyan/blue}] {pos}/{len} ({per_sec}, {eta} est remaining, {elapsed} elapsed)",
-        )
-        .unwrap_or_else(|_| ProgressStyle::default_bar())
-        .progress_chars("#>-"),
+        ProgressStyle::with_template(template)
+            .unwrap_or_else(|_| ProgressStyle::default_bar())
+            .progress_chars("#>-"),
     );
     pb.set_message(msg.into());
-    pb.enable_steady_tick(Duration::from_millis(100));
+    pb.enable_steady_tick(tick);
     pb
+}
+
+/// Create a progress bar counting `total` discrete items.
+pub(crate) fn bar(total: usize, msg: impl Into<String>) -> ProgressBar {
+    styled_bar(
+        total as u64,
+        msg,
+        "{spinner:.green} {msg} [{bar:40.cyan/blue}] {pos}/{len} ({per_sec}, {eta} est remaining, {elapsed} elapsed)",
+        Duration::from_millis(100),
+    )
+}
+
+/// Create a byte-oriented progress bar for a single large transfer, so that a
+/// multi-gigabyte package is distinguishable from a hung connection. Ticks
+/// slower than [`bar`]: each steady tick is its own thread taking the global
+/// draw lock, and there can be one of these per concurrent download.
+pub(crate) fn bytes_bar(total: u64, msg: impl Into<String>) -> ProgressBar {
+    styled_bar(
+        total,
+        msg,
+        "{spinner:.green} {msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta} est remaining)",
+        Duration::from_millis(500),
+    )
 }
 
 /// Create a spinner for an operation whose total length is unknown.

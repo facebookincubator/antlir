@@ -6,9 +6,12 @@
  */
 
 use std::path::Path;
+use std::time::Duration;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use backoff::ExponentialBackoff;
+use backoff::ExponentialBackoffBuilder;
 use serde::Deserialize;
 use serde::Serialize;
 use snapshot_common::Checksums;
@@ -20,6 +23,24 @@ mod facebook;
 use facebook::ManifoldStorage;
 #[cfg(facebook)]
 use facebook::ManifoldStorageConfig;
+
+/// How many tree symlinks to create at once.
+pub(crate) const MAX_CONCURRENT_SYMLINK: usize = 500;
+
+const INITIAL_BACKOFF: Duration = Duration::from_secs(1);
+const MAX_ELAPSED: Duration = Duration::from_secs(60);
+
+/// Exponential-backoff policy (with built-in jitter) for retrying transient
+/// operations against the storage backend.
+///
+/// Bounding by wall clock is right here because these are small, fast RPCs; it
+/// is not right for package transfers, which bound by attempt count instead.
+pub(crate) fn retry_policy() -> ExponentialBackoff {
+    ExponentialBackoffBuilder::new()
+        .with_initial_interval(INITIAL_BACKOFF)
+        .with_max_elapsed_time(Some(MAX_ELAPSED))
+        .build()
+}
 
 /// The status of a blob in storage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
