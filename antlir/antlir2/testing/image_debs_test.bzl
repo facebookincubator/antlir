@@ -44,7 +44,7 @@ def _deb_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
 _deb_names_test = rule(
     impl = _deb_names_test_impl,
     attrs = {
-        "image_debs_test": attrs.default_only(attrs.dep(default = "antlir//antlir/antlir2/testing/image_debs_test:image-debs-test")),
+        "image_debs_test": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/testing/image_debs_test:image-debs-test")),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
         "names": attrs.list(attrs.string()),
