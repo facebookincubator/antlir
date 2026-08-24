@@ -135,12 +135,15 @@ def install(
 
     exec_deps = {
         "_debuginfo_splitter": "fbcode//antlir/antlir2/tools:debuginfo-splitter",
-        "_mac_signer": "fbcode//python/runtime/tools:recursive_mac_signer",
         "_objcopy": internal_external(
             fb = "fbsource//third-party/binutils:objcopy",
             oss = "toolchains//:objcopy",
         ),
     }
+    is_macos = select({
+        "DEFAULT": False,
+        "ovr_config//os:macos": True,
+    })
     deps = {}
     deps_or_srcs = {}
     distro_platform_deps = {}
@@ -171,38 +174,45 @@ def install(
     else:
         fail("impossible transition_to_distro_platform value '{}'".format(transition_to_distro_platform))
 
-    return ParseTimeFeature(
-        feature_type = "install",
-        plugin = "antlir//antlir/antlir2/features/install:install",
-        deps_or_srcs = deps_or_srcs,
-        deps = deps,
-        distro_platform_deps = distro_platform_deps,
-        exec_deps = exec_deps,
-        uses_plugins = uses_plugins,
-        kwargs = {
-            "always_use_gnu_debuglink": always_use_gnu_debuglink,
-            "default_binary_mode": default_permissions.binary,
-            "default_directory_mode": default_permissions.directory,
-            "default_file_mode": default_permissions.file,
-            "discard_debuginfo": discard_debuginfo,
-            "dst": dst,
-            "group": group,
-            "ignore_symlink_tree": ignore_symlink_tree,
-            "mode": mode,
-            "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
-            "setcap": setcap,
-            "split_debuginfo": split_debuginfo,
-            "strip_all": strip_all,
-            "text": None,
-            "transition_to_distro_platform": transition_to_distro_platform.value,
-            "user": user,
-            "xattrs": xattrs,
-            "_binaries_require_repo": binaries_require_repo.select_value,
-            "_is_macos": select({
-                "DEFAULT": False,
-                "ovr_config//os:macos": True,
-            }),
-        },
+    return selects.apply(
+        is_macos,
+        lambda on_macos: ParseTimeFeature(
+            feature_type = "install",
+            plugin = "antlir//antlir/antlir2/features/install:install",
+            deps_or_srcs = deps_or_srcs,
+            deps = deps,
+            distro_platform_deps = distro_platform_deps,
+            exec_deps = exec_deps
+            | (
+                {
+                    "_mac_signer": "fbcode//python/runtime/tools:recursive_mac_signer",
+                }
+                if on_macos
+                else {}
+            ),
+            uses_plugins = uses_plugins,
+            kwargs = {
+                "always_use_gnu_debuglink": always_use_gnu_debuglink,
+                "default_binary_mode": default_permissions.binary,
+                "default_directory_mode": default_permissions.directory,
+                "default_file_mode": default_permissions.file,
+                "discard_debuginfo": discard_debuginfo,
+                "dst": dst,
+                "group": group,
+                "ignore_symlink_tree": ignore_symlink_tree,
+                "mode": mode,
+                "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
+                "setcap": setcap,
+                "split_debuginfo": split_debuginfo,
+                "strip_all": strip_all,
+                "text": None,
+                "transition_to_distro_platform": transition_to_distro_platform.value,
+                "user": user,
+                "xattrs": xattrs,
+                "_binaries_require_repo": binaries_require_repo.select_value,
+                "_is_macos": on_macos,
+            },
+        ),
     )
 
 def install_text(
