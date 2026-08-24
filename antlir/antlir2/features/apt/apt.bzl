@@ -35,7 +35,7 @@ def _common(action: str, *, packages: list[str | Select] | Select):
         },
         deps = {
             "suite": select({
-                "antlir//antlir/antlir2/os:debian-trixie": TRIXIE_SUITE,
+                "DEFAULT": TRIXIE_SUITE,
                 "antlir//antlir/antlir2/os:ubuntu-noble": NOBLE_SUITE,
             }),
         },
