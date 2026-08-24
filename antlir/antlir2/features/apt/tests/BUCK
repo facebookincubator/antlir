@@ -33,6 +33,8 @@ antlir2_configured_alias(
     name = "test-bash-installed-ubuntu-noble",
     actual = ":test-bash-installed",
     default_os = "ubuntu-noble",
+    # Noble does not have aarch64 packages
+    target_compatible_with = ["ovr_config//cpu:x86_64"],
 )
 
 image.layer(
