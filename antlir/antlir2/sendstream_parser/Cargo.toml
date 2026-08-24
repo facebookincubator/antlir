@@ -19,7 +19,7 @@ bytes = { version = "1.12.1", features = ["serde"] }
 derive_more = { version = "1.0.0", features = ["full"] }
 futures = { version = "0.3.34", features = ["async-await", "compat"] }
 hex = { version = "0.4.3", features = ["alloc"] }
-nix = { version = "0.30.1", features = ["dir", "event", "hostname", "inotify", "ioctl", "mman", "mount", "net", "poll", "ptrace", "reboot", "resource", "sched", "signal", "term", "time", "user", "zerocopy"] }
+nix = { version = "0.31.3", features = ["dir", "event", "hostname", "inotify", "ioctl", "mman", "mount", "net", "poll", "ptrace", "reboot", "resource", "sched", "signal", "term", "time", "user", "zerocopy"] }
 nom = "8"
 num_enum = "0.7.6"
 serde = { version = "1.0.229", features = ["derive", "rc"], optional = true }
