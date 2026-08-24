@@ -79,7 +79,7 @@ test_variants(
         "nix",
         "rustix",
         "serde_json",
-        "whoami-1",
+        "whoami",
     ],
 )
 

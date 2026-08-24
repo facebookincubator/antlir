@@ -15,7 +15,7 @@ use rustix::fs::statfs;
 #[test]
 fn user() {
     let expected = std::env::var("TEST_USER").expect("TEST_USER not set");
-    let actual = whoami::username();
+    let actual = whoami::username().unwrap_or_else(|_| "unknown".to_owned());
     assert_eq!(expected, actual);
     let expected_uid = User::from_name(&expected)
         .expect("failed to lookup user")
