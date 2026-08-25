@@ -37,7 +37,11 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 _EXTRACT_PLUGIN = "antlir//antlir/antlir2/features/extract:extract"
 _EXTRACT_ANALYZE = "antlir//antlir/antlir2/features/extract:extract-analyze"
 
-def extract_from_layer(layer: str | Select, binaries: list[str | Select] | Select):
+def extract_from_layer(
+    layer: str | Select,
+    binaries: list[str | Select] | Select,
+    dlopen_min_priority: str | Select = "recommended",
+):
     """
     Extract a binary and all of its runtime dependencies from `layer` into the
     target layer.
@@ -59,6 +63,8 @@ def extract_from_layer(layer: str | Select, binaries: list[str | Select] | Selec
     Arguments:
         layer: antlir2 layer target to extract from
         binaries: list of file paths to extract
+        dlopen_min_priority: minimum priority for .note.dlopen libs to extract.
+            One of "required", "recommended", "suggested". Defaults to "recommended".
     """
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
@@ -71,11 +77,17 @@ def extract_from_layer(layer: str | Select, binaries: list[str | Select] | Selec
         },
         kwargs = {
             "binaries": binaries,
+            "dlopen_min_priority": dlopen_min_priority,
             "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         },
     )
 
-def extract_buck_binary(src: str | Select, dst: str | Select, strip: bool | Select = True):
+def extract_buck_binary(
+    src: str | Select,
+    dst: str | Select,
+    strip: bool | Select = True,
+    dlopen_min_priority: str | Select = "recommended",
+):
     """
     Extract a buck-built binary and all of its runtime dependencies into the
     target layer.
@@ -97,6 +109,8 @@ def extract_buck_binary(src: str | Select, dst: str | Select, strip: bool | Sele
         src: binary target
         dst: path to install it to in the image
         strip: strip debug info from the binary and discard it
+        dlopen_min_priority: minimum priority for .note.dlopen libs to extract.
+            One of "required", "recommended", "suggested". Defaults to "recommended".
     """
     return ParseTimeFeature(
         feature_type = "extract_buck_binary",
@@ -114,6 +128,7 @@ def extract_buck_binary(src: str | Select, dst: str | Select, strip: bool | Sele
             ),
         },
         kwargs = {
+            "dlopen_min_priority": dlopen_min_priority,
             "dst": dst,
             "strip": strip,
             "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -126,17 +141,14 @@ def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
     manifest = ctx.actions.declare_output("manifest.json")
     libs_dir = ctx.actions.declare_output("libs_dir", dir = True)
 
-    binary_args = []
-    for b in ctx.attrs.binaries:
-        binary_args.append(cmd_args(b, format = "--binary={}"))
-
     ctx.actions.run(
         cmd_args(
             ctx.attrs._analyze[RunInfo],
             "from-layer",
             cmd_args(layer_subvol, format = "--layer={}"),
-            binary_args,
+            cmd_args(ctx.attrs.binaries, format = "--binary={}"),
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+            cmd_args(ctx.attrs.dlopen_min_priority, format = "--dlopen-min-priority={}"),
             cmd_args(manifest.as_output(), format = "--manifest={}"),
             cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
         ),
@@ -163,6 +175,7 @@ extract_from_layer_rule = new_feature_rule(
     impl = _extract_from_layer_impl,
     attrs = {
         "binaries": attrs.list(attrs.string(), default = []),
+        "dlopen_min_priority": attrs.string(default = "recommended"),
         "layer": attrs.dep(providers = [LayerInfo]),
         "target_arch": attrs.string(),
         "_analyze": attrs.exec_dep(),
@@ -183,6 +196,7 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
 
     manifest = ctx.actions.declare_output("manifest.json", has_content_based_path = False)
     libs_dir = ctx.actions.declare_output("libs_dir", dir = True, has_content_based_path = False)
+
     ctx.actions.run(
         cmd_args(
             ctx.attrs._analyze[RunInfo],
@@ -190,6 +204,7 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(src, format = "--src={}"),
             cmd_args(ctx.attrs.dst, format = "--dst={}"),
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+            cmd_args(ctx.attrs.dlopen_min_priority, format = "--dlopen-min-priority={}"),
             cmd_args(manifest.as_output(), format = "--manifest={}"),
             cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
             hidden = ctx.attrs.src[RunInfo],
@@ -219,6 +234,7 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
 extract_buck_binary_rule = new_feature_rule(
     impl = _extract_buck_binary_impl,
     attrs = {
+        "dlopen_min_priority": attrs.string(default = "recommended"),
         "dst": attrs.option(attrs.string(), default = None),
         "src": attrs.dep(providers = [RunInfo]),
         "strip": attrs.bool(default = True),

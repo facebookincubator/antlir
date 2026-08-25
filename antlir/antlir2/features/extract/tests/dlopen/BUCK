@@ -1,0 +1,184 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load(":add_dlopen_note.bzl", "add_dlopen_note")
+
+oncall("antlir")
+
+rust_binary(
+    name = "empty-binary",
+    srcs = ["main.rs"],
+    unittests = False,
+)
+
+rust_binary(
+    name = "dlopen-notes",
+    srcs = ["dlopen_notes.rs"],
+    crate_root = "dlopen_notes.rs",
+    deps = [
+        "anyhow",
+        "byteorder",
+        "clap",
+        "goblin",
+        "serde",
+        "serde_json",
+        "tempfile",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
+
+add_dlopen_note(
+    name = "dlopen_binary",
+    src = ":empty-binary",
+    out = "dlopen_binary",
+    # Generic: dict of section_name -> list of entries, forwarded to add_notes.rs.
+    # Key is section name (configurable to test matching on note type not name).
+    # Value list tests multiple entries per section.
+    # Top-level dict itself tests repeated sections.
+    notes = {
+        ".note.dlopen": [
+            {
+                "description": "required dep",
+                "feature": "prio-required",
+                "priority": "required",
+                "soname": ["libz.so.1"],
+            },
+            {
+                "description": "recommended dep",
+                "feature": "prio-recommended",
+                "priority": "recommended",
+                "soname": ["libbz2.so.1"],
+            },
+        ],
+        ".note.foobar": [
+            {
+                "description": "suggested dep",
+                "feature": "prio-suggested",
+                "priority": "suggested",
+                "soname": ["liblzma.so.5"],
+            },
+            {
+                "description": "feature a dep",
+                "feature": "feature-a",
+                "priority": "recommended",
+                "soname": ["libcap.so.2"],
+            },
+            {
+                "description": "feature b dep",
+                "feature": "feature-b",
+                "priority": "recommended",
+                "soname": ["libffi.so.6"],
+            },
+        ],
+    },
+)
+
+# One test that confirms extract_from_layer behavior, since that is harder to
+# control, all the extra filtering behaivor is tested with a buck-built binary
+image.layer(
+    name = "extract-shutdown",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/lib/systemd"),
+        feature.extract_from_layer(
+            binaries = [
+                "/usr/lib/systemd/systemd-shutdown",
+            ],
+            layer = "//antlir/antlir2/features/extract/tests:binaries-clone-src",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_sh_test(
+    name = "extract-shutdown-test",
+    layer = ":extract-shutdown",
+    test = "test-extract-shutdown.sh",
+)
+
+image.layer(
+    name = "extract-buck-dlopen-default",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dst = "/usr/bin/test-dlopen-binary",
+            # default is recommended: should get required + recommended, not suggested
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-default-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["liblzma.so"],
+            "present": ["libbz2.so", "libcap.so", "libffi.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-default",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)
+
+image.layer(
+    name = "extract-buck-dlopen-required",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dlopen_min_priority = "required",
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-required-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["libbz2.so", "libcap.so", "libffi.so", "liblzma.so"],
+            "present": ["libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-required",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)
+
+image.layer(
+    name = "extract-buck-dlopen-suggested",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dlopen_min_priority = "suggested",
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-suggested-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": [],
+            "present": ["libbz2.so", "libcap.so", "libffi.so", "liblzma.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-suggested",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)

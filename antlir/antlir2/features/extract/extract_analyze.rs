@@ -23,6 +23,7 @@ use clap::Parser;
 use extract::Manifest;
 use extract::ManifestEntry;
 use goblin::elf::Elf;
+use serde::Deserialize;
 use tracing::debug;
 use tracing::trace;
 use tracing::warn;
@@ -51,6 +52,14 @@ struct BuckBinaryArgs {
     manifest: PathBuf,
     #[clap(long)]
     libs_dir: PathBuf,
+    #[clap(flatten)]
+    dlopen_args: DlopenArgs,
+}
+
+#[derive(Debug, clap::Args)]
+struct DlopenArgs {
+    #[clap(long, default_value_t)]
+    dlopen_min_priority: DlopenPriority,
 }
 
 #[derive(Debug, Parser)]
@@ -65,6 +74,8 @@ struct FromLayerArgs {
     manifest: PathBuf,
     #[clap(long)]
     libs_dir: PathBuf,
+    #[clap(flatten)]
+    dlopen_args: DlopenArgs,
 }
 
 fn write_manifest(entries: BTreeSet<ManifestEntry>, path: &Path) -> Result<()> {
@@ -164,6 +175,118 @@ struct DepsCollector<'a> {
     interpreter_dir: Option<&'a Path>,
     visited: HashSet<PathBuf>,
     result: Vec<PathBuf>,
+    dlopen_filter: &'a DlopenFilter,
+}
+
+const NT_FDO_DLOPEN: u32 = 0x407c0c0a;
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Default,
+    Deserialize,
+    strum::Display,
+    clap::ValueEnum
+)]
+#[serde(rename_all = "lowercase")]
+/// The declared priority for a dlopen note dep
+///
+/// These are the only legal values according to the doc, so rejecting anything
+/// outside of this is correct behavior
+enum DlopenPriority {
+    /// Core functionality needs the dependency, the binary will not work if it
+    /// cannot be found
+    Suggested,
+    /// Important functionality needs the dependency, the binary will work but
+    /// in most cases the dependency should be provided
+    #[default]
+    Recommended,
+    /// Core functionality needs the dependency, the binary will not work if it
+    /// cannot be found
+    Required,
+}
+
+#[derive(Debug, Clone, Default)]
+struct DlopenFilter {
+    min_priority: DlopenPriority,
+}
+
+impl DlopenFilter {
+    fn from_args(args: DlopenArgs) -> Self {
+        Self {
+            min_priority: args.dlopen_min_priority,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct DlopenNoteEntry {
+    #[serde(default)]
+    soname: Vec<String>,
+    #[serde(default)]
+    priority: Option<DlopenPriority>,
+}
+
+fn dlopen_entries_from_desc(desc: &[u8]) -> Vec<DlopenNoteEntry> {
+    let s = String::from_utf8_lossy(desc);
+    let trimmed = s.trim_matches(|c: char| c == '\0').trim();
+    if trimmed.is_empty() {
+        return Vec::new();
+    }
+    match serde_json::from_str::<Vec<DlopenNoteEntry>>(trimmed) {
+        Ok(entries) => entries,
+        Err(e) => {
+            warn!("failed to parse .note.dlopen JSON payload: {}", e);
+            Vec::new()
+        }
+    }
+}
+
+fn filter_dlopen_entries(entries: Vec<DlopenNoteEntry>, filter: &DlopenFilter) -> Vec<String> {
+    let mut sonames = Vec::new();
+    for entry in entries {
+        let Some(priority) = entry.priority else {
+            continue;
+        };
+        if priority < filter.min_priority {
+            continue;
+        }
+        sonames.extend(entry.soname);
+    }
+    sonames
+}
+
+fn extract_dlopen_sonames(
+    elf_data: &[u8],
+    elf: &Elf,
+    filter: &DlopenFilter,
+) -> Result<Vec<String>> {
+    let mut all_entries = Vec::new();
+
+    let mut iters = Vec::new();
+    if let Some(it) = elf.iter_note_headers(elf_data) {
+        iters.push(it);
+    }
+    if let Some(it) = elf.iter_note_sections(elf_data, None) {
+        iters.push(it);
+    }
+
+    for iter in iters {
+        for note_res in iter {
+            if let Ok(note) = note_res {
+                if note.n_type == NT_FDO_DLOPEN && note.name == "FDO" {
+                    all_entries.extend(dlopen_entries_from_desc(note.desc));
+                }
+            }
+        }
+    }
+
+    Ok(filter_dlopen_entries(all_entries, filter))
 }
 
 impl<'a> DepsCollector<'a> {
@@ -179,10 +302,10 @@ impl<'a> DepsCollector<'a> {
         let elf = Elf::parse(&buf)
             .with_context(|| format!("while parsing ELF {}", binary_path.display()))?;
 
-        self.collect_elf_deps(&elf, binary_path)
+        self.collect_elf_deps(&elf, binary_path, &buf)
     }
 
-    fn collect_elf_deps(&mut self, elf: &Elf, binary_path: &Path) -> Result<()> {
+    fn collect_elf_deps(&mut self, elf: &Elf, binary_path: &Path, elf_data: &[u8]) -> Result<()> {
         let arch = arch_from_elf(elf);
         let origin = binary_path.parent().unwrap_or(Path::new("/"));
 
@@ -234,6 +357,21 @@ impl<'a> DepsCollector<'a> {
             }
         }
 
+        for dlopen_soname in extract_dlopen_sonames(elf_data, elf, &self.dlopen_filter)? {
+            if let Some(resolved) = resolve_library(&dlopen_soname, &search_dirs, self.sysroot) {
+                if !self.visited.contains(&resolved) {
+                    self.result.push(resolved.clone());
+                    self.collect(&resolved)?;
+                }
+            } else {
+                warn!(
+                    soname = dlopen_soname,
+                    binary = binary_path.display().to_string(),
+                    "could not resolve dlopen shared library dependency"
+                );
+            }
+        }
+
         Ok(())
     }
 }
@@ -244,6 +382,7 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
     binary: S,
     sysroot: Option<&Path>,
     default_interpreter: &Path,
+    dlopen_filter: &DlopenFilter,
 ) -> anyhow::Result<Vec<PathBuf>> {
     let binary = Path::new(binary.as_ref());
     let binary_as_seen_from_here = match sysroot {
@@ -293,12 +432,13 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
         interpreter_dir: interpreter.parent(),
         visited: HashSet::new(),
         result: Vec::new(),
+        dlopen_filter,
     };
 
     // Process the root binary's deps from the already-parsed ELF,
     // avoiding a redundant read+parse.
     collector.visited.insert(binary.to_path_buf());
-    collector.collect_elf_deps(&elf, binary)?;
+    collector.collect_elf_deps(&elf, binary, &buf)?;
 
     let interpreter_path = interpreter.to_path_buf();
     if !collector.visited.contains(&interpreter_path) {
@@ -325,6 +465,10 @@ pub fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Binary entrypoint (analysis actions)
+// ---------------------------------------------------------------------------
+
 fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::TRACE)
@@ -340,7 +484,8 @@ fn main() -> Result<()> {
 fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
     let default_interp = default_interpreter(args.target_arch);
     let src = args.src.canonicalize()?;
-    let deps = so_dependencies(src.clone(), None, default_interp)?;
+    let dlopen_filter = DlopenFilter::from_args(args.dlopen_args);
+    let deps = so_dependencies(src.clone(), None, default_interp, &dlopen_filter)?;
 
     let mut entries = BTreeSet::new();
 
@@ -396,6 +541,7 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
         .layer
         .canonicalize()
         .context("while looking up abspath of src layer")?;
+    let dlopen_filter = DlopenFilter::from_args(args.dlopen_args);
 
     let mut entries = BTreeSet::new();
     let mut added_relpaths = HashSet::new();
@@ -478,9 +624,14 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
             .strip_prefix(&src_layer)
             .unwrap_or(real_binary.as_path());
         all_deps.extend(
-            so_dependencies(real_binary_in_layer, Some(&src_layer), default_interp)?
-                .into_iter()
-                .map(|path| ensure_usr(&path).to_path_buf()),
+            so_dependencies(
+                real_binary_in_layer,
+                Some(&src_layer),
+                default_interp,
+                &dlopen_filter,
+            )?
+            .into_iter()
+            .map(|path| ensure_usr(&path).to_path_buf()),
         );
     }
 
