@@ -9,7 +9,8 @@ oncall("antlir")
 
 image.layer(
     name = "qemu-tools-rc",
-    features = [
+    features = [feature.ensure_dirs_exist(dirs = "/share")]
+    + [
         feature.clone(
             path = path,
             src_layer = internal_external(
@@ -22,16 +23,6 @@ image.layer(
             "/libexec",
             "/share/qemu",
         ]
-    ]
-    + [
-        feature.ensure_dirs_exist(dirs = "/share"),
-        feature.clone(
-            path = "/bin/swtpm",
-            src_layer = internal_external(
-                fb = "//antlir/third-party/swtpm:swtpm",
-                oss = "//third-party/antlir/swtpm:swtpm",
-            ),
-        ),
     ],
 )
 
@@ -59,7 +50,6 @@ alias(
         visibility = ["PUBLIC"],
     )
     for binary in [
-        "/bin/swtpm",
         "/bin/qemu-img",
         "/bin/qemu-system-aarch64",
         "/bin/qemu-system-x86_64",
