@@ -13,6 +13,8 @@ use std::sync::Mutex;
 
 use buck_label::Label;
 use libloading::Library;
+use libloading::os::unix::RTLD_GLOBAL;
+use libloading::os::unix::RTLD_NOW;
 
 use crate::Error;
 use crate::Result;
@@ -63,7 +65,11 @@ impl PluginArg {
 
 impl Plugin {
     fn register(src: String, dispatch: tracing::Dispatch) -> Result<&'static Self> {
-        let lib: Box<Library> = Box::new(libloading::Library::new(&src)?);
+        // Rust's runtime state must be shared by every plugin, so load with RLTD_GLOBAL to
+        // ensure a single copy.
+        let lib: Box<Library> = Box::new(
+            libloading::os::unix::Library::open(Some(&src), RTLD_NOW | RTLD_GLOBAL)?.into(),
+        );
 
         let label: libloading::Symbol<fn() -> &'static str> = unsafe { lib.get(b"label\0")? };
         let label = label();
