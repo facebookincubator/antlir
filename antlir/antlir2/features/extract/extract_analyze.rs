@@ -23,7 +23,11 @@ use clap::Parser;
 use extract::Manifest;
 use extract::ManifestEntry;
 use goblin::elf::Elf;
+use json_arg::Json;
+use regex::Regex;
 use serde::Deserialize;
+use serde_with::DisplayFromStr;
+use serde_with::serde_as;
 use tracing::debug;
 use tracing::trace;
 use tracing::warn;
@@ -56,10 +60,18 @@ struct BuckBinaryArgs {
     dlopen_args: DlopenArgs,
 }
 
+#[serde_as]
+#[derive(Debug, Clone, Deserialize)]
+struct FeaturesAllowlist(#[serde_as(as = "Vec<(DisplayFromStr, _)>")] Vec<(Regex, Vec<String>)>);
+
 #[derive(Debug, clap::Args)]
 struct DlopenArgs {
     #[clap(long, default_value_t)]
     dlopen_min_priority: DlopenPriority,
+    #[clap(long, default_value = "[]")]
+    dlopen_features_allow: Json<FeaturesAllowlist>,
+    #[clap(long, default_value = "[]")]
+    dlopen_features_deny: Json<FeaturesAllowlist>,
 }
 
 #[derive(Debug, Parser)]
@@ -212,15 +224,41 @@ enum DlopenPriority {
 }
 
 #[derive(Debug, Clone, Default)]
-struct DlopenFilter {
+pub(crate) struct DlopenFilter {
     min_priority: DlopenPriority,
+    allow: Vec<(Regex, Vec<String>)>,
+    deny: Vec<(Regex, Vec<String>)>,
 }
 
 impl DlopenFilter {
-    fn from_args(args: DlopenArgs) -> Self {
-        Self {
+    fn from_args(args: DlopenArgs) -> Result<Self> {
+        Ok(Self {
             min_priority: args.dlopen_min_priority,
+            allow: args.dlopen_features_allow.into_inner().0,
+            deny: args.dlopen_features_deny.into_inner().0,
+        })
+    }
+
+    fn allowed_features_for(&self, binary_path: &Path) -> HashSet<String> {
+        let path_str = binary_path.to_string_lossy();
+        let mut allowed = HashSet::new();
+        for (pattern, features) in &self.allow {
+            if pattern.is_match(&path_str) {
+                allowed.extend(features.iter().cloned());
+            }
         }
+        allowed
+    }
+
+    fn denied_features_for(&self, binary_path: &Path) -> HashSet<String> {
+        let path_str = binary_path.to_string_lossy();
+        let mut denied = HashSet::new();
+        for (pattern, features) in &self.deny {
+            if pattern.is_match(&path_str) {
+                denied.extend(features.iter().cloned());
+            }
+        }
+        denied
     }
 }
 
@@ -230,6 +268,8 @@ struct DlopenNoteEntry {
     soname: Vec<String>,
     #[serde(default)]
     priority: Option<DlopenPriority>,
+    #[serde(default)]
+    feature: Option<String>,
 }
 
 fn dlopen_entries_from_desc(desc: &[u8]) -> Vec<DlopenNoteEntry> {
@@ -247,9 +287,32 @@ fn dlopen_entries_from_desc(desc: &[u8]) -> Vec<DlopenNoteEntry> {
     }
 }
 
-fn filter_dlopen_entries(entries: Vec<DlopenNoteEntry>, filter: &DlopenFilter) -> Vec<String> {
+fn filter_dlopen_entries(
+    entries: Vec<DlopenNoteEntry>,
+    filter: &DlopenFilter,
+    binary_path: &Path,
+) -> Vec<String> {
+    let allowed = filter.allowed_features_for(binary_path);
+    let denied = filter.denied_features_for(binary_path);
+
     let mut sonames = Vec::new();
     for entry in entries {
+        // Deny takes precedence: if feature matches denylist, skip
+        if let Some(ref feat) = entry.feature {
+            if denied.contains(feat) {
+                continue;
+            }
+        }
+
+        // Allowlist is union + precedence over priority
+        if let Some(ref feat) = entry.feature {
+            if allowed.contains(feat) {
+                sonames.extend(entry.soname);
+                continue;
+            }
+        }
+
+        // Fall back to priority filtering
         let Some(priority) = entry.priority else {
             continue;
         };
@@ -265,6 +328,7 @@ fn extract_dlopen_sonames(
     elf_data: &[u8],
     elf: &Elf,
     filter: &DlopenFilter,
+    binary_path: &Path,
 ) -> Result<Vec<String>> {
     let mut all_entries = Vec::new();
 
@@ -286,7 +350,7 @@ fn extract_dlopen_sonames(
         }
     }
 
-    Ok(filter_dlopen_entries(all_entries, filter))
+    Ok(filter_dlopen_entries(all_entries, filter, binary_path))
 }
 
 impl<'a> DepsCollector<'a> {
@@ -357,7 +421,8 @@ impl<'a> DepsCollector<'a> {
             }
         }
 
-        for dlopen_soname in extract_dlopen_sonames(elf_data, elf, &self.dlopen_filter)? {
+        for dlopen_soname in extract_dlopen_sonames(elf_data, elf, self.dlopen_filter, binary_path)?
+        {
             if let Some(resolved) = resolve_library(&dlopen_soname, &search_dirs, self.sysroot) {
                 if !self.visited.contains(&resolved) {
                     self.result.push(resolved.clone());
@@ -378,7 +443,7 @@ impl<'a> DepsCollector<'a> {
 
 /// Look up absolute paths to all (recursive) deps of this binary
 #[tracing::instrument]
-pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
+pub(crate) fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
     binary: S,
     sysroot: Option<&Path>,
     default_interpreter: &Path,
@@ -484,7 +549,7 @@ fn main() -> Result<()> {
 fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
     let default_interp = default_interpreter(args.target_arch);
     let src = args.src.canonicalize()?;
-    let dlopen_filter = DlopenFilter::from_args(args.dlopen_args);
+    let dlopen_filter = DlopenFilter::from_args(args.dlopen_args)?;
     let deps = so_dependencies(src.clone(), None, default_interp, &dlopen_filter)?;
 
     let mut entries = BTreeSet::new();
@@ -541,7 +606,7 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
         .layer
         .canonicalize()
         .context("while looking up abspath of src layer")?;
-    let dlopen_filter = DlopenFilter::from_args(args.dlopen_args);
+    let dlopen_filter = DlopenFilter::from_args(args.dlopen_args)?;
 
     let mut entries = BTreeSet::new();
     let mut added_relpaths = HashSet::new();
@@ -687,4 +752,278 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
     }
 
     write_manifest(entries, &args.manifest)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_entry(
+        soname: &str,
+        priority: Option<DlopenPriority>,
+        feature: Option<&str>,
+    ) -> DlopenNoteEntry {
+        DlopenNoteEntry {
+            soname: vec![soname.to_string()],
+            priority,
+            feature: feature.map(|f| f.to_string()),
+        }
+    }
+
+    fn filter_for(
+        min_priority: DlopenPriority,
+        allow: Vec<(&str, Vec<&str>)>,
+        deny: Vec<(&str, Vec<&str>)>,
+    ) -> DlopenFilter {
+        let allow = allow
+            .into_iter()
+            .map(|(re, feats)| {
+                (
+                    Regex::new(re).expect("valid regex"),
+                    feats.into_iter().map(|s| s.to_string()).collect(),
+                )
+            })
+            .collect();
+        let deny = deny
+            .into_iter()
+            .map(|(re, feats)| {
+                (
+                    Regex::new(re).expect("valid regex"),
+                    feats.into_iter().map(|s| s.to_string()).collect(),
+                )
+            })
+            .collect();
+        DlopenFilter {
+            min_priority,
+            allow,
+            deny,
+        }
+    }
+
+    #[test]
+    fn test_priority_filtering_default() {
+        let entries = vec![
+            make_entry(
+                "libz.so.1",
+                Some(DlopenPriority::Required),
+                Some("prio-required"),
+            ),
+            make_entry(
+                "libbz2.so.1",
+                Some(DlopenPriority::Recommended),
+                Some("prio-recommended"),
+            ),
+            make_entry(
+                "liblzma.so.5",
+                Some(DlopenPriority::Suggested),
+                Some("prio-suggested"),
+            ),
+        ];
+        let filter = filter_for(DlopenPriority::Recommended, vec![], vec![]);
+        let binary_path = Path::new("/usr/bin/test");
+        let result = filter_dlopen_entries(entries, &filter, binary_path);
+        assert!(result.contains(&"libz.so.1".to_string()));
+        assert!(result.contains(&"libbz2.so.1".to_string()));
+        assert!(!result.contains(&"liblzma.so.5".to_string()));
+    }
+
+    #[test]
+    fn test_allow_overrides_priority() {
+        // min_priority required, but allow suggested via .*
+        let entries = vec![
+            make_entry(
+                "libz.so.1",
+                Some(DlopenPriority::Required),
+                Some("prio-required"),
+            ),
+            make_entry(
+                "liblzma.so.5",
+                Some(DlopenPriority::Suggested),
+                Some("prio-suggested"),
+            ),
+        ];
+        let filter = filter_for(
+            DlopenPriority::Required,
+            vec![(".*", vec!["prio-suggested"])],
+            vec![],
+        );
+        let binary_path = Path::new("/some/path/dlopen_binary");
+        let result = filter_dlopen_entries(entries, &filter, binary_path);
+        assert!(result.contains(&"libz.so.1".to_string()));
+        assert!(
+            result.contains(&"liblzma.so.5".to_string()),
+            "allowlist should include suggested despite required filter"
+        );
+    }
+
+    #[test]
+    fn test_allow_specific_regex_matching() {
+        let entries = vec![
+            make_entry(
+                "libz.so.1",
+                Some(DlopenPriority::Required),
+                Some("prio-required"),
+            ),
+            make_entry(
+                "libcap.so.2",
+                Some(DlopenPriority::Recommended),
+                Some("feature-a"),
+            ),
+        ];
+        let filter = filter_for(
+            DlopenPriority::Required,
+            vec![("dlopen_binary", vec!["feature-a"])],
+            vec![],
+        );
+        let binary_path = Path::new("/buck-out/v2/gen/fbcode/antlir/dlopen_binary");
+        let result = filter_dlopen_entries(entries, &filter, binary_path);
+        assert!(result.contains(&"libz.so.1".to_string()));
+        assert!(result.contains(&"libcap.so.2".to_string()));
+    }
+
+    #[test]
+    fn test_allow_union_multiple_regexes() {
+        let entries = vec![
+            make_entry(
+                "libz.so.1",
+                Some(DlopenPriority::Required),
+                Some("prio-required"),
+            ),
+            make_entry(
+                "libcap.so.2",
+                Some(DlopenPriority::Recommended),
+                Some("feature-a"),
+            ),
+            make_entry(
+                "libffi.so.6",
+                Some(DlopenPriority::Recommended),
+                Some("feature-b"),
+            ),
+        ];
+        let filter = filter_for(
+            DlopenPriority::Required,
+            vec![("dlopen", vec!["feature-a"]), ("binary", vec!["feature-b"])],
+            vec![],
+        );
+        let binary_path = Path::new("/path/to/dlopen_binary");
+        let result = filter_dlopen_entries(entries, &filter, binary_path);
+        assert!(result.contains(&"libz.so.1".to_string()));
+        assert!(result.contains(&"libcap.so.2".to_string()));
+        assert!(result.contains(&"libffi.so.6".to_string()));
+    }
+
+    #[test]
+    fn test_deny_overrides_priority() {
+        let entries = vec![
+            make_entry(
+                "libz.so.1",
+                Some(DlopenPriority::Required),
+                Some("prio-required"),
+            ),
+            make_entry(
+                "libbz2.so.1",
+                Some(DlopenPriority::Recommended),
+                Some("feature-b"),
+            ),
+            make_entry(
+                "libcap.so.2",
+                Some(DlopenPriority::Recommended),
+                Some("feature-a"),
+            ),
+        ];
+        let filter = filter_for(
+            DlopenPriority::Recommended,
+            vec![],
+            vec![(".*", vec!["feature-b"])],
+        );
+        let binary_path = Path::new("/usr/bin/test");
+        let result = filter_dlopen_entries(entries, &filter, binary_path);
+        assert!(result.contains(&"libz.so.1".to_string()));
+        assert!(result.contains(&"libcap.so.2".to_string()));
+        assert!(
+            !result.contains(&"libbz2.so.1".to_string()),
+            "denylist should exclude even when priority matches"
+        );
+    }
+
+    #[test]
+    fn test_deny_precedence_over_allow() {
+        let entries = vec![
+            make_entry(
+                "libz.so.1",
+                Some(DlopenPriority::Required),
+                Some("prio-required"),
+            ),
+            make_entry(
+                "libcap.so.2",
+                Some(DlopenPriority::Recommended),
+                Some("feature-a"),
+            ),
+            make_entry(
+                "liblzma.so.5",
+                Some(DlopenPriority::Suggested),
+                Some("prio-suggested"),
+            ),
+        ];
+        let filter = filter_for(
+            DlopenPriority::Required,
+            vec![(".*", vec!["feature-a", "prio-suggested"])],
+            vec![(".*", vec!["feature-a"])],
+        );
+        let binary_path = Path::new("/path/dlopen_binary");
+        let result = filter_dlopen_entries(entries, &filter, binary_path);
+        assert!(result.contains(&"libz.so.1".to_string()));
+        assert!(result.contains(&"liblzma.so.5".to_string()));
+        assert!(
+            !result.contains(&"libcap.so.2".to_string()),
+            "deny should take precedence over allow"
+        );
+    }
+
+    #[test]
+    fn test_allowed_denied_features_for_union() {
+        let filter = filter_for(
+            DlopenPriority::Recommended,
+            vec![
+                ("bin_a", vec!["feature-a"]),
+                ("bin", vec!["feature-b"]),
+                (".*", vec!["feature-c"]),
+            ],
+            vec![(".*", vec!["denied-1"]), ("specific", vec!["denied-2"])],
+        );
+        // binary path matches "bin", "bin_a", and ".*" for allow
+        let binary_path = Path::new("/usr/bin/bin_a_test");
+        let allowed = filter.allowed_features_for(binary_path);
+        assert!(allowed.contains("feature-a"));
+        assert!(allowed.contains("feature-b"));
+        assert!(allowed.contains("feature-c"));
+
+        // denied: .* matches, specific does not match this path unless contains "specific"
+        let denied = filter.denied_features_for(binary_path);
+        assert!(denied.contains("denied-1"));
+        assert!(!denied.contains("denied-2"));
+
+        let binary_path2 = Path::new("/specific/path");
+        let denied2 = filter.denied_features_for(binary_path2);
+        assert!(denied2.contains("denied-1"));
+        assert!(denied2.contains("denied-2"));
+    }
+
+    #[test]
+    fn test_entry_without_feature_uses_priority_only() {
+        // Entry without feature should be filtered only by priority, not allow/deny
+        let entries = vec![
+            make_entry("libz.so.1", Some(DlopenPriority::Required), None),
+            make_entry("libbz2.so.1", Some(DlopenPriority::Recommended), None),
+        ];
+        let filter = filter_for(
+            DlopenPriority::Required,
+            vec![(".*", vec!["some-feature"])],
+            vec![(".*", vec!["other"])],
+        );
+        let binary_path = Path::new("/any");
+        let result = filter_dlopen_entries(entries, &filter, binary_path);
+        assert!(result.contains(&"libz.so.1".to_string()));
+        assert!(!result.contains(&"libbz2.so.1".to_string()));
+    }
 }

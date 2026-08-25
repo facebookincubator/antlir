@@ -41,6 +41,8 @@ def extract_from_layer(
     layer: str | Select,
     binaries: list[str | Select] | Select,
     dlopen_min_priority: str | Select = "recommended",
+    dlopen_features_allow: dict[str, list[str]] | Select = {},
+    dlopen_features_deny: dict[str, list[str]] | Select = {},
 ):
     """
     Extract a binary and all of its runtime dependencies from `layer` into the
@@ -65,6 +67,13 @@ def extract_from_layer(
         binaries: list of file paths to extract
         dlopen_min_priority: minimum priority for .note.dlopen libs to extract.
             One of "required", "recommended", "suggested". Defaults to "recommended".
+        dlopen_features_allow: dict of regex -> list of features to allow.
+            Regex is matched against the file path of the binary that declares the dlopen dep.
+            If a dep's feature matches an allowed feature for its binary, it is included
+            regardless of priority (union with priority filter).
+        dlopen_features_deny: dict of regex -> list of features to deny.
+            If a dep's feature matches a denied feature, it is excluded even if its
+            priority would otherwise include it. Deny takes precedence over allow and priority.
     """
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
@@ -77,6 +86,8 @@ def extract_from_layer(
         },
         kwargs = {
             "binaries": binaries,
+            "dlopen_features_allow": dlopen_features_allow,
+            "dlopen_features_deny": dlopen_features_deny,
             "dlopen_min_priority": dlopen_min_priority,
             "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         },
@@ -87,6 +98,8 @@ def extract_buck_binary(
     dst: str | Select,
     strip: bool | Select = True,
     dlopen_min_priority: str | Select = "recommended",
+    dlopen_features_allow: dict[str, list[str]] | Select = {},
+    dlopen_features_deny: dict[str, list[str]] | Select = {},
 ):
     """
     Extract a buck-built binary and all of its runtime dependencies into the
@@ -111,6 +124,9 @@ def extract_buck_binary(
         strip: strip debug info from the binary and discard it
         dlopen_min_priority: minimum priority for .note.dlopen libs to extract.
             One of "required", "recommended", "suggested". Defaults to "recommended".
+        dlopen_features_allow: dict of regex -> list of features to allow.
+            Regex is matched against the file path of the binary that declares the dlopen dep.
+        dlopen_features_deny: dict of regex -> list of features to deny.
     """
     return ParseTimeFeature(
         feature_type = "extract_buck_binary",
@@ -128,6 +144,8 @@ def extract_buck_binary(
             ),
         },
         kwargs = {
+            "dlopen_features_allow": dlopen_features_allow,
+            "dlopen_features_deny": dlopen_features_deny,
             "dlopen_min_priority": dlopen_min_priority,
             "dst": dst,
             "strip": strip,
@@ -149,6 +167,8 @@ def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(ctx.attrs.binaries, format = "--binary={}"),
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(ctx.attrs.dlopen_min_priority, format = "--dlopen-min-priority={}"),
+            cmd_args(json.encode(list(ctx.attrs.dlopen_features_allow.items())), format = "--dlopen-features-allow={}"),
+            cmd_args(json.encode(list(ctx.attrs.dlopen_features_deny.items())), format = "--dlopen-features-deny={}"),
             cmd_args(manifest.as_output(), format = "--manifest={}"),
             cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
         ),
@@ -175,6 +195,16 @@ extract_from_layer_rule = new_feature_rule(
     impl = _extract_from_layer_impl,
     attrs = {
         "binaries": attrs.list(attrs.string(), default = []),
+        "dlopen_features_allow": attrs.dict(
+            attrs.string(),
+            attrs.list(attrs.string()),
+            default = {},
+        ),
+        "dlopen_features_deny": attrs.dict(
+            attrs.string(),
+            attrs.list(attrs.string()),
+            default = {},
+        ),
         "dlopen_min_priority": attrs.string(default = "recommended"),
         "layer": attrs.dep(providers = [LayerInfo]),
         "target_arch": attrs.string(),
@@ -205,6 +235,8 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(ctx.attrs.dst, format = "--dst={}"),
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(ctx.attrs.dlopen_min_priority, format = "--dlopen-min-priority={}"),
+            cmd_args(json.encode(list(ctx.attrs.dlopen_features_allow.items())), format = "--dlopen-features-allow={}"),
+            cmd_args(json.encode(list(ctx.attrs.dlopen_features_deny.items())), format = "--dlopen-features-deny={}"),
             cmd_args(manifest.as_output(), format = "--manifest={}"),
             cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
             hidden = ctx.attrs.src[RunInfo],
@@ -234,6 +266,16 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
 extract_buck_binary_rule = new_feature_rule(
     impl = _extract_buck_binary_impl,
     attrs = {
+        "dlopen_features_allow": attrs.dict(
+            attrs.string(),
+            attrs.list(attrs.string()),
+            default = {},
+        ),
+        "dlopen_features_deny": attrs.dict(
+            attrs.string(),
+            attrs.list(attrs.string()),
+            default = {},
+        ),
         "dlopen_min_priority": attrs.string(default = "recommended"),
         "dst": attrs.option(attrs.string(), default = None),
         "src": attrs.dep(providers = [RunInfo]),

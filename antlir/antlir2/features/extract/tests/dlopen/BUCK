@@ -182,3 +182,203 @@ image_rust_test(
         "serde_json",
     ],
 )
+
+# -- allowlist tests --
+
+image.layer(
+    name = "extract-buck-dlopen-allow-suggested",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dlopen_features_allow = {
+                ".*": ["prio-suggested"],
+            },
+            dlopen_min_priority = "required",
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-allow-suggested-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["libbz2.so", "libcap.so", "libffi.so"],
+            "present": ["liblzma.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-allow-suggested",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)
+
+image.layer(
+    name = "extract-buck-dlopen-allow-feature-a",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dlopen_features_allow = {
+                "dlopen_binary": ["feature-a"],
+            },
+            dlopen_min_priority = "required",
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-allow-feature-a-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["libbz2.so", "libffi.so", "liblzma.so"],
+            "present": ["libcap.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-allow-feature-a",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)
+
+image.layer(
+    name = "extract-buck-dlopen-allow-union",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dlopen_features_allow = {
+                "binary": ["feature-b"],
+                "dlopen": ["feature-a"],
+            },
+            dlopen_min_priority = "required",
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-allow-union-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["libbz2.so", "liblzma.so"],
+            "present": ["libcap.so", "libffi.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-allow-union",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)
+
+# -- denylist tests --
+
+image.layer(
+    name = "extract-buck-dlopen-deny-feature-b",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            # default recommended: required + recommended, not suggested
+            dlopen_features_deny = {
+                ".*": ["feature-b"],
+            },
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-deny-feature-b-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["libffi.so", "liblzma.so"],
+            "present": ["libbz2.so", "libcap.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-deny-feature-b",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)
+
+image.layer(
+    name = "extract-buck-dlopen-deny-precedence",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dlopen_features_allow = {
+                ".*": ["feature-a", "prio-suggested"],
+            },
+            dlopen_features_deny = {
+                ".*": ["feature-a"],
+            },
+            dlopen_min_priority = "required",
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-deny-precedence-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["libbz2.so", "libcap.so", "libffi.so"],
+            "present": ["liblzma.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-deny-precedence",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)
+
+image.layer(
+    name = "extract-buck-dlopen-allow-override-priority",
+    features = [
+        feature.extract_buck_binary(
+            src = ":dlopen_binary",
+            dlopen_features_allow = {
+                ".*": ["prio-recommended", "feature-a"],
+            },
+            dlopen_min_priority = "required",
+            dst = "/usr/bin/test-filter-binary",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image_rust_test(
+    name = "extract-buck-dlopen-allow-override-priority-test",
+    srcs = ["check_dso.rs"],
+    crate_root = "check_dso.rs",
+    env = {
+        "DSO_CHECK": json.encode({
+            "absent": ["libffi.so", "liblzma.so"],
+            "present": ["libbz2.so", "libcap.so", "libz.so"],
+        }),
+    },
+    layer = ":extract-buck-dlopen-allow-override-priority",
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)

@@ -41,6 +41,7 @@ fn try_unmount() {
             );
         }
     }
+    // Best-effort for gvfs
     let _ = std::process::Command::new("umount")
         .arg("/mnt/gvfs")
         .output();
