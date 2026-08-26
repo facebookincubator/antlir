@@ -86,19 +86,55 @@ feature.new(
                 ]
             ),
         }),
-        select({
-            "//antlir/antlir2/os/package_manager:package_manager[apt]": None,
-            "//antlir/antlir2/os:centos8": None,
-            "//antlir/antlir2/os:rhel8": None,
-            "//antlir/antlir2/os:rhel8.8": None,
-            "DEFAULT": feature.rpms_install(
-                rpms = [
-                    "erofs-utils",
-                ]
-            ),
-        }),
+        ":erofs-utils",
         ":btrfs-progs",
     ],
+    visibility = [],
+)
+
+# el9 only ever shipped erofs-utils 1.7.1, whose buffer-block allocator is
+# quadratic in image size: placing a file's inlined tail scans every metadata
+# block allocated so far looking for one with room. Upstream fixed it in v1.8.6
+# by indexing those blocks by free space (erofs-utils commits a42dc09 +
+# d97c001), which took their 1.28M-inode uncompressed benchmark from 36m29s to
+# 1m14s at the same image size. Build from third-party so we get the fix
+# without waiting on an el9 rebuild.
+feature.new(
+    name = "erofs-utils",
+    features = internal_external(
+        # Same platform matrix as the OSS branch below, so this is only a swap
+        # of which mkfs.erofs gets installed -- never a change to *where* one
+        # is available. apt platforms already get erofs-utils from the
+        # apt_install above, and el8 has no erofs-utils at all.
+        fb = [
+            select({
+                "//antlir/antlir2/os/package_manager:package_manager[apt]": None,
+                "//antlir/antlir2/os:centos8": None,
+                "//antlir/antlir2/os:rhel8": None,
+                "//antlir/antlir2/os:rhel8.8": None,
+                "DEFAULT": [
+                    feature.ensure_dirs_exist(dirs = "/usr/local/bin"),
+                    feature.install(
+                        src = "fbsource//third-party/erofs-utils:mkfs.erofs",
+                        dst = "/usr/local/bin/mkfs.erofs",
+                    ),
+                ],
+            }),
+        ],
+        oss = [
+            select({
+                "//antlir/antlir2/os/package_manager:package_manager[apt]": None,
+                "//antlir/antlir2/os:centos8": None,
+                "//antlir/antlir2/os:rhel8": None,
+                "//antlir/antlir2/os:rhel8.8": None,
+                "DEFAULT": feature.rpms_install(
+                    rpms = [
+                        "erofs-utils",
+                    ]
+                ),
+            }),
+        ],
+    ),
     visibility = [],
 )
 
