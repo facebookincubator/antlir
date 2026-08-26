@@ -16,6 +16,7 @@
 
 use std::borrow::Cow;
 use std::ffi::OsStr;
+use std::ops::Deref;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
