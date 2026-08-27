@@ -142,7 +142,7 @@ _genrule_in_image = rule(
 
 _genrule_in_image_macro = rule_with_default_target_platform(_genrule_in_image)
 
-def genrule_in_image(*, name: str, default_os: str | None = None, rootless: bool | None = None, **kwargs):
+def genrule_in_image(*, name: str, default_os: str | None = None, rootless: bool | None = None, exec_compatible_with = None, **kwargs):
     default_os = default_os or get_default_os_for_package()
     if rootless == None:
         rootless = get_antlir2_rootless()
@@ -151,6 +151,7 @@ def genrule_in_image(*, name: str, default_os: str | None = None, rootless: bool
     if not rootless:
         labels = selects.apply(labels, lambda labels: list(labels or []) + ["uses_sudo"])
 
-    _genrule_in_image_macro(
-        name = name, default_os = default_os, rootless = rootless, labels = labels, exec_compatible_with = ["prelude//platforms:may_run_local"], **kwargs
-    )
+    if exec_compatible_with == None:
+        exec_compatible_with = ["prelude//platforms:may_run_local"]
+
+    _genrule_in_image_macro(name = name, default_os = default_os, rootless = rootless, labels = labels, exec_compatible_with = exec_compatible_with, **kwargs)
