@@ -66,28 +66,30 @@ impl antlir2_compile::CompileFeature for EnsureDirExists {
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let dst = ctx.dst_path(&self.dir)?;
         tracing::trace!("creating {}", dst.display());
-        match std::fs::create_dir(&dst) {
-            Ok(_) => {
-                let uid = ctx.uid(&self.user)?;
-                let gid = ctx.gid(&self.group)?;
-                chown(&dst, Some(uid.into()), Some(gid.into()))?;
-                std::fs::set_permissions(&dst, Permissions::from_mode(self.mode.0))?;
-                for (key, val) in &self.xattrs {
-                    xattr::set(&dst, key, val.as_bytes())?;
-                }
-            }
-            Err(e) => match e.kind() {
+        let created = if dst.try_exists()? {
+            false
+        } else {
+            match std::fs::create_dir(&dst) {
+                Ok(_) => true,
                 // The directory may have already been created by a concurrent [EnsureDirsExist]
                 // This is safe to ignore because the depgraph will already
                 // have validated that the ownership and modes are identical
-                std::io::ErrorKind::AlreadyExists => {
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
                     tracing::debug!(dst = dst.display().to_string(), "dir already existed");
-                    for (key, val) in &self.xattrs {
-                        xattr::set(&dst, key, val.as_bytes())?;
-                    }
+                    false
                 }
-                _ => return Err(e.into()),
-            },
+                Err(e) => return Err(e.into()),
+            }
+        };
+
+        if created {
+            let uid = ctx.uid(&self.user)?;
+            let gid = ctx.gid(&self.group)?;
+            chown(&dst, Some(uid.into()), Some(gid.into()))?;
+            std::fs::set_permissions(&dst, Permissions::from_mode(self.mode.0))?;
+        }
+        for (key, val) in &self.xattrs {
+            xattr::set(&dst, key, val.as_bytes())?;
         }
         Ok(())
     }
