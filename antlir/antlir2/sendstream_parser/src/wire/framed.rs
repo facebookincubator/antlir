@@ -102,3 +102,51 @@ impl Decoder for SendstreamDecoder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use quickcheck::quickcheck;
+
+    use super::*;
+
+    fn headers_survive_arbitrary_chunking(versions: Vec<u32>, chunk_sizes: Vec<u8>) -> bool {
+        let versions = versions.into_iter().take(32).collect::<Vec<_>>();
+        let encoded = versions
+            .iter()
+            .flat_map(|version| MAGIC_HEADER.iter().copied().chain(version.to_le_bytes()))
+            .collect::<Vec<_>>();
+        let chunk_sizes = if chunk_sizes.is_empty() {
+            vec![1]
+        } else {
+            chunk_sizes
+        };
+
+        let mut decoder = SendstreamDecoder::new();
+        let mut buffer = BytesMut::new();
+        let mut decoded = Vec::new();
+        let mut offset = 0;
+        let mut chunk_index = 0;
+        while offset < encoded.len() {
+            let chunk_len = 1 + usize::from(chunk_sizes[chunk_index % chunk_sizes.len()] % 23);
+            let end = (offset + chunk_len).min(encoded.len());
+            buffer.extend_from_slice(&encoded[offset..end]);
+            offset = end;
+            chunk_index += 1;
+
+            loop {
+                match decoder.decode(&mut buffer) {
+                    Ok(Some(Item::SendstreamStart(version))) => decoded.push(version),
+                    Ok(Some(Item::Command(_))) | Err(_) => return false,
+                    Ok(None) => break,
+                }
+            }
+        }
+
+        decoded == versions && buffer.is_empty()
+    }
+
+    #[test]
+    fn headers_survive_arbitrary_chunking_quickcheck() {
+        quickcheck(headers_survive_arbitrary_chunking as fn(Vec<u32>, Vec<u8>) -> bool);
+    }
+}

@@ -29,6 +29,7 @@ tokio-util = { version = "0.7.19", features = ["full"] }
 uuid = { version = "1.24.1", features = ["rng-getrandom", "serde", "v4", "v5", "v6", "v7", "v8"] }
 
 [dev-dependencies]
+quickcheck = "1.1"
 serde = { version = "1.0.229", features = ["derive", "rc"] }
 similar-asserts = "1.4.2"
 
