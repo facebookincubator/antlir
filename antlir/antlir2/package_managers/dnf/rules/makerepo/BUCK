@@ -16,7 +16,7 @@ rust_binary(
         "quick-xml",
         "serde",
         "serde_json",
-        "sha2",
+        "sha2-010",
     ],
 )
 
