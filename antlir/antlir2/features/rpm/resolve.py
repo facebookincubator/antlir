@@ -24,6 +24,7 @@ import libdnf
 from antlir2_features_rpm_common import (
     AntlirError,
     compute_explicitly_installed_package_names,
+    drop_stale_bdb_regions,
     enable_modules,
     LockedOutput,
     package_struct,
@@ -222,6 +223,9 @@ def base_init(spec):
 
 def driver(spec) -> None:
     assert spec["mode"] == "resolve"
+    # The parent layer was built by processes that have since exited; anything
+    # they left behind in the rpmdb stops us from opening it.
+    drop_stale_bdb_regions(spec["install_root"])
     out = LockedOutput(sys.stdout)
     base, local_rpms = base_init(spec)
     explicitly_installed_package_names = compute_explicitly_installed_package_names(

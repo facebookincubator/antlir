@@ -14,6 +14,9 @@
 # /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
 # ensure that we're using the same python that dnf itself is using
 
+import contextlib
+import glob
+import os
 import threading
 
 import dnf
@@ -22,6 +25,25 @@ from dnf.module.module_base import ModuleBase
 
 class AntlirError(Exception):
     pass
+
+
+def drop_stale_bdb_regions(install_root):
+    """
+    Berkeley DB - the only writable rpmdb backend on EL8 - records the pid of
+    every process that opens the database in shared-memory region files. Those
+    processes are long gone by the time we run: some exited in the build step
+    that produced the parent layer, others are the `rpmkeys` invocations this
+    driver makes itself. librpm's failchk still refuses to open a database whose
+    regions name a dead pid, reporting `BDB1507 Thread died in Berkeley DB
+    library` / `DB_RUNRECOVERY`, or blocking on a lock the dead pid never
+    released. The regions hold no persistent state and are recreated on the next
+    open, so drop them before opening the database. Other backends (sqlite on
+    EL9+) never create these files, so this is a no-op there.
+    """
+    for region in glob.glob(os.path.join(install_root, "var/lib/rpm", "__db.*")):
+        # the region may disappear between the glob and the unlink
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(region)
 
 
 class LockedOutput:

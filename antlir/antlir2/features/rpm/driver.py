@@ -31,6 +31,7 @@ import rpm as librpm
 from antlir2_features_rpm_common import (
     AntlirError,
     compute_explicitly_installed_package_names,
+    drop_stale_bdb_regions,
     LockedOutput,
     package_struct,
 )
@@ -266,6 +267,10 @@ def driver(spec) -> None:
     assert spec["mode"] == "run"
     assert "resolved_transaction" in spec
 
+    # The parent layer was built by processes that have since exited; anything
+    # they left behind in the rpmdb stops us from opening it.
+    drop_stale_bdb_regions(spec["install_root"])
+
     spec_backup = copy.deepcopy(spec)
     out = LockedOutput(sys.stdout)
     base, local_rpms = base_init(spec)
@@ -403,6 +408,15 @@ def driver(spec) -> None:
                 gpg_warnings[pkg].append(
                     f"failed to import gpg key ({keyfile}): {import_result.stderr.lower()}"
                 )
+
+    # Every `rpmkeys --import` above was a separate process that has now exited.
+    # Drop the regions they left behind before the signature checks below open
+    # the rpmdb in-process to read the keys that were just imported - otherwise
+    # they cannot see those keys and report every package as unsigned. Close our
+    # own handle first so the regions are not unlinked underneath it; `base._ts`
+    # is a lazy property and is transparently reopened on next use.
+    base._closeRpmDB()
+    drop_stale_bdb_regions(spec["install_root"])
 
     for pkg in base.transaction.install_set:
         # If the package comes from a repo without a GPG key, don't bother
@@ -551,6 +565,11 @@ def driver(spec) -> None:
     #    dependency will not be recorded with "user' as the install reason
     # 2) installation of a dependency in a pre-resolved transaction will be
     #    marked as "user" installed rather than "dependency"
+    # Scriptlets run by the transaction above are separate processes that may
+    # have opened the rpmdb themselves; `base.close()` released our own handle,
+    # so nothing is holding it now.
+    drop_stale_bdb_regions(spec["install_root"])
+
     base = dnf_base(spec)
     # @oss-disable[end= ]: base.fill_sack_from_repos_in_cache()
     base.fill_sack() # @oss-enable
