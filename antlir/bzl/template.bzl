@@ -27,7 +27,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 if src.basename == ctx.label.name or src.basename == ctx.label.name + ".jinja2":
                     root = src
         if not root:
-            fail("could not infer 'root' template, please set `root` attr", attr = "root")
+            fail("could not infer 'root' template, please set the `root` attr")
 
     compiled_srcs = {}
     for src in ctx.attrs.srcs:
