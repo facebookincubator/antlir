@@ -780,14 +780,11 @@ def layer(
                     "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
                 }),
             })
-            + select({
-                # arm images can be cross-built on x86_64 hosts (but not x86_64 RE
-                # workers) so we omit the CPU constraint for arm64. x86_64 targets
-                # always require an x86_64 execution platform (emulation does not
-                # work aarch64->x86_64).
-                "ovr_config//cpu:arm64": ["ovr_config//os:linux"],
-                "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64", "ovr_config//os:linux"],
-            })
+            # Local builds cross-emulate in either direction through the
+            # qemu-user binfmt handler, so no CPU constraint is needed here.
+            # RE workers have no such handler, which is why the force-remote
+            # branch above still pins the CPU to the target architecture.
+            + ["ovr_config//os:linux"]
         )
 
     return layer_rule(
