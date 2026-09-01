@@ -163,7 +163,7 @@ feature.new(
 
 image.layer(
     name = "packager-appliance.layer",
-    default_os = "centos9",
+    default_os = "centos10",
     features = [
         ":build-appliance-features",
     ],
@@ -172,7 +172,7 @@ image.layer(
 
 package.unprivileged_dir(
     name = "packager-appliance.dir",
-    default_os = "centos9",
+    default_os = "centos10",
     layer = ":packager-appliance.layer",
     visibility = ["//antlir/antlir2/antlir2_packager/facebook/..."],
 )
