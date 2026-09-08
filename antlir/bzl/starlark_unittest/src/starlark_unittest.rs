@@ -153,17 +153,14 @@ struct TestModule {
 
 impl TestModule {
     fn tests(&self) -> Vec<TestDescAndFn> {
-        let test_names = self
-            .module
-            .names()
-            .filter(|n| n.as_str().starts_with("test_"));
+        let test_names = self.module.names().filter(|n| n.starts_with("test_"));
         let tests: HashMap<String, OwnedFrozen<Value<'static>>> = test_names
             .into_iter()
             .map(|name| {
                 (
-                    name.as_str().to_string(),
+                    name.to_string(),
                     self.module
-                        .get_owned(&name)
+                        .get_owned(name)
                         .expect("couldn't get test out of module"),
                 )
             })

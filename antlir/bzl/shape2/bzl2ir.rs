@@ -480,10 +480,10 @@ fn starlark_to_ir(
         .names()
         // grab the Value that is assigned to this name from the starlark module (this is the TypeId)
         .filter_map(|n| {
-            f.get_option_ref(&n)
+            f.get_option_ref(n)
                 .ok()
                 .flatten()
-                .map(|v| (ir::TypeName::from(n.as_str()), v))
+                .map(|v| (ir::TypeName::from(n), v))
         })
         // only TypeIds matter, any other top-level variables can be safely
         // ignored for now, since they are not (directly) relevant to generated
