@@ -8,8 +8,10 @@
 #![feature(duration_constructors)]
 
 use std::fmt::Debug;
+use std::fs::OpenOptions;
 use std::io::ErrorKind;
 use std::os::unix::fs::MetadataExt as _;
+use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::fs::chown;
 use std::path::Path;
 use std::path::PathBuf;
@@ -17,6 +19,13 @@ use std::process::Command;
 
 use antlir2_rootless::Rootless;
 use clap::ValueEnum;
+use nix::fcntl::Flock;
+use nix::fcntl::FlockArg;
+use nix::libc;
+#[cfg(target_os = "linux")]
+use nix::sys::statfs::BTRFS_SUPER_MAGIC;
+#[cfg(target_os = "linux")]
+use nix::sys::statfs::statfs;
 use nix::unistd::getegid;
 use nix::unistd::geteuid;
 use tracing::trace;
@@ -28,8 +37,27 @@ mod gc;
 pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    #[error("failed to get scratch path for working volume")]
-    MkScratch(std::io::Error),
+    #[error("failed to run Eden redirect command {cmd}: {source}\nDebug info:\n{debug_info}")]
+    SpawnRedirect {
+        cmd: String,
+        debug_info: String,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("Eden redirect command failed: {cmd}\nStderr:\n{stderr}\nDebug info:\n{debug_info}")]
+    RedirectFailed {
+        cmd: String,
+        debug_info: String,
+        stderr: String,
+    },
+    #[error("failed to inspect Eden redirect at {path}")]
+    InspectRedirect {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("Eden redirect is not backed by Btrfs: {0}")]
+    RedirectNotBtrfs(PathBuf),
     #[error("failed to create working volume")]
     CreateWorkingVolume(std::io::Error),
     #[error("failed to check eden presence")]
@@ -47,39 +75,117 @@ pub struct WorkingVolume {
     path: PathBuf,
 }
 
+fn get_debug_info() -> String {
+    let mut cmd = Command::new("eden");
+    let res = match cmd.arg("rage").arg("--dry-run").output() {
+        Ok(res) => res,
+        Err(error) => return format!("Failed to run {cmd:?}: {error}"),
+    };
+    format!(
+        "\
+        Eden doctor command: {cmd}\n\
+        Eden doctor stdout:\n\
+        {stdout}\n\
+        Eden doctor stderr:\n\
+        {stderr}",
+        cmd = format_args!("{:?}", cmd),
+        stdout = String::from_utf8_lossy(&res.stdout).into_owned(),
+        stderr = String::from_utf8_lossy(&res.stderr).into_owned(),
+    )
+}
+
 const DIRNAME: &str = "antlir2-out";
+
+#[cfg(target_os = "linux")]
+fn ensure_btrfs(path: &Path) -> Result<()> {
+    let stat = statfs(path).map_err(|source| Error::InspectRedirect {
+        path: path.to_path_buf(),
+        source: source.into(),
+    })?;
+    if stat.filesystem_type() != BTRFS_SUPER_MAGIC {
+        return Err(Error::RedirectNotBtrfs(path.to_path_buf()));
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn ensure_btrfs(_path: &Path) -> Result<()> {
+    Ok(())
+}
 
 impl WorkingVolume {
     /// Ensure the [WorkingVolume] exists and is set up correctly.
     pub fn ensure() -> Result<Self> {
-        // If we're on Eden, use mkscratch to get a scratch path on local disk.
+        // If we're on Eden, create a new redirection
         // https://www.internalfb.com/intern/wiki/EdenFS/detecting-an-eden-mount/#on-linux-and-macos
-        let path = match std::fs::read_link(".eden/root") {
-            Ok(repo_root) => {
-                let output = Command::new("mkscratch")
-                    .arg("path")
-                    .arg(repo_root)
-                    .arg("--subdir")
-                    .arg(DIRNAME)
-                    .output()
-                    .map_err(Error::MkScratch)?;
-                if !output.status.success() {
-                    return Err(Error::MkScratch(std::io::Error::other(
-                        String::from_utf8_lossy(&output.stderr).into_owned(),
-                    )));
-                }
-                PathBuf::from(String::from_utf8_lossy(&output.stdout).trim().to_string())
-            }
-            Err(e) if e.kind() == ErrorKind::NotFound => {
-                trace!("no .eden: {e:?}");
-                if let Err(e) = std::fs::create_dir(DIRNAME) {
-                    if e.kind() != ErrorKind::AlreadyExists {
-                        return Err(Error::CreateWorkingVolume(e));
+        let path = match OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_DIRECTORY)
+            .open(".eden")
+        {
+            Ok(dir) => {
+                // There seems to be some racy behavior with eden adding
+                // redirects, take an exclusive lock before adding
+                let _locked_dir = Flock::lock(dir, FlockArg::LockExclusive)
+                    .map_err(|(_fd, err)| std::io::Error::from(err))?;
+                let redirect_path = Path::new(DIRNAME);
+                let path_existed = match std::fs::symlink_metadata(redirect_path) {
+                    Ok(_) => true,
+                    Err(error) if error.kind() == ErrorKind::NotFound => false,
+                    Err(source) => {
+                        return Err(Error::InspectRedirect {
+                            path: redirect_path.to_path_buf(),
+                            source,
+                        });
                     }
+                };
+                let mut cmd = Command::new("eden");
+                let res = cmd
+                    .env("EDENFSCTL_ONLY_RUST", "1")
+                    .arg("redirect")
+                    .arg("add")
+                    .arg("--strict")
+                    .arg(DIRNAME)
+                    .arg("bind")
+                    .output()
+                    .map_err(|source| Error::SpawnRedirect {
+                        cmd: format!("{:?}", cmd),
+                        debug_info: get_debug_info(),
+                        source,
+                    })?;
+                if !res.status.success() {
+                    if !path_existed {
+                        // Eden may have created the directory before failing.
+                        let _ = std::fs::remove_dir(redirect_path);
+                    }
+                    return Err(Error::RedirectFailed {
+                        cmd: format!("{:?}", cmd),
+                        debug_info: get_debug_info(),
+                        stderr: String::from_utf8_lossy(&res.stderr).into_owned(),
+                    });
                 }
-                PathBuf::from(DIRNAME)
+
+                let path = std::fs::canonicalize(redirect_path).map_err(|source| {
+                    Error::InspectRedirect {
+                        path: redirect_path.to_path_buf(),
+                        source,
+                    }
+                })?;
+                ensure_btrfs(&path)?;
+                path
             }
-            Err(e) => return Err(Error::CheckEden(e)),
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => {
+                    trace!("no .eden: {e:?}");
+                    if let Err(e) = std::fs::create_dir(DIRNAME) {
+                        if e.kind() != ErrorKind::AlreadyExists {
+                            return Err(Error::CreateWorkingVolume(e));
+                        }
+                    }
+                    PathBuf::from(DIRNAME)
+                }
+                _ => return Err(Error::CheckEden(e)),
+            },
         };
         let s = Self { path };
         let subvols_dir = s.subvols_path();
