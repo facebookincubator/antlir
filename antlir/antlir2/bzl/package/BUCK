@@ -22,12 +22,33 @@ image.layer(
             ]
         ),
     ],
+    visibility = [],
 )
 
 image_command_alias(
     name = "skopeo",
     exe = "/usr/bin/skopeo",
     layer = ":skopeo-layer",
+    rootless = True,
+    visibility = ["PUBLIC"],
+)
+
+image.layer(
+    name = "qemu-img-layer",
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "qemu-img",
+            ]
+        ),
+    ],
+    visibility = [],
+)
+
+image_command_alias(
+    name = "qemu-img",
+    exe = "/usr/bin/qemu-img",
+    layer = ":qemu-img-layer",
     rootless = True,
     visibility = ["PUBLIC"],
 )

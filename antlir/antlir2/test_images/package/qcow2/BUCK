@@ -1,0 +1,29 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/test_images/package:defs.bzl", "package_feature", "test_in_layer")
+
+oncall("antlir")
+
+package.ext4(
+    name = "test.ext4",
+    layer = "//antlir/antlir2/test_images/package:standard",
+)
+
+package.qcow2(
+    name = "test.qcow2",
+    src = ":test.ext4",
+)
+
+test_in_layer(
+    name = "test-qcow2",
+    layer_features = [
+        feature.ensure_dirs_exist(dirs = "/package"),
+        feature.install(
+            src = ":test.qcow2",
+            dst = "/package.qcow2",
+        ),
+        feature.rpms_install(rpms = ["e2fsprogs", "qemu-img"]),
+    ],
+    omit_package_features = [package_feature("hardlink_ino_eq")],
+    stub = "stub.rs",
+)

@@ -12,8 +12,10 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":attrs.bzl", "common_attrs", "default_attrs")
 load(":btrfs.bzl", "btrfs")
 load(":cfg.bzl", "package_cfg")
+load(":disk_image.bzl", "DiskImage")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":macro.bzl", "package_macro")
+load(":qcow2.bzl", "qcow2")
 load(":sendstream.bzl", "sendstream_v2")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 load(":unprivileged_dir.bzl", "unprivileged_dir")
@@ -80,6 +82,7 @@ def _generic_impl_with_layer(
     providers = [DefaultInfo(package)]
     if can_be_partition:
         providers.append(GptPartitionSource(src = package))
+        providers.append(DiskImage(src = package))
     return providers
 
 def _generic_impl(
@@ -505,6 +508,7 @@ package = struct(
     ext3 = package_macro(_ext3),
     ext4 = package_macro(_ext4),
     gpt = gpt,
+    qcow2 = qcow2,
     rpm = package_macro(_rpm, always_rootless = True),
     sendstream_v2 = sendstream_v2,
     squashfs = package_macro(_squashfs),

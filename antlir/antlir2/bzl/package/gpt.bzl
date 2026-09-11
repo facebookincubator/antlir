@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load(":disk_image.bzl", "DiskImage")
 
 GptPartitionSource = provider(fields = ["src"])
 
@@ -65,7 +66,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             sub_targets = {
                 "spec.json": [DefaultInfo(spec_json)],
             },
-        )
+        ),
+        DiskImage(src = out),
     ]
 
 _gpt = rule(

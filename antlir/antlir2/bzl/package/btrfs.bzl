@@ -8,6 +8,7 @@ load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "package_cfg")
 load(":attrs.bzl", "default_attrs")
+load(":disk_image.bzl", "DiskImage")
 load(":gpt.bzl", "GptPartitionSource")
 load(":macro.bzl", "package_macro")
 
@@ -55,6 +56,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         DefaultInfo(package),
         GptPartitionSource(src = package),
+        DiskImage(src = package),
     ]
 
 _btrfs = rule(
