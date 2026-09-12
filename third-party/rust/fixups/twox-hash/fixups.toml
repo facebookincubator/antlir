@@ -1,0 +1,16 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is dual-licensed under either the MIT license found in the
+# LICENSE-MIT file in the root directory of this source tree or the Apache
+# License, Version 2.0 found in the LICENSE-APACHE file in the root directory
+# of this source tree. You may select, at your option, one of the
+# above-listed licenses.
+
+# twox-hash 2.1 depends on rand `>=0.9, <=0.11`; reindeer's auto-narrowing
+# picks the (nonexistent) 0.11 lane, so pin the rand selected for the rest of
+# the graph. The 2.0 lane (pulled in by ruzstd) still uses rand 0.8.
+[resolver.dependencies.rand]
+narrow_to = "=0.10.2"
+
+['cfg(version = "=2.0.0")'.resolver.dependencies]
+rand.narrow_to = "=0.8.8"

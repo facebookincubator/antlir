@@ -4,13 +4,16 @@
 # LICENSE file in the root directory of this source tree.
 
 def _impl(ctx):
-    # TODO: the distro setup should work in OSS, but they require more target
-    # platform configuration that is annoying to replicate in this test, so just
-    # don't and leave it for the actual test running part of CI
-    targets = ctx.uquery().eval("set(//...) - set(//antlir/distro/...)")
-    targets = ctx.configured_targets(targets)
+    targets = ctx.uquery().eval("set(//...)")
 
     ctx.output.print("All BUCK files evaluate ({} targets)".format(len(targets)))
+
+    if ctx.cli_args.eval_only:
+        return
+
+    targets = ctx.configured_targets(targets)
+
+    ctx.output.print("All targets configure successfully")
 
     ctx.analysis(targets)
 
@@ -18,5 +21,10 @@ def _impl(ctx):
 
 test_target_graph = bxl_main(
     impl = _impl,
-    cli_args = {},
+    cli_args = {
+        "eval_only": cli_args.bool(
+            default = False,
+            doc = "Only evaluate the target graph, skipping configuration and analysis (for environments where third-party deps are not vendored)",
+        ),
+    },
 )
