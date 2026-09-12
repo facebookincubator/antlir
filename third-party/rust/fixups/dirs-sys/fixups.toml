@@ -1,0 +1,13 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is dual-licensed under either the MIT license found in the
+# LICENSE-MIT file in the root directory of this source tree or the Apache
+# License, Version 2.0 found in the LICENSE-APACHE file in the root directory
+# of this source tree. You may select, at your option, one of the
+# above-listed licenses.
+
+# dirs-sys 0.5 depends on an unbounded `windows-sys >=0.59` range, which
+# reindeer's deterministic resolver refuses to resolve on its own. Pin it to
+# the windows-sys selected for the rest of the graph.
+[resolver.dependencies.windows-sys]
+narrow_to = "=0.61.2"
