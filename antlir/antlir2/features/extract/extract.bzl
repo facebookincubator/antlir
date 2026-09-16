@@ -97,6 +97,7 @@ def extract_buck_binary(
     src: str | Select,
     dst: str | Select,
     strip: bool | Select = True,
+    strip_all: bool | Select = False,
     dlopen_min_priority: str | Select = "recommended",
     dlopen_features_allow: dict[str, list[str]] | Select = {},
     dlopen_features_deny: dict[str, list[str]] | Select = {},
@@ -122,6 +123,13 @@ def extract_buck_binary(
         src: binary target
         dst: path to install it to in the image
         strip: strip debug info from the binary and discard it
+        strip_all: when True and strip is also True, use `objcopy --strip-all`
+            instead of `--strip-debug` to also remove the `.symtab` and
+            `.strtab` sections. Since this feature discards debuginfo rather
+            than installing it to `/usr/lib/debug`, those symbols are not
+            recoverable afterwards: C++ frames in a backtrace become bare
+            addresses. Go frames are unaffected, as the Go runtime resolves
+            them from `.gopclntab`, which is not a symbol table.
         dlopen_min_priority: minimum priority for .note.dlopen libs to extract.
             One of "required", "recommended", "suggested". Defaults to "recommended".
         dlopen_features_allow: dict of regex -> list of features to allow.
@@ -149,6 +157,7 @@ def extract_buck_binary(
             "dlopen_min_priority": dlopen_min_priority,
             "dst": dst,
             "strip": strip,
+            "strip_all": strip_all,
             "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         },
     )
@@ -219,6 +228,7 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             src = ctx.attrs.src,
             objcopy = ctx.attrs._objcopy,
             debuginfo_splitter = ctx.attrs._debuginfo_splitter,
+            strip_all = ctx.attrs.strip_all,
         )
         src = split_anon_target.artifact("src")
     else:
@@ -280,6 +290,7 @@ extract_buck_binary_rule = new_feature_rule(
         "dst": attrs.option(attrs.string(), default = None),
         "src": attrs.dep(providers = [RunInfo]),
         "strip": attrs.bool(default = True),
+        "strip_all": attrs.bool(default = False),
         "target_arch": attrs.string(),
         "_analyze": attrs.exec_dep(),
         "_debuginfo_splitter": attrs.option(attrs.exec_dep(), default = None),
