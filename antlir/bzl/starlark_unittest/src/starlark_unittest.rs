@@ -160,7 +160,7 @@ impl TestModule {
                 (
                     name.to_string(),
                     self.module
-                        .get_owned(name)
+                        .get(name)
                         .expect("couldn't get test out of module"),
                 )
             })
