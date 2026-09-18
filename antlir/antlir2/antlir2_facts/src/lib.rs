@@ -304,7 +304,7 @@ impl<'db> Transaction<'db> {
 
 fn row_to_fact<F>(row: &Row) -> rusqlite::Result<F>
 where
-    F: for<'de> Fact + DeserializeOwned,
+    F: Fact + DeserializeOwned,
 {
     // We can make this strong assertion about deserialization always
     // working because we know that the databases will only ever be read by
@@ -323,14 +323,14 @@ where
 
 fn rows_to_facts<F>(rows: Rows) -> rusqlite::Result<Vec<F>>
 where
-    F: for<'de> Fact + DeserializeOwned,
+    F: Fact + DeserializeOwned,
 {
     rows.mapped(row_to_fact).collect()
 }
 
 pub struct FactIter<F>
 where
-    F: for<'de> Fact,
+    F: Fact,
 {
     iter: <Vec<F> as IntoIterator>::IntoIter,
 }
