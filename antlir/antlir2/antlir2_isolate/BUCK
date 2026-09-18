@@ -1,10 +1,16 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "get_visibility", "rust_binary", "rust_library")
 
 oncall("antlir")
 
 rust_library(
     name = "antlir2_isolate",
     srcs = glob(["src/**/*.rs"]),
+    test_visibility = get_visibility(),
+    visibility = get_visibility()
+    + [
+        # @oss-disable[end= ]: "//outsource/rust:outsource",
+        # @oss-disable[end= ]: "//outsource/rust:outsource-unittest",
+    ],
     deps = [
         "derive_more",
         "thiserror",
