@@ -56,8 +56,6 @@ pub enum Error {
         #[source]
         source: std::io::Error,
     },
-    #[error("Eden redirect is not backed by Btrfs: {0}")]
-    RedirectNotBtrfs(PathBuf),
     #[error("failed to create working volume")]
     CreateWorkingVolume(std::io::Error),
     #[error("failed to check eden presence")]
@@ -96,21 +94,24 @@ fn get_debug_info() -> String {
 
 const DIRNAME: &str = "antlir2-out";
 
+/// Whether the working volume is on Btrfs.
+///
+/// A working volume that is not Btrfs cannot hold subvolumes, so a build that
+/// needs one will fail later and say so. It is not a reason to refuse up front:
+/// the redirect is also where non-subvolume build output goes, and the
+/// non-Eden branch of [`WorkingVolume::ensure`] has never checked at all.
 #[cfg(target_os = "linux")]
-fn ensure_btrfs(path: &Path) -> Result<()> {
+fn is_btrfs(path: &Path) -> Result<bool> {
     let stat = statfs(path).map_err(|source| Error::InspectRedirect {
         path: path.to_path_buf(),
         source: source.into(),
     })?;
-    if stat.filesystem_type() != BTRFS_SUPER_MAGIC {
-        return Err(Error::RedirectNotBtrfs(path.to_path_buf()));
-    }
-    Ok(())
+    Ok(stat.filesystem_type() == BTRFS_SUPER_MAGIC)
 }
 
 #[cfg(not(target_os = "linux"))]
-fn ensure_btrfs(_path: &Path) -> Result<()> {
-    Ok(())
+fn is_btrfs(_path: &Path) -> Result<bool> {
+    Ok(true)
 }
 
 impl WorkingVolume {
@@ -171,7 +172,12 @@ impl WorkingVolume {
                         source,
                     }
                 })?;
-                ensure_btrfs(&path)?;
+                if !is_btrfs(&path)? {
+                    tracing::warn!(
+                        "working volume {} is not Btrfs; builds that need a subvolume will fail",
+                        path.display()
+                    );
+                }
                 path
             }
             Err(e) => match e.kind() {
