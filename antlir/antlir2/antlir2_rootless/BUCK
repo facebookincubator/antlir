@@ -25,6 +25,10 @@ rust_library(
 rust_binary(
     name = "unshare-userns",
     srcs = ["bin/unshare_userns.rs"],
+    visibility = [
+        "//antlir/antlir2/antlir2_rootless/facebook:",
+        "//scripts/jfincher/dirtball:",
+    ],
     deps = [
         "anyhow",
         ":antlir2_rootless",
