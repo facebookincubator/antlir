@@ -1,0 +1,274 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Definitions of third-party Rust libraries used by the OSS build.
+# The `rust/BUCK` file is generated from this manifest by reindeer
+# and is NOT committed; CI regenerates it (see .github/workflows/ci.yml).
+#
+# The direct dependency set covers everything targets in this repo
+# need, plus crates shared with the fbcode build of antlir, so the
+# generated graph stays a superset of what either consumer resolves.
+
+[package]
+name = "rust-third-party"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "top"
+path = "top/main.rs"
+test = false
+
+[dependencies]
+annotate-snippets = { version = "=0.12.16", features = ["std"] }
+anstyle-parse = { version = "=1.0.0", features = ["utf8"] }
+anyhow = { version = "=1.0.104", features = ["std"] }
+anymap3 = { version = "=1.1.0", features = ["std"] }
+arc-swap = { version = "=1.9.2", features = ["weak"], default-features = false }
+argfile = "=1.0.0"
+assert_matches = { version = "=1.5.0", default-features = false }
+async-compression = { version = "=0.4.45", features = ["brotli", "bzip2", "deflate", "gzip", "zlib", "zstd", "zstdmt"], default-features = false }
+async-condvar-fair = { version = "=1.0.1", features = ["parking_lot_0_12"], default-features = false }
+async-recursion = { version = "=1.1.1", default-features = false }
+async-scoped = { version = "=0.9.0", features = ["use-tokio"], default-features = false }
+async-stream = { version = "=0.3.6", default-features = false }
+async-trait = { version = "=0.1.92", default-features = false }
+atomic = { version = "=0.6.1", features = ["fallback"] }
+backtrace = { version = "=0.3.76", features = ["std"] }
+base64 = { version = "=0.23.1", features = ["alloc", "simd-unsafe", "std"] }
+bincode = { version = "=2.0.1", features = ["alloc", "derive", "std"] }
+bit-set = { version = "=0.11.1", features = ["std"] }
+bit-vec = { version = "=0.10.1", features = ["std"] }
+bitflags = { version = "=2.13.1", features = ["serde", "std"], default-features = false }
+blake3 = { version = "=1.8.7", features = ["mmap", "rayon", "std", "traits-preview"] }
+bon = { version = "=3.10.1", features = ["alloc", "std"] }
+bstr = { version = "=1.13.1", features = ["alloc", "serde", "std", "unicode"] }
+buck-resources = { version = "=1.0.0", default-features = false }
+bumpalo = { version = "=3.20.3", features = ["allocator_api", "collections"] }
+bytemuck = { version = "=1.25.2", features = ["const_zeroed", "derive", "extern_crate_alloc", "min_const_generics", "must_cast"], default-features = false }
+byteorder = { version = "=1.5.0", features = ["std"] }
+bytes = { version = "=1.12.1", features = ["std"] }
+bytesize = { version = "=2.7.0", features = ["std"] }
+cap-std = "=4.0.3"
+chrono = { version = "=0.4.45", features = ["alloc", "clock", "now", "std", "winapi"], default-features = false }
+clap = { version = "=4.6.6", features = ["color", "derive", "env", "error-context", "help", "std", "string", "suggestions", "unicode", "unstable-ext", "usage", "wrap_help"] }
+clap_complete = { version = "=4.6.9", features = ["unstable-dynamic"] }
+close-err = { version = "=1.0.2", default-features = false }
+colored = { version = "=3.1.1", default-features = false }
+common-path = { version = "=1.0.0", default-features = false }
+compact_str = { version = "=0.10.0", features = ["serde", "std"] }
+console = { version = "=0.16.4", features = ["alloc", "ansi-parsing", "std"] }
+const_format = "=0.2.36"
+constant_time_eq = { version = "=0.6.0", features = ["std"] }
+convert_case = { version = "=0.12.0", default-features = false }
+criterion = { version = "=0.8.2", features = ["async", "async_tokio", "cargo_bench_support", "csv_output", "plotters", "rayon"] }
+crossbeam = { version = "=0.8.5", features = ["alloc", "std"] }
+crossbeam-channel = { version = "=0.5.17", features = ["std"] }
+crossterm = { version = "=0.29.0", features = ["bracketed-paste", "derive-more", "event-stream", "events", "serde", "windows"] }
+csv = { version = "=1.4.0", default-features = false }
+ctor = { version = "=1.0.13", features = ["priority", "proc_macro", "std"] }
+dashmap = { version = "=6.2.1", default-features = false }
+debugserver-types = { version = "=0.5.0", default-features = false }
+derivative = { version = "=2.2.0", default-features = false }
+derive_more = { version = "=2.1.1", features = ["add", "add_assign", "as_ref", "constructor", "debug", "deref", "deref_mut", "display", "eq", "error", "from", "from_str", "full", "index", "index_mut", "into", "into_iterator", "is_variant", "mul", "mul_assign", "not", "std", "sum", "try_from", "try_into", "try_unwrap", "unwrap"] }
+digest-010 = { package = "digest", version = "=0.10.7", features = ["alloc", "core-api", "rand_core", "std"] }
+dirs = { version = "=6.0.0", default-features = false }
+dunce = { version = "=1.0.5", default-features = false }
+either = { version = "=1.18.0", features = ["std", "use_std"] }
+elf = { version = "=0.8.0", features = ["alloc", "std", "to_str"] }
+enum-iterator = { version = "=2.3.0", default-features = false }
+enum-map = { version = "=3.1.0", features = ["derive"] }
+env_logger = { version = "=0.11.11", features = ["auto-color", "color", "humantime", "regex"] }
+equivalent = { version = "=1.0.2", default-features = false }
+erased-serde = { version = "=0.4.10", features = ["alloc", "std"] }
+faccess = { version = "=0.2.4", default-features = false }
+fancy-regex = { version = "=0.19.1", features = ["perf", "std", "unicode", "variable-lookbehinds"] }
+fbinit = { version = "=0.2.0", default-features = false }
+flate2 = { version = "=1.1.10", features = ["any_impl", "any_zlib", "miniz_oxide", "runtime_detection", "rust_backend", "zlib-rs"] }
+fnv = { version = "=1.0.7", features = ["std"] }
+form_urlencoded = { version = "=1.2.2", features = ["alloc", "std"] }
+fs4 = { version = "=1.1.0", features = ["sync"] }
+futures = { version = "=0.3.34", features = ["alloc", "async-await", "compat", "executor", "std"] }
+futures-intrusive = { version = "=0.5.0", features = ["alloc", "std"] }
+fxhash = { version = "=0.2.1", default-features = false }
+glob = { version = "=0.3.4", default-features = false }
+globset = { version = "=0.4.20", features = ["serde1"] }
+hashbrown = { version = "=0.17.1", features = ["default-hasher", "inline-more", "raw-entry"] }
+hex = { version = "=0.4.3", features = ["alloc", "std"] }
+hostname = "=0.4.2"
+http = { version = "=1.5.0", features = ["std"] }
+http-body = { version = "=1.1.0", default-features = false }
+http-body-util = "=0.1.5"
+httparse = { version = "=1.10.1", features = ["std"] }
+httptest = { version = "=0.16.4", default-features = false }
+humantime = { version = "=2.4.0", default-features = false }
+hyper = { version = "=1.11.1", features = ["client", "http1", "http2", "server"] }
+hyper-http-proxy = { version = "=1.2.0", features = ["__rustls", "__tls", "default-tls", "rustls-tls-native-roots"] }
+hyper-proxy2 = { version = "=0.1.0", features = ["rustls", "rustls-base"], default-features = false }
+hyper-rustls = { version = "=0.27.9", features = ["aws-lc-rs", "http1", "http2", "logging", "native-tokio", "tls12"] }
+hyper-timeout = { version = "=0.5.2", default-features = false }
+hyper-util = { version = "=0.1.20", features = ["client", "client-legacy", "http1", "http2", "server", "server-auto", "service", "tokio"] }
+hyperlocal = { version = "=0.9.1", features = ["client", "server"] }
+image = { version = "=0.25.10", features = ["bmp", "dds", "ff", "gif", "hdr", "ico", "jpeg", "png", "pnm", "tga", "tiff", "webp"], default-features = false }
+indent_write = { version = "=2.2.0", features = ["std"] }
+indenter = "=0.3.4"
+index_vec = "=0.1.4"
+indexmap = { version = "=2.14.2", features = ["serde", "std"] }
+indoc = { version = "=2.0.7", default-features = false }
+inferno = { version = "=0.12.8", default-features = false }
+internment = { version = "=0.8.6", features = ["arc", "intern"] }
+inventory = { version = "=0.3.24", default-features = false }
+ipnetwork = "=0.21.1"
+is_proc_translated = { version = "=0.1.1", default-features = false }
+itertools = { version = "=0.15.0", features = ["use_alloc", "use_std"] }
+jemallocator = { package = "tikv-jemallocator", version = "=0.7.0", features = ["background_threads_runtime_support"] }
+jiff = { version = "=0.2.35", features = ["alloc", "perf-inline", "serde", "std", "tz-fat", "tz-system", "tzdb-bundle-platform", "tzdb-concatenated", "tzdb-zoneinfo"] }
+libc = { version = "=0.2.189", features = ["extra_traits", "std"] }
+libfuzzer-sys = { version = "=0.4.13", features = ["link_libfuzzer"] }
+libloading = { version = "=0.8.9", default-features = false }
+linked-hash-map = { version = "=0.5.6", features = ["serde_impl"], default-features = false }
+linkme = { version = "=0.3.37", features = ["used_linker"], default-features = false }
+log = { version = "=0.4.34", features = ["alloc", "kv", "kv_std", "kv_unstable", "kv_unstable_std", "std"], default-features = false }
+logos = { version = "=0.16.1", features = ["export_derive", "std"] }
+lru = { version = "=0.18.4", default-features = false }
+lsp-server = { version = "=0.10.0", default-features = false }
+lsp-types = "=0.97.0"
+maplit = { version = "=1.0.2", default-features = false }
+md-5 = { version = "=0.10.6", features = ["std"] }
+memchr = { version = "=2.8.3", features = ["alloc", "std"] }
+memfd = { version = "=0.6.6", default-features = false }
+memmap2 = { version = "=0.9.11", default-features = false }
+mimalloc = { version = "=0.1.52", default-features = false }
+multimap = { version = "=0.10.1", features = ["serde_impl"] }
+native-tls = "=0.2.18"
+nix = { version = "=0.31.3", features = ["dir", "event", "feature", "fs", "hostname", "inotify", "ioctl", "mman", "mount", "net", "poll", "process", "ptrace", "reboot", "resource", "sched", "signal", "socket", "term", "time", "uio", "user", "zerocopy"] }
+nom = { version = "=8.0.0", features = ["alloc", "std"] }
+nom-language = { version = "=0.1.0", default-features = false }
+nonempty = { version = "=0.12.0", features = ["std"] }
+notify = { version = "=8.2.0", features = ["macos_fsevent"] }
+num-bigint = { version = "=0.5.1", features = ["rand_0_10", "rand_core_0_10", "serde", "std"] }
+num-traits = { version = "=0.2.19", features = ["i128", "libm", "std"] }
+num_cpus = { version = "=1.17.0", default-features = false }
+num_enum = { version = "=0.7.6", features = ["std"] }
+object = { version = "=0.40.0", features = ["archive", "coff", "compression", "elf", "macho", "pe", "read", "read_core", "std", "write", "write_core", "write_std", "xcoff"] }
+oid-registry = { version = "=0.8.1", features = ["crypto", "kdf", "nist_algs", "pkcs1", "pkcs12", "pkcs7", "pkcs9", "registry", "x509", "x962"] }
+once_cell = { version = "=1.21.4", features = ["alloc", "race", "std"] }
+openat2 = { version = "=0.1.2", default-features = false }
+os_str_bytes = { version = "=7.2.1", features = ["conversions", "raw_os_str"] }
+parking_lot = { version = "=0.12.5", features = ["arc_lock", "send_guard"] }
+paste = { version = "=1.0.15", default-features = false }
+pathdiff = { version = "=0.2.3", default-features = false }
+perf-event = { version = "=0.4.9", features = ["hooks"] }
+perf-event-open-sys = { version = "=5.0.0", default-features = false }
+petgraph = { version = "=0.8.3", features = ["graphmap", "matrix_graph", "stable_graph", "std"] }
+pin-project = { version = "=1.1.13", default-features = false }
+plist = "=1.10.1"
+postcard = { version = "=1.1.3", features = ["alloc", "crc", "heapless", "heapless-cas", "use-crc", "use-std"] }
+pretty_assertions = { version = "=1.4.1", features = ["alloc"], default-features = false }
+proc-macro-error2 = { version = "=2.0.1", features = ["syn-error"] }
+proc-macro2 = { version = "=1.0.107", features = ["proc-macro", "span-locations"] }
+prost = { version = "=0.14.4", features = ["derive", "std"] }
+prost-build = { version = "=0.14.4", features = ["cleanup-markdown", "format"] }
+prost-types = { version = "=0.14.4", features = ["std"] }
+protoc-bin-vendored = { version = "=3.2.0", default-features = false }
+ptyprocess = { version = "=0.5.0", default-features = false }
+quick-xml = { version = "=0.42.0", features = ["overlapped-lists", "serialize"] }
+quickcheck = { version = "=1.1.0", features = ["regex", "use_logging"] }
+quote = { version = "=1.0.47", features = ["proc-macro"] }
+rand = { version = "=0.10.2", features = ["alloc", "std", "std_rng", "sys_rng", "thread_rng"] }
+rand_chacha = { version = "=0.10.0", features = ["std"] }
+rand_distr = { version = "=0.6.0", features = ["alloc", "std"] }
+rand_xoshiro = { version = "=0.8.1", default-features = false }
+ref-cast = { version = "=1.0.27", default-features = false }
+regex = { version = "=1.13.1", features = ["perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"] }
+relative-path = { version = "=2.0.1", features = ["alloc", "serde", "std"] }
+ring = { version = "=0.17.14", features = ["alloc", "dev_urandom_fallback"] }
+ruff_formatter = { version = "=0.0.11", features = ["serde"], default-features = false }
+ruff_python_ast = { version = "=0.0.11", features = ["get-size", "serde"], default-features = false }
+ruff_python_formatter = { version = "=0.0.11", features = ["serde"] }
+ruff_python_parser = { version = "=0.0.11", default-features = false }
+ruff_python_trivia = { version = "=0.0.11", default-features = false }
+ruff_source_file = { version = "=0.0.11", features = ["get-size", "serde"], default-features = false }
+ruff_text_size = { version = "=0.0.11", features = ["get-size", "serde"], default-features = false }
+rusqlite = { version = "=0.40.2", features = ["backup", "blob", "bundled", "cache", "column_decltype", "fallible_uint", "ffi-sqlite-wasm-rs", "functions", "hooks", "limits", "modern_sqlite", "session", "vtab"] }
+rustc-hash = { version = "=2.1.3", features = ["std"] }
+rustix = { version = "=1.1.4", features = ["alloc", "fs", "mount", "std"] }
+rustls = { version = "=0.23.44", features = ["logging", "prefer-post-quantum", "ring", "std", "tls12"] }
+rustls-native-certs = { version = "=0.8.4", default-features = false }
+rustls-pemfile = { version = "=2.2.0", features = ["std"] }
+rustls-pki-types = { version = "=1.15.1", features = ["alloc", "std"] }
+rustyline = { version = "=18.0.1", features = ["custom-bindings", "derive", "with-dirs", "with-file-history"] }
+scopeguard = { version = "=1.2.0", features = ["use_std"] }
+sequence_trie = { version = "=0.3.6", default-features = false }
+serde = { version = "=1.0.229", features = ["alloc", "derive", "rc", "std"] }
+serde_json = { version = "=1.0.151", features = ["alloc", "float_roundtrip", "raw_value", "std", "unbounded_depth"] }
+serde_with = { version = "=3.23.0", features = ["alloc", "hex", "macros", "std"] }
+sha1-010 = { package = "sha1", version = "=0.10.7", features = ["std"] }
+sha2-010 = { package = "sha2", version = "=0.10.9", features = ["std"] }
+shlex = { version = "=2.0.1", features = ["std"] }
+similar = { version = "=3.2.0", features = ["bytes", "inline", "std", "text", "unicode"] }
+siphasher = { version = "=1.0.3", features = ["std"] }
+slab = { version = "=0.4.12", features = ["std"] }
+sled = { version = "=0.34.7", features = ["no_metrics"] }
+slog = { version = "=2.8.2", features = ["max_level_trace", "nested-values", "std"] }
+smallvec = { version = "=1.16.0", features = ["const_generics", "const_new", "impl_bincode", "specialization", "union", "write"], default-features = false }
+sorted_vector_map = { version = "=0.2.1", default-features = false }
+static_assertions = { version = "=1.1.0", default-features = false }
+strsim = { version = "=0.11.1", default-features = false }
+strum = { version = "=0.28.0", features = ["derive", "std"] }
+syn = { version = "=3.0.5", features = ["clone-impls", "derive", "extra-traits", "fold", "full", "parsing", "printing", "proc-macro", "visit", "visit-mut"] }
+sync_wrapper = { version = "=1.0.2", default-features = false }
+synstructure = { version = "=0.14.0", features = ["proc-macro"] }
+sys-info = { version = "=0.9.1", default-features = false }
+sysinfo = { version = "=0.39.6", features = ["component", "disk", "network", "system", "user"] }
+take_mut = { version = "=0.2.2", default-features = false }
+tar = "=0.4.46"
+tempfile = "=3.27.0"
+termimad = { version = "=0.35.4", features = ["special-renders"] }
+termios = { version = "=0.3.3", default-features = false }
+test-case = { version = "=3.3.1", default-features = false }
+textwrap = "=0.16.2"
+thiserror = { version = "=2.0.20", features = ["std"] }
+threadpool = { version = "=1.8.1", default-features = false }
+tokio = { version = "=1.53.1", features = ["fs", "full", "io-std", "io-util", "macros", "net", "process", "rt", "rt-multi-thread", "signal", "sync", "test-util", "time"] }
+tokio-retry = { version = "=0.3.2", features = ["rand"] }
+tokio-rustls = { version = "=0.26.5", features = ["logging", "ring", "tls12"], default-features = false }
+tokio-stream = { version = "=0.1.19", features = ["fs", "io-util", "net", "signal", "sync", "time"] }
+tokio-util = { version = "=0.7.19", features = ["codec", "compat", "full", "io", "io-util", "join-map", "net", "rt", "time"] }
+toml = { version = "=1.1.5+spec-1.1.0", features = ["display", "parse", "preserve_order", "serde", "std"] }
+tonic = { version = "=0.14.6", features = ["_tls-any", "channel", "codegen", "gzip", "router", "server", "tls-connect-info", "tls-native-roots", "tls-ring", "tls-webpki-roots", "transport"] }
+tonic-build = { version = "=0.14.6", features = ["transport"] }
+tonic-prost = { version = "=0.14.6", default-features = false }
+tonic-prost-build = { version = "=0.14.6", features = ["cleanup-markdown", "transport"] }
+tower = { version = "=0.5.3", features = ["balance", "buffer", "discover", "limit", "load", "load-shed", "make", "ready-cache", "util"], default-features = false }
+tower-layer = { version = "=0.3.3", default-features = false }
+tower-lsp-server = { version = "=0.22.1", features = ["runtime-tokio"] }
+tower-service = { version = "=0.3.3", default-features = false }
+tracing = { version = "=0.1.44", features = ["attributes", "std", "valuable"] }
+tracing-core = { version = "=0.1.36", features = ["std"] }
+tracing-subscriber = { version = "=0.3.23", features = ["alloc", "ansi", "env-filter", "fmt", "json", "local-time", "nu-ansi-term", "registry", "std"] }
+triomphe = { version = "=0.1.16", features = ["std"] }
+twox-hash = { version = "=2.1.4", features = ["alloc", "random", "std", "xxhash32", "xxhash3_128", "xxhash3_64", "xxhash64"] }
+typed-arena = { version = "=2.0.2", features = ["std"] }
+typed-builder = { version = "=0.23.2", default-features = false }
+typetag = { version = "=0.2.23", default-features = false }
+unicode-segmentation = { version = "=1.13.3", default-features = false }
+unicode-width = { version = "=0.2.2", features = ["cjk"] }
+uuid = { version = "=1.26.0", features = ["atomic", "rng", "rng-getrandom", "serde", "sha1", "std", "v4", "v5", "v6", "v7", "v8"] }
+vt100 = { version = "=0.16.2", default-features = false }
+walkdir = { version = "=2.5.0", default-features = false }
+watchman_client = { version = "=0.9.0", default-features = false }
+which = { version = "=8.0.6", features = ["real-sys"] }
+whoami = { version = "=2.1.3", features = ["std", "wasi-wasite", "wasm-web"] }
+winapi = { version = "=0.3.9", features = ["everything", "std"], default-features = false }
+windows-sys = { version = "=0.61.2", features = ["Wdk", "Wdk_Foundation", "Wdk_Storage", "Wdk_Storage_FileSystem", "Wdk_System", "Wdk_System_IO", "Win32", "Win32_Foundation", "Win32_Globalization", "Win32_NetworkManagement", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_NetworkManagement_WindowsFilteringPlatform", "Win32_Networking", "Win32_Networking_WinSock", "Win32_Security", "Win32_Security_Authentication", "Win32_Security_Authentication_Identity", "Win32_Security_Authorization", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage", "Win32_Storage_FileSystem", "Win32_System", "Win32_System_Com", "Win32_System_Console", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug", "Win32_System_Environment", "Win32_System_IO", "Win32_System_JobObjects", "Win32_System_Kernel", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_Pipes", "Win32_System_ProcessStatus", "Win32_System_Rpc", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming", "Win32_UI", "Win32_UI_Input", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell"] }
+winver = { version = "=1.0.0", default-features = false }
+x509-parser = "=0.18.1"
+xattr = { version = "=1.6.1", features = ["unsupported"] }
+zip = { version = "=8.6.0", features = ["_bzip2_any", "_deflate-any", "aes-crypto", "bzip2", "deflate", "deflate-flate2", "deflate-flate2-zlib-rs", "deflate-zopfli", "time"], default-features = false }
+zstd = { version = "=0.13.3", features = ["arrays", "experimental", "legacy", "zdict_builder", "zstdmt"] }
+
+[workspace]
