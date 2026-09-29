@@ -20,6 +20,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     package = ctx.actions.declare_output(output_name, has_content_based_path = False)
 
+    disable_build_id_links = ctx.attrs.disable_build_id_links
+    if layer[LayerInfo].supplements.get("python_outplace"):
+        # Some Python outplace binaries ship prebuilt ELFs (like libnuma) at per-binary
+        # paths, so their /usr/lib/.build-id links conflict between RPMs.
+        disable_build_id_links = True
+
     rpm_spec = {
         "arch": ctx.attrs.arch,
         "autoprov": ctx.attrs.autoprov,
@@ -31,7 +37,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "conflicts": ctx.attrs.conflicts,
         "description": ctx.attrs.description,
         "dirs": ctx.attrs.dirs,
-        "disable_build_id_links": ctx.attrs.disable_build_id_links,
+        "disable_build_id_links": disable_build_id_links,
         "disable_ldconfig": ctx.attrs.disable_ldconfig,
         "disable_strip": ctx.attrs.disable_strip,
         "epoch": ctx.attrs.epoch,

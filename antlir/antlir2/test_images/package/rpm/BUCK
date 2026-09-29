@@ -2,7 +2,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
-load("//antlir/bzl:build_defs.bzl", "cpp_binary", "cpp_library")
+load("//antlir/bzl:build_defs.bzl", "cpp_binary", "cpp_library", "python_binary")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
@@ -57,6 +57,35 @@ package.rpm(
     rpm_name = "add",
 )
 
+python_binary(
+    name = "outplace",
+    srcs = ["outplace.py"],
+    main_module = "antlir.antlir2.test_images.package.rpm.outplace",
+    package_style = "outplace",
+)
+
+image.layer(
+    name = "outplace-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/local"),
+        feature.install(
+            src = ":outplace",
+            dst = "/usr/bin/outplace",
+        ),
+    ],
+    # /usr/bin/add would otherwise get a build-id link, as it does in add.rpm
+    parent_layer = ":layer",
+)
+
+package.rpm(
+    name = "outplace.rpm",
+    # @oss-disable[end= ]: compatible_with = ["ovr_config//build_mode:opt"],
+    disable_ldconfig = True,
+    layer = ":outplace-layer",
+    license = "none",
+    rpm_name = "outplace",
+)
+
 tcw = select(
     internal_external(
         fb = {
@@ -76,6 +105,10 @@ image.layer(
         feature.install(
             src = ":add.rpm",
             dst = "/add.rpm",
+        ),
+        feature.install(
+            src = ":outplace.rpm",
+            dst = "/outplace.rpm",
         ),
     ],
     target_compatible_with = tcw,

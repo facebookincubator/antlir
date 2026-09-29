@@ -32,3 +32,8 @@ class RpmTest(unittest.TestCase):
         self.assertIn("/usr/lib64/libadd.so.1.2", files)
         # but ldconfig should not have been run, so the symlink should not exist
         self.assertNotIn("/usr/lib64/libadd.so.1", files)
+
+    def test_outplace_disables_build_id_links(self) -> None:
+        files = _files_in_rpm("/outplace.rpm")
+        self.assertIn("/usr/bin/add", files)
+        self.assertFalse(any(f.startswith("/usr/lib/.build-id") for f in files))

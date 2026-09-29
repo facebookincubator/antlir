@@ -270,6 +270,11 @@ implicit_resources_record = record(
     resources_dir_name = field(str),
 )
 
+# package.rpm reads this to disable build-id links
+def _mark_python_outplace(supplements: dict[str, typing.Any]) -> dict[str, typing.Any]:
+    supplements["python_outplace"] = True
+    return supplements
+
 def _python_outplace_features(
     ctx: AnalysisContext,
     installed_name: str,
@@ -340,6 +345,7 @@ def _python_outplace_features(
             required_artifacts = required_artifacts,
             required_run_infos = required_run_infos,
             plugin = ctx.attrs.plugin,
+            mutate_supplements = _mark_python_outplace,
         )
         for dst, src in srcs.items()
     ]
