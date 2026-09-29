@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "os_select")
 load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginPluginKind")
@@ -16,6 +15,7 @@ load(":disk_image.bzl", "DiskImage")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":macro.bzl", "package_macro")
 load(":qcow2.bzl", "qcow2")
+load(":rpm.bzl", "rpm")
 load(":sendstream.bzl", "sendstream_v2")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 load(":unprivileged_dir.bzl", "unprivileged_dir")
@@ -322,66 +322,6 @@ _cpio_lz4 = _new_compressed_package_rule(
 )
 
 # @unused
-_rpm, _rpm_anon = _new_package_rule(
-    rule_attrs = {
-        "arch": attrs.enum(
-            ["x86_64", "aarch64", "noarch"],
-            default = arch_select(x86_64 = "x86_64", aarch64 = "aarch64"),
-        ),
-        "autoprov": attrs.bool(default = True),
-        "autoreq": attrs.bool(default = True),
-        "binary_payload": attrs.option(attrs.string(), default = None),
-        "build_requires": attrs.list(attrs.string(), default = []),
-        "changelog": attrs.option(attrs.string(), default = None),
-        "conflicts": attrs.list(attrs.string(), default = []),
-        "description": attrs.option(attrs.string(), default = None),
-        "dirs": attrs.list(
-            attrs.string(),
-            default = [],
-            doc = "List of directories that will be explictly 'owned' by the rpm. Dirs must already exist in the package contents.",
-        ),
-        "disable_build_id_links": attrs.bool(default = False),
-        "disable_ldconfig": attrs.bool(default = False),
-        "disable_strip": attrs.bool(default = False),
-        "epoch": attrs.int(default = 0),
-        "extra_files": attrs.list(attrs.string(), default = []),
-        "license": attrs.string(),
-        "os": attrs.enum(
-            ["linux", "darwin"],
-            default = os_select(linux = "linux", macos = "darwin"),
-        ),
-        "packager": attrs.option(attrs.string(), default = None),
-        "post_install_script": attrs.option(attrs.string(), default = None),
-        "post_uninstall_script": attrs.option(attrs.string(), default = None),
-        "pre_uninstall_script": attrs.option(attrs.string(), default = None),
-        "provides": attrs.list(attrs.string(), default = []),
-        "python_bytecompile": attrs.bool(default = True),
-        "recommends": attrs.list(attrs.string(), default = []),
-        "release": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime YYYYMMDD"),
-        "requires": attrs.list(attrs.string(), default = []),
-        "requires_post": attrs.list(attrs.string(), default = []),
-        "requires_post_uninstall": attrs.list(attrs.string(), default = []),
-        "requires_pre_uninstall": attrs.list(attrs.string(), default = []),
-        "rpm_name": attrs.string(),
-        "sign_digest_algo": attrs.option(attrs.string(), default = None),
-        "sign_with_private_key": attrs.option(attrs.source(), default = None),
-        "summary": attrs.option(attrs.string(), default = None),
-        "supplements": attrs.list(attrs.string(), default = []),
-        "transfiletriggerpostun_paths": attrs.list(attrs.string(), default = []),
-        "transfiletriggerpostun_script": attrs.option(attrs.string(), default = None),
-        "version": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime HHMMSS"),
-        "_strip": internal_external(
-            fb = attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:strip")),
-            oss = attrs.option(attrs.exec_dep(), default = None),
-        ),
-    },
-    format = "rpm",
-    dot_meta = False,
-    force_extension = "rpm",
-    uses_build_appliance = True,
-)
-
-# @unused
 _vfat, _vfat_anon = _new_package_rule(
     rule_attrs = {
         "fat_size": attrs.option(attrs.int(), default = None),
@@ -509,7 +449,7 @@ package = struct(
     ext4 = package_macro(_ext4),
     gpt = gpt,
     qcow2 = qcow2,
-    rpm = package_macro(_rpm, always_rootless = True),
+    rpm = rpm,
     sendstream_v2 = sendstream_v2,
     squashfs = package_macro(_squashfs),
     tar = package_macro(_tar),
