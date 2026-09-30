@@ -352,7 +352,7 @@ def _implicit_image_test(
         # (remote_enabled=False), and when the layer was compiled on RE without
         # a local materialize_to_subvol (e.g. force-remote + aarch64), the test
         # rule creates its own local_only materialize action.
-        exec_compatible_with = ["prelude//platforms:may_run_local"]
+        exec_compatible_with = ["prelude//platforms:runs_local[may_run_local]"]
 
     image_test(
         name = name,

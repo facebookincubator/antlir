@@ -77,7 +77,7 @@ def test_that_should_fail(test_rule, name: str, stdout_re: str | None = None, st
         # `image_diff_test` is `local_only=True`, use this to force exec_deps to
         # resolve to the host platform where the test is actually going to
         # execute
-        exec_compatible_with = ["prelude//platforms:may_run_local"],
+        exec_compatible_with = ["prelude//platforms:runs_local[may_run_local]"],
         **default_target_platform_kwargs(),
     )
 

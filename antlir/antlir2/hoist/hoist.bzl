@@ -83,5 +83,5 @@ _hoist = rule(
 _hoist_macro = rule_with_default_target_platform(_hoist)
 
 def hoist(**kwargs):
-    kwargs.setdefault("exec_compatible_with", ["prelude//platforms:may_run_local"])
+    kwargs.setdefault("exec_compatible_with", ["prelude//platforms:runs_local[may_run_local]"])
     _hoist_macro(**kwargs)

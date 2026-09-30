@@ -12,7 +12,7 @@ def rule_with_default_target_platform(rule_fn, *, local_only_exec: bool = False)
                 kwargs[k] = v
 
         if local_only_exec:
-            kwargs["exec_compatible_with"] = kwargs.get("exec_compatible_with", []) + ["prelude//platforms:may_run_local"]
+            kwargs["exec_compatible_with"] = kwargs.get("exec_compatible_with", []) + ["prelude//platforms:runs_local[may_run_local]"]
         return rule_fn(**kwargs)
 
     return _wrapped

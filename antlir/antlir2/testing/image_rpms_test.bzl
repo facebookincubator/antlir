@@ -87,7 +87,7 @@ def image_test_rpm_names(*, default_os: str | None = None, rootless: bool | None
         # `image_diff_test` is `local_only=True`, use this to force exec_deps to
         # resolve to the host platform where the test is actually going to
         # execute
-        exec_compatible_with = ["prelude//platforms:may_run_local"],
+        exec_compatible_with = ["prelude//platforms:runs_local[may_run_local]"],
         **kwargs,
     )
 

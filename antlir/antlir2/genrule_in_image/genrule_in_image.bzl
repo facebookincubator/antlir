@@ -152,6 +152,6 @@ def genrule_in_image(*, name: str, default_os: str | None = None, rootless: bool
         labels = selects.apply(labels, lambda labels: list(labels or []) + ["uses_sudo"])
 
     if exec_compatible_with == None:
-        exec_compatible_with = ["prelude//platforms:may_run_local"]
+        exec_compatible_with = ["prelude//platforms:runs_local[may_run_local]"]
 
     _genrule_in_image_macro(name = name, default_os = default_os, rootless = rootless, labels = labels, exec_compatible_with = exec_compatible_with, **kwargs)
