@@ -37,7 +37,6 @@ buck_sh_test(
 test_in_layer(
     name = "test-erofs",
     layer_features = [
-        feature.ensure_dirs_exist(dirs = "/package"),
         feature.install(
             src = ":standard.erofs",
             dst = "/package.erofs",

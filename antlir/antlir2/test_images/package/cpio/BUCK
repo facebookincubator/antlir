@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/test_images/package:defs.bzl", "package_feature", "test_in_layer")
+load("//antlir/bzl:build_defs.bzl", "rust_unittest")
 
 oncall("antlir")
 
@@ -12,13 +13,31 @@ package.cpio(
 test_in_layer(
     name = "test-cpio",
     layer_features = [
-        feature.ensure_dirs_exist(dirs = "/package"),
         feature.install(
             src = ":test.cpio",
             dst = "/package.cpio",
         ),
         feature.rpms_install(rpms = ["cpio"]),
     ],
-    omit_package_features = [package_feature("xattr")],
+    omit_package_features = [
+        package_feature("xattr"),
+        package_feature("root_directory_mode"),
+    ],
     stub = "stub.rs",
+)
+
+# GNU cpio ignores the archived `.` mode when extracting onto a pre-existing
+# directory, so the recorded root mode is asserted here at the archive level
+# instead of in the standardized test above
+rust_unittest(
+    name = "test-cpio-root-mode",
+    srcs = ["test_cpio_root_mode.rs"],
+    crate_root = "test_cpio_root_mode.rs",
+    resources = {
+        "test.cpio": ":test.cpio",
+    },
+    deps = [
+        "buck-resources",
+        "cpio",
+    ],
 )

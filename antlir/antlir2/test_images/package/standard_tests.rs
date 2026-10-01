@@ -265,6 +265,20 @@ fn sticky_directory() {
     assert_eq!(meta.mode() & 0o7777, 0o1755);
 }
 
+#[cfg(feature = "root_directory_mode")]
+#[test]
+fn root_directory_mode() {
+    let package = StubImpl::open();
+    let meta = package.dir_metadata().expect("failed to stat root");
+    assert!(meta.file_type().is_dir());
+    // antlir2 doesn't provide a way to set the permissions of the image's root
+    // directory, it is always 755. Test harnesses must either not pre-create
+    // the extracted root directory or they must create it with different
+    // permissions in order to prove that the package format correctly specifies
+    // it.
+    assert_eq!(meta.mode() & 0o777, 0o755);
+}
+
 #[cfg(feature = "dot_meta")]
 #[test]
 fn dot_meta() {

@@ -49,7 +49,6 @@ python_unittest(
 test_in_layer(
     name = "test-ext3",
     layer_features = [
-        feature.ensure_dirs_exist(dirs = "/package"),
         feature.install(
             src = ":default.ext3",
             dst = "/package.ext3",

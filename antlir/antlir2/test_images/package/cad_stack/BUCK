@@ -14,7 +14,6 @@ test_in_layer(
     # can't materialize xattrs on overlayfs
     ephemeral = "btrfs",
     layer_features = [
-        feature.ensure_dirs_exist(dirs = "/package"),
         feature.install(
             src = ":test.cad_stack",
             dst = "/package.cad_stack",

@@ -15,7 +15,6 @@ package.tar(
 test_in_layer(
     name = "test-tar",
     layer_features = [
-        feature.ensure_dirs_exist(dirs = "/package"),
         feature.install(
             src = ":test.tar",
             dst = "/package.tar",

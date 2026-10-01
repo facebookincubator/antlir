@@ -12,6 +12,7 @@ load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
 package_feature = enum(
     "dot_meta",
     "hardlink_ino_eq",
+    "root_directory_mode",
     "xattr",
 )
 
@@ -51,7 +52,16 @@ def test_in_layer(
 ):
     image.layer(
         name = name + "-layer",
-        features = [feature.rpms_install(rpms = ["basesystem"])] + layer_features,
+        features = [
+            feature.rpms_install(rpms = ["basesystem"]),
+            # All harnesses extract (or mount) the package under /package.
+            # Create it with deliberately wrong permissions so that
+            # root_directory_mode proves the package format specifies the
+            # root mode (for cpio that means the `.` entry; mounts shadow
+            # this directory entirely).
+            feature.ensure_dirs_exist(dirs = "/package", mode = "a+"),
+        ]
+        + layer_features,
     )
     image_rust_test(
         name = name,

@@ -14,8 +14,8 @@ impl crate::Stub for StubImpl {
     fn open() -> Dir {
         let store = ObjectStore::open_rw("/package.cad_stack/store", std::iter::empty::<&str>())
             .expect("failed to open store");
-        std::fs::create_dir_all("/extracted").expect("failed to create target dir");
-        let target = Dir::open_ambient_dir("/extracted", cap_std::ambient_authority())
+        std::fs::create_dir_all("/package").expect("failed to create target dir");
+        let target = Dir::open_ambient_dir("/package", cap_std::ambient_authority())
             .expect("failed to open target dir");
         cad_stack_fs::extract_root_dir(&store, &target).expect("failed to extract root");
         target

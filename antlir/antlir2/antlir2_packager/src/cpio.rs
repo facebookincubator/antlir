@@ -43,9 +43,13 @@ impl PackageFormat for Cpio {
             .working_directory(Path::new("/__antlir2__/working_directory"))
             .build();
 
+        // Include `.` itself: the kernel applies an archived root dir's mode
+        // to the live rootfs at unpack time (init_mkdir + init_chmod in
+        // init/initramfs.c), so this carries the layer root's actual mode
+        // into the booted image instead of leaving the kernel default.
         let cpio_script = "set -ue -o pipefail; \
             pushd /__antlir2__/root; \
-            /usr/bin/find . -mindepth 1 ! -type s | \
+            /usr/bin/find . ! -type s | \
             LANG=C /usr/bin/sort | \
             LANG=C /usr/bin/cpio -o -H newc \
             > /__antlir2__/out/cpio";
