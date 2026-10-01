@@ -1,0 +1,4 @@
+buildscript.run = false
+
+[env]
+OUT_DIR = "$(location //third-party/rust/fixups/typetag:out_dir)"

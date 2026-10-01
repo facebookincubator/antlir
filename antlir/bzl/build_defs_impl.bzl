@@ -16,11 +16,9 @@ load("@shim//:shims.bzl", shim_cpp_binary = "cpp_binary", shim_cpp_library = "cp
 load("@shim//build_defs:export_files.bzl", shim_export_file = "export_file")
 load(
     "@shim//build_defs:native_rules.bzl",
-    shim_alias = "alias",
     shim_buck_filegroup = "buck_filegroup",
     shim_buck_genrule = "buck_genrule",
     shim_buck_sh_binary = "buck_sh_binary",
-    shim_buck_sh_test = "buck_sh_test",
 )
 load("@shim//build_defs:platform_utils.bzl", "platform_utils")
 load("@shim//tools/build_defs:fb_native_wrapper.bzl", "fb_native")
@@ -123,7 +121,9 @@ def _buck_command_alias(*args, **kwargs):
     _wrap_internal(fb_native.command_alias, args, kwargs)
 
 def _alias(*args, **kwargs):
-    _wrap_internal(shim_alias, args, kwargs)
+    # The shim wrapper assumes `actual` is always a string, but Buck aliases
+    # also accept selects.
+    _wrap_internal(fb_native.alias, args, kwargs)
 
 def _toolchain_alias(*args, **kwargs):
     fb_native.toolchain_alias(*args, **kwargs)
@@ -149,7 +149,7 @@ def _buck_sh_binary(*args, **kwargs):
     _wrap_internal(shim_buck_sh_binary, args, kwargs)
 
 def _buck_sh_test(*args, **kwargs):
-    _wrap_internal(shim_buck_sh_test, args, kwargs)
+    _wrap_internal(fb_native.sh_test, args, kwargs)
 
 def _cpp_binary(*args, **kwargs):
     _wrap_internal(shim_cpp_binary, args, kwargs)
@@ -192,6 +192,7 @@ def _python_library(**kwargs):
     _wrap_internal(fb_native.python_library, [], kwargs)
 
 def _python_binary(*, name: str, main_function: str | None = None, main_module: str | None = None, **kwargs):
+    kwargs.pop("package_style", None)
     _python_library(name = name + "-library", **kwargs)
 
     _wrap_internal(
@@ -224,7 +225,7 @@ def _python_unittest(*args, **kwargs):
     _wrap_internal(fb_native.python_test, args, kwargs)
 
 def _cpp_python_extension(name: str, **_kwargs):
-    shim_alias(
+    fb_native.alias(
         name = name,
         actual = "antlir//antlir:empty",
     )
@@ -279,7 +280,7 @@ def _rust_bindgen_library(name: str, header: str, **kwargs):
     )
 
 def _rust_python_extension(name: str, **_kwargs):
-    shim_alias(
+    fb_native.alias(
         name = name,
         actual = "antlir//antlir:empty",
     )

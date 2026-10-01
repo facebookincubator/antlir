@@ -31,6 +31,12 @@ special_tags = struct(
     test_is_invisible_to_testpilot = "OSS_NO_OP",
 )
 
+tpx_labels = special_tags
+
+network_access_utils = struct(
+    all = lambda: "all",
+)
+
 rollout = struct(
     check_base_path = ret_false,
     create_feature = ret_false,
