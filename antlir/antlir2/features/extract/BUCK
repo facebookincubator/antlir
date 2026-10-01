@@ -31,6 +31,7 @@ rust_binary(
         ":extract.lib",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_path:antlir2_path",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )

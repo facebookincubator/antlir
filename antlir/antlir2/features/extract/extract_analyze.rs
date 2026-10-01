@@ -12,11 +12,14 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufWriter;
+use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 
 use antlir2_compile::Arch;
 use antlir2_path::PathExt;
+use antlir2_rootless::Rootless;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -56,6 +59,10 @@ struct BuckBinaryArgs {
     manifest: PathBuf,
     #[clap(long)]
     libs_dir: PathBuf,
+    /// Enter a user namespace for rootless builds, so that files without
+    /// read permission (like mode 4111 /usr/bin/sudo) can still be read
+    #[clap(long)]
+    rootless: bool,
     #[clap(flatten)]
     dlopen_args: DlopenArgs,
 }
@@ -86,6 +93,10 @@ struct FromLayerArgs {
     manifest: PathBuf,
     #[clap(long)]
     libs_dir: PathBuf,
+    /// Enter a user namespace for rootless builds, so that files without
+    /// read permission (like mode 4111 /usr/bin/sudo) can still be read
+    #[clap(long)]
+    rootless: bool,
     #[clap(flatten)]
     dlopen_args: DlopenArgs,
 }
@@ -93,6 +104,53 @@ struct FromLayerArgs {
 fn write_manifest(entries: BTreeSet<ManifestEntry>, path: &Path) -> Result<()> {
     let f = BufWriter::new(File::create(path)?);
     serde_json::to_writer_pretty(f, &Manifest(entries))?;
+    Ok(())
+}
+
+/// Permission bits (including setuid/setgid/sticky) of the file at `path`,
+/// following symlinks, for recording in the manifest so that the compile step
+/// can restore the source's true mode.
+fn src_mode(path: &Path) -> Result<u32> {
+    Ok(std::fs::metadata(path)
+        .with_context(|| format!("while stating {}", path.display()))?
+        .permissions()
+        .mode()
+        & 0o7777)
+}
+
+/// Owning uid and gid of the file at `path`, following symlinks, for
+/// recording in the manifest so that the compile step can restore the
+/// source's true ownership (in rooted builds the source layer is root-owned,
+/// while the libs_dir transit copies are owned by the invoking user).
+fn src_owner(path: &Path) -> Result<(u32, u32)> {
+    let meta =
+        std::fs::metadata(path).with_context(|| format!("while stating {}", path.display()))?;
+    Ok((meta.uid(), meta.gid()))
+}
+
+/// Read a source file's contents, momentarily escalating to root when the
+/// analyzer is running dropped-privilege in a rooted build (the action runs
+/// under sudo there, but drops to the invoking user immediately, so
+/// root-owned files like mode 4111 /usr/bin/sudo need a momentary escalate).
+/// In rootless builds this is a plain read: the user namespace already
+/// bypasses permission checks.
+fn read_source(path: &Path, rootless: Option<&Rootless>) -> Result<Vec<u8>> {
+    let bytes = match rootless {
+        Some(r) if r.unprivileged_uid().is_some() => r
+            .as_root(|| std::fs::read(path))
+            .context("while escalating to read source file")?
+            .with_context(|| format!("while reading {}", path.display()))?,
+        _ => std::fs::read(path).with_context(|| format!("while reading {}", path.display()))?,
+    };
+    Ok(bytes)
+}
+
+/// Copy a source file into libs_dir, keeping the destination owned by the
+/// invoking user: only the read is (momentarily) privileged.
+fn copy_source(src: &Path, dst: &Path, rootless: Option<&Rootless>) -> Result<()> {
+    let contents = read_source(src, rootless)?;
+    std::fs::write(dst, &contents)
+        .with_context(|| format!("while copying {} to {}", src.display(), dst.display()))?;
     Ok(())
 }
 
@@ -188,6 +246,7 @@ struct DepsCollector<'a> {
     visited: HashSet<PathBuf>,
     result: Vec<PathBuf>,
     dlopen_filter: &'a DlopenFilter,
+    rootless: Option<&'a Rootless>,
 }
 
 const NT_FDO_DLOPEN: u32 = 0x407c0c0a;
@@ -361,8 +420,7 @@ impl<'a> DepsCollector<'a> {
         self.visited.insert(binary_path.to_path_buf());
 
         let real_path = with_sysroot(binary_path, self.sysroot);
-        let buf = std::fs::read(&real_path)
-            .with_context(|| format!("while reading {}", real_path.display()))?;
+        let buf = read_source(&real_path, self.rootless)?;
         let elf = Elf::parse(&buf)
             .with_context(|| format!("while parsing ELF {}", binary_path.display()))?;
 
@@ -448,6 +506,7 @@ pub(crate) fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
     sysroot: Option<&Path>,
     default_interpreter: &Path,
     dlopen_filter: &DlopenFilter,
+    rootless: Option<&Rootless>,
 ) -> anyhow::Result<Vec<PathBuf>> {
     let binary = Path::new(binary.as_ref());
     let binary_as_seen_from_here = match sysroot {
@@ -460,8 +519,7 @@ pub(crate) fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
         "reading binary to discover interpreter and dependencies"
     );
 
-    let buf = std::fs::read(&binary_as_seen_from_here)
-        .with_context(|| format!("while reading {}", binary_as_seen_from_here.display()))?;
+    let buf = read_source(&binary_as_seen_from_here, rootless)?;
     let elf =
         Elf::parse(&buf).with_context(|| format!("while parsing ELF {}", binary.display()))?;
     let interpreter = elf.interpreter.map_or(default_interpreter, Path::new);
@@ -498,6 +556,7 @@ pub(crate) fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
         visited: HashSet::new(),
         result: Vec::new(),
         dlopen_filter,
+        rootless,
     };
 
     // Process the root binary's deps from the already-parsed ELF,
@@ -534,33 +593,60 @@ pub fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
 // Binary entrypoint (analysis actions)
 // ---------------------------------------------------------------------------
 
+impl Subcommand {
+    fn rootless(&self) -> bool {
+        match self {
+            Subcommand::BuckBinary(args) => args.rootless,
+            Subcommand::FromLayer(args) => args.rootless,
+        }
+    }
+}
+
 fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::TRACE)
         .init();
     let args = Args::parse();
 
+    // Binaries like /usr/bin/sudo are installed mode 4111 (setuid,
+    // execute-only), which an unprivileged user cannot open O_RDONLY.
+    // In rootless builds, enter a user namespace like image builds and
+    // genrule_in_image so that file reads bypass permission checks.
+    // Otherwise the action runs under sudo: drop to the invoking user
+    // immediately and only escalate back to read source file contents, so
+    // that all outputs stay owned by the invoking user.
+    let rootless = match args.command.rootless() {
+        true => {
+            antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+            None
+        }
+        false => Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?),
+    };
+
     match args.command {
-        Subcommand::BuckBinary(args) => buck_binary(args),
-        Subcommand::FromLayer(args) => from_layer(args),
+        Subcommand::BuckBinary(args) => buck_binary(args, rootless.as_ref()),
+        Subcommand::FromLayer(args) => from_layer(args, rootless.as_ref()),
     }
 }
 
-fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
+fn buck_binary(args: BuckBinaryArgs, rootless: Option<&Rootless>) -> Result<()> {
     let default_interp = default_interpreter(args.target_arch);
     let src = args.src.canonicalize()?;
     let dlopen_filter = DlopenFilter::from_args(args.dlopen_args)?;
-    let deps = so_dependencies(src.clone(), None, default_interp, &dlopen_filter)?;
+    let deps = so_dependencies(src.clone(), None, default_interp, &dlopen_filter, rootless)?;
 
     let mut entries = BTreeSet::new();
 
     std::fs::create_dir_all(&args.libs_dir)?;
     let main_relpath = PathBuf::from("__main");
-    std::fs::copy(&src, args.libs_dir.join(&main_relpath))
-        .with_context(|| format!("while copying {}", src.display()))?;
+    copy_source(&src, &args.libs_dir.join(&main_relpath), rootless)?;
+    let (uid, gid) = src_owner(&src)?;
     entries.insert(ManifestEntry::File {
         src_relpath: main_relpath,
         dst: args.dst.clone(),
+        mode: src_mode(&src)?,
+        uid,
+        gid,
     });
 
     for dep in &deps {
@@ -590,17 +676,22 @@ fn buck_binary(args: BuckBinaryArgs) -> Result<()> {
 
         let copy_path = args.libs_dir.join(&src_relpath);
         std::fs::create_dir_all(copy_path.parent().expect("always has parent"))?;
-        std::fs::copy(dep, &copy_path).with_context(|| {
-            format!("while copying {} to {}", dep.display(), copy_path.display())
-        })?;
+        copy_source(dep, &copy_path, rootless)?;
 
-        entries.insert(ManifestEntry::File { src_relpath, dst });
+        let (uid, gid) = src_owner(dep)?;
+        entries.insert(ManifestEntry::File {
+            src_relpath,
+            dst,
+            mode: src_mode(dep)?,
+            uid,
+            gid,
+        });
     }
 
     write_manifest(entries, &args.manifest)
 }
 
-fn from_layer(args: FromLayerArgs) -> Result<()> {
+fn from_layer(args: FromLayerArgs, rootless: Option<&Rootless>) -> Result<()> {
     let default_interp = default_interpreter(args.target_arch);
     let src_layer = args
         .layer
@@ -655,10 +746,14 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
             if added_relpaths.insert(src_relpath.clone()) {
                 let copy_path = args.libs_dir.join(&src_relpath);
                 std::fs::create_dir_all(copy_path.parent().expect("always has parent"))?;
-                std::fs::copy(&target_under_src, &copy_path)?;
+                copy_source(&target_under_src, &copy_path, rootless)?;
+                let (uid, gid) = src_owner(&target_under_src)?;
                 entries.insert(ManifestEntry::File {
                     src_relpath,
                     dst: canonical_target_rel.to_owned(),
+                    mode: src_mode(&target_under_src)?,
+                    uid,
+                    gid,
                 });
             }
 
@@ -675,10 +770,14 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
             if added_relpaths.insert(src_relpath.clone()) {
                 let copy_path = args.libs_dir.join(&src_relpath);
                 std::fs::create_dir_all(copy_path.parent().expect("always has parent"))?;
-                std::fs::copy(&src, &copy_path)?;
+                copy_source(&src, &copy_path, rootless)?;
+                let (uid, gid) = src_owner(&src)?;
                 entries.insert(ManifestEntry::File {
                     src_relpath,
                     dst: binary.to_owned(),
+                    mode: src_mode(&src)?,
+                    uid,
+                    gid,
                 });
             }
 
@@ -694,6 +793,7 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
                 Some(&src_layer),
                 default_interp,
                 &dlopen_filter,
+                rootless,
             )?
             .into_iter()
             .map(|path| ensure_usr(&path).to_path_buf()),
@@ -737,17 +837,15 @@ fn from_layer(args: FromLayerArgs) -> Result<()> {
         } else {
             dep_copy_path
         };
-        std::fs::copy(&resolved, &copy_path).with_context(|| {
-            format!(
-                "while copying {} to {}",
-                resolved.display(),
-                copy_path.display()
-            )
-        })?;
+        copy_source(&resolved, &copy_path, rootless)?;
 
+        let (uid, gid) = src_owner(&resolved)?;
         entries.insert(ManifestEntry::File {
             src_relpath,
             dst: dep.to_owned(),
+            mode: src_mode(&resolved)?,
+            uid,
+            gid,
         });
     }
 

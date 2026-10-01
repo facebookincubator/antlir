@@ -21,6 +21,7 @@ This new-and-improved version of extract is capable of extracting buck-built
 binaries without first installing them into a layer.
 """
 
+load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
@@ -43,6 +44,7 @@ def extract_from_layer(
     dlopen_min_priority: str | Select = "recommended",
     dlopen_features_allow: dict[str, list[str]] | Select = {},
     dlopen_features_deny: dict[str, list[str]] | Select = {},
+    rootless: bool | Select = rootless_cfg.is_rootless_select,
 ):
     """
     Extract a binary and all of its runtime dependencies from `layer` into the
@@ -74,6 +76,11 @@ def extract_from_layer(
         dlopen_features_deny: dict of regex -> list of features to deny.
             If a dep's feature matches a denied feature, it is excluded even if its
             priority would otherwise include it. Deny takes precedence over allow and priority.
+        rootless: run the dependency analysis in a user namespace (like image
+            builds and `genrule_in_image`), so that files without read
+            permission (like mode 4111 `/usr/bin/sudo`) can still be read.
+            When False, the analysis runs under `sudo` instead. Defaults to
+            the image rootless configuration.
     """
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
@@ -89,6 +96,7 @@ def extract_from_layer(
             "dlopen_features_allow": dlopen_features_allow,
             "dlopen_features_deny": dlopen_features_deny,
             "dlopen_min_priority": dlopen_min_priority,
+            "rootless": rootless,
             "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         },
     )
@@ -101,6 +109,7 @@ def extract_buck_binary(
     dlopen_min_priority: str | Select = "recommended",
     dlopen_features_allow: dict[str, list[str]] | Select = {},
     dlopen_features_deny: dict[str, list[str]] | Select = {},
+    rootless: bool | Select = rootless_cfg.is_rootless_select,
 ):
     """
     Extract a buck-built binary and all of its runtime dependencies into the
@@ -135,6 +144,10 @@ def extract_buck_binary(
         dlopen_features_allow: dict of regex -> list of features to allow.
             Regex is matched against the file path of the binary that declares the dlopen dep.
         dlopen_features_deny: dict of regex -> list of features to deny.
+        rootless: run the dependency analysis in a user namespace (like image
+            builds and `genrule_in_image`), so that files without read
+            permission can still be read. When False, the analysis runs under
+            `sudo` instead. Defaults to the image rootless configuration.
     """
     return ParseTimeFeature(
         feature_type = "extract_buck_binary",
@@ -156,6 +169,7 @@ def extract_buck_binary(
             "dlopen_features_deny": dlopen_features_deny,
             "dlopen_min_priority": dlopen_min_priority,
             "dst": dst,
+            "rootless": rootless,
             "strip": strip,
             "strip_all": strip_all,
             "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -170,8 +184,10 @@ def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
 
     ctx.actions.run(
         cmd_args(
+            "sudo" if not ctx.attrs.rootless else cmd_args(),
             ctx.attrs._analyze[RunInfo],
             "from-layer",
+            "--rootless" if ctx.attrs.rootless else cmd_args(),
             cmd_args(layer_subvol, format = "--layer={}"),
             cmd_args(ctx.attrs.binaries, format = "--binary={}"),
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
@@ -216,6 +232,7 @@ extract_from_layer_rule = new_feature_rule(
         ),
         "dlopen_min_priority": attrs.string(default = "recommended"),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "rootless": attrs.bool(),
         "target_arch": attrs.string(),
         "_analyze": attrs.exec_dep(),
     },
@@ -239,8 +256,10 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
 
     ctx.actions.run(
         cmd_args(
+            "sudo" if not ctx.attrs.rootless else cmd_args(),
             ctx.attrs._analyze[RunInfo],
             "buck-binary",
+            "--rootless" if ctx.attrs.rootless else cmd_args(),
             cmd_args(src, format = "--src={}"),
             cmd_args(ctx.attrs.dst, format = "--dst={}"),
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
@@ -252,10 +271,15 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             hidden = ctx.attrs.src[RunInfo],
         ),
         category = "extract_buck_binary",
-        # The analyzer resolves shared libraries by reading the target arch's
-        # fbcode platform directory off the filesystem, and RE workers only have
-        # the native arch's platform installed.
-        local_only = ctx.attrs.target_arch == "aarch64",
+        local_only = (
+            # The analyzer resolves shared libraries by reading the target arch's
+            # fbcode platform directory off the filesystem, and RE workers only have
+            # the native arch's platform installed.
+            ctx.attrs.target_arch == "aarch64"
+            or
+            # no sudo access on remote execution
+            not ctx.attrs.rootless
+        ),
     )
 
     return [
@@ -288,6 +312,7 @@ extract_buck_binary_rule = new_feature_rule(
         ),
         "dlopen_min_priority": attrs.string(default = "recommended"),
         "dst": attrs.option(attrs.string(), default = None),
+        "rootless": attrs.bool(),
         "src": attrs.dep(providers = [RunInfo]),
         "strip": attrs.bool(default = True),
         "strip_all": attrs.bool(default = False),

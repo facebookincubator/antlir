@@ -141,3 +141,46 @@ image_sh_test(
     layer = ":extract-symlink-layer",
     test = "test-extract-symlink-layer.sh",
 )
+
+image.layer(
+    name = "sudo-src",
+    features = [
+        feature.rpms_install(rpms = ["sudo"]),
+    ],
+)
+
+image.layer(
+    name = "extract-sudo",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.ensure_dirs_exist(dirs = "/usr/libexec/sudo"),
+        feature.extract_from_layer(
+            binaries = [
+                # /usr/bin/sudo is mode 4111 (setuid, execute-only),
+                # which cannot be opened O_RDONLY by an unprivileged user.
+                "/usr/bin/sudo",
+            ],
+            layer = ":sudo-src",
+        ),
+        feature.extract_from_layer(
+            binaries = [
+                # sudo loads this plugin via dlopen, so it is not picked up
+                # as an ELF dependency of /usr/bin/sudo itself.
+                "/usr/libexec/sudo/sudoers.so",
+            ],
+            layer = ":sudo-src",
+        ),
+        # the sudoers plugin refuses to initialize without this
+        feature.clone(
+            path = "/etc/sudoers",
+            src_layer = ":sudo-src",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_sh_test(
+    name = "extract-sudo-test",
+    layer = ":extract-sudo",
+    test = "test-extract-sudo.sh",
+)

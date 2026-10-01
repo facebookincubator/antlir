@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 use std::fs::File;
 use std::hash::Hasher;
 use std::io::BufReader;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -37,8 +38,18 @@ pub type Feature = Extract;
 /// An entry in the extract manifest describing a file to install.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub enum ManifestEntry {
-    /// Copy a file from libs_dir to an absolute path in the image
-    File { src_relpath: PathBuf, dst: PathBuf },
+    /// Copy a file from libs_dir to an absolute path in the image.
+    /// `mode`, `uid` and `gid` are the source file's metadata. They must
+    /// travel in the manifest because libs_dir transits through buck action
+    /// outputs, which cannot represent special mode bits, and are owned by
+    /// the invoking user rather than the source file's owner.
+    File {
+        src_relpath: PathBuf,
+        dst: PathBuf,
+        mode: u32,
+        uid: u32,
+        gid: u32,
+    },
     /// Create a symlink at `link` pointing to `target`
     Symlink { link: PathBuf, target: PathBuf },
 }
@@ -114,9 +125,21 @@ impl antlir2_compile::CompileFeature for Extract {
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         for entry in &self.libs.manifest.0 {
             match entry {
-                ManifestEntry::File { src_relpath, dst } => {
+                ManifestEntry::File {
+                    src_relpath,
+                    dst,
+                    mode,
+                    uid,
+                    gid,
+                } => {
                     trace!("copying {} -> {}", src_relpath.display(), dst.display());
-                    copy_dep(&self.libs.libs_dir.join(src_relpath), &ctx.dst_path(dst)?)?;
+                    copy_dep(
+                        &self.libs.libs_dir.join(src_relpath),
+                        &ctx.dst_path(dst)?,
+                        *mode,
+                        *uid,
+                        *gid,
+                    )?;
                 }
                 ManifestEntry::Symlink { link, target } => {
                     trace!("symlinking {} -> {}", link.display(), target.display());
@@ -131,7 +154,7 @@ impl antlir2_compile::CompileFeature for Extract {
 }
 
 #[tracing::instrument(err, ret)]
-pub fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
+pub fn copy_dep(dep: &Path, dst: &Path, mode: u32, uid: u32, gid: u32) -> Result<()> {
     // create the destination directory tree based on permissions in the source
     if !dst.parent().expect("dst always has parent").exists() {
         for dir in dst
@@ -198,7 +221,19 @@ pub fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
             ));
         }
     } else {
-        copy_with_metadata().src(&dep).dst(dst).call()?
+        copy_with_metadata()
+            .src(&dep)
+            .dst(dst)
+            .uid(uid)
+            .gid(gid)
+            .call()?;
+        // Apply the source's true mode from the manifest (after chown, so
+        // that setuid/setgid bits survive). The libs_dir copy cannot be
+        // trusted for ownership or mode: it transits through buck action
+        // outputs, which cannot represent special mode bits, and is owned by
+        // the invoking user rather than the source file's owner.
+        std::fs::set_permissions(dst, std::fs::Permissions::from_mode(mode & !0o002))
+            .with_context(|| format!("while setting permissions on '{}'", dst.display()))?;
     }
     Ok(())
 }
