@@ -1,16 +1,64 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
 load("//antlir/bzl:build_defs.bzl", "rust_library")
 
 oncall("antlir")
 
+deps = [
+    "cap-std",
+    "derive_more",
+    "libc",
+    "nix",
+    "serde",
+    "thiserror",
+    "tracing",
+    "walkdir",
+    "xattr",
+    "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
+]
+
 rust_library(
     name = "antlir2_change_stream",
     srcs = glob(["src/**/*.rs"]),
-    deps = [
-        "cap-std",
-        "libc",
-        "serde",
-        "thiserror",
-        "walkdir",
-        "xattr",
+    unittests = False,
+    deps = deps,
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = ["bash"]),
+        feature.ensure_dirs_exist(
+            dirs = "/work",
+            mode = 0o777,
+        ),
     ],
+)
+
+image_rust_test(
+    name = "antlir2_change_stream-image-test",
+    srcs = glob(["src/**/*.rs"]),
+    layer = ":test-layer",
+    rootless = False,
+    target_compatible_with = [
+        "ovr_config//cpu:x86_64",
+        "ovr_config//os:linux",
+        "//antlir/antlir2/antlir2_rootless:config[rooted]",
+    ],
+    deps = deps + ["tempfile"],
+)
+
+image_rust_test(
+    name = "antlir2_change_stream-image-test-unprivileged",
+    srcs = glob(["src/**/*.rs"]),
+    layer = ":test-layer",
+    rootless = False,
+    run_as_user = "nobody",
+    target_compatible_with = [
+        "ovr_config//cpu:x86_64",
+        "ovr_config//os:linux",
+        "//antlir/antlir2/antlir2_rootless:config[rooted]",
+    ],
+    deps = deps + ["tempfile"],
 )

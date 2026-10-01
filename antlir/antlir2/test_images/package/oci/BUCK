@@ -158,6 +158,29 @@ image_python_test(
     deps = [":podman_helpers"],
 )
 
+# Package the same layer with the fast snapshot diff and check that every
+# layer tar is byte-identical to the one built by reading every file.
+
+oci(
+    name = "oci-fast-snapshot-diff",
+    entrypoint = [
+        "/entrypoint.sh",
+        "foo",
+    ],
+    fast_snapshot_diff = True,
+    layer = ":layer",
+)
+
+image_python_test(
+    name = "test-fast-snapshot-diff",
+    srcs = ["test_fast_snapshot_diff.py"],
+    env = {
+        "OCI": "$(location :oci)",
+        "OCI_FAST_SNAPSHOT_DIFF": "$(location :oci-fast-snapshot-diff)",
+    },
+    layer = ":test-layer",
+)
+
 oci(
     name = "oci-zstd-chunked",
     entrypoint = [

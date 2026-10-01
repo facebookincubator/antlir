@@ -45,7 +45,7 @@ def _oci_layer_sub_targets(layer: OciLayer) -> list[Provider]:
         )
     ]
 
-def _make_layer_tar(*, ctx: AnalysisContext, identifier: str, parent: LayerContents | None, child_subvol: LayerContents) -> OciLayer:
+def _make_layer_tar(*, ctx: AnalysisContext, identifier: str, parent: LayerContents | None, child_subvol: LayerContents, fast_snapshot_diff: str) -> OciLayer:
     tar = ctx.actions.declare_output(identifier, "layer.tar", has_content_based_path = False)
     ctx.actions.run(
         cmd_args(
@@ -57,6 +57,7 @@ def _make_layer_tar(*, ctx: AnalysisContext, identifier: str, parent: LayerConte
             cmd_args(tar.as_output(), format = "--out={}"),
             cmd_args(ctx.attrs.strip_paths, format = "--strip-path={}"),
             cmd_args(ctx.attrs.retain_paths, format = "--retain-path={}"),
+            cmd_args(fast_snapshot_diff, format = "--fast-snapshot-diff={}") if fast_snapshot_diff != "off" and parent else cmd_args(),
         ),
         local_only = True,  # comparing local subvols
         category = "oci_layer",
@@ -96,6 +97,7 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
                 identifier = last_phase.value,
                 parent = None,
                 child_subvol = layer.contents,
+                fast_snapshot_diff = "off",
             )
         )
     else:
@@ -113,6 +115,7 @@ def _oci_layers_impl(ctx: AnalysisContext) -> list[Provider]:
                     identifier = child_phase.value,
                     parent = parent,
                     child_subvol = child_contents,
+                    fast_snapshot_diff = ctx.attrs.fast_snapshot_diff,
                 )
             )
 
@@ -128,6 +131,7 @@ _oci_layers = anon_rule(
     impl = _oci_layers_impl,
     attrs = {
         "collapse_into_one_layer": attrs.bool(default = False),
+        "fast_snapshot_diff": attrs.string(default = "off"),
         "layer": attrs.dep(providers = [LayerInfo]),
         "retain_paths": attrs.list(attrs.string(), default = []),
         "strip_paths": attrs.list(attrs.string(), default = []),
@@ -140,6 +144,23 @@ _oci_layers = anon_rule(
     },
     artifact_promise_mappings = {},
 )
+
+def _fast_snapshot_diff(ctx: AnalysisContext) -> str:
+    override = ctx.attrs._fast_snapshot_diff_override
+    if override == "true":
+        return "on"
+    if override == "false":
+        return "off"
+    if override == "verify":
+        return "verify"
+    if override:
+        fail("antlir2.fast_snapshot_diff must be 'true', 'false' or 'verify', not '{}'".format(override))
+    attr = ctx.attrs.fast_snapshot_diff
+    if attr == None:
+        return "verify"
+    if attr:
+        return "on"
+    return "off"
 
 def _impl(ctx: AnalysisContext) -> Promise:
     base_layers_dir = None
@@ -226,6 +247,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
             _oci_layers,
             {
                 "collapse_into_one_layer": ctx.attrs.collapse_into_one_layer,
+                "fast_snapshot_diff": _fast_snapshot_diff(ctx),
                 "layer": layer,
                 "name": layer[LayerInfo].label,
                 "retain_paths": [str(p) for p in ctx.attrs.retain_paths],
@@ -240,6 +262,14 @@ def _impl(ctx: AnalysisContext) -> Promise:
 oci_attrs = {
     "collapse_into_one_layer": attrs.bool(default = False, doc = "If True, collapse all layers into a single layer containing the final filesystem state"),
     "entrypoint": attrs.list(attrs.string(), doc = "Command to run as the main process"),
+    "fast_snapshot_diff": attrs.option(
+        attrs.bool(),
+        default = None,
+        doc = "How to compare files against the previous phase's btrfs snapshot when building each layer tar: "
+        + "None (default) skips provably unchanged files but byte-compares every skipped file, "
+        + "True skips them without verifying, False reads everything. "
+        + "`-c antlir2.fast_snapshot_diff=true|false|verify` overrides this for every target.",
+    ),
     "image_labels": attrs.dict(
         attrs.string(),
         attrs.string(),
@@ -271,6 +301,11 @@ oci_attrs = {
         attrs.string(
             default = native.read_root_config("build_info", "time_iso8601", ""),
         )
+    ),
+    "_fast_snapshot_diff_override": attrs.default_only(
+        attrs.string(
+            default = native.read_root_config("antlir2", "fast_snapshot_diff", ""),
+        ),
     ),
     "_make_oci_layer": attrs.default_only(
         attrs.exec_dep(

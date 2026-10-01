@@ -168,6 +168,29 @@ image.layer(
     parent_layer = ":some-mutation-base",
 )
 
+# Large enough to be stored in regular extents rather than inline in metadata
+image.layer(
+    name = "big-file",
+    features = [
+        feature.genrule(
+            bash = "head -c 131072 /dev/zero | tr '\\0' x > /big",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":some-mutation-base",
+)
+
+image.layer(
+    name = "overwrite-in-place",
+    features = [
+        feature.genrule(
+            bash = "printf y | dd of=/big bs=1 seek=65536 conv=notrunc status=none",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":big-file",
+)
+
 image.layer(
     name = "test-layer",
     features = [
@@ -219,6 +242,14 @@ image.layer(
         feature.layer_mount(
             mountpoint = "/dir-to-file",
             source = ":dir-to-file",
+        ),
+        feature.layer_mount(
+            mountpoint = "/big-file",
+            source = ":big-file",
+        ),
+        feature.layer_mount(
+            mountpoint = "/overwrite-in-place",
+            source = ":overwrite-in-place",
         ),
     ],
 )

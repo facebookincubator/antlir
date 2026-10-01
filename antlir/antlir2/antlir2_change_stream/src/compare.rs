@@ -6,6 +6,7 @@
  */
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use cap_std::fs::Dir;
 use cap_std::fs::File;
@@ -16,10 +17,14 @@ use crate::Change;
 use crate::Contents;
 use crate::Operation;
 use crate::Result;
+use crate::Stats;
 
 mod file;
 mod tree;
+mod unchanged;
 mod xattrs;
+pub(crate) use unchanged::Shortcut;
+pub(crate) use unchanged::Snapshot;
 use xattrs::xattr_ops;
 
 /// Control is an instruction that is placed on a stack
@@ -76,9 +81,19 @@ fn sanitize_mode(mode: u32) -> u32 {
     mode & !0o0170000
 }
 
+/// How regular files that exist on both sides are compared.
+pub(crate) struct FileComparison {
+    pub(crate) shortcut: Option<Shortcut>,
+    pub(crate) stats: Arc<Stats>,
+}
+
 /// Run the stack machine to completion using this starting set of instructions,
 /// yielding each change as it is produced by the stack machine.
-pub(crate) fn run_to_completion<C, F>(mut stack: Vec<Instruction<C>>, mut yield_fn: F) -> Result<()>
+pub(crate) fn run_to_completion<C, F>(
+    mut stack: Vec<Instruction<C>>,
+    files: &FileComparison,
+    mut yield_fn: F,
+) -> Result<()>
 where
     C: Contents,
     F: FnMut(Change<C>),
@@ -96,7 +111,7 @@ where
                 stack.extend(tree::add(&prefix, dir)?);
             }
             Instruction::CompareFile { path, old, new } => {
-                let ops = file::compare(old, new)?;
+                let ops = file::compare(&path, old, new, files)?;
                 stack.extend(
                     ops.into_iter()
                         .rev()

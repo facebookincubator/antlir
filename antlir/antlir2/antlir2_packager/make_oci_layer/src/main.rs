@@ -15,6 +15,7 @@ use std::io::Seek;
 use std::path::Path;
 use std::path::PathBuf;
 
+use antlir2_change_stream::FastSnapshotDiff;
 use antlir2_change_stream::Iter;
 use antlir2_change_stream::Operation;
 use anyhow::Context;
@@ -50,6 +51,18 @@ struct Args {
     strip_path: Vec<String>,
     #[clap(long)]
     retain_path: Vec<String>,
+    /// How to compare files that exist on both sides: `off` reads everything,
+    /// `on` skips files a read-only btrfs snapshot proves unchanged, and
+    /// `verify` skips them but byte-compares every skipped file anyway
+    #[clap(long, value_enum, default_value_t = SnapshotDiffMode::Off)]
+    fast_snapshot_diff: SnapshotDiffMode,
+}
+
+#[derive(Clone, Copy, Debug, clap::ValueEnum)]
+enum SnapshotDiffMode {
+    Off,
+    On,
+    Verify,
 }
 
 struct Entry {
@@ -166,12 +179,23 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
 
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let path_filter = PathFilter::new(&args.strip_path, &args.retain_path)?;
 
+    let fast_snapshot_diff = match args.fast_snapshot_diff {
+        SnapshotDiffMode::Off => FastSnapshotDiff::Off,
+        SnapshotDiffMode::On => FastSnapshotDiff::On,
+        SnapshotDiffMode::Verify => FastSnapshotDiff::VerifyAll,
+    };
     let stream: Iter<File> = match &args.parent {
-        Some(parent) => Iter::diff(parent, &args.child)?,
+        Some(parent) => Iter::diff_with(parent, &args.child, fast_snapshot_diff)?,
         None => Iter::from_empty(&args.child)?,
     };
+    let stats = stream.stats();
 
     let mut builder = Builder::new(BufWriter::new(File::create(&args.out)?));
 
@@ -483,6 +507,17 @@ fn main() -> Result<()> {
         header.set_mode(0o644);
         header.set_entry_type(EntryType::Regular);
         builder.append_data(&mut header, wh_full_path, std::io::empty())?;
+    }
+
+    if !matches!(args.fast_snapshot_diff, SnapshotDiffMode::Off) {
+        tracing::info!(
+            active = stats.fast_snapshot_diff(),
+            skipped = stats.skipped(),
+            verified = stats.verified(),
+            mismatched = stats.mismatched(),
+            read = stats.read(),
+            "fast snapshot diff"
+        );
     }
 
     ensure!(

@@ -6,10 +6,13 @@
  */
 
 use std::os::fd::AsRawFd as _;
+use std::path::Path;
+use std::sync::atomic::Ordering;
 
 use cap_std::fs::File;
 use cap_std::fs::MetadataExt;
 
+use super::FileComparison;
 use super::maybe_chmod;
 use super::maybe_chown;
 use super::maybe_set_times;
@@ -20,7 +23,12 @@ use crate::Error;
 use crate::Operation;
 use crate::Result;
 
-pub(super) fn compare<C: Contents>(old: File, new: File) -> Result<Vec<Operation<C>>> {
+pub(super) fn compare<C: Contents>(
+    path: &Path,
+    old: File,
+    new: File,
+    files: &FileComparison,
+) -> Result<Vec<Operation<C>>> {
     let old_meta = old.metadata()?;
     let new_meta = new.metadata()?;
     let mut ops = Vec::new();
@@ -30,12 +38,24 @@ pub(super) fn compare<C: Contents>(old: File, new: File) -> Result<Vec<Operation
         // re-open them for reading (the given fds are just O_PATH)
         let new_fd = std::fs::File::open(format!("/proc/self/fd/{}", new.as_raw_fd()))?;
         let old_fd = std::fs::File::open(format!("/proc/self/fd/{}", old.as_raw_fd()))?;
-        let mut new_contents = C::from_file(new_fd)?;
-        let mut old_contents = C::from_file(old_fd)?;
-        if new_contents.differs(&mut old_contents)? {
-            ops.push(Operation::Contents {
-                contents: new_contents,
-            });
+        let skip = match &files.shortcut {
+            Some(shortcut) => shortcut.skip(
+                path,
+                (&old_meta, &old_fd),
+                (&new_meta, &new_fd),
+                &files.stats,
+            )?,
+            None => false,
+        };
+        if !skip {
+            files.stats.read.fetch_add(1, Ordering::Relaxed);
+            let mut new_contents = C::from_file(new_fd)?;
+            let mut old_contents = C::from_file(old_fd)?;
+            if new_contents.differs(&mut old_contents)? {
+                ops.push(Operation::Contents {
+                    contents: new_contents,
+                });
+            }
         }
     }
 

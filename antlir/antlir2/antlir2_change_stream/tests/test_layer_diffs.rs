@@ -5,14 +5,17 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 
 use antlir2_change_stream::Change;
 use antlir2_change_stream::Contents;
+use antlir2_change_stream::FastSnapshotDiff;
 use antlir2_change_stream::Iter;
 use antlir2_change_stream::Operation;
 use pretty_assertions::assert_eq;
@@ -46,17 +49,41 @@ enum TimestampMode {
     Omit,
 }
 
+/// Changes from `old` to `new`, after checking that the fast snapshot diff
+/// produces exactly the same ones as reading every file.
 fn changes_between<C>(
     old: impl AsRef<Path>,
     new: impl AsRef<Path>,
     ts_mode: TimestampMode,
 ) -> Vec<Change<C>>
 where
+    C: Contents + PartialEq + Debug + 'static,
+{
+    let full = collect_changes(
+        Iter::diff(&old, &new).expect("failed to create stream"),
+        ts_mode,
+    );
+    let fast_iter =
+        Iter::diff_with(&old, &new, FastSnapshotDiff::VerifyAll).expect("failed to create stream");
+    let fast_stats = fast_iter.stats();
+    let fast = collect_changes(fast_iter, ts_mode);
+    assert_eq!(
+        full, fast,
+        "the fast snapshot diff must produce the same changes as reading every file"
+    );
+    assert_eq!(
+        fast_stats.mismatched(),
+        0,
+        "verification must never find a skipped file whose bytes differ"
+    );
+    full
+}
+
+fn collect_changes<C>(iter: Iter<C>, ts_mode: TimestampMode) -> Vec<Change<C>>
+where
     C: Contents + 'static,
 {
-    Iter::diff(old, new)
-        .expect("failed to create stream")
-        .map(|r| r.expect("failed to get change"))
+    iter.map(|r| r.expect("failed to get change"))
         .filter_map(|change| match change.operation() {
             // zero out timestamps so these tests can be deterministic while
             // still verifying that a SetTimes change is produced
@@ -349,6 +376,64 @@ fn change_file_contents() {
             "/change-file-contents",
             TimestampMode::Zero
         )
+    );
+}
+
+/// Sizes of the files that were read, which only overwrite_in_place uses.
+static SIZES_READ: Mutex<Vec<u64>> = Mutex::new(Vec::new());
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RecordingString(LossyString);
+
+impl Contents for RecordingString {
+    fn from_file(file: std::fs::File) -> std::io::Result<Self> {
+        SIZES_READ
+            .lock()
+            .expect("lock")
+            .push(file.metadata()?.len());
+        LossyString::from_file(file).map(Self)
+    }
+
+    fn differs(&mut self, other: &mut Self) -> std::io::Result<bool> {
+        self.0.differs(&mut other.0)
+    }
+}
+
+#[test]
+fn overwrite_in_place() {
+    SIZES_READ.lock().expect("lock").clear();
+    let contents = format!("{}y{}", "x".repeat(65536), "x".repeat(65535));
+    let expected: Vec<Change<RecordingString>> = file_changes(
+        "big",
+        [
+            Operation::Contents {
+                contents: RecordingString(contents.as_str().into()),
+            },
+            zero_times(),
+            Operation::Close,
+        ],
+    )
+    .collect();
+    let iter = Iter::diff_with("/big-file", "/overwrite-in-place", FastSnapshotDiff::On)
+        .expect("failed to create stream");
+    let stats = iter.stats();
+    assert_eq!(expected, collect_changes(iter, TimestampMode::Zero));
+    assert!(
+        stats.fast_snapshot_diff(),
+        "the mounted layers are read-only snapshots, so the fast snapshot diff must be used"
+    );
+    assert!(stats.skipped() > 0, "untouched files must be skipped");
+    // Files small enough for btrfs to store inline in metadata have no
+    // physical extent to compare, so they are always read.
+    let large_reads = SIZES_READ
+        .lock()
+        .expect("lock")
+        .iter()
+        .filter(|&&len| len > 4096)
+        .count();
+    assert_eq!(
+        large_reads, 2,
+        "only the old and new /big should be read, every other large file is untouched since the snapshot"
     );
 }
 

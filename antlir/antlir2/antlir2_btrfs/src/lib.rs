@@ -5,9 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(exit_status_error)]
-#![cfg_attr(test, feature(io_error_more))]
-
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs::OpenOptions;
@@ -69,6 +66,16 @@ bitflags! {
     #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     struct SubvolFlags: u64 {
         const READ_ONLY = 1 << 1;
+    }
+}
+
+// GET_SUBVOL_INFO reports root item flags, where read-only is
+// BTRFS_ROOT_SUBVOL_RDONLY. This is not the same bit as the
+// BTRFS_SUBVOL_RDONLY flag used by `get_flags`/`set_flags`.
+bitflags! {
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
+    pub struct SubvolInfoFlags: u64 {
+        const READONLY = 1 << 0;
     }
 }
 
@@ -256,11 +263,7 @@ impl Subvolume {
     }
 
     pub fn info(&self) -> Result<Info> {
-        let mut args = Default::default();
-        unsafe {
-            ioctl::get_subvol_info(self.fd.as_raw_fd(), &mut args).map_err(std::io::Error::from)?;
-        }
-        Ok(Info(args))
+        Info::from_fd(&self.fd)
     }
 }
 
@@ -268,6 +271,23 @@ impl Subvolume {
 pub struct Info(ioctl::get_subvol_info_args);
 
 impl Info {
+    /// Info about the subvolume whose root `fd` points at, without reopening
+    /// anything by path. The fd must be the subvolume root itself, not just a
+    /// file inside it.
+    pub fn from_fd(fd: &impl AsFd) -> Result<Self> {
+        ensure_is_btrfs(fd, format!("/dev/fd/{}", fd.as_fd().as_raw_fd()))?;
+        let stat = fstat(fd).map_err(std::io::Error::from)?;
+        if stat.st_ino != INO_SUBVOL {
+            return Err(Error::NotSubvol);
+        }
+        let mut args = Default::default();
+        unsafe {
+            ioctl::get_subvol_info(fd.as_fd().as_raw_fd(), &mut args)
+                .map_err(std::io::Error::from)?;
+        }
+        Ok(Self(args))
+    }
+
     pub fn id(&self) -> u64 {
         self.0.id
     }
@@ -295,6 +315,14 @@ impl Info {
     pub fn ctransid(&self) -> u64 {
         self.0.ctransid
     }
+
+    pub fn flags(&self) -> SubvolInfoFlags {
+        SubvolInfoFlags::from_bits_retain(self.0.flags)
+    }
+
+    pub fn is_readonly(&self) -> bool {
+        self.flags().contains(SubvolInfoFlags::READONLY)
+    }
 }
 
 impl Debug for Info {
@@ -303,6 +331,7 @@ impl Debug for Info {
             .field("id", &self.id())
             .field("uuid", &self.uuid())
             .field("parent_uuid", &self.parent_uuid())
+            .field("flags", &self.flags())
             .finish_non_exhaustive()
     }
 }
@@ -364,7 +393,9 @@ mod tests {
     fn toggle_readonly() {
         let mut subvol = Subvolume::create("/work/foo").expect("failed to create subvol /work/foo");
         std::fs::write("/work/foo/bar", "bar").expect("failed to write /work/foo/bar");
+        assert!(!subvol.info().expect("info").is_readonly());
         subvol.set_readonly(true).expect("failed to set readonly");
+        assert!(subvol.info().expect("info").is_readonly());
         assert_eq!(
             std::fs::write("/work/foo/baz", "baz")
                 .expect_err("should have failed to write /foo/baz")
@@ -372,7 +403,39 @@ mod tests {
             ErrorKind::ReadOnlyFilesystem,
         );
         subvol.set_readonly(false).expect("failed to set readwrite");
+        assert!(!subvol.info().expect("info").is_readonly());
         std::fs::write("/work/foo/qux", "qux").expect("failed to write /work/foo/qux");
+    }
+
+    #[test]
+    fn info_from_fd() {
+        let subvol = Subvolume::create("/work/foo").expect("failed to create subvol /work/foo");
+        std::fs::create_dir("/work/foo/dir").expect("failed to mkdir /work/foo/dir");
+        std::fs::write("/work/foo/dir/file", "file").expect("failed to write /work/foo/dir/file");
+
+        // reopen the subvol and get the info with the new fd
+        let f = std::fs::File::open("/work/foo").expect("failed to open /work/foo");
+        let info = Info::from_fd(&f).expect("failed Info::from_fd");
+        assert_eq!(
+            info.uuid(),
+            subvol.info().expect("failed to get subvol info").uuid()
+        );
+
+        // but paths inside the subvol are not the subvol root
+        for path in ["/work/foo/dir", "/work/foo/dir/file"] {
+            let f = std::fs::File::open(path).expect("open");
+            assert!(
+                matches!(Info::from_fd(&f), Err(Error::NotSubvol)),
+                "expected error on info lookup for {path}"
+            );
+        }
+
+        // and entirely-non-btrfs should fail accordingly
+        let f = std::fs::File::open("/tmp").expect("failed to open /tmp");
+        assert!(
+            matches!(Info::from_fd(&f), Err(Error::NotBtrfs(_))),
+            "expected error on info lookup for non-btrfs"
+        );
     }
 
     #[test]
@@ -389,9 +452,11 @@ mod tests {
     fn snapshot_readonly() {
         let subvol = Subvolume::create("/work/src").expect("failed to create src subvol");
         std::fs::write("/work/src/empty", "").expect("failed to write empty file");
-        subvol
+        let snapshot = subvol
             .snapshot("/work/snapshot", SnapshotFlags::READONLY)
             .expect("failed to make snapshot");
+        assert!(snapshot.info().expect("info").is_readonly());
+        assert!(!subvol.info().expect("info").is_readonly());
         assert_eq!(
             std::fs::write("/work/snapshot/foo", "foo")
                 .expect_err("should have failed to write /work/snapshot/foo")

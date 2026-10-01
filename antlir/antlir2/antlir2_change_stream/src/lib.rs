@@ -8,6 +8,8 @@
 use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
 use std::time::SystemTime;
 
 use cap_std::fs::FileType;
@@ -32,6 +34,69 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// Whether [`Iter::diff_with`] may skip reading regular files that a btrfs
+/// snapshot proves unchanged.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum FastSnapshotDiff {
+    /// Read and compare every regular file that exists on both sides.
+    #[default]
+    Off,
+    /// Skip reading files whose inode, ctime, size and physical extents match
+    /// across a read-only snapshot.
+    On,
+    /// Like `On`, but byte-compare every skipped file. A file that differs is
+    /// read in full and counted as mismatched instead of failing the diff,
+    /// so this validates correctness without speeding anything up.
+    VerifyAll,
+}
+
+/// How regular files that exist on both sides of a diff were compared.
+#[derive(Debug)]
+pub struct Stats {
+    fast_snapshot_diff: bool,
+    skipped: AtomicU64,
+    verified: AtomicU64,
+    mismatched: AtomicU64,
+    read: AtomicU64,
+}
+
+impl Stats {
+    fn new(fast_snapshot_diff: bool) -> Self {
+        Self {
+            fast_snapshot_diff,
+            skipped: AtomicU64::new(0),
+            verified: AtomicU64::new(0),
+            mismatched: AtomicU64::new(0),
+            read: AtomicU64::new(0),
+        }
+    }
+
+    /// Whether the fast snapshot diff was requested and the trees qualified.
+    pub fn fast_snapshot_diff(&self) -> bool {
+        self.fast_snapshot_diff
+    }
+
+    /// Files not read because they are provably unchanged.
+    pub fn skipped(&self) -> u64 {
+        self.skipped.load(Ordering::Relaxed)
+    }
+
+    /// Skipped files that were byte-compared anyway.
+    pub fn verified(&self) -> u64 {
+        self.verified.load(Ordering::Relaxed)
+    }
+
+    /// Verified files whose bytes differed, which were read in full instead.
+    pub fn mismatched(&self) -> u64 {
+        self.mismatched.load(Ordering::Relaxed)
+    }
+
+    /// Files read and compared in full.
+    pub fn read(&self) -> u64 {
+        self.read.load(Ordering::Relaxed)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
