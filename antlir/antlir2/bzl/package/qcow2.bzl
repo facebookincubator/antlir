@@ -17,6 +17,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "raw",
             "-O",
             "qcow2",
+            ["-c"] if ctx.attrs.compressed else [],
             ctx.attrs.src[DiskImage].src,
             out.as_output(),
         ),
@@ -28,6 +29,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 qcow2_rule = anon_rule(
     impl = _impl,
     attrs = {
+        "compressed": attrs.bool(default = False, doc = "compress clusters with deflate (qemu-img convert -c)"),
         "src": attrs.dep(providers = [DiskImage]),
         "_qemu_img": attrs.default_only(
             attrs.exec_dep(

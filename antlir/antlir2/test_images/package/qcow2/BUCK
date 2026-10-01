@@ -14,12 +14,32 @@ package.qcow2(
     src = ":test.ext4",
 )
 
+package.qcow2(
+    name = "test-compressed.qcow2",
+    src = ":test.ext4",
+    compressed = True,
+)
+
 test_in_layer(
     name = "test-qcow2",
     layer_features = [
         feature.ensure_dirs_exist(dirs = "/package"),
         feature.install(
             src = ":test.qcow2",
+            dst = "/package.qcow2",
+        ),
+        feature.rpms_install(rpms = ["e2fsprogs", "qemu-img"]),
+    ],
+    omit_package_features = [package_feature("hardlink_ino_eq")],
+    stub = "stub.rs",
+)
+
+test_in_layer(
+    name = "test-compressed-qcow2",
+    layer_features = [
+        feature.ensure_dirs_exist(dirs = "/package"),
+        feature.install(
+            src = ":test-compressed.qcow2",
             dst = "/package.qcow2",
         ),
         feature.rpms_install(rpms = ["e2fsprogs", "qemu-img"]),
