@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include <cstdlib>
+#include <string>
+
 #include <gtest/gtest.h>
 #include <pwd.h>
 #include <unistd.h>
