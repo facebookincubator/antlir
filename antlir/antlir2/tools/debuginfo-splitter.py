@@ -145,10 +145,12 @@ def cmd_split_dir(args: argparse.Namespace) -> None:
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
     for filepath in sorted(input_dir.rglob("*")):
+        relpath = filepath.relative_to(input_dir)
+        if filepath.is_dir():
+            (stripped_dir / relpath).mkdir(parents=True, exist_ok=True)
+            continue
         if not filepath.is_file():
             continue
-
-        relpath = filepath.relative_to(input_dir)
 
         stripped_path = stripped_dir / relpath
         stripped_path.parent.mkdir(parents=True, exist_ok=True)

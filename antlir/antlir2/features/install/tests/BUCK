@@ -480,11 +480,18 @@ export_file(
     name = "resource.txt",
 )
 
+buck_genrule(
+    name = "empty-resource",
+    out = "empty",
+    cmd = 'mkdir "$OUT"',
+)
+
 rust_binary(
     name = "binary-with-resources",
     srcs = ["binary_with_resources.rs"],
     crate_root = "binary_with_resources.rs",
     resources = {
+        "empty_resource": ":empty-resource",
         "my_resource": ":resource.txt",
     },
     deps = [
