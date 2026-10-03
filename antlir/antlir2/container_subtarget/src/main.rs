@@ -70,10 +70,6 @@ fn main() -> anyhow::Result<()> {
         antlir2_rootless::unshare_new_userns().context("while unsharing userns")?;
     }
 
-    let repo_root =
-        find_root::find_repo_root(std::env::current_exe().context("while getting argv[0]")?)
-            .context("while looking for repo root")?;
-
     // antlir2_isolate re-parses these into --bind-ro args and escapes any colons, so we
     // instead take an explicit pair to not have to deal with the added complexity of
     // de-and-re-serializing.
@@ -111,6 +107,9 @@ fn main() -> anyhow::Result<()> {
         cmd_builder.devtmpfs(Path::new("/dev"));
     }
     if args.artifacts_require_repo {
+        let repo_root =
+            find_root::find_repo_root(std::env::current_exe().context("while getting argv[0]")?)
+                .context("while looking for repo root")?;
         cmd_builder.inputs(repo_root);
         cmd_builder.inputs(PathBuf::from("/usr/local/fbcode"));
     }
