@@ -216,11 +216,21 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
                 tmpfs
                     .symlink_contents("/proc/self/fd", "fd")
                     .context("while creating /dev/fd symlink")?;
+                // A real /dev also carries these, and things that open
+                // /dev/stdin by name (rather than using fd 0) break without
+                // them.
+                for (link, target) in [
+                    ("stdin", "/proc/self/fd/0"),
+                    ("stdout", "/proc/self/fd/1"),
+                    ("stderr", "/proc/self/fd/2"),
+                ] {
+                    tmpfs
+                        .symlink_contents(target, link)
+                        .with_context(|| format!("while creating /dev/{link} symlink"))?;
+                }
             }
 
-            for devname in [
-                "fuse", "null", "zero", "full", "random", "urandom", "tty", "ptmx",
-            ] {
+            for devname in ["fuse", "null", "zero", "full", "random", "urandom", "tty"] {
                 let dev = tmpfs
                     .create(devname)
                     .with_context(|| format!("while creating device file '{devname}'"))?;
@@ -257,6 +267,41 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
                 )
                 .context("while mounting device node 'console'")?;
             }
+
+            // `openpty` allocates through /dev/ptmx and expects the slave to
+            // appear under /dev/pts. Bind-mounting the host's /dev/ptmx is not
+            // enough: it allocates against the host's devpts instance, whose
+            // slaves are not visible here, so anything using a pty fails. Give
+            // the container its own devpts instance and point /dev/ptmx at it.
+            tmpfs
+                .create_dir("pts")
+                .context("while creating directory 'pts'")?;
+            let pts = tmpfs
+                .open_dir("pts")
+                .context("while opening pts mountpoint")?
+                .into_std_file();
+            nix::mount::mount(
+                Some("devpts"),
+                &pts.abspath(),
+                Some("devpts"),
+                MsFlags::MS_NOSUID | MsFlags::MS_NOEXEC,
+                // ptmxmode makes the instance's own ptmx usable by non-root,
+                // which it is not by default.
+                Some("newinstance,ptmxmode=0666,mode=0620"),
+            )
+            .context("while mounting devpts")?;
+
+            let ptmx = tmpfs
+                .create("ptmx")
+                .context("while creating device file 'ptmx'")?;
+            nix::mount::mount(
+                Some(pts.abspath().join("ptmx").as_path()),
+                &ptmx.abspath(),
+                None::<&str>,
+                MsFlags::MS_BIND | MS_NOSYMFOLLOW,
+                None::<&str>,
+            )
+            .context("while mounting device node 'ptmx'")?;
 
             // Things like `sem_open` requires a usable `/dev/shm`.
             tmpfs

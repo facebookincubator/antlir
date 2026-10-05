@@ -97,6 +97,26 @@ image_python_test(
     layer = ":base",
 )
 
+# Run as root and as an unprivileged user, both rootless and under nspawn
+# (which gets devpts from systemd), so the two isolation backends stay at parity.
+[
+    image_rust_test(
+        name = "test-pty-{}{}".format(user, "-rootless" if rootless else ""),
+        srcs = ["test_pty.rs"],
+        crate = "test_pty",
+        crate_root = "test_pty.rs",
+        layer = ":base",
+        rootless = rootless,
+        run_as_user = user,
+        deps = [
+            "nix",
+            "rustix",
+        ],
+    )
+    for user in ("root", "nobody")
+    for rootless in (True, False)
+]
+
 image_python_test(
     name = "test-hostname-booted",
     srcs = ["test_hostname.py"],
