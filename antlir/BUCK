@@ -1,5 +1,15 @@
 # @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
-load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file", "python_binary", "python_library", "rust_binary", "rust_library", "third_party")
+load(
+    "//antlir/bzl:build_defs.bzl",
+    "buck_sh_binary",
+    "buck_sh_test",
+    "export_file",
+    "python_binary",
+    "python_library",
+    "rust_binary",
+    "rust_library",
+    "third_party",
+)
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
 oncall("antlir")
@@ -172,4 +182,15 @@ buck_sh_binary(
     name = "empty.bin",
     main = "empty.sh",
     visibility = ["PUBLIC"],
+)
+
+buck_sh_binary(
+    name = "clean-antlir2-out",
+    main = "clean-antlir2-out.sh",
+)
+
+buck_sh_test(
+    name = "clean-antlir2-out-test",
+    args = ["$(location :clean-antlir2-out)"],
+    test = "clean-antlir2-out_test.sh",
 )
