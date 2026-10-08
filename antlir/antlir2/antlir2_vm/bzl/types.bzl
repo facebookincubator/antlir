@@ -33,5 +33,10 @@ VMHostInfo = provider(
         "image",  # Container image to execute the VM in
         "machine_spec",  # Generated json that fully describes a VM's hardware and boot configuration
         "vm_exec",  # Antlir2 VM executable
+        # Directory artifact holding a pre-booted snapshot of this VM (guest
+        # memory plus disk overlays), or None if prewarming is not enabled.
+        # Consumers thaw it instead of booting. Also available as the `[frozen]`
+        # sub-target.
+        "frozen",
     ]
 )

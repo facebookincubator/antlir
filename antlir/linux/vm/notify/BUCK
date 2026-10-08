@@ -8,6 +8,12 @@ oncall("antlir")
 feature.new(
     name = "notify",
     features = [
+        feature.ensure_dirs_exist(dirs = "/usr/lib/antlir"),
+        feature.install(
+            src = "vm-notify-ready",
+            dst = "/usr/lib/antlir/vm-notify-ready",
+            mode = "a+rx",
+        ),
         systemd.install_unit(
             "virtio-notify@.service",
         ),

@@ -7,8 +7,7 @@ ConditionPathExists=/dev/virtio-ports/%i
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStartPre=/bin/bash -c '/usr/bin/systemctl is-active --quiet sshd.service && /usr/bin/systemctl is-active --quiet network-online.target'
-ExecStart=/bin/echo READY
+ExecStart=/usr/lib/antlir/vm-notify-ready
 StandardOutput=file:/dev/virtio-ports/%i
 Restart=on-failure
 RestartSec=42s

@@ -178,6 +178,15 @@ pub(crate) struct VMArgs {
     /// terminate via ACPI S5. Leave unset to disable.
     #[clap(long)]
     pub(crate) expect_vm_exit: Option<u32>,
+    /// Boot the VM, wait for it to signal readiness, then snapshot it into this
+    /// directory and exit. The result can be handed to `--thaw-from` to skip
+    /// booting entirely.
+    #[clap(long)]
+    pub(crate) freeze_to: Option<PathBuf>,
+    /// Restore a VM frozen by `--freeze-to` instead of booting one. The guest
+    /// has already signalled readiness, so no boot event is expected.
+    #[clap(long)]
+    pub(crate) thaw_from: Option<PathBuf>,
     /// Operation for VM to carry out
     #[clap(flatten)]
     pub(crate) mode: VMModeArgs,
@@ -251,6 +260,14 @@ impl VMArgs {
             args.push("--expect-vm-exit".into());
             args.push(expect_vm_exit.to_string().into());
         }
+        if let Some(path) = &self.freeze_to {
+            args.push("--freeze-to".into());
+            args.push(path.into());
+        }
+        if let Some(path) = &self.thaw_from {
+            args.push("--thaw-from".into());
+            args.push(path.into());
+        }
         if let Some(command) = &self.mode.command {
             command.iter().for_each(|c| args.push(c.clone()));
         }
@@ -283,6 +300,10 @@ impl VMArgs {
             } else {
                 outputs.insert(env::current_dir().expect("current dir must be valid"));
             }
+        }
+        // qemu writes the migration stream from inside the container.
+        if let Some(dir) = &self.freeze_to {
+            outputs.insert(dir.clone());
         }
         outputs
     }

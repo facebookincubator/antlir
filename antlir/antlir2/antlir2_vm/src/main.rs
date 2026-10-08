@@ -13,6 +13,7 @@ mod iscsi;
 mod isolation;
 mod net;
 mod pci;
+mod qmp;
 mod share;
 mod ssh;
 mod tpm;
@@ -30,6 +31,7 @@ use std::process::Command;
 use anyhow::Context;
 use anyhow::anyhow;
 use anyhow::bail;
+use anyhow::ensure;
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
@@ -73,10 +75,14 @@ enum Commands {
     Isolate(IsolateCmdArgs),
     /// Run VM tests inside container.
     Test(IsolateCmdArgs),
+    /// Boot a VM, wait for it to signal readiness, and snapshot it to disk so
+    /// later runs can skip booting. Respawns inside the container like
+    /// `Isolate` does.
+    Prewarm(PrewarmCmdArgs),
 }
 
 /// Execute the VM
-#[derive(Debug, Args)]
+#[derive(Debug, Clone, Args)]
 struct RunCmdArgs {
     /// Json-encoded file for VM machine configuration
     #[arg(long)]
@@ -93,7 +99,7 @@ struct RunCmdArgs {
 }
 
 /// Spawn a container and execute the VM inside.
-#[derive(Debug, Args)]
+#[derive(Debug, Clone, Args)]
 struct IsolateCmdArgs {
     /// Path to container image.
     #[arg(long)]
@@ -107,6 +113,16 @@ struct IsolateCmdArgs {
     /// Args for run command
     #[clap(flatten)]
     run_cmd_args: RunCmdArgs,
+}
+
+/// Pre-boot a VM and freeze it into an artifact.
+#[derive(Debug, Args)]
+struct PrewarmCmdArgs {
+    /// Directory to write the frozen VM into.
+    #[arg(long)]
+    out: PathBuf,
+    #[clap(flatten)]
+    isolate_args: IsolateCmdArgs,
 }
 
 /// Actually starting the VM. This needs to be inside an ephemeral container as
@@ -139,7 +155,41 @@ fn run(args: &RunCmdArgs) -> Result<()> {
     }
 
     let machine_opts = args.machine_spec.clone().into_inner();
-    let result = VM::<VirtiofsShare>::new(machine_opts, vm_args)?.run();
+
+    // Special handling for prewarm: we want buck build to stay green
+    // even when VM fails to boot. VM::run() already writes BOOT_FAILURE and
+    // returns Ok when freeze_to is Some, but VM::new can fail before that.
+    // Catch that here and write a failure marker so the build stays green
+    // and downstream tests can surface the reasoning.
+    let result = match VM::<VirtiofsShare>::new(machine_opts, vm_args.clone()) {
+        Ok(mut vm) => vm.run(),
+        Err(e) => {
+            if let Some(freeze_to) = &vm_args.freeze_to {
+                // Try to capture console if logs_dir was set
+                let console = vm_args
+                    .console_output_file()
+                    .and_then(|p| std::fs::read_to_string(&p).ok())
+                    .unwrap_or_else(|| {
+                        "<no console output captured - VM creation failed before boot>".to_string()
+                    });
+                let content = format!(
+                    "VM prewarm FAILED during VM creation (before boot)\n\
+                    Error: {}\n\n\
+                    ===== VM CONSOLE OUTPUT (full) =====\n\
+                    {}\n\
+                    ===== END CONSOLE OUTPUT =====\n\n\
+                    This file was written so that `buck build` stays green even when prewarm boot fails.\n\
+                    The downstream test will fail during thaw with this reasoning.\n",
+                    e, console
+                );
+                let _ = std::fs::create_dir_all(freeze_to);
+                let _ = std::fs::write(freeze_to.join(vm::BOOT_FAILURE_MARKER), content);
+                Ok(())
+            } else {
+                Err(e)
+            }
+        }
+    };
 
     if !args.expect_failure {
         result?;
@@ -151,7 +201,10 @@ fn run(args: &RunCmdArgs) -> Result<()> {
                 VMError::BootError { .. }
                 | VMError::EarlyTerminationError(_)
                 | VMError::SSHCommandResultError(_)
-                | VMError::RunError(_) => debug!("VM failed with expected error: {:?}", e),
+                | VMError::RunError(_)
+                | VMError::PrewarmBootFailure(_) => {
+                    debug!("VM failed with expected error: {:?}", e)
+                }
                 _ => bail!("VM failed with unexpected error: {:?}", e),
             },
         }
@@ -341,10 +394,32 @@ fn get_test_vm_args(
     if dump_eth0_traffic {
         vm_args.eth0_output_file = create_tpx_blobs("eth0.pcap", "eth0 traffic")?;
     }
-    if let Some(logs_dir) = &vm_args.logs_dir {
-        if !vm_args.output_dirs.contains(logs_dir) {
-            vm_args.output_dirs.push(logs_dir.clone());
+    let _ = std::fs::write(
+        "/tmp/ft/vmdebug.txt",
+        format!(
+            "thaw_from={:?}\noutput_dirs={:?}\nlogs_dir={:?}\n",
+            vm_args.thaw_from, vm_args.output_dirs, vm_args.logs_dir
+        ),
+    );
+    // Every entry in output_dirs becomes a virtiofs share, and shares decide
+    // the guest's PCI layout. A thawed VM has to present exactly the topology
+    // its snapshot was taken with, so a test that restores one cannot add any.
+    // The logs dir is still writable from the container either way, it just
+    // isn't visible inside the guest.
+    if vm_args.thaw_from.is_none() {
+        if let Some(logs_dir) = &vm_args.logs_dir {
+            if !vm_args.output_dirs.contains(logs_dir) {
+                vm_args.output_dirs.push(logs_dir.clone());
+            }
         }
+    } else if !vm_args.output_dirs.is_empty() {
+        return Err(anyhow!(
+            "use_prewarmed_vm is incompatible with output dirs {:?}: each one \
+             adds a virtiofs device, which changes the guest PCI layout away \
+             from the one the snapshot was taken with. Drop the output dirs or \
+             boot the VM normally.",
+            vm_args.output_dirs,
+        ));
     }
     Ok(ValidatedVMArgs {
         inner: vm_args,
@@ -491,6 +566,59 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     Ok(())
 }
 
+/// Boot and freeze a VM (prewarm). This is `respawn` with the guest command
+/// replaced by "snapshot yourself and exit", so it goes through exactly the same
+/// boot path a test would.
+fn prewarm(args: &PrewarmCmdArgs) -> Result<()> {
+    // while we take care to keep build actions green even if the vm fails
+    // to boot, hard environmental failures should fail fast and not taint
+    // the cache with a "failed boot", since that isn't really what happened
+    ensure!(
+        Path::new("/dev/kvm").exists(),
+        "Refusing to pre-warm a VM without having KVM available"
+    );
+    ensure!(
+        Path::new("/dev/net/tun").exists(),
+        "Cannot pre-warm a VM without tap networking"
+    );
+    let mut isolate_args = args.isolate_args.clone();
+    std::fs::create_dir_all(&args.out)
+        .with_context(|| format!("while creating {}", args.out.display()))?;
+    // Must be absolute: the container bind-mounts writable dirs by path, and a
+    // buck-relative one silently lands on the read-only repo mount instead.
+    let out = args
+        .out
+        .canonicalize()
+        .with_context(|| format!("while resolving {}", args.out.display()))?;
+    isolate_args.run_cmd_args.vm_args.freeze_to = Some(out.clone());
+    // Nothing runs inside the guest, so there is no command and no ssh session.
+    isolate_args.run_cmd_args.vm_args.mode.command = None;
+    match respawn(&isolate_args) {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            // If respawn itself failed (e.g. isolation setup), ensure we still
+            // produce a BOOT_FAILURE file so buck build stays green and the
+            // failure is surfaced as a test failure during thaw.
+            let marker = out.join(vm::BOOT_FAILURE_MARKER);
+            if !marker.exists() {
+                let content = format!(
+                    "VM prewarm FAILED in respawn stage (before VM boot)\n\
+                    Error: {}\n\n\
+                    This file was written so that `buck build` stays green even when prewarm boot fails.\n\
+                    The downstream test will fail during thaw with this reasoning.\n\
+                    Original out dir: {}\n",
+                    e,
+                    args.out.display()
+                );
+                let _ = std::fs::create_dir_all(&out);
+                let _ = std::fs::write(&marker, content);
+            }
+            // Return Ok to keep buck build green; the marker explains the failure.
+            Ok(())
+        }
+    }
+}
+
 fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr))
@@ -508,6 +636,7 @@ fn main() -> Result<()> {
         Commands::Isolate(args) => respawn(args),
         Commands::Run(args) => run(args),
         Commands::Test(args) => test(args),
+        Commands::Prewarm(args) => prewarm(args),
     }
 }
 

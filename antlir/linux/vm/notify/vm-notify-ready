@@ -1,0 +1,38 @@
+#!/bin/bash
+# Emit the READY boot event that the antlir2_vm host is waiting for.
+#
+# The gate is always sshd + network-online, because that is what "this VM is
+# usable by a test" means. Callers that freeze a pre-booted VM can additionally
+# require their own units to be active first, so the snapshot is taken with
+# those services already up. Those extra units arrive as a systemd credential
+# rather than being baked into the image, because they are a property of the
+# vm.host target, not of the guest image.
+
+set -euo pipefail
+
+REQUIRED_UNITS=(sshd.service network-online.target)
+
+# Read the system credential directly rather than via ImportCredential=, so
+# this keeps working on the older systemd in some consumer images.
+extra_credential=/run/credentials/@system/antlir.notify_wait_units
+if [[ -r "$extra_credential" ]]; then
+    # Whitespace- or comma-separated.
+    while read -r unit; do
+        [[ -n "$unit" ]] && REQUIRED_UNITS+=("$unit")
+    done < <(tr ',' '\n' < "$extra_credential" | tr -s '[:space:]' '\n')
+fi
+
+for unit in "${REQUIRED_UNITS[@]}"; do
+    # `is-active --quiet` alone races units that are still activating, and
+    # `systemctl is-active` does not block. Poll instead; the host applies the
+    # real deadline and will kill us if this never converges.
+    until systemctl is-active --quiet "$unit"; do
+        if systemctl is-failed --quiet "$unit"; then
+            echo "vm-notify-ready: $unit failed, not signalling READY" >&2
+            exit 1
+        fi
+        sleep 0.2
+    done
+done
+
+echo READY

@@ -48,6 +48,8 @@ use crate::net::VirtualNICError;
 use crate::net::VirtualNICs;
 use crate::pci::PCIBridgeError;
 use crate::pci::PCIBridges;
+use crate::qmp::Qmp;
+use crate::qmp::QmpError;
 use crate::share::Share;
 use crate::share::ShareError;
 use crate::share::Shares;
@@ -94,6 +96,8 @@ pub(crate) struct VM<S: Share> {
     identifier: String,
 }
 
+pub(crate) const BOOT_FAILURE_MARKER: &str = "BOOT_FAILURE";
+
 #[derive(Error, Debug)]
 pub(crate) enum VMError {
     #[error("Failed to create directory for VM states")]
@@ -136,6 +140,16 @@ pub(crate) enum VMError {
     CleanupError { desc: String, err: std::io::Error },
     #[error(transparent)]
     Isolation(#[from] IsolationError),
+    #[error(transparent)]
+    Qmp(#[from] QmpError),
+    #[error("Failed to {action} VM state: {desc}: `{err}`")]
+    SnapshotError {
+        action: &'static str,
+        desc: String,
+        err: std::io::Error,
+    },
+    #[error("VM boot previously failed during prewarm: {0}")]
+    PrewarmBootFailure(String),
 }
 
 type Result<T> = std::result::Result<T, VMError>;
@@ -252,22 +266,211 @@ impl<S: Share> VM<S> {
         })
     }
 
+    /// If this run is using a frozen artifact that previously failed to boot,
+    /// surface that failure immediately with its captured console output.
+    fn check_for_previous_boot_failure(&self, dir: &Path) -> Result<()> {
+        let marker = dir.join(BOOT_FAILURE_MARKER);
+        if marker.exists() {
+            let content = fs::read_to_string(&marker)
+                .unwrap_or_else(|e| format!("<failed to read {}: {}>", marker.display(), e));
+            return Err(VMError::PrewarmBootFailure(format!(
+                "Frozen artifact at {} was produced by a prewarm action that FAILED to boot.\n\
+                The buck build was intentionally kept green, but the VM cannot be thawed.\n\n\
+                {}\n\n\
+                Fix the rootfs/kernel/initrd that causes the boot failure, then rebuild. \
+                The full prewarm failure is above (including entire VM console output if captured).",
+                dir.display(),
+                content
+            )));
+        }
+        Ok(())
+    }
+
+    fn console_output_content(&self) -> Option<String> {
+        if let Some(path) = self.args.console_output_file() {
+            match fs::read_to_string(&path) {
+                Ok(s) => Some(s),
+                Err(e) => Some(format!(
+                    "<failed to read console output file {}: {}>",
+                    path.display(),
+                    e
+                )),
+            }
+        } else {
+            None
+        }
+    }
+
+    fn enrich_error_with_console(&self, err: VMError) -> VMError {
+        if let Some(console) = self.console_output_content() {
+            VMError::RunError(format!(
+                "{}\n\n\
+                ===== VM CONSOLE OUTPUT (full) =====\n\
+                {}\n\
+                ===== END CONSOLE OUTPUT =====\n\
+                Note: console output was captured from {:?}. \
+                If the VM timed out waiting for READY, the console likely shows the boot hang.",
+                err,
+                console,
+                self.args.console_output_file()
+            ))
+        } else {
+            err
+        }
+    }
+
+    fn write_boot_failure_file(&self, dir: &Path, err: &VMError) -> std::io::Result<()> {
+        // Ensure dir exists - it is the buck output dir for frozen artifact
+        fs::create_dir_all(dir)?;
+        let console = self.console_output_content().unwrap_or_else(|| {
+            "<no console output captured - logs_dir was not set or file missing>".to_string()
+        });
+        let elapsed = self
+            .args
+            .timeout_secs
+            .map(|t| format!("{}s (configured timeout)", t))
+            .unwrap_or_else(|| "none configured".to_string());
+        let content = format!(
+            "VM prewarm FAILED\n\
+            Error type: {}\n\
+            Error details: {}\n\
+            Configured timeout: {}\n\
+            Freeze_to dir: {}\n\
+            Logs dir: {:?}\n\
+            Console file: {:?}\n\n\
+            ===== FULL ERROR =====\n\
+            {}\n\
+            ===== END ERROR =====\n\n\
+            ===== VM CONSOLE OUTPUT (full) =====\n\
+            {}\n\
+            ===== END CONSOLE OUTPUT =====\n\n\
+            This file was written so that `buck build` of vm tests stays green even when prewarm boot fails.\n\
+            The downstream test (with prewarm=True) will read this file during thaw and fail with this reasoning,\n\
+            making the failure visible as a test failure rather than an expensive build failure.\n\
+            To debug, inspect the console output above. Common causes: kernel panic, systemd units failing to start,\n\
+            dracut/initrd issues, or timeout waiting for READY signal.\n",
+            std::any::type_name_of_val(err),
+            err,
+            elapsed,
+            dir.display(),
+            self.args.logs_dir,
+            self.args.console_output_file(),
+            err,
+            console
+        );
+        let marker_path = dir.join(BOOT_FAILURE_MARKER);
+        fs::write(&marker_path, content)?;
+        // Also copy console output as separate file for easier access
+        let _ = fs::write(dir.join("console.txt"), console);
+        info!(
+            "Wrote boot failure marker to {} (preserving buck build as green)",
+            marker_path.display()
+        );
+        Ok(())
+    }
+
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
         let start_ts = Instant::now();
         self.sidecar_handles = self.spawn_sidecar_services()?;
+
+        // If we are about to thaw from a previously failed prewarm, fail fast
+        // with that failure's reasoning instead of trying to restore missing disks.
+        if let Some(dir) = &self.args.thaw_from {
+            if let Err(e) = self.check_for_previous_boot_failure(dir) {
+                return Err(e);
+            }
+        }
+
         if self.args.first_boot_command.is_some() {
             info!("Booting VM for first boot command. It could take seconds to minutes...");
-            let proc = self.spawn_vm()?;
-            let ssh_first_boot_cmd = self.ssh_first_boot_command()?;
-            self.wait_for_vm(proc, ssh_first_boot_cmd, true, start_ts)?;
-            thread::sleep(Duration::from_secs(1));
+            match self.spawn_vm() {
+                Ok(proc) => {
+                    let ssh_first_boot_cmd = match self.ssh_first_boot_command() {
+                        Ok(c) => c,
+                        Err(e) => {
+                            if let Some(freeze_to) = &self.args.freeze_to {
+                                let _ = self.write_boot_failure_file(freeze_to, &e);
+                                return Ok(());
+                            } else {
+                                return Err(self.enrich_error_with_console(e));
+                            }
+                        }
+                    };
+                    if let Err(e) = self.wait_for_vm(proc, ssh_first_boot_cmd, true, start_ts) {
+                        if let Some(freeze_to) = &self.args.freeze_to {
+                            let _ = self.write_boot_failure_file(freeze_to, &e);
+                            return Ok(());
+                        } else {
+                            return Err(self.enrich_error_with_console(e));
+                        }
+                    }
+                    thread::sleep(Duration::from_secs(1));
+                }
+                Err(e) => {
+                    if let Some(freeze_to) = &self.args.freeze_to {
+                        let _ = self.write_boot_failure_file(freeze_to, &e);
+                        return Ok(());
+                    } else {
+                        return Err(self.enrich_error_with_console(e));
+                    }
+                }
+            }
         }
-        info!("Booting VM. It could take seconds to minutes...");
-        let proc = self.spawn_vm()?;
-        let ssh_cmd = self.ssh_command()?;
-        self.wait_for_vm(proc, ssh_cmd, false, start_ts)?;
-        Ok(())
+        if let Some(dir) = self.args.thaw_from.clone() {
+            // The check above already looked for BOOT_FAILURE, but restore_disks
+            // also checks for it to give a good error if someone calls it directly.
+            if let Err(e) = self.restore_disks(&dir) {
+                // restore_disks will already have produced a PrewarmBootFailure if
+                // it saw the marker; otherwise enrich with console
+                if matches!(e, VMError::PrewarmBootFailure(_)) {
+                    return Err(e);
+                } else if self.args.freeze_to.is_some() {
+                    // This is a thaw during a freeze? unlikely, but handle
+                    let _ = self.write_boot_failure_file(self.args.freeze_to.as_ref().unwrap(), &e);
+                    return Ok(());
+                } else {
+                    return Err(self.enrich_error_with_console(e));
+                }
+            }
+            info!("Restoring VM from frozen state instead of booting...");
+        } else {
+            info!("Booting VM. It could take seconds to minutes...");
+        }
+        let proc = match self.spawn_vm() {
+            Ok(p) => p,
+            Err(e) => {
+                if let Some(freeze_to) = &self.args.freeze_to {
+                    let _ = self.write_boot_failure_file(freeze_to, &e);
+                    return Ok(());
+                } else {
+                    return Err(self.enrich_error_with_console(e));
+                }
+            }
+        };
+        let ssh_cmd = match self.ssh_command() {
+            Ok(c) => c,
+            Err(e) => {
+                if let Some(freeze_to) = &self.args.freeze_to {
+                    let _ = self.write_boot_failure_file(freeze_to, &e);
+                    return Ok(());
+                } else {
+                    return Err(self.enrich_error_with_console(e));
+                }
+            }
+        };
+        match self.wait_for_vm(proc, ssh_cmd, false, start_ts) {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                if let Some(freeze_to) = &self.args.freeze_to {
+                    let _ = self.write_boot_failure_file(freeze_to, &e);
+                    // Return Ok so buck build stays green; the marker file explains failure
+                    Ok(())
+                } else {
+                    Err(self.enrich_error_with_console(e))
+                }
+            }
+        }
     }
 
     /// Create a directory to store VM state. We rely on container for clean
@@ -356,6 +559,185 @@ impl<S: Share> VM<S> {
     fn notify_file(&self) -> PathBuf {
         self.state_dir
             .join(format!("vmtest_notify-{}.sock", self.identifier))
+    }
+
+    fn qmp_file(&self) -> PathBuf {
+        self.state_dir
+            .join(format!("vmtest_qmp-{}.sock", self.identifier))
+    }
+
+    /// Snapshot a booted VM into `dir` so it can be thawed later.
+    ///
+    /// `stop` comes first so the guest is quiesced and the memory image and the
+    /// disk overlays describe the same instant. `mapped-ram` lays guest RAM
+    /// down at fixed offsets, which keeps the artifact sparse.
+    fn freeze(&self, dir: &Path, start_ts: Instant) -> Result<()> {
+        info!("Freezing VM into {}", dir.display());
+        fs::create_dir_all(dir).map_err(|err| VMError::SnapshotError {
+            action: "freeze",
+            desc: format!("failed to create {}", dir.display()),
+            err,
+        })?;
+
+        let mut qmp = Qmp::connect(&self.qmp_file(), Duration::from_secs(60))?;
+        qmp.stop()?;
+        qmp.enable_mapped_ram()?;
+        qmp.migrate_to_file(&Self::state_mem(dir))?;
+        qmp.await_migration(self.time_left(start_ts).unwrap_or(Duration::from_secs(300)))?;
+
+        // Disk overlays live in the ephemeral state dir and would die with the
+        // container, so they have to be captured alongside the memory image.
+        self.copy_disks(&self.state_dir, &Self::disks_dir(dir), "freeze")?;
+
+        qmp.quit()?;
+        info!(
+            "VM frozen after {} seconds",
+            start_ts.elapsed().as_secs_f32()
+        );
+        Ok(())
+    }
+
+    /// Load a frozen memory image into a VM started with `-incoming defer` and
+    /// resume it.
+    fn thaw(&self, dir: &Path, start_ts: Instant) -> Result<()> {
+        info!("Thawing VM from {}", dir.display());
+        let mut qmp = Qmp::connect(&self.qmp_file(), Duration::from_secs(60))?;
+        // Order matters: the capability has to be negotiated before the stream
+        // is read, which is why the VM is started with `-incoming defer`
+        // instead of `-incoming file:`.
+        qmp.enable_mapped_ram()?;
+        qmp.migrate_incoming_file(&Self::state_mem(dir))?;
+        qmp.await_migration(self.time_left(start_ts).unwrap_or(Duration::from_secs(300)))?;
+        qmp.cont()?;
+        info!(
+            "VM thawed and running after {} seconds",
+            start_ts.elapsed().as_secs_f32()
+        );
+        Ok(())
+    }
+
+    /// Restore the frozen disk overlays over the freshly created ones.
+    ///
+    /// The fresh overlays already point at the right base image for this build,
+    /// so their backing pointer is read first and stamped back onto the frozen
+    /// copies: the base image lives at a buck-out path that is not guaranteed
+    /// to be the same one it had at freeze time.
+    fn restore_disks(&self, dir: &Path) -> Result<()> {
+        // If this frozen dir is actually a boot failure marker from a previous
+        // prewarm that we kept green for buck, surface it now.
+        self.check_for_previous_boot_failure(dir)?;
+
+        let frozen = Self::disks_dir(dir);
+        for overlay in Self::qcow2_files(&self.state_dir, "thaw")? {
+            let name = overlay.file_name().expect("qcow2 files are named");
+            let src = frozen.join(name);
+            if !src.exists() {
+                return Err(VMError::SnapshotError {
+                    action: "thaw",
+                    desc: format!(
+                        "frozen state has no overlay for disk {}",
+                        name.to_string_lossy()
+                    ),
+                    err: std::io::Error::from(std::io::ErrorKind::NotFound),
+                });
+            }
+            let backing = Self::backing_file(&overlay)?;
+            fs::copy(&src, &overlay).map_err(|err| VMError::SnapshotError {
+                action: "thaw",
+                desc: format!("failed to copy {} to {}", src.display(), overlay.display()),
+                err,
+            })?;
+            if let Some(backing) = backing {
+                Self::rebase_overlay(&overlay, &backing)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn state_mem(dir: &Path) -> PathBuf {
+        dir.join("state.mem")
+    }
+
+    fn disks_dir(dir: &Path) -> PathBuf {
+        dir.join("disks")
+    }
+
+    fn qcow2_files(dir: &Path, action: &'static str) -> Result<Vec<PathBuf>> {
+        let entries = fs::read_dir(dir).map_err(|err| VMError::SnapshotError {
+            action,
+            desc: format!("failed to list {}", dir.display()),
+            err,
+        })?;
+        let mut files: Vec<_> = entries
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().is_some_and(|e| e == "qcow2"))
+            .collect();
+        files.sort();
+        Ok(files)
+    }
+
+    fn copy_disks(&self, from: &Path, to: &Path, action: &'static str) -> Result<()> {
+        fs::create_dir_all(to).map_err(|err| VMError::SnapshotError {
+            action,
+            desc: format!("failed to create {}", to.display()),
+            err,
+        })?;
+        for src in Self::qcow2_files(from, action)? {
+            let dst = to.join(src.file_name().expect("qcow2 files are named"));
+            fs::copy(&src, &dst).map_err(|err| VMError::SnapshotError {
+                action,
+                desc: format!("failed to copy {} to {}", src.display(), dst.display()),
+                err,
+            })?;
+        }
+        Ok(())
+    }
+
+    fn backing_file(overlay: &Path) -> Result<Option<PathBuf>> {
+        let out = Command::new("qemu-img")
+            .args(["info", "--output=json"])
+            .arg(overlay)
+            .output()
+            .map_err(|err| VMError::SnapshotError {
+                action: "thaw",
+                desc: format!("qemu-img info failed for {}", overlay.display()),
+                err,
+            })?;
+        let info: serde_json::Value =
+            serde_json::from_slice(&out.stdout).map_err(|e| VMError::RunError(e.to_string()))?;
+        Ok(info
+            .get("full-backing-filename")
+            .or_else(|| info.get("backing-filename"))
+            .and_then(|v| v.as_str())
+            .map(PathBuf::from))
+    }
+
+    /// `-u` is metadata-only: it rewrites the backing pointer without touching
+    /// any data, so this stays O(1) no matter how big the base image is.
+    fn rebase_overlay(overlay: &Path, backing: &Path) -> Result<()> {
+        let mut cmd = Command::new("qemu-img");
+        cmd.arg("rebase")
+            .arg("-u")
+            .arg("-b")
+            .arg(backing)
+            .arg("-F")
+            .arg("raw")
+            .arg(overlay);
+        let status = log_command(&mut cmd)
+            .status()
+            .map_err(|err| VMError::SnapshotError {
+                action: "thaw",
+                desc: format!("qemu-img rebase failed for {}", overlay.display()),
+                err,
+            })?;
+        if !status.success() {
+            return Err(VMError::RunError(format!(
+                "qemu-img rebase of {} onto {} failed: {status}",
+                overlay.display(),
+                backing.display()
+            )));
+        }
+        Ok(())
     }
 
     fn ssh_command(&self) -> Result<Command> {
@@ -523,6 +905,14 @@ impl<S: Share> VM<S> {
             args.extend(ibft.qemu_args());
         }
         args.extend(self.extra_qemu_args());
+        if self.args.thaw_from.is_some() {
+            // `-incoming file:` would begin loading immediately, before the
+            // mapped-ram capability can be negotiated, and the load then fails
+            // with "Capability mapped-ram is off, but received capability is
+            // on". Defer so the handshake happens over QMP first.
+            args.push("-incoming".into());
+            args.push("defer".into());
+        }
 
         let mut command = Command::new(&self.machine.qemu_binary);
         command = self.redirect_input_output(command)?;
@@ -752,33 +1142,58 @@ impl<S: Share> VM<S> {
             return Ok(());
         }
 
-        // Wait for boot notify message. We expect "READY" message once VM boots
-        debug!("Waiting for boot notify message");
-        if self.args.timeout_secs.is_some() {
+        let socket = if let Some(dir) = self.args.thaw_from.clone() {
+            // A thawed guest already signalled READY before it was frozen and
+            // will not do so again, so there is no boot event to wait for.
+            self.thaw(&dir, start_ts)?;
             socket
-                .set_read_timeout(Some(self.time_left(start_ts)?))
-                .map_err(|err| VMError::BootError {
-                    desc: "Failed to set notify socket read timeout".into(),
-                    err,
-                })?;
-        }
-        let mut response = String::new();
-        let mut f = BufReader::new(socket);
-        let desc = "Failed to read boot event from the notify socket. This
+        } else {
+            // Wait for boot notify message. We expect "READY" message once VM boots
+            debug!("Waiting for boot notify message");
+            if self.args.timeout_secs.is_some() {
+                socket
+                    .set_read_timeout(Some(self.time_left(start_ts)?))
+                    .map_err(|err| VMError::BootError {
+                        desc: "Failed to set notify socket read timeout".into(),
+                        err,
+                    })?;
+            }
+            let mut response = String::new();
+            let mut f = BufReader::new(socket);
+            let desc = "Failed to read boot event from the notify socket. This
         indicates the VM failed to boot to default target. Please check the
         console log for further analysis"
-            .into();
-        f.read_line(&mut response)
-            .map_err(|err| VMError::BootError { desc, err })?;
-        info!(
-            "Received boot event {} after {} seconds",
-            response.trim(),
-            start_ts.elapsed().as_secs_f32()
-        );
-        let socket = f.into_inner();
+                .into();
+            f.read_line(&mut response)
+                .map_err(|err| VMError::BootError { desc, err })?;
+            info!(
+                "Received boot event {} after {} seconds",
+                response.trim(),
+                start_ts.elapsed().as_secs_f32()
+            );
+            let socket = f.into_inner();
+            // Clear the deadline the boot wait installed; later reads on this
+            // socket are liveness polls, not boot waits.
+            socket
+                .set_read_timeout(None)
+                .map_err(|err| VMError::BootError {
+                    desc: "Failed to clear notify socket read timeout".into(),
+                    err,
+                })?;
+            socket
+        };
 
         // VM booted
         self.check_sidecar_services()?;
+
+        // Freezing is terminal for this process: snapshot the running guest and
+        // tear it down rather than running any command inside it.
+        if let Some(dir) = self.args.freeze_to.clone() {
+            self.freeze(&dir, start_ts)?;
+            self.cleanup_vm(vm_proc, &socket, cleanup_needed, start_ts)?;
+            return Ok(());
+        }
+
         let mut exit_status = None;
         if self.args.mode.console {
             // Just wait for the human that's trying to debug with console
@@ -926,6 +1341,12 @@ impl<S: Share> VM<S> {
                 ),
                 "-device",
                 "virtserialport,chardev=notify,name=notify-host",
+                // Control channel for freeze/thaw. Harmless when unused.
+                "-qmp",
+                &format!(
+                    "unix:{},server=on,wait=off",
+                    self.qmp_file().to_str().expect("Invalid file name")
+                ),
             ]
             .iter()
             .map(|x| x.into())

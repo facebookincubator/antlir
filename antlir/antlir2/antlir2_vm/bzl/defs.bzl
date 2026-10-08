@@ -80,6 +80,60 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     )
     return machine_json, machine_json_args
 
+def _frozen_vm(ctx: AnalysisContext, machine_json_args) -> Artifact | None:
+    """Boot this VM once at build time and snapshot it.
+
+    The result is a directory holding the guest memory image and the disk
+    overlays, which `vm.*_test(prewarm = True)` restores instead of booting from
+    scratch.
+
+    The action is always declared for a prewarmable host but only ever runs if
+    something actually asks for the artifact, so declaring it costs nothing.
+
+    This action intentionally never fails `buck build` even when the VM fails to
+    boot (which often manifests as only a timeout from the harness). The Rust
+    implementation (`prewarm`) catches boot failures, writes a `BOOT_FAILURE`
+    file with the full error and entire VM console output into `--out`, and
+    exits 0 so the build stays green. Downstream test consumers reading the
+    frozen dir via `--thaw-from` detect that marker and fail with the captured
+    reasoning.
+    """
+    if not ctx.attrs.prewarmable:
+        return None
+
+    out = ctx.actions.declare_output("frozen", dir = True)
+    cmd = cmd_args(
+        cmd_args(ctx.attrs.vm_exec[RunInfo]),
+        "prewarm",
+        cmd_args(out.as_output(), format = "--out={}"),
+        cmd_args(ensure_single_output(ctx.attrs.image), format = "--image={}"),
+        cmd_args(machine_json_args, format = "--machine-spec={}"),
+        cmd_args(str(ctx.attrs.prewarm_timeout_secs), format = "--timeout-secs={}"),
+    )
+    if ctx.attrs.prewarm_wait_units:
+        # Consumed by virtio-notify@.service in the guest, which holds the READY
+        # signal until these are active. That way the snapshot is taken with the
+        # caller's services already running.
+        cmd = cmd_args(
+            cmd,
+            cmd_args(
+                ",".join(ctx.attrs.prewarm_wait_units),
+                format = "--systemd-credential=antlir.notify_wait_units={}",
+            ),
+        )
+
+    ctx.actions.run(
+        cmd,
+        category = "vm_prewarm",
+        identifier = ctx.label.name,
+        # Booting a VM needs /dev/kvm and tap devices, which RE does not have.
+        local_only = True,
+        # A real machine boot is not a pure function of its inputs, and the
+        # snapshot embeds host CPU state, so it must not be shared via the cache.
+        allow_cache_upload = False,
+    )
+    return out
+
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     """Create the json specs used as input for VM target."""
     machine_json, machine_json_args = _machine_json(ctx)
@@ -102,20 +156,26 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         allow_args = True,
         has_content_based_path = False,
     )
+    frozen = _frozen_vm(ctx, machine_json_args)
+    sub_targets = {
+        "console": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--console"))],
+        "container": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--container"))],
+        "machine_json": [DefaultInfo(machine_json)],
+    }
+    if frozen:
+        sub_targets["frozen"] = [DefaultInfo(frozen)]
+
     return [
         DefaultInfo(
             default_output = run_script,
-            sub_targets = {
-                "console": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--console"))],
-                "container": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--container"))],
-                "machine_json": [DefaultInfo(machine_json)],
-            },
+            sub_targets = sub_targets,
         ),
         RunInfo(run_cmd),
         VMHostInfo(
             vm_exec = ctx.attrs.vm_exec,
             image = ctx.attrs.image,
             machine_spec = machine_json_args,
+            frozen = frozen,
         ),
     ]
 
@@ -196,6 +256,27 @@ _vm_host = rule(
             default = [],
             doc = "additional read-write host directories to bind-mount into the VM container. "
             + "Useful when extra_qemu_args references paths outside the repo.",
+        ),
+        "prewarm_timeout_secs": attrs.int(
+            default = 300,
+            doc = "Give up prewarming, and fail the build, if the VM has not " + "signalled readiness within this long.",
+        ),
+        "prewarm_wait_units": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "Extra systemd units that must be active in the guest before "
+            + "it signals readiness and gets frozen. sshd and "
+            + "network-online.target are always waited for; these are "
+            + "added on top, so a snapshot can capture your services "
+            + "already running.",
+        ),
+        "prewarmable": attrs.bool(
+            default = True,
+            doc = "Whether this VM can be pre-booted and snapshotted, exposing "
+            + "the result as the `[frozen]` sub-target and on VMHostInfo. "
+            + "Nothing is booted unless a test actually asks for it with "
+            + "`prewarm = True`. Set False for hosts where a snapshot would be "
+            + "wrong or useless, e.g. tests that assert on boot itself.",
         ),
         # Must be an arg() because it needs to accept locations.
         "qemu_binary": attrs.arg(

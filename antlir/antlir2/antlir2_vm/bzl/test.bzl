@@ -11,6 +11,7 @@ load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS", "env_from_wr
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 # @oss-disable[end= ]: load(":disable_dev_mode.bzl", "disable_dev_mode")
+load(":package.bzl", "get_vm_prewarm_default")
 load("//antlir/bzl:oss_shim.bzl", "tpx_labels") # @oss-enable
 load(":types.bzl", "VMHostInfo")
 
@@ -43,6 +44,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         test_cmd = cmd_args(test_cmd, "--expect-vm-exit", str(ctx.attrs.expect_vm_exit))
     if ctx.attrs.dump_eth0:
         test_cmd = cmd_args(test_cmd, "--dump-eth0-traffic")
+
+    if ctx.attrs.prewarm:
+        frozen = ctx.attrs.vm_host[VMHostInfo].frozen
+        if not frozen:
+            fail(
+                "{} sets prewarm = True, but its vm_host {} sets prewarmable = False".format(
+                    ctx.label,
+                    ctx.attrs.vm_host.label,
+                ),
+            )
+        test_cmd = cmd_args(test_cmd, cmd_args(frozen, format = "--thaw-from={}"))
 
     if ctx.attrs.output_dirs:
         for output_dir in ctx.attrs.output_dirs:
@@ -188,6 +200,10 @@ _vm_test = rule(
             through env $CONSOLE_OUTPUT. This is usually combined with @expect_failure to validate \
             failure scenarios.",
         ),
+        "prewarm": attrs.bool(
+            default = False,
+            doc = "Restore @vm_host's pre-booted snapshot instead of booting a " + "VM for this test. @vm_host must be prewarmable.",
+        ),
         "systemd_credentials": attrs.dict(
             attrs.string(),
             # There's no reason why these can't also include passing source
@@ -276,6 +292,7 @@ def _implicit_vm_test(
     # @oss-disable[end= ]: vm_test_labels: list[str] | None = None,
     output_dirs: list[str] | None = None,
     systemd_credentials: dict[str, str] | None = None,
+    prewarm: bool | None = None,
     _add_outer_labels: list[str] = [],
     _static_list_wrapper: str | None = None,
     _static_list_embeds_test_command: bool = False,
@@ -294,6 +311,12 @@ def _implicit_vm_test(
         should not be undone by the test fixture (ie, rebooting or setting
         a sysctl that cannot be undone for example).
     """
+
+    # An explicit prewarm= on the target wins; otherwise fall back to the
+    # PACKAGE-level default, which is itself False unless a PACKAGE file opted
+    # this directory in via vm_prewarm(enabled = True).
+    if prewarm == None:
+        prewarm = get_vm_prewarm_default()
 
     # We only execute aarch64 tests on x64 hosts for now and cross-platform
     # emulation is slower. Give more buffer based on additional boot time.
@@ -329,6 +352,7 @@ def _implicit_vm_test(
         postmortem = postmortem,
         output_dirs = output_dirs,
         systemd_credentials = systemd_credentials or {},
+        prewarm = prewarm,
         compatible_with = kwargs.get("compatible_with"),
         _static_list_wrapper = _static_list_wrapper,
         _static_list_embeds_test_command = _static_list_embeds_test_command,
