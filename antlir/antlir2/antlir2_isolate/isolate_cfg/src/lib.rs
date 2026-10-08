@@ -389,6 +389,14 @@ impl<'a> IntoBinds<'a> for HashSet<PathBuf> {
     }
 }
 
+impl<'a> IntoBinds<'a> for BTreeSet<PathBuf> {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.into_iter()
+            .map(|path| (Cow::Owned(path.clone()), Cow::Owned(path)))
+            .collect()
+    }
+}
+
 impl<'a> IntoBinds<'a> for HashMap<PathBuf, PathBuf> {
     fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
         self.into_iter()

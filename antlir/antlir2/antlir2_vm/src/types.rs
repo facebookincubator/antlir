@@ -8,8 +8,8 @@
 //! This file contains data structure that mirrors what described in vm bzl files
 //! so that we can directly deserialize a json into Rust structs.
 
+use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::env;
 use std::ffi::OsStr;
 use std::ffi::OsString;
@@ -263,13 +263,13 @@ impl VMArgs {
     }
 
     /// Get all output directories for the VM.
-    pub(crate) fn get_vm_output_dirs(&self) -> HashSet<PathBuf> {
-        let outputs: HashSet<_> = self.output_dirs.iter().cloned().collect();
+    pub(crate) fn get_vm_output_dirs(&self) -> BTreeSet<PathBuf> {
+        let outputs: BTreeSet<_> = self.output_dirs.iter().cloned().collect();
         outputs
     }
 
     /// Get all output directories for the container.
-    pub(crate) fn get_container_output_dirs(&self) -> HashSet<PathBuf> {
+    pub(crate) fn get_container_output_dirs(&self) -> BTreeSet<PathBuf> {
         let mut outputs = self.get_vm_output_dirs();
         // Every host-side log lands here, so it must be writable from inside
         // the container.
@@ -512,7 +512,7 @@ mod test {
         };
         assert_eq!(
             args.get_vm_output_dirs(),
-            HashSet::from(["/foo/bar".into(), "/baz".into()])
+            BTreeSet::from(["/foo/bar".into(), "/baz".into()])
         );
         let args = VMArgs {
             output_dirs: vec!["/foo/bar".into()],
@@ -521,7 +521,7 @@ mod test {
         };
         assert_eq!(
             args.get_vm_output_dirs(),
-            HashSet::from(["/foo/bar".into()])
+            BTreeSet::from(["/foo/bar".into()])
         );
     }
 
@@ -598,7 +598,7 @@ mod test {
         };
         assert_eq!(
             args.get_container_output_dirs(),
-            HashSet::from(["/foo/bar".into(), "/baz".into(), "/tmp/whatever".into(),])
+            BTreeSet::from(["/foo/bar".into(), "/baz".into(), "/tmp/whatever".into(),])
         );
     }
 }

@@ -20,7 +20,7 @@ mod types;
 mod utils;
 mod vm;
 
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::env;
 use std::ffi::OsString;
 use std::path::Path;
@@ -36,7 +36,6 @@ use clap::Subcommand;
 use image_test_lib::KvPair;
 use image_test_lib::Test;
 use json_arg::JsonFile;
-use maplit::hashset;
 use tempfile::tempdir;
 use tracing::debug;
 use tracing::warn;
@@ -215,12 +214,12 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
     let machine_spec = &args.run_cmd_args.machine_spec;
-    let inputs: HashSet<PathBuf> = machine_spec
+    let inputs: BTreeSet<PathBuf> = machine_spec
         .input_dirs
         .iter()
         .map(|d| PathBuf::from(d.concat()))
         .collect();
-    let mut outputs: HashSet<PathBuf> = vm_args
+    let mut outputs: BTreeSet<PathBuf> = vm_args
         .get_container_output_dirs()
         .into_iter()
         .chain(writable_devices())
@@ -331,13 +330,20 @@ fn get_test_vm_args(
         create_tpx_logs(CONSOLE_LOG, "console logs")?;
         vm_args.logs_dir = tpx_artifacts_dir();
     }
+    // Absolute, because this is bind-mounted writable into the container by
+    // path. A relative one silently resolves against the read-only repo mount
+    // instead, and the guest console then fails to open. Today this happens to
+    // work only because the canonicalized copy pushed into output_dirs below
+    // is what actually gets mounted; don't rely on that.
+    if let Some(dir) = &vm_args.logs_dir {
+        vm_args.logs_dir = Some(dir.canonicalize().unwrap_or_else(|_| dir.clone()));
+    }
     if dump_eth0_traffic {
         vm_args.eth0_output_file = create_tpx_blobs("eth0.pcap", "eth0 traffic")?;
     }
     if let Some(logs_dir) = &vm_args.logs_dir {
-        let canonical = logs_dir.canonicalize().unwrap_or_else(|_| logs_dir.clone());
-        if !vm_args.output_dirs.contains(&canonical) {
-            vm_args.output_dirs.push(canonical);
+        if !vm_args.output_dirs.contains(logs_dir) {
+            vm_args.output_dirs.push(logs_dir.clone());
         }
     }
     Ok(ValidatedVMArgs {
@@ -346,22 +352,22 @@ fn get_test_vm_args(
     })
 }
 
-fn writable_outputs(validated_args: &ValidatedVMArgs) -> HashSet<PathBuf> {
+fn writable_outputs(validated_args: &ValidatedVMArgs) -> BTreeSet<PathBuf> {
     let mut outputs = validated_args.inner.get_container_output_dirs();
     outputs.extend(writable_devices());
     outputs
 }
 
-fn writable_devices() -> HashSet<PathBuf> {
-    let mut devs = hashset! {
+fn writable_devices() -> BTreeSet<PathBuf> {
+    let mut devs = BTreeSet::from([
         // And tap networking devices
-        "/dev/net/tun".into(),
+        PathBuf::from("/dev/net/tun"),
         // And other device nodes needed by qemu
-        "/dev/urandom".into(),
+        PathBuf::from("/dev/urandom"),
         // RW bind-mount /dev/fuse for running XAR.
         // More details in antlir/antlir2/testing/image_test/src/main.rs.
-        "/dev/fuse".into(),
-    };
+        PathBuf::from("/dev/fuse"),
+    ]);
     // Carry over virtualization support
     if Path::new("/dev/kvm").exists() {
         devs.insert("/dev/kvm".into());
@@ -378,7 +384,7 @@ fn writable_devices() -> HashSet<PathBuf> {
 fn list_test_command(
     args: &IsolateCmdArgs,
     validated_args: &ValidatedVMArgs,
-    inputs: HashSet<PathBuf>,
+    inputs: BTreeSet<PathBuf>,
     outputs: &[Vec<String>],
 ) -> Result<Command> {
     let mut collected_outputs = writable_outputs(validated_args);
@@ -407,7 +413,7 @@ fn list_test_command(
 fn vm_test_command(
     args: &IsolateCmdArgs,
     validated_args: &ValidatedVMArgs,
-    inputs: HashSet<PathBuf>,
+    inputs: BTreeSet<PathBuf>,
     outputs: &[Vec<String>],
 ) -> Result<Command> {
     let mut collected_outputs = writable_outputs(validated_args);
@@ -444,7 +450,7 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     // It may then decide whether to use host's platform for the actual test.
     Platform::set(&MountPlatformDecision(true))?;
     let machine_spec = &args.run_cmd_args.machine_spec;
-    let inputs: HashSet<PathBuf> = machine_spec
+    let inputs: BTreeSet<PathBuf> = machine_spec
         .input_dirs
         .iter()
         .map(|d| PathBuf::from(d.concat()))

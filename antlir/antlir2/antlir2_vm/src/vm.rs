@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::fs;
 use std::io::BufRead;
@@ -150,7 +150,7 @@ impl<S: Share> VM<S> {
         for dir in &machine.output_dirs {
             all_output_dirs.insert(PathBuf::from(dir.concat()));
         }
-        let all_input_dirs: HashSet<PathBuf> = machine
+        let all_input_dirs: BTreeSet<PathBuf> = machine
             .input_dirs
             .iter()
             .map(|d| PathBuf::from(d.concat()))
@@ -279,25 +279,30 @@ impl<S: Share> VM<S> {
     }
 
     /// All platform paths needs to be mounted inside the VM as read-only shares.
-    /// Collect them into ShareOpts along with others.
+    /// Collect them into ShareOpts along with others. Inputs are `BTreeSet` so
+    /// iteration order is deterministic (sorted) — a share's position decides
+    /// which `virtiofsd` instance serves it and which PCI slot it lands in, and
+    /// `HashSet` ordering varies between processes because of the random hash
+    /// seed.
     fn get_all_shares_opts(
-        inputs: &HashSet<PathBuf>,
-        outputs: &HashSet<PathBuf>,
+        inputs: &BTreeSet<PathBuf>,
+        outputs: &BTreeSet<PathBuf>,
     ) -> Vec<ShareOpts> {
         Platform::get()
             .iter()
+            .cloned()
             .map(|path| ShareOpts {
-                path: path.to_path_buf(),
+                path,
                 read_only: true,
                 mount_tag: None,
             })
-            .chain(inputs.iter().map(|p| ShareOpts {
-                path: p.to_path_buf(),
+            .chain(inputs.iter().cloned().map(|path| ShareOpts {
+                path,
                 read_only: true,
                 mount_tag: None,
             }))
-            .chain(outputs.iter().map(|p| ShareOpts {
-                path: p.to_path_buf(),
+            .chain(outputs.iter().cloned().map(|path| ShareOpts {
+                path,
                 read_only: false,
                 mount_tag: None,
             }))
@@ -1318,16 +1323,16 @@ mod test {
         let mount_platform = MountPlatformDecision(true);
         Platform::set(&mount_platform).expect("Failed to query platform");
 
-        let outputs = HashSet::from([PathBuf::from("/path")]);
+        let outputs = BTreeSet::from([PathBuf::from("/path")]);
         let opt = ShareOpts {
             path: PathBuf::from("/path"),
             read_only: false,
             mount_tag: None,
         };
-        let all_opts = VM::<VirtiofsShare>::get_all_shares_opts(&HashSet::new(), &outputs);
+        let all_opts = VM::<VirtiofsShare>::get_all_shares_opts(&BTreeSet::new(), &outputs);
         assert!(all_opts.contains(&opt));
 
-        let inputs = HashSet::from([PathBuf::from("/extra/input")]);
+        let inputs = BTreeSet::from([PathBuf::from("/extra/input")]);
         let mut extended_outputs = outputs.clone();
         extended_outputs.insert(PathBuf::from("/extra/output"));
         let all_opts = VM::<VirtiofsShare>::get_all_shares_opts(&inputs, &extended_outputs);

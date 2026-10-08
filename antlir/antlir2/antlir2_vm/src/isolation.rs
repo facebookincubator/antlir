@@ -6,7 +6,7 @@
  */
 
 use std::collections::BTreeMap;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::OnceLock;
@@ -36,7 +36,7 @@ type Result<T> = std::result::Result<T, IsolationError>;
 /// Platform paths that are shared into the container. They also need
 /// to be shared inside VM.
 pub(crate) struct Platform {
-    paths: HashSet<PathBuf>,
+    paths: BTreeSet<PathBuf>,
 }
 
 /// Platform should be same once set. Enforce through OnceCell.
@@ -59,7 +59,7 @@ impl Platform {
     pub(crate) fn set(mount_platform: &MountPlatformDecision) -> Result<()> {
         let repo = Platform::repo_root()?;
 
-        let mut paths = HashSet::from([
+        let mut paths = BTreeSet::from([
             repo,
             #[cfg(facebook)]
             PathBuf::from("/mnt/gvfs"),
@@ -74,7 +74,7 @@ impl Platform {
     }
 
     /// Return the populated platform. Should only be called after `set`.
-    pub(crate) fn get() -> &'static HashSet<PathBuf> {
+    pub(crate) fn get() -> &'static BTreeSet<PathBuf> {
         &PLATFORM
             .get()
             .expect("get_platform called before initialization")
@@ -91,8 +91,8 @@ impl Platform {
 pub(crate) fn isolated(
     image: &PathBuf,
     envs: Vec<KvPair>,
-    outputs: HashSet<PathBuf>,
-    inputs: HashSet<PathBuf>,
+    outputs: BTreeSet<PathBuf>,
+    inputs: BTreeSet<PathBuf>,
 ) -> Result<IsolatedContext> {
     let repo = Platform::repo_root()?;
     let mut builder = IsolationContext::builder(image);
