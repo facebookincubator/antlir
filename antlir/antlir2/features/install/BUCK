@@ -8,6 +8,9 @@ feature_impl(
         "//antlir/antlir2/libcap:available": ["setcap"],
         "DEFAULT": [],
     }),
+    test_deps = [
+        "tempfile",
+    ],
     deps = [
         "anyhow",
         "base64",

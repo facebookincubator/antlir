@@ -565,12 +565,13 @@ impl antlir2_compile::CompileFeature for Install {
                         .join(&shared_libraries.dir_name);
                     std::fs::create_dir_all(&shared_lib_dir)?;
                     for shared_lib in &shared_libraries.so_targets {
-                        copy_with_metadata()
-                            .src(&shared_lib.target)
-                            .dst(shared_lib_dir.join(&shared_lib.soname))
-                            .uid(uid.as_raw())
-                            .gid(gid.as_raw())
-                            .call()?;
+                        install_shared_library(
+                            &shared_lib.target,
+                            &shared_lib_dir,
+                            &shared_lib.soname,
+                            uid,
+                            gid,
+                        )?;
                     }
                 }
             }
@@ -680,6 +681,58 @@ fn cp_debug_symbols(
     Ok(())
 }
 
+/// Installs `src` into `dir` as `soname`. Prebuilt libraries are often a
+/// relative symlink to a versioned file in the same directory
+/// (libz.so -> libz.so.1.2.13). Such symlinks are reproduced in `dir` together
+/// with the file they point to, so that they do not dangle.
+fn install_shared_library(
+    src: &Path,
+    dir: &Path,
+    soname: &str,
+    uid: UserId,
+    gid: GroupId,
+) -> anyhow::Result<()> {
+    // Fails on a symlink cycle, which guarantees that the loop terminates.
+    let real_path = std::fs::canonicalize(src)?;
+
+    let mut src = src.to_owned();
+    let mut dst = dir.join(soname);
+    loop {
+        // Symlink chains of multiple libraries may end at the same file.
+        if dst.symlink_metadata().is_ok() {
+            return Ok(());
+        }
+
+        let link_target = if src.symlink_metadata()?.is_symlink() {
+            Some(std::fs::read_link(&src)?)
+        } else {
+            None
+        };
+        let Some(link_target) = link_target.filter(|t| t.file_name() == Some(t.as_os_str())) else {
+            copy_with_metadata()
+                .src(&real_path)
+                .dst(&dst)
+                .uid(uid.as_raw())
+                .gid(gid.as_raw())
+                .call()?;
+            return Ok(());
+        };
+
+        // The soname may coincide with a name further along the chain
+        // (libz.so -> libz.so.1 -> libz.so.1.2.13).
+        if dst.file_name() != Some(link_target.as_os_str()) {
+            copy_with_metadata()
+                .src(&src)
+                .dst(&dst)
+                .uid(uid.as_raw())
+                .gid(gid.as_raw())
+                .call()?;
+        }
+        src.set_file_name(&link_target);
+        dst.set_file_name(&link_target);
+    }
+}
+
 fn add_gnu_debuglink(src: &Path, debug: &Path) -> anyhow::Result<()> {
     let mut objcopy = std::process::Command::new("objcopy");
     objcopy.arg("--add-gnu-debuglink").arg(debug).arg(src);
@@ -689,6 +742,8 @@ fn add_gnu_debuglink(src: &Path, debug: &Path) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::os::unix::fs::MetadataExt;
+
     use super::*;
 
     #[test]
@@ -705,5 +760,136 @@ mod tests {
             XattrValue(b"baz".to_vec()),
             serde_json::from_str::<XattrValue>(r#""0sYmF6""#).expect("failed to deserialize")
         );
+    }
+
+    struct SharedLibraryTest {
+        _tmp: tempfile::TempDir,
+        src_dir: PathBuf,
+        dst_dir: PathBuf,
+        uid: UserId,
+        gid: GroupId,
+    }
+
+    impl SharedLibraryTest {
+        fn new() -> Self {
+            let tmp = tempfile::tempdir().expect("failed to create tempdir");
+            let src_dir = tmp.path().join("src");
+            let dst_dir = tmp.path().join("dst");
+            std::fs::create_dir(&src_dir).expect("failed to create src dir");
+            std::fs::create_dir(&dst_dir).expect("failed to create dst dir");
+            let meta = tmp.path().metadata().expect("failed to stat tempdir");
+            Self {
+                _tmp: tmp,
+                src_dir,
+                dst_dir,
+                uid: UserId::from_raw(meta.uid()),
+                gid: GroupId::from_raw(meta.gid()),
+            }
+        }
+
+        fn file(&self, name: &str) {
+            std::fs::write(self.src_dir.join(name), name).expect("failed to write file");
+        }
+
+        fn symlink(&self, name: &str, target: impl AsRef<Path>) {
+            std::os::unix::fs::symlink(target, self.src_dir.join(name))
+                .expect("failed to create symlink");
+        }
+
+        fn install(&self, name: &str, soname: &str) {
+            install_shared_library(
+                &self.src_dir.join(name),
+                &self.dst_dir,
+                soname,
+                self.uid,
+                self.gid,
+            )
+            .expect("failed to install shared library");
+        }
+
+        fn installed(&self) -> Vec<(String, Option<PathBuf>)> {
+            let mut entries: Vec<_> = std::fs::read_dir(&self.dst_dir)
+                .expect("failed to read dst dir")
+                .map(|entry| {
+                    let entry = entry.expect("failed to read dir entry");
+                    let name = entry
+                        .file_name()
+                        .into_string()
+                        .expect("non-UTF-8 file name");
+                    (name, std::fs::read_link(entry.path()).ok())
+                })
+                .collect();
+            entries.sort();
+            entries
+        }
+
+        fn read(&self, name: &str) -> String {
+            std::fs::read_to_string(self.dst_dir.join(name)).expect("failed to read file")
+        }
+    }
+
+    #[test]
+    fn shared_library_symlink_chain() {
+        let t = SharedLibraryTest::new();
+        t.file("libz.so.1.2.13");
+        t.symlink("libz.so", "libz.so.1.2.13");
+        t.install("libz.so", "libz.so.1");
+        assert_eq!(
+            t.installed(),
+            [
+                (
+                    "libz.so.1".to_owned(),
+                    Some(PathBuf::from("libz.so.1.2.13"))
+                ),
+                ("libz.so.1.2.13".to_owned(), None),
+            ],
+            "the soname should link to a copy of the versioned file",
+        );
+        assert_eq!(t.read("libz.so.1"), "libz.so.1.2.13");
+    }
+
+    #[test]
+    fn shared_library_soname_in_chain() {
+        let t = SharedLibraryTest::new();
+        t.file("libz.so.1.2.13");
+        t.symlink("libz.so.1", "libz.so.1.2.13");
+        t.symlink("libz.so", "libz.so.1");
+        t.install("libz.so", "libz.so.1");
+        assert_eq!(
+            t.installed(),
+            [
+                (
+                    "libz.so.1".to_owned(),
+                    Some(PathBuf::from("libz.so.1.2.13"))
+                ),
+                ("libz.so.1.2.13".to_owned(), None),
+            ],
+            "the soname should not become a symlink to itself",
+        );
+        assert_eq!(t.read("libz.so.1"), "libz.so.1.2.13");
+    }
+
+    #[test]
+    fn shared_library_symlink_to_other_dir() {
+        let t = SharedLibraryTest::new();
+        std::fs::create_dir(t.src_dir.join("real")).expect("failed to create dir");
+        std::fs::write(t.src_dir.join("real/libfoo.so.1.0"), "foo").expect("failed to write file");
+        t.symlink("libfoo.so", "real/libfoo.so.1.0");
+        t.install("libfoo.so", "libfoo.so.1");
+        assert_eq!(
+            t.installed(),
+            [("libfoo.so.1".to_owned(), None)],
+            "a symlink outside of the directory should be copied as the file it resolves to",
+        );
+        assert_eq!(t.read("libfoo.so.1"), "foo");
+    }
+
+    #[test]
+    fn shared_library_regular_file() {
+        let t = SharedLibraryTest::new();
+        t.file("libfoo.so");
+        t.install("libfoo.so", "libfoo.so.1");
+        assert_eq!(t.installed(), [("libfoo.so.1".to_owned(), None)]);
+        assert_eq!(t.read("libfoo.so.1"), "libfoo.so");
     }
 }
