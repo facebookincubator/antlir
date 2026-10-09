@@ -26,11 +26,13 @@ def diff_ids(oci: Path) -> list[str]:
 
 class TestFastSnapshotDiff(TestCase):
     def test_layers_are_identical(self) -> None:
-        full = diff_ids(Path(os.environ["OCI"]))
-        fast = diff_ids(Path(os.environ["OCI_FAST_SNAPSHOT_DIFF"]))
+        default = diff_ids(Path(os.environ["OCI"]))
+        explicit_on = diff_ids(Path(os.environ["OCI_FAST_SNAPSHOT_DIFF"]))
+        full_read = diff_ids(Path(os.environ["OCI_FULL_READ"]))
         self.assertGreater(
-            len(full),
+            len(default),
             1,
             "at least one layer must be diffed against a parent phase",
         )
-        self.assertEqual(full, fast)
+        self.assertEqual(default, explicit_on)
+        self.assertEqual(default, full_read)
