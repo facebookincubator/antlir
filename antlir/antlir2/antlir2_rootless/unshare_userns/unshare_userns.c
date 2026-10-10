@@ -102,7 +102,9 @@ int unshare_userns(
         case -1:
           exit(EXIT_FAILURE);
         case 0: {
-          // do newgidmap first
+          // do newgidmap first — use absolute path so that builds succeed
+          // even when /usr/bin is not on the inherited PATH (common in
+          // sandcastle / skycastle CI workers).
           char* args[] = {
               "newgidmap",
               pid_str,
@@ -113,8 +115,8 @@ int unshare_userns(
               gid_map_outside_sub_start,
               gid_map_len,
               NULL};
-          if (execvp("newgidmap", args) == -1) {
-            perror("exec newgidmap");
+          if (execv("/usr/bin/newgidmap", args) == -1) {
+            perror("exec /usr/bin/newgidmap");
             exit(EXIT_FAILURE);
           }
           exit(EXIT_SUCCESS);
@@ -131,7 +133,8 @@ int unshare_userns(
         }
       }
 
-      // now the newgidmap is done, do newuidmap
+      // now the newgidmap is done, do newuidmap — same absolute-path
+      // reasoning as newgidmap above.
       char* args[] = {
           "newuidmap",
           pid_str,
@@ -142,8 +145,8 @@ int unshare_userns(
           uid_map_outside_sub_start,
           uid_map_len,
           NULL};
-      if (execvp("newuidmap", args) == -1) {
-        perror("exec newuidmap");
+      if (execv("/usr/bin/newuidmap", args) == -1) {
+        perror("exec /usr/bin/newuidmap");
         exit(EXIT_FAILURE);
       };
       exit(EXIT_SUCCESS);
