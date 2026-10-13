@@ -156,9 +156,7 @@ def _fast_snapshot_diff(ctx: AnalysisContext) -> str:
     if override:
         fail("antlir2.fast_snapshot_diff must be 'true', 'false' or 'verify', not '{}'".format(override))
     attr = ctx.attrs.fast_snapshot_diff
-    if attr == None:
-        return "verify"
-    if attr:
+    if attr == None or attr:
         return "on"
     return "off"
 
@@ -266,8 +264,8 @@ oci_attrs = {
         attrs.bool(),
         default = None,
         doc = "How to compare files against the previous phase's btrfs snapshot when building each layer tar: "
-        + "None (default) skips provably unchanged files but byte-compares every skipped file, "
-        + "True skips them without verifying, False reads everything. "
+        + "None (default) skips provably unchanged files without re-reading them, "
+        + "True does the same, False reads everything. "
         + "`-c antlir2.fast_snapshot_diff=true|false|verify` overrides this for every target.",
     ),
     "image_labels": attrs.dict(
