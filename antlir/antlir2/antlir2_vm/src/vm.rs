@@ -425,9 +425,9 @@ impl<S: Share> VM<S> {
                 // it saw the marker; otherwise enrich with console
                 if matches!(e, VMError::PrewarmBootFailure(_)) {
                     return Err(e);
-                } else if self.args.freeze_to.is_some() {
+                } else if let Some(freeze_to) = self.args.freeze_to.as_ref() {
                     // This is a thaw during a freeze? unlikely, but handle
-                    let _ = self.write_boot_failure_file(self.args.freeze_to.as_ref().unwrap(), &e);
+                    let _ = self.write_boot_failure_file(freeze_to, &e);
                     return Ok(());
                 } else {
                     return Err(self.enrich_error_with_console(e));
