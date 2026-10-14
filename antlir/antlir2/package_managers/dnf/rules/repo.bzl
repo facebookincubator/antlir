@@ -48,7 +48,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 optional_args,
             ),
             category = "repodata",
-            local_only = True,
             allow_cache_upload = True,
         )
     else:
@@ -147,8 +146,6 @@ _repo = rule(
 _repo_macro = rule_with_default_target_platform(_repo)
 
 def repo(**kwargs):
-    # the repodata action is local_only=True, so we can't run it remotely
-    kwargs.setdefault("exec_compatible_with", ["prelude//platforms:may_run_local"])
     _repo_macro(**kwargs)
 
 RepoSetInfo = provider(fields = ["repos"])
