@@ -60,6 +60,28 @@ image_test_deb_names(
     not_installed = True,
 )
 
+# The suite seeds the debootstrap base set (Essential + Required) into
+# every installing transaction. None of login, hostname or perl-base is
+# requested here or depended on by bash, dash or dpkg, so their presence
+# proves the seeding.
+image_test_deb_names(
+    name = "test-base-seeded",
+    layer = ":bash-installed",
+    names = [
+        "hostname",
+        "login",
+        "perl-base",
+    ],
+)
+
+antlir2_configured_alias(
+    name = "test-base-seeded-ubuntu-noble",
+    actual = ":test-base-seeded",
+    default_os = "ubuntu-noble",
+    # Noble does not have aarch64 packages
+    target_compatible_with = ["ovr_config//cpu:x86_64"],
+)
+
 # base-files creates the merged-/usr alias symlinks (/bin, /sbin, /lib,
 # /lib64 -> usr/*). iproute2 still ships legacy paths, so installing it in a
 # child layer must leave the symlinks intact with its files merged through.

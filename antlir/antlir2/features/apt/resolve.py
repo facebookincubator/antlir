@@ -22,6 +22,13 @@ import tempfile
 import apt_pkg
 
 
+def _is_essential(pkg) -> bool:
+    candidate = pkg.candidate
+    if candidate is None or candidate.record is None:
+        return False
+    return str(candidate.record.get("Essential", "")).lower() == "yes"
+
+
 def main() -> int:
     spec = json.load(sys.stdin)
 
@@ -31,8 +38,12 @@ def main() -> int:
     arch = spec.get("arch")
     mode = spec["mode"]
     dpkg_status_content = spec.get("dpkg_status")
+    base_variant = spec.get("base_variant", "none")
 
     assert mode == "resolve", f"resolve.py only supports mode=resolve, got {mode}"
+    if base_variant not in ("none", "minbase", "standard"):
+        print(f"Error: unknown base_variant {base_variant!r}", file=sys.stderr)
+        return 1
 
     if not os.path.isdir(archive_dir):
         print(f"Error: archive dir {archive_dir} does not exist", file=sys.stderr)
@@ -126,6 +137,37 @@ def main() -> int:
             print(f"Warning: apt update had issues: {e}", file=sys.stderr)
         cache.open()
 
+        # Seed the debootstrap base set (Essential + Required, plus
+        # Important for the "standard" variant) before processing items,
+        # so layers get a complete minimal system instead of only the
+        # requested closure. Items are processed after, so explicit
+        # removals still win. Skipped for remove-only transactions.
+        if base_variant != "none" and any(
+            item.get("action") == "install" for item in items
+        ):
+            for pkg in cache:
+                candidate = pkg.candidate
+                if candidate is None or candidate.record is None:
+                    continue
+                record = candidate.record
+                is_essential = str(record.get("Essential", "")).lower() == "yes"
+                priority = str(record.get("Priority", "")).lower()
+                wanted = (
+                    is_essential
+                    or priority == "required"
+                    or (base_variant == "standard" and priority == "important")
+                )
+                if not wanted:
+                    continue
+                try:
+                    pkg.mark_install()
+                except Exception as e:
+                    print(
+                        f"Error: failed to mark base package {pkg.name}: {e}",
+                        file=sys.stderr,
+                    )
+                    return 1
+
         # Process items
         install_packages = []
         remove_packages = []
@@ -159,7 +201,11 @@ def main() -> int:
         install_list = []
         remove_list = []
 
-        for pkg in sorted(changes, key=lambda p: p.name):
+        # Unpack Essential packages first, mirroring dpkg: base-files (and
+        # other essentials) own paths like the merged-/usr alias symlinks
+        # that later packages populate, so extracting them out of order
+        # fails (creating a symlink over an already-created directory).
+        for pkg in sorted(changes, key=lambda p: (not _is_essential(p), p.name)):
             if pkg.marked_install or pkg.marked_upgrade:
                 candidate = pkg.candidate
                 if candidate is None:

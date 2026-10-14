@@ -23,6 +23,7 @@ DebSuiteInfo = provider(
     fields = {
         "archive_dir": Artifact,
         "archive_url": str,
+        "base_variant": str,
         "components": list[ComponentInfo],
         "distribution": str,
         "suite_baseurl": str,
@@ -224,6 +225,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         DebSuiteInfo(
             archive_dir = archive_dir,
             archive_url = archive_url,
+            base_variant = ctx.attrs.base_variant,
             distribution = distribution,
             components = components,
             suite_baseurl = suite_baseurl,
@@ -250,6 +252,11 @@ _suite = rule(
             }),
         ),
         "archive_url": attrs.string(),
+        "base_variant": attrs.enum(
+            ["none", "minbase", "standard"],
+            default = "minbase",
+            doc = "Seed the debootstrap base set (Essential + Required for minbase, plus Important for standard) into every installing transaction. Seeded packages are marked before user items, so explicit removals still win.",
+        ),
         "components": attrs.list(attrs.string()),
         "distribution": attrs.option(attrs.string(), default = None),
         "index_checksums": attrs.dict(

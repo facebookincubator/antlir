@@ -39,6 +39,8 @@ struct Args {
     items: JsonFile<Vec<AptItem>>,
     #[clap(long)]
     resolve_cmd: Vec<String>,
+    #[clap(long, default_value = "none")]
+    base_variant: String,
     #[clap(long)]
     out: PathBuf,
 }
@@ -78,6 +80,7 @@ fn main() -> Result<()> {
             args.archive_dir,
             args.target_arch,
             dpkg_status_content,
+            args.base_variant,
         ))
         .context("while planning transaction")?;
 

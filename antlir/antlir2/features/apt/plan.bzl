@@ -79,6 +79,7 @@ def plan(
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(items, format = "--items={}"),
             cmd_args(resolve_cmd, format = "--resolve-cmd={}"),
+            cmd_args(suite[DebSuiteInfo].base_variant, format = "--base-variant={}"),
             cmd_args(tx.as_output(), format = "--out={}"),
             cmd_args(dpkg_status_out.as_output(), format = "--dpkg-status-out={}"),
             cmd_args(parent_dpkg_status, format = "--dpkg-status={}") if parent_dpkg_status else cmd_args(),

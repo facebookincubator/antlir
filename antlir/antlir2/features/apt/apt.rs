@@ -5,9 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::BTreeSet;
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io::BufReader;
 use std::io::BufWriter;
+use std::io::ErrorKind;
 use std::io::Seek;
 use std::path::Path;
 use std::path::PathBuf;
@@ -130,8 +132,8 @@ pub struct InstallPackage {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ResolvedTransaction {
-    pub install: BTreeSet<InstallPackage>,
-    pub remove: BTreeSet<RemovePackage>,
+    pub install: Vec<InstallPackage>,
+    pub remove: Vec<RemovePackage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
@@ -175,6 +177,128 @@ impl antlir2_compile::CompileFeature for Apt {
     }
 }
 
+/// Depends and Pre-Depends of every package in the image's dpkg status db
+fn package_dependencies(ctx: &CompilerContext) -> Result<HashMap<String, Vec<String>>> {
+    let path = ctx.dst_path("/var/lib/dpkg/status")?;
+    let status = match std::fs::read_to_string(&path) {
+        Ok(status) => status,
+        Err(e) if e.kind() == ErrorKind::NotFound => return Ok(HashMap::new()),
+        Err(e) => return Err(e).with_context(|| format!("while reading {}", path.display())),
+    };
+    Ok(status
+        .split("\n\n")
+        .filter_map(|stanza| {
+            // unfold continuation lines so wrapped Depends stay whole
+            let mut logical: Vec<String> = Vec::new();
+            for line in stanza.lines() {
+                if line.starts_with(' ') || line.starts_with('\t') {
+                    if let Some(last) = logical.last_mut() {
+                        last.push_str(line);
+                    }
+                } else {
+                    logical.push(line.to_owned());
+                }
+            }
+            let field = |name: &str| {
+                logical
+                    .iter()
+                    .find_map(|l| l.strip_prefix(name)?.strip_prefix(':'))
+                    .map(str::trim)
+            };
+            let name = field("Package")?.to_owned();
+            let mut deps = Vec::new();
+            for key in ["Depends", "Pre-Depends"] {
+                if let Some(field) = field(key) {
+                    deps.extend(parse_depends(field));
+                }
+            }
+            Some((name, deps))
+        })
+        .collect())
+}
+
+/// Bare package names from a Depends/Pre-Depends field:
+/// "dbus-bin (= 1.14), libfoo:amd64 | libbar" -> ["dbus-bin", "libfoo"]
+fn parse_depends(field: &str) -> Vec<String> {
+    field
+        .split(',')
+        .filter_map(|alts| {
+            let name = alts
+                .split('|')
+                .next()?
+                .split('(')
+                .next()?
+                .split(':')
+                .next()?
+                .trim();
+            if name.is_empty() {
+                None
+            } else {
+                Some(name.to_owned())
+            }
+        })
+        .collect()
+}
+
+/// Order package names the way dpkg would configure (dependencies first)
+/// or remove (dependents first, when `reverse`) them. The resolver's
+/// transaction order does not respect Depends, which breaks scripts that
+/// rely on another package's side effects. Packages unrelated by Depends
+/// keep their original relative order; dependency cycles (legal in dpkg)
+/// deterministically fall back to original order for the packages
+/// involved. Dependencies on packages outside `names` (already configured
+/// in a parent layer, or not installed at all) are ignored.
+fn sort_by_dependencies(
+    ctx: &CompilerContext,
+    names: Vec<String>,
+    reverse: bool,
+) -> Result<Vec<String>> {
+    Ok(topo_order(names, &package_dependencies(ctx)?, reverse))
+}
+
+fn topo_order(
+    names: Vec<String>,
+    deps: &HashMap<String, Vec<String>>,
+    reverse: bool,
+) -> Vec<String> {
+    fn visit(
+        name: &str,
+        deps: &HashMap<String, Vec<String>>,
+        in_set: &HashSet<&str>,
+        ordered: &mut Vec<String>,
+        done: &mut HashSet<String>,
+        visiting: &mut HashSet<String>,
+    ) {
+        if done.contains(name) || !visiting.insert(name.to_owned()) {
+            // already ordered, or a dependency cycle: dpkg also just picks
+            // an order, so keep the original one here
+            return;
+        }
+        if let Some(ds) = deps.get(name) {
+            for d in ds {
+                if in_set.contains(d.as_str()) {
+                    visit(d, deps, in_set, ordered, done, visiting);
+                }
+            }
+        }
+        visiting.remove(name);
+        done.insert(name.to_owned());
+        ordered.push(name.to_owned());
+    }
+
+    let in_set: HashSet<&str> = names.iter().map(String::as_str).collect();
+    let mut ordered = Vec::with_capacity(names.len());
+    let mut done = HashSet::new();
+    let mut visiting = HashSet::new();
+    for name in &names {
+        visit(name, deps, &in_set, &mut ordered, &mut done, &mut visiting);
+    }
+    if reverse {
+        ordered.reverse();
+    }
+    ordered
+}
+
 impl Apt {
     #[tracing::instrument(skip_all)]
     pub fn plan(
@@ -216,6 +340,7 @@ struct DriverSpec<'a> {
     mode: DriverMode,
     arch: &'a str,
     resolved_transaction: Option<ResolvedTransaction>,
+    base_variant: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     dpkg_status: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -241,8 +366,8 @@ enum TransactionOperation {
 #[allow(dead_code)]
 enum DriverEvent {
     TransactionResolved {
-        install: BTreeSet<InstallPackage>,
-        remove: BTreeSet<RemovePackage>,
+        install: Vec<InstallPackage>,
+        remove: Vec<RemovePackage>,
         #[serde(default)]
         dpkg_status: Option<String>,
     },
@@ -270,6 +395,7 @@ pub enum DriverContext<'a> {
         archive_dir: PathBuf,
         target_arch: Arch,
         dpkg_status: Option<String>,
+        base_variant: String,
     },
 }
 
@@ -280,6 +406,7 @@ impl DriverContext<'_> {
         archive_dir: PathBuf,
         target_arch: Arch,
         dpkg_status: Option<String>,
+        base_variant: String,
     ) -> Self {
         Self::Plan {
             label,
@@ -287,6 +414,7 @@ impl DriverContext<'_> {
             archive_dir,
             target_arch,
             dpkg_status,
+            base_variant,
         }
     }
 
@@ -347,6 +475,13 @@ impl DriverContext<'_> {
             Self::Plan { .. } => None,
         }
     }
+
+    fn base_variant(&self) -> &str {
+        match self {
+            Self::Plan { base_variant, .. } => base_variant,
+            Self::Compile { .. } => "none",
+        }
+    }
 }
 
 fn arch_to_deb_arch(arch: Arch) -> &'static str {
@@ -379,6 +514,7 @@ fn run_apt_driver(
         mode,
         arch: arch_to_deb_arch(ctx.target_arch()),
         resolved_transaction,
+        base_variant: ctx.base_variant(),
         dpkg_status: ctx.dpkg_status(),
         debs_dir: debs_dir_in_container.as_deref(),
     };
@@ -452,5 +588,88 @@ fn run_apt_driver(
             ));
         }
         Ok(events)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_depends() {
+        assert_eq!(
+            parse_depends(
+                "dbus-bin (= 1.14.10-4ubuntu4), dbus-system-bus-common (>= 1.14.10), libc6 (>= 2.34)"
+            ),
+            vec!["dbus-bin", "dbus-system-bus-common", "libc6"],
+        );
+        // alternatives resolve to the first option, arch qualifiers are stripped
+        assert_eq!(
+            parse_depends("default-dbus-session-bus | dbus-session-bus, libfoo:amd64"),
+            vec!["default-dbus-session-bus", "libfoo"],
+        );
+        assert!(parse_depends("").is_empty());
+    }
+
+    fn dep_map(pairs: &[(&str, &[&str])]) -> HashMap<String, Vec<String>> {
+        pairs
+            .iter()
+            .map(|(name, ds)| (name.to_string(), ds.iter().map(|d| d.to_string()).collect()))
+            .collect()
+    }
+
+    fn names(ns: &[&str]) -> Vec<String> {
+        ns.iter().map(|n| n.to_string()).collect()
+    }
+
+    #[test]
+    fn test_topo_order_dependencies_first() {
+        let deps = dep_map(&[
+            ("dbus", &["dbus-system-bus-common", "libc6"]),
+            ("dbus-system-bus-common", &[]),
+        ]);
+        // dbus listed first, but its dependency must configure first
+        assert_eq!(
+            topo_order(
+                names(&["dbus", "dbus-system-bus-common", "tzdata"]),
+                &deps,
+                false
+            ),
+            names(&["dbus-system-bus-common", "dbus", "tzdata"]),
+        );
+        // unrelated packages keep their relative order
+        assert_eq!(
+            topo_order(
+                names(&["tzdata", "dbus", "dbus-system-bus-common"]),
+                &deps,
+                false
+            ),
+            names(&["tzdata", "dbus-system-bus-common", "dbus"]),
+        );
+    }
+
+    #[test]
+    fn test_topo_order_reverse_removes_dependents_first() {
+        let deps = dep_map(&[("dbus", &["dbus-system-bus-common"])]);
+        assert_eq!(
+            topo_order(names(&["dbus-system-bus-common", "dbus"]), &deps, true),
+            names(&["dbus", "dbus-system-bus-common"]),
+        );
+    }
+
+    #[test]
+    fn test_topo_order_ignores_external_deps_and_cycles() {
+        // libc6 is not in the transaction (comes from a parent layer)
+        let deps = dep_map(&[("dbus", &["libc6", "dbus-system-bus-common"])]);
+        assert_eq!(
+            topo_order(names(&["dbus", "dbus-system-bus-common"]), &deps, false),
+            names(&["dbus-system-bus-common", "dbus"]),
+        );
+        // cycles are legal in dpkg; the result is deterministic
+        let deps = dep_map(&[("a", &["b"]), ("b", &["a"])]);
+        assert_eq!(
+            topo_order(names(&["a", "b"]), &deps, false),
+            names(&["b", "a"]),
+        );
     }
 }
