@@ -2,6 +2,7 @@ load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_debs_test.bzl", "image_test_deb_names")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
 oncall("antlir")
 
@@ -57,4 +58,48 @@ image_test_deb_names(
         "bash",
     ],
     not_installed = True,
+)
+
+# base-files creates the merged-/usr alias symlinks (/bin, /sbin, /lib,
+# /lib64 -> usr/*). iproute2 still ships legacy paths, so installing it in a
+# child layer must leave the symlinks intact with its files merged through.
+image.layer(
+    name = "usrmerge-base",
+    default_os = "debian-trixie",
+    features = [
+        feature.apt_install(
+            packages = [
+                "bash",
+                "coreutils",
+                "dash",
+            ]
+        ),
+    ],
+)
+
+image.layer(
+    name = "usrmerge-child",
+    default_os = "debian-trixie",
+    features = [
+        feature.apt_install(
+            packages = [
+                "iproute2",
+            ]
+        ),
+    ],
+    parent_layer = ":usrmerge-base",
+)
+
+image_sh_test(
+    name = "test-usrmerge",
+    layer = ":usrmerge-child",
+    test = "test-usrmerge.sh",
+)
+
+antlir2_configured_alias(
+    name = "test-usrmerge-ubuntu-noble",
+    actual = ":test-usrmerge",
+    default_os = "ubuntu-noble",
+    # Noble does not have aarch64 packages
+    target_compatible_with = ["ovr_config//cpu:x86_64"],
 )

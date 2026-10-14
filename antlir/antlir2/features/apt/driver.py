@@ -160,15 +160,33 @@ def main() -> int:
             sys.stdout.flush()
             return 1
 
-        # Extract the package contents directly into the install root
-        result = subprocess.run(
-            ["dpkg-deb", "--extract", deb_path, install_root],
+        # Extract the package contents directly into the install root.
+        # --keep-directory-symlink preserves merged-/usr alias symlinks
+        # (e.g. /sbin -> usr/sbin from base-files) when a .deb ships the
+        # same path as a real directory, matching what dpkg itself does.
+        # Plain extraction replaces the symlink and strands the files
+        # under the legacy path.
+        dpkg_deb = subprocess.Popen(
+            ["dpkg-deb", "--fsys-tarfile", deb_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        assert dpkg_deb.stdout is not None
+        tar = subprocess.run(
+            ["tar", "--keep-directory-symlink", "-x", "-C", install_root],
+            stdin=dpkg_deb.stdout,
             capture_output=True,
             text=True,
+            errors="replace",
         )
-        if result.returncode != 0:
+        dpkg_deb.stdout.close()
+        _, dpkg_stderr = dpkg_deb.communicate()
+        if tar.returncode != 0 or dpkg_deb.returncode != 0:
+            # Child stderr may not be UTF-8 (e.g. raw filename bytes);
+            # degrade to replacement chars rather than crash error reporting.
+            err = tar.stderr.strip() or dpkg_stderr.decode(errors="replace").strip()
             json.dump(
-                {"tx_error": f"Failed to extract {pkg['name']}: {result.stderr}"},
+                {"tx_error": f"Failed to extract {pkg['name']}: {err}"},
                 sys.stdout,
             )
             sys.stdout.write("\n")
@@ -185,6 +203,7 @@ def main() -> int:
             ["dpkg-deb", "--control", deb_path, ctrl_dir],
             capture_output=True,
             text=True,
+            errors="replace",
         )
         if result.returncode != 0:
             json.dump(
