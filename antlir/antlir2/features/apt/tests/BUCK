@@ -155,10 +155,35 @@ local_suite(
         ),
         test_deb(
             name = "antlir2-scripts",
-            postinst = "touch /antlir2-postinst-ran",
-            postrm = "touch /antlir2-postrm-ran",
-            preinst = "touch /antlir2-preinst-ran",
-            prerm = "touch /antlir2-prerm-ran",
+            postinst = 'echo "$@" > /antlir2-postinst-ran',
+            postrm = 'echo "$@" > /antlir2-postrm-ran',
+            preinst = 'echo "$@" > /antlir2-preinst-ran',
+            prerm = 'echo "$@" > /antlir2-prerm-ran',
+            version = "1",
+        ),
+        # Registers itself as an alternative the same way that
+        # dh_installalternatives does for real packages
+        test_deb(
+            name = "antlir2-alternative",
+            features = [
+                feature.ensure_dirs_exist(dirs = "/usr/bin"),
+                feature.install_text(
+                    dst = "/usr/bin/antlir2-greeter-hello",
+                    mode = "a+rx",
+                    text = "#!/bin/sh\necho hello from antlir2\n",
+                ),
+            ],
+            postinst = """
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ]; then
+    update-alternatives --install /usr/bin/antlir2-greeter antlir2-greeter /usr/bin/antlir2-greeter-hello 5 \\
+        --slave /usr/bin/antlir2-greet antlir2-greet /usr/bin/antlir2-greeter-hello
+fi
+""",
+            prerm = """
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ]; then
+    update-alternatives --remove antlir2-greeter /usr/bin/antlir2-greeter-hello
+fi
+""",
             version = "1",
         ),
     ],
@@ -169,6 +194,7 @@ image.layer(
     features = [
         feature.apt_install(
             packages = [
+                "antlir2-alternative",
                 "antlir2-files",
                 "antlir2-scripts",
             ],
@@ -182,9 +208,16 @@ image_test_deb_names(
     name = "test-local-debs-installed",
     layer = ":local-debs-installed",
     names = [
+        "antlir2-alternative",
         "antlir2-files",
         "antlir2-scripts",
     ],
+)
+
+image_sh_test(
+    name = "test-local-deb-alternative-installed",
+    layer = ":local-debs-installed",
+    test = "test-local-deb-alternative-installed.sh",
 )
 
 image_sh_test(
@@ -194,9 +227,9 @@ image_sh_test(
 )
 
 image_sh_test(
-    name = "test-local-deb-install-scripts-not-run",
+    name = "test-local-deb-install-scripts-run",
     layer = ":local-debs-installed",
-    test = "test-local-deb-install-scripts-not-run.sh",
+    test = "test-local-deb-install-scripts-run.sh",
 )
 
 image.layer(
@@ -204,6 +237,7 @@ image.layer(
     features = [
         feature.apt_remove(
             packages = [
+                "antlir2-alternative",
                 "antlir2-scripts",
             ]
         ),
@@ -212,9 +246,15 @@ image.layer(
 )
 
 image_sh_test(
-    name = "test-local-deb-remove-scripts-not-run",
+    name = "test-local-deb-remove-scripts-run",
     layer = ":local-deb-scripts-removed",
-    test = "test-local-deb-remove-scripts-not-run.sh",
+    test = "test-local-deb-remove-scripts-run.sh",
+)
+
+image_sh_test(
+    name = "test-local-deb-alternative-removed",
+    layer = ":local-deb-scripts-removed",
+    test = "test-local-deb-alternative-removed.sh",
 )
 
 image_sh_test(

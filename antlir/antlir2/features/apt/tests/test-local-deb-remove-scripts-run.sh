@@ -9,8 +9,6 @@ set -ex
 test ! -e /var/lib/dpkg/info/antlir2-scripts.prerm
 test ! -e /var/lib/dpkg/info/antlir2-scripts.postrm
 
-# Maintainer scripts are not executed yet. Once they are, this should assert
-# that the prerm and postrm side effects exist.
-for script in preinst postinst prerm postrm; do
-    test ! -e "/antlir2-$script-ran"
-done
+# Each script records its arguments in the image root
+test "$(cat /antlir2-prerm-ran)" = "remove"
+test "$(cat /antlir2-postrm-ran)" = "remove"

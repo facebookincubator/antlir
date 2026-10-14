@@ -14,6 +14,9 @@ the packages into the install root by extracting .deb files directly.
 The .deb files are expected to be in the archive directory, accessible via
 the `filename` field in each package's resolved metadata.
 
+This only extracts files and updates the dpkg database. Maintainer scripts are
+run separately by the apt feature, inside the image root.
+
 Must be run inside a Debian chroot that has dpkg-deb installed.
 """
 
@@ -66,9 +69,9 @@ def main() -> int:
         with open(available_path, "w") as f:
             pass
 
-    # Handle removals by directly removing files and updating the status db.
-    # We don't use `dpkg --remove` because it tries to execute maintainer
-    # scripts which fail in a cross-root context.
+    # Maintainer scripts (prerm/postrm) are run by the apt feature around this
+    # step, inside the image root rather than this build appliance, so this
+    # must not use `dpkg --remove`, which would also run them.
     for pkg in remove_pkgs:
         pkg_name = pkg["name"]
         json.dump(

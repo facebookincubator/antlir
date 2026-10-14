@@ -7,10 +7,12 @@
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fs::Permissions;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::ErrorKind;
 use std::io::Seek;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -21,6 +23,7 @@ use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::item::Item;
 // Mandatory dep from feature_impl(); suppress unused-dep check.
 use antlir2_features as _;
+use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use antlir2_isolate::unshare;
 use anyhow::Context;
@@ -32,6 +35,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde::de::Error as _;
 use serde_json::Deserializer;
+use tracing::debug;
 use tracing::trace;
 
 pub type Feature = Apt;
@@ -160,21 +164,197 @@ impl antlir2_compile::CompileFeature for Apt {
             .plan("apt")
             .context("apt feature was not planned")?
             .context("while loading apt plan")?;
-        run_apt_driver(
-            DriverContext::Compile {
-                ctx,
-                build_appliance: plan.build_appliance,
-                archive_dir: plan.archive_dir,
-                debs_dir: plan.debs_dir,
-            },
-            &self.driver_cmd,
-            &self.items,
-            DriverMode::Run,
-            Some(plan.tx.into_inner()),
-        )
-        .map(|_| ())
-        .map_err(antlir2_compile::Error::from)
+        self.run_transaction(ctx, plan)
+            .map_err(antlir2_compile::Error::from)
     }
+}
+
+const DPKG_INFO_DIR: &str = "/var/lib/dpkg/info";
+
+impl Apt {
+    /// Apply the transaction following dpkg's ordering of maintainer scripts
+    /// around file removal and extraction. The exception is preinst, which
+    /// (like debootstrap) runs after unpacking, since on a fresh root there
+    /// is no /bin/sh until the essential packages are unpacked.
+    /// Like dpkg, packages are configured dependencies-first and removed
+    /// dependents-first, since scripts often rely on another package's
+    /// side effects (users, alternatives, config).
+    fn run_transaction(&self, ctx: &CompilerContext, plan: Plan) -> Result<()> {
+        let tx = plan.tx.into_inner();
+        let run_driver = |tx: ResolvedTransaction| {
+            run_apt_driver(
+                DriverContext::Compile {
+                    ctx,
+                    build_appliance: plan.build_appliance.clone(),
+                    archive_dir: plan.archive_dir.clone(),
+                    debs_dir: plan.debs_dir.clone(),
+                },
+                &self.driver_cmd,
+                &self.items,
+                DriverMode::Run,
+                Some(tx),
+            )
+        };
+
+        if !tx.remove.is_empty() {
+            // dpkg removes dependents before the packages they depend on
+            let remove: Vec<RemovePackage> = sort_by_dependencies(
+                ctx,
+                tx.remove.iter().map(|pkg| pkg.name.clone()).collect(),
+                true,
+            )?
+            .into_iter()
+            .map(|name| {
+                tx.remove
+                    .iter()
+                    .find(|pkg| pkg.name == name)
+                    .expect("sorted name came from tx.remove")
+                    .clone()
+            })
+            .collect();
+            for pkg in &remove {
+                run_maintainer_script(ctx, &pkg.name, &pkg.arch, "prerm", &["remove"])?;
+            }
+            // The driver deletes all of a package's info files, but postrm
+            // runs after the files are gone
+            let mut postrms = Vec::new();
+            for pkg in &remove {
+                let path = ctx.dst_path(format!("{DPKG_INFO_DIR}/{}.postrm", pkg.name))?;
+                match std::fs::read(&path) {
+                    Ok(contents) => postrms.push((pkg, path, contents)),
+                    Err(e) if e.kind() == ErrorKind::NotFound => {}
+                    Err(e) => {
+                        return Err(e).with_context(|| format!("while reading {}", path.display()));
+                    }
+                }
+            }
+            run_driver(ResolvedTransaction {
+                install: vec![],
+                remove: tx.remove.clone(),
+            })?;
+            for (pkg, path, contents) in postrms {
+                std::fs::write(&path, contents)
+                    .with_context(|| format!("while restoring {}", path.display()))?;
+                std::fs::set_permissions(&path, Permissions::from_mode(0o755))?;
+                let res = run_maintainer_script(ctx, &pkg.name, &pkg.arch, "postrm", &["remove"]);
+                std::fs::remove_file(&path)
+                    .with_context(|| format!("while removing {}", path.display()))?;
+                res?;
+            }
+        }
+
+        if !tx.install.is_empty() {
+            let previous_versions = installed_versions(ctx)?;
+            run_driver(ResolvedTransaction {
+                install: tx.install.clone(),
+                remove: vec![],
+            })?;
+            // dpkg configures dependencies before the packages that depend
+            // on them (e.g. dbus-system-bus-common's postinst creates the
+            // messagebus user that dbus's postinst requires); the resolver
+            // does not guarantee this order, so sort it here.
+            let install: Vec<InstallPackage> = sort_by_dependencies(
+                ctx,
+                tx.install.iter().map(|p| p.package.name.clone()).collect(),
+                false,
+            )?
+            .into_iter()
+            .map(|name| {
+                tx.install
+                    .iter()
+                    .find(|p| p.package.name == name)
+                    .expect("sorted name came from tx.install")
+                    .clone()
+            })
+            .collect();
+            for InstallPackage { package, .. } in &install {
+                let args = match previous_versions.get(&package.name) {
+                    Some(old) => vec!["upgrade", old.as_str()],
+                    None => vec!["install"],
+                };
+                run_maintainer_script(ctx, &package.name, &package.arch, "preinst", &args)?;
+            }
+            for InstallPackage { package, .. } in &install {
+                let args = match previous_versions.get(&package.name) {
+                    Some(old) => vec!["configure", old.as_str()],
+                    None => vec!["configure"],
+                };
+                run_maintainer_script(ctx, &package.name, &package.arch, "postinst", &args)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Versions of the packages currently recorded in the image's dpkg status db
+fn installed_versions(ctx: &CompilerContext) -> Result<HashMap<String, String>> {
+    let path = ctx.dst_path("/var/lib/dpkg/status")?;
+    let status = match std::fs::read_to_string(&path) {
+        Ok(status) => status,
+        Err(e) if e.kind() == ErrorKind::NotFound => return Ok(HashMap::new()),
+        Err(e) => return Err(e).with_context(|| format!("while reading {}", path.display())),
+    };
+    Ok(status
+        .split("\n\n")
+        .filter_map(|stanza| {
+            let field = |name: &str| {
+                stanza
+                    .lines()
+                    .find_map(|l| l.strip_prefix(name)?.strip_prefix(':'))
+                    .map(str::trim)
+            };
+            Some((field("Package")?.to_owned(), field("Version")?.to_owned()))
+        })
+        .collect())
+}
+
+/// Run a maintainer script (if the package has one) with the image as the
+/// root filesystem
+fn run_maintainer_script(
+    ctx: &CompilerContext,
+    package: &str,
+    arch: &str,
+    script: &str,
+    args: &[&str],
+) -> Result<()> {
+    let path = format!("{DPKG_INFO_DIR}/{package}.{script}");
+    if !ctx.dst_path(&path)?.exists() {
+        return Ok(());
+    }
+    let mut isol = IsolationContext::builder(ctx.root_path());
+    isol.ephemeral(false)
+        .working_directory(Path::new("/"))
+        .devtmpfs(Path::new("/dev"))
+        .tmpfs(Path::new("/tmp"))
+        .invocation_type(InvocationType::Pid2Pipe)
+        .setenv(("TMPDIR", "/tmp"))
+        .setenv((
+            "PATH",
+            "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        ))
+        .setenv(("DEBIAN_FRONTEND", "noninteractive"))
+        .setenv(("SYSTEMD_OFFLINE", "1"))
+        .setenv(("DPKG_MAINTSCRIPT_PACKAGE", package))
+        .setenv(("DPKG_MAINTSCRIPT_NAME", script))
+        .setenv(("DPKG_MAINTSCRIPT_ARCH", arch));
+    let mut cmd = unshare(isol.build())?.command(&path)?;
+    cmd.args(args);
+    trace!("running maintainer script: {cmd:?}");
+    let out = cmd
+        .output()
+        .with_context(|| format!("while running {package} {script}"))?;
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    if !out.status.success() {
+        return Err(anyhow::anyhow!(
+            "{package} {script} {args:?} failed ({}):\n{stdout}\n{stderr}",
+            out.status
+        ));
+    }
+    if !stdout.is_empty() || !stderr.is_empty() {
+        debug!("{package} {script}: {stdout}{stderr}");
+    }
+    Ok(())
 }
 
 /// Depends and Pre-Depends of every package in the image's dpkg status db
