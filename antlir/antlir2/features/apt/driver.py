@@ -19,8 +19,21 @@ Must be run inside a Debian chroot that has dpkg-deb installed.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
+
+
+def _remove_status_entry(status_path: str, pkg_name: str) -> None:
+    with open(status_path, "r") as f:
+        stanzas = [s for s in f.read().split("\n\n") if s.strip()]
+    kept = [
+        s for s in stanzas if f"Package: {pkg_name}" not in s.strip("\n").split("\n")
+    ]
+    with open(status_path, "w") as f:
+        f.write("\n\n".join(kept))
+        if kept:
+            f.write("\n\n")
 
 
 def main() -> int:
@@ -92,43 +105,7 @@ def main() -> int:
                 except OSError:
                     pass
 
-        # Update the status database: mark as not installed
-        if os.path.exists(status_path):
-            with open(status_path, "r") as f:
-                status_content = f.read()
-            # Remove the package's entry from the status file
-            new_entries = []
-            current_entry = []
-            for line in status_content.split("\n"):
-                if line == "" and current_entry:
-                    entry_text = "\n".join(current_entry)
-                    # Check if this entry is for the package being removed
-                    is_target = False
-                    for el in current_entry:
-                        if (
-                            el.startswith("Package: ")
-                            and el.split(": ", 1)[1] == pkg_name
-                        ):
-                            is_target = True
-                            break
-                    if not is_target:
-                        new_entries.append(entry_text)
-                    current_entry = []
-                else:
-                    current_entry.append(line)
-            if current_entry:
-                entry_text = "\n".join(current_entry)
-                is_target = False
-                for el in current_entry:
-                    if el.startswith("Package: ") and el.split(": ", 1)[1] == pkg_name:
-                        is_target = True
-                        break
-                if not is_target:
-                    new_entries.append(entry_text)
-            with open(status_path, "w") as f:
-                f.write("\n\n".join(new_entries))
-                if new_entries:
-                    f.write("\n")
+        _remove_status_entry(status_path, pkg_name)
 
     # Install packages by extracting .deb files directly from the archive dir
     for pkg_info in install_pkgs:
@@ -259,14 +236,15 @@ def main() -> int:
         if os.path.exists(control_path):
             with open(control_path, "r") as f:
                 control_data = f.read().strip()
+            # Reinstalls and upgrades must replace the old entry: dpkg refuses
+            # to parse a status file with two instances of one package.
+            _remove_status_entry(status_path, pkg_name)
             with open(status_path, "a") as f:
                 f.write(control_data + "\n")
                 f.write("Status: install ok installed\n")
                 f.write("\n")
 
         # Clean up temp control dir
-        import shutil
-
         shutil.rmtree(ctrl_dir, ignore_errors=True)
 
     return 0

@@ -125,3 +125,17 @@ antlir2_configured_alias(
     # Noble does not have aarch64 packages
     target_compatible_with = ["ovr_config//cpu:x86_64"],
 )
+
+image_sh_test(
+    name = "test-dpkg-status-unique",
+    layer = ":usrmerge-child",
+    test = "test-dpkg-status-unique.sh",
+)
+
+antlir2_configured_alias(
+    name = "test-dpkg-status-unique-ubuntu-noble",
+    actual = ":test-dpkg-status-unique",
+    default_os = "ubuntu-noble",
+    # Noble does not have aarch64 packages
+    target_compatible_with = ["ovr_config//cpu:x86_64"],
+)
