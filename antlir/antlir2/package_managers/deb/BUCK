@@ -8,6 +8,14 @@ export_file(
     src = "keys/dummy.secret.pgp",
 )
 
+prelude = native
+
+prelude.python_bootstrap_binary(
+    name = "local-suite-index",
+    main = "local_suite_index.py",
+    visibility = ["PUBLIC"],
+)
+
 suite(
     name = "trixie",
     architectures = [

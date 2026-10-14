@@ -13,6 +13,7 @@ pub enum Spec {
     Btrfs(crate::btrfs::Btrfs),
     CadStack(crate::cad_stack::CadStack),
     Cpio(crate::cpio::Cpio),
+    Deb(crate::deb::Deb),
     DockerArchive(crate::docker_archive::DockerArchive),
     Erofs(crate::erofs::Erofs),
     Ext3(crate::ext3::Ext3),

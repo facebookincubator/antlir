@@ -25,7 +25,7 @@ NOBLE_SUITE = internal_external(
     oss = "antlir//antlir/antlir2/package_managers/deb:noble",
 )
 
-def _common(action: str, *, packages: list[str | Select] | Select):
+def _common(action: str, *, packages: list[str | Select] | Select, suite: str | None = None):
     return ParseTimeFeature(
         feature_type = "apt",
         plugin = "antlir//antlir/antlir2/features/apt:apt",
@@ -34,7 +34,8 @@ def _common(action: str, *, packages: list[str | Select] | Select):
             "subjects": packages,
         },
         deps = {
-            "suite": select({
+            "suite": suite
+            or select({
                 "DEFAULT": TRIXIE_SUITE,
                 "antlir//antlir/antlir2/os:ubuntu-noble": NOBLE_SUITE,
             }),
@@ -48,13 +49,16 @@ def _common(action: str, *, packages: list[str | Select] | Select):
         },
     )
 
-def apt_install(*, packages: list[str | Select] | Select):
+def apt_install(*, packages: list[str | Select] | Select, suite: str | None = None):
     """
     Install deb packages by name.
 
     Elements in `packages` are apt package names like `"bash"` or `"systemd"`.
+
+    `suite` overrides the default suite for the image OS, for example with a
+    `local_suite` of debs built by `package.deb`.
     """
-    return _common("install", packages = packages)
+    return _common("install", packages = packages, suite = suite)
 
 def apt_remove_if_exists(*, packages: list[str | Select] | Select):
     """
@@ -132,6 +136,12 @@ apt_rule = new_feature_rule(
 )
 
 def _reduce_apt_features(left: feature_record | typing.Any, right: feature_record | typing.Any):
+    # Reduced features share one planner, so the right side's suite would
+    # silently be ignored
+    left_suite = left.analysis.planner.kwargs["suite"].label
+    right_suite = right.analysis.planner.kwargs["suite"].label
+    if left_suite != right_suite:
+        fail("all apt features in a layer must use the same suite, got {} and {}".format(left_suite, right_suite))
     f = structs.to_dict(left)
     f["analysis"] = structs.to_dict(left.analysis)
     f["analysis"]["data"] = structs.to_dict(f["analysis"]["data"])

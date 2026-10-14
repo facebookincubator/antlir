@@ -11,6 +11,7 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":attrs.bzl", "common_attrs", "default_attrs")
 load(":btrfs.bzl", "btrfs")
 load(":cfg.bzl", "package_cfg")
+load(":deb.bzl", "deb")
 load(":disk_image.bzl", "DiskImage")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":macro.bzl", "package_macro")
@@ -444,6 +445,7 @@ package = struct(
     cpio_gz = package_macro(_cpio_gz),
     cpio_lz4 = package_macro(_cpio_lz4),
     cpio_zst = package_macro(_cpio_zst),
+    deb = deb,
     erofs = package_macro(_erofs),
     ext3 = package_macro(_ext3),
     ext4 = package_macro(_ext4),

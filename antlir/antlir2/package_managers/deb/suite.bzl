@@ -25,6 +25,9 @@ DebSuiteInfo = provider(
         "archive_url": str,
         "base_variant": str,
         "components": list[ComponentInfo],
+        # Pre-built directory of .deb files keyed by Filename, used instead of
+        # downloading from archive_url
+        "debs_dir": provider_field(Artifact | None, default = None),
         "distribution": str,
         "suite_baseurl": str,
     }

@@ -66,7 +66,6 @@ def plan(
 ) -> struct:
     tx = ctx.actions.declare_output(identifier, "apt/transaction.json", has_content_based_path = False)
     dpkg_status_out = ctx.actions.declare_output(identifier, "apt/dpkg_status.txt", has_content_based_path = False)
-    debs_dir = ctx.actions.declare_output(identifier, "apt/debs", dir = True, has_content_based_path = False)
 
     archive_dir = suite[DebSuiteInfo].archive_dir
 
@@ -88,16 +87,20 @@ def plan(
         identifier = identifier,
     )
 
-    # Dynamically download the resolved .deb files after the plan action
-    # produces the transaction JSON. This uses Buck's download_file for
-    # hermetic, cached downloads with integrity verification.
-    ctx.actions.dynamic_output_new(
-        _download_debs(
-            archive_url = suite[DebSuiteInfo].archive_url,
-            tx = tx,
-            debs_dir = debs_dir.as_output(),
-        ),
-    )
+    debs_dir = suite[DebSuiteInfo].debs_dir
+    if not debs_dir:
+        debs_dir = ctx.actions.declare_output(identifier, "apt/debs", dir = True, has_content_based_path = False)
+
+        # Dynamically download the resolved .deb files after the plan action
+        # produces the transaction JSON. This uses Buck's download_file for
+        # hermetic, cached downloads with integrity verification.
+        ctx.actions.dynamic_output_new(
+            _download_debs(
+                archive_url = suite[DebSuiteInfo].archive_url,
+                tx = tx,
+                debs_dir = debs_dir.as_output(),
+            ),
+        )
 
     plan_json = ctx.actions.declare_output(identifier, "apt/plan.json", has_content_based_path = False)
     out = ctx.actions.write_json(

@@ -23,6 +23,7 @@ use json_arg::JsonFile;
 mod btrfs;
 mod cad_stack;
 mod cpio;
+mod deb;
 mod docker_archive;
 mod erofs;
 mod ext3;
@@ -177,6 +178,10 @@ fn main() -> Result<()> {
             &materialize_layer().context("layer required for this format")?,
         ),
         Spec::Cpio(p) => p.build(
+            &args.out,
+            &materialize_layer().context("layer required for this format")?,
+        ),
+        Spec::Deb(p) => p.build(
             &args.out,
             &materialize_layer().context("layer required for this format")?,
         ),
