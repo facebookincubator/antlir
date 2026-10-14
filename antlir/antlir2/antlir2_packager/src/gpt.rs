@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
+use bitflags::bitflags;
 use bytesize::ByteSize;
 use serde::Deserialize;
 use uuid::Uuid;
@@ -33,6 +34,18 @@ pub struct Gpt {
 enum PartitionType {
     Esp,
     Linux,
+    LinuxRootX64,
+    LinuxRootArm64,
+}
+
+bitflags! {
+    // The bitflags Deserialize implementation expects |-joined all-caps flag
+    // names, so that's what we serialize in gpt.bzl
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+    #[serde(transparent)]
+    struct PartitionFlags: u64 {
+        const GROW_FILE_SYSTEM = 1 << 59;
+    }
 }
 
 #[derive(Debug, Copy, Clone, Default, Deserialize)]
@@ -67,6 +80,8 @@ impl PartitionType {
         match self {
             Self::Esp => gpt::partition_types::EFI,
             Self::Linux => gpt::partition_types::LINUX_FS,
+            Self::LinuxRootX64 => gpt::partition_types::LINUX_ROOT_X64,
+            Self::LinuxRootArm64 => gpt::partition_types::LINUX_ROOT_ARM_64,
         }
     }
 }
@@ -76,6 +91,8 @@ struct Partition {
     src: PathBuf,
     #[serde(rename = "type")]
     partition_type: PartitionType,
+    #[serde(default)]
+    flags: PartitionFlags,
     name: Option<String>,
     alignment: Option<u64>,
     uuid: Option<Uuid>,
@@ -142,7 +159,7 @@ impl Gpt {
                     partition.name.as_deref().unwrap_or_default(),
                     src_size.as_u64(),
                     partition.partition_type.gpt_type(),
-                    0,
+                    partition.flags.bits(),
                     partition
                         .alignment
                         .map(|alignment| alignment / self.block_size.as_u64()),

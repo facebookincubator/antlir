@@ -21,6 +21,7 @@ rust_binary(
     deps = [
         "anyhow",
         "base64",
+        "bitflags",
         "blake3",
         "bytesize",
         "cap-std",

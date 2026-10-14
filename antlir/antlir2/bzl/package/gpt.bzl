@@ -4,24 +4,48 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":disk_image.bzl", "DiskImage")
 
 GptPartitionSource = provider(fields = ["src"])
 
-PartitionType = enum("linux", "esp")
+PartitionType = enum("linux", "linux-root-x64", "linux-root-arm64", "esp")
 
-def Partition(src: str, type: PartitionType = PartitionType("linux"), label: str | None = None, alignment: int | None = None, uuid: str | None = None):
-    return (src, type.value, label, alignment, uuid, "_internal_came_from_package_fn")
+TargetArchLinuxRootPartitionType = select({
+    "ovr_config//cpu:arm64": PartitionType("linux-root-arm64"),
+    "ovr_config//cpu:x86_64": PartitionType("linux-root-x64"),
+})
+
+PartitionFlags = enum("grow_file_system")
+
+def Partition(
+    src: str,
+    type: PartitionType | Select = PartitionType("linux"),
+    flags: list[PartitionFlags] | Select | None = None,
+    label: str | None = None,
+    alignment: int | None = None,
+    uuid: str | None = None,
+):
+    return (
+        src,
+        selects.apply(type, lambda t: t.value),
+        selects.apply(flags, lambda flags: [f.value for f in flags] if flags else []),
+        label,
+        alignment,
+        uuid,
+        "_internal_came_from_package_fn",
+    )
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     partitions = []
-    for src, type, label, alignment, uuid, _token in ctx.attrs.partitions:
+    for src, type, flags, label, alignment, uuid, _token in ctx.attrs.partitions:
         if alignment == 0 or (alignment != None and alignment % ctx.attrs.block_size != 0):
             fail("alignment must be a multiple of block size")
 
         partitions.append({
             "alignment": alignment,
+            "flags": " | ".join([f.upper() for f in flags]),
             "name": label,
             "src": src[GptPartitionSource].src,
             "type": type,
@@ -81,6 +105,10 @@ _gpt = rule(
             attrs.tuple(
                 attrs.dep(providers = [GptPartitionSource]),
                 attrs.enum(PartitionType.values(), default = "linux"),
+                attrs.list(
+                    attrs.enum(PartitionFlags.values()),
+                    default = [],
+                ),
                 attrs.option(attrs.string()),
                 attrs.option(attrs.int()),
                 attrs.option(attrs.string()),

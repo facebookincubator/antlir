@@ -3,7 +3,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:btrfs.bzl", "BtrfsSubvol")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/bzl/package:gpt.bzl", "Partition", "PartitionType")
+load("//antlir/antlir2/bzl/package:gpt.bzl", "Partition", "PartitionFlags", "PartitionType", "TargetArchLinuxRootPartitionType")
 
 oncall("antlir")
 
@@ -62,6 +62,21 @@ vm_disk(
     name = "test-disk",
     base_image = ":test.gpt",
     bootable = False,
+    visibility = [
+        "//antlir/antlir2/test_images/package/gpt/...",
+    ],
+)
+
+package.gpt(
+    name = "ddi.raw",
+    partitions = [
+        Partition(
+            src = ":gpt-esp",
+            label = "ESP",
+            type = PartitionType("esp"),
+        ),
+        Partition(src = ":gpt-rootfs", flags = [PartitionFlags("grow_file_system")], type = TargetArchLinuxRootPartitionType),
+    ],
     visibility = [
         "//antlir/antlir2/test_images/package/gpt/...",
     ],
