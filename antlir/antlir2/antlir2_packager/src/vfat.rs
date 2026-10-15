@@ -27,6 +27,7 @@ pub struct Vfat {
     fat_size: Option<u16>,
     label: Option<String>,
     size_mb: u64,
+    sector_size: u32,
 }
 
 impl PackageFormat for Vfat {
@@ -61,7 +62,7 @@ impl PackageFormat for Vfat {
         if let Some(label) = &self.label {
             mkfs.arg("-n").arg(label);
         }
-        mkfs.arg("-S").arg("4096");
+        mkfs.arg("-S").arg(self.sector_size.to_string());
 
         run_cmd(mkfs.arg("/__antlir2__/out/vfat").stdout(Stdio::piped()))
             .context("failed to mkfs.vfat")?;

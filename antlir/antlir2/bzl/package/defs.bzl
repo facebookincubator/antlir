@@ -327,6 +327,7 @@ _vfat, _vfat_anon = _new_package_rule(
     rule_attrs = {
         "fat_size": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
+        "sector_size": attrs.int(default = 4096),
         "size_mb": attrs.int(),
     },
     format = "vfat",
