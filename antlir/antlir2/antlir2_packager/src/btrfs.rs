@@ -13,11 +13,15 @@ use std::path::PathBuf;
 use antlir2_isolate::IsolationContext;
 use antlir2_isolate::unshare;
 use antlir2_path::PathExt;
+use antlir2_working_volume::WorkingFormat;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
 use serde::Deserialize;
+use tempfile::TempDir;
 
 use crate::BuildAppliance;
+use crate::materialize_cad_stack;
 use crate::run_cmd;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -35,12 +39,12 @@ pub struct Btrfs {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Subvol {
-    layer: PathBuf,
+    layers: Vec<PathBuf>,
     writable: bool,
 }
 
 impl Btrfs {
-    pub fn build(&self, out: &Path) -> Result<()> {
+    pub fn build(&self, out: &Path, working_format: WorkingFormat) -> Result<()> {
         // use antlir2_isolate to setup a rootdir view of all the subvolumes we
         // want so that mkfs.btrfs can see the desired structure
         let mut common_isol = IsolationContext::builder(self.build_appliance.path());
@@ -60,11 +64,24 @@ impl Btrfs {
         let mut isol = common_isol.clone();
         isol.tmpfs(Path::new("/__antlir2__/root"));
 
+        let mut materialized_roots = Vec::new();
         for (path, subvol) in &self.subvols {
-            isol.inputs((
-                Path::new("/__antlir2__/root").join_abs(path),
-                subvol.layer.clone(),
-            ));
+            let root = match working_format {
+                WorkingFormat::Btrfs => {
+                    if subvol.layers.len() != 1 {
+                        return Err(anyhow!("btrfs requires exactly one layer"));
+                    }
+                    subvol.layers[0].clone()
+                }
+                WorkingFormat::CadStack => {
+                    let dir = TempDir::new().context("while creating materialization directory")?;
+                    materialize_cad_stack(&subvol.layers, dir.path())?;
+                    let root = dir.path().to_path_buf();
+                    materialized_roots.push(dir);
+                    root
+                }
+            };
+            isol.inputs((Path::new("/__antlir2__/root").join_abs(path), root));
         }
 
         let isol_context = isol.build();

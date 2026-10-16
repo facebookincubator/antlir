@@ -16,8 +16,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     package = ctx.actions.declare_output("image.btrfs", has_content_based_path = False)
     build_appliance = ctx.attrs.build_appliance
 
+    spec_file = ctx.actions.declare_output("spec.json", has_content_based_path = False)
     spec = ctx.actions.write_json(
-        "spec.json",
+        spec_file,
         {
             "btrfs": {
                 "build_appliance": build_appliance[BuildApplianceInfo].dir,
@@ -28,7 +29,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "seed_device": ctx.attrs.seed_device,
                 "subvols": {
                     path: {
-                        "layer": subvol["layer"][LayerInfo].contents.subvol_symlink,
+                        "layers": [subvol["layer"][LayerInfo].contents.subvol_symlink]
+                        if ctx.attrs._working_format == "btrfs"
+                        else subvol["layer"][LayerInfo].contents.cad_stack,
                         "writable": subvol.get("writable") or False,
                     }
                     for path, subvol in ctx.attrs.subvols.items()
@@ -48,13 +51,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(package.as_output(), format = "--out={}"),
             "--rootless" if ctx.attrs._rootless else cmd_args(),
         ),
-        local_only = True,  # needs local subvolumes
+        # btrfs subvolumes can only exist locally, and there is no sudo on RE
+        local_only = (ctx.attrs._working_format == "btrfs") or (not ctx.attrs._rootless),
         category = "antlir2_package",
         identifier = "btrfs",
     )
 
     return [
-        DefaultInfo(package),
+        DefaultInfo(package, sub_targets = {"spec": [DefaultInfo(spec_file, other_outputs = [spec])]}),
         GptPartitionSource(src = package),
         DiskImage(src = package),
     ]

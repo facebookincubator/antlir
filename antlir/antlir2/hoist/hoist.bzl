@@ -6,6 +6,8 @@
 load("@prelude//:paths.bzl", paths_bzl = "paths")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs")
+load("//antlir/antlir2/bzl/package:cfg.bzl", "package_cfg")
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     if int(bool(ctx.attrs.path)) + int(bool(ctx.attrs.paths)) != 1:
@@ -39,20 +41,29 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         )
         outputs = {ctx.attrs.path: default_output}
         projected_outputs = {}
+    working_format = ctx.attrs._working_format
+    if working_format == "btrfs":
+        layer_args = cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--subvol-symlink={}")
+        rootless = ctx.attrs.layer[LayerInfo].contents.subvol_symlink_rootless
+    else:
+        layer_args = cmd_args(ctx.attrs.layer[LayerInfo].contents.cad_stack, format = "--layer={}")
+        rootless = ctx.attrs._rootless
     for path, output in outputs.items():
         ctx.actions.run(
             cmd_args(
-                "sudo" if not ctx.attrs.layer[LayerInfo].contents.subvol_symlink_rootless else cmd_args(),
+                "sudo" if not rootless else cmd_args(),
                 ctx.attrs._hoist[RunInfo],
-                cmd_args(ctx.attrs.layer[LayerInfo].contents.subvol_symlink, format = "--subvol-symlink={}"),
-                "--rootless" if ctx.attrs.layer[LayerInfo].contents.subvol_symlink_rootless else cmd_args(),
+                layer_args,
+                cmd_args(working_format, format = "--working-format={}"),
+                "--rootless" if rootless else cmd_args(),
                 cmd_args(path, format = "--path={}"),
                 cmd_args(output.as_output(), format = "--out={}"),
             ),
             category = "hoist",
             identifier = path,
             allow_cache_upload = True,
-            local_only = True,  # needs local subvol
+            # btrfs subvolumes can only exist locally, and there is no sudo on RE
+            local_only = (working_format == "btrfs") or (not rootless),
         )
 
     providers = [
@@ -77,7 +88,11 @@ _hoist = rule(
         "path": attrs.option(attrs.string(), default = None),
         "paths": attrs.option(attrs.list(attrs.string()), default = None),
         "_hoist": attrs.default_only(attrs.exec_dep(default = "antlir//antlir/antlir2/hoist:hoist")),
-    },
+        "_rootless": attrs_selected_by_cfg["_rootless"],
+        "_working_format": attrs_selected_by_cfg["_working_format"],
+    }
+    | cfg_attrs(),
+    cfg = package_cfg,
 )
 
 _hoist_macro = rule_with_default_target_platform(_hoist)

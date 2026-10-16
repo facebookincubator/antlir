@@ -1,5 +1,6 @@
 load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 load("//antlir/antlir2/antlir2_vm/bzl:disk.bzl", "vm_disk")
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:btrfs.bzl", "BtrfsSubvol")
@@ -42,9 +43,18 @@ image.layer(
         feature.install_text(
             dst = "/foo",
             group = "antlir",
+            mode = 0o640,
             text = "foo",
             user = "antlir",
+            xattrs = {
+                "security.capability": "0sAQAAAoAAAAAAAAAAAAAAAAAAAAA=",
+                "system.posix_acl_access": "0sAgAAAAEABgD/////AgAEACoAAAAEAAQA/////xAABAD/////IAAAAP////8=",
+                "user.portable": "metadata",
+            },
         ),
+        feature.hardlink(link = "/foo-link", target = "/foo"),
+        feature.ensure_file_symlink(link = "/foo-relative", target = "foo"),
+        feature.ensure_file_symlink(link = "/foo-absolute", target = "/foo"),
         feature.ensure_dirs_exist(dirs = "/baz/qux"),
     ],
 )
@@ -57,6 +67,7 @@ image.layer(
             text = "bar",
         ),
     ],
+    parent_layer = ":foo",
 )
 
 image.layer(
@@ -69,76 +80,75 @@ image.layer(
     ],
 )
 
-package.btrfs(
-    name = "btrfs",
-    default_subvol = "/foo/baz/qux",
-    label = "mylabel",
-    subvols = {
-        "/bar": BtrfsSubvol(
-            layer = ":bar",
-            writable = True,
-        ),
-        "/foo": BtrfsSubvol(layer = ":foo"),
-        "/foo/baz/qux": BtrfsSubvol(
-            layer = ":qux",
-        ),
-    },
-)
-
-package.btrfs(
-    name = "btrfs-seed",
-    default_subvol = "/foo/baz/qux",
-    label = "seed",
-    seed_device = True,
-    subvols = {
-        "/bar": BtrfsSubvol(
-            layer = ":bar",
-            writable = True,
-        ),
-        "/foo": BtrfsSubvol(layer = ":foo"),
-        "/foo/baz/qux": BtrfsSubvol(
-            layer = ":qux",
-        ),
-    },
-)
-
 FREE_MB = 1024
 
-package.btrfs(
-    name = "btrfs-free-space",
-    default_subvol = "/foo/baz/qux",
-    free_mb = FREE_MB,
-    label = "free-space",
-    subvols = {
-        "/bar": BtrfsSubvol(
-            layer = ":bar",
-            writable = True,
-        ),
-        "/foo": BtrfsSubvol(layer = ":foo"),
-        "/foo/baz/qux": BtrfsSubvol(
-            layer = ":qux",
-        ),
-    },
-)
+[
+    package.btrfs(
+        name = name,
+        default_subvol = "/foo/baz/qux",
+        exec_mode = options.get("exec_mode"),
+        free_mb = options.get("free_mb"),
+        label = label,
+        seed_device = options.get("seed_device", False),
+        subvols = {
+            "/bar": BtrfsSubvol(layer = ":bar", writable = True),
+            "/foo": BtrfsSubvol(layer = ":foo"),
+            "/foo/baz/qux": BtrfsSubvol(layer = ":qux"),
+        },
+        working_format = options.get("working_format"),
+    )
+    for name, label, options in [
+        ("btrfs", "mylabel", {}),
+        ("btrfs-seed", "seed", {"seed_device": True}),
+        ("btrfs-free-space", "free-space", {"free_mb": FREE_MB}),
+        ("btrfs-cad-stack", "mylabel", {"working_format": "cad-stack"}),
+        ("btrfs-cad-stack-remote", "mylabel", {"exec_mode": "force-remote", "working_format": "cad-stack"}),
+    ]
+]
 
-vm_disk(
-    name = "test-disk",
-    base_image = ":btrfs",
-    bootable = False,
-    visibility = [
-        "//antlir/antlir2/test_images/package/btrfs/...",
-    ],
-)
+[
+    hoist(
+        name = name,
+        layer = ":foo",
+        path = "/foo",
+        working_format = working_format,
+    )
+    for name, working_format in [("hoist-foo", "btrfs"), ("hoist-foo-cad-stack", "cad-stack")]
+]
+
+[
+    vm_disk(
+        name = name,
+        base_image = image,
+        bootable = False,
+        visibility = ["//antlir/antlir2/test_images/package/btrfs/..."],
+    )
+    for name, image in [
+        ("test-disk", ":btrfs"),
+        ("test-disk-cad-stack", ":btrfs-cad-stack"),
+        ("test-disk-cad-stack-remote", ":btrfs-cad-stack-remote"),
+    ]
+]
 
 python_unittest(
     name = "test",
     srcs = ["test.py"],
     compatible_with = ["ovr_config//cpu:x86_64"],
     env = {
+        "CAD_STACK": "$(location :btrfs-cad-stack)",
+        "CAD_STACK_REMOTE": "$(location :btrfs-cad-stack-remote)",
+        "CAD_STACK_SPEC": "$(location :btrfs-cad-stack[spec])",
         "FREE_MB": str(FREE_MB),
         "FREE_SPACE": "$(location :btrfs-free-space)",
+        "HOIST": "$(location :hoist-foo)",
+        "HOIST_CAD_STACK": "$(location :hoist-foo-cad-stack)",
+        "PACKAGER": "$(exe //antlir/antlir2/antlir2_packager:antlir2-packager)",
         "SEED": "$(location :btrfs-seed)",
         "SIMPLE": "$(location :btrfs)",
     },
     network_access = network_access_utils.all(),
+    deps = [
+        "//antlir:artifacts_dir",
+        "//antlir:fs_utils",
+    ],
 )

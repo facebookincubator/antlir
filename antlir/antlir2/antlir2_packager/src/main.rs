@@ -113,6 +113,24 @@ pub(crate) fn pad_to_align(path: &Path, align: u64) -> Result<()> {
     Ok(())
 }
 
+/// Rehydrate the root of a cad-stack into an existing directory.
+pub(crate) fn materialize_cad_stack(layers: &[PathBuf], path: &Path) -> Result<()> {
+    if layers.is_empty() {
+        return Err(anyhow!("cad-stack requires at least one layer"));
+    }
+    let store = ::cad_stack::ObjectStore::open_rw(
+        layers[0].join("store"),
+        layers.iter().skip(1).map(|p| p.join("store")),
+    )
+    .context("while opening root store")?;
+    extract_root_dir(
+        &store,
+        &Dir::open_ambient_dir(path, ambient_authority()).context("while opening new root")?,
+    )
+    .context("while re-hydrating cad-stack")?;
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args = PackageArgs::parse();
 
@@ -149,30 +167,18 @@ fn main() -> Result<()> {
         WorkingFormat::CadStack => {
             let wv = WorkingVolume::ensure()?;
             let path = wv.allocate_new_subvol_path()?;
-            // Try to create a btrfs subvolume so that formats like sendstream
-            // (which need a real subvolume) work correctly. Fall back to a
-            // plain directory for environments without btrfs (e.g. RE).
+            // Sendstreams require a real subvolume; other formats also work
+            // with a plain directory when btrfs is unavailable.
             if antlir2_btrfs::Subvolume::create(&path).is_err() {
                 std::fs::create_dir_all(&path)?;
             }
-
-            let store = ::cad_stack::ObjectStore::open_rw(
-                args.layer[0].join("store"),
-                args.layer.iter().skip(1).map(|p| p.join("store")),
-            )
-            .context("while opening root store")?;
-            extract_root_dir(
-                &store,
-                &Dir::open_ambient_dir(&path, ambient_authority())
-                    .context("while opening new root")?,
-            )
-            .context("while re-hydrating cad-stack")?;
+            materialize_cad_stack(&args.layer, &path)?;
             Ok(path)
         }
     };
 
     match args.spec.into_inner() {
-        Spec::Btrfs(p) => p.build(&args.out),
+        Spec::Btrfs(p) => p.build(&args.out, args.working_format),
         Spec::CadStack(p) => p.build(
             &args.out,
             &materialize_layer().context("layer required for this format")?,

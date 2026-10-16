@@ -8,27 +8,30 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::File;
-use std::path::Path;
 use std::path::PathBuf;
 
-use antlir2_isolate::IsolationContext;
-use antlir2_isolate::unshare;
 use antlir2_path::PathExt;
+use antlir2_working_volume::WorkingFormat;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::ensure;
+use cad_stack_fs::extract_root_dir;
+use cap_std::ambient_authority;
 use cap_std::fs::Dir;
 use clap::Parser;
-use nix::unistd::Gid;
-use nix::unistd::Uid;
+use tempfile::TempDir;
 use walkdir::WalkDir;
 
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
-    subvol_symlink: PathBuf,
+    subvol_symlink: Option<PathBuf>,
+    #[clap(value_enum, long, default_value_t = WorkingFormat::Btrfs)]
+    working_format: WorkingFormat,
+    #[clap(long)]
+    layer: Vec<PathBuf>,
     #[clap(long)]
     rootless: bool,
     #[clap(long)]
@@ -61,7 +64,34 @@ fn main() -> Result<()> {
 
     // open all the files that need to be cloned as the (maybe) privileged image user
 
-    let src = args.subvol_symlink.join_abs(&args.path);
+    let (src_root, _materialized_tmpdir) = match args.working_format {
+        WorkingFormat::Btrfs => (
+            args.subvol_symlink
+                .clone()
+                .ok_or_else(|| anyhow!("btrfs requires --subvol-symlink"))?,
+            None,
+        ),
+        WorkingFormat::CadStack => {
+            if args.layer.is_empty() {
+                bail!("cad-stack requires at least one --layer");
+            }
+            let tmpdir = TempDir::new().context("while creating materialization tmpdir")?;
+            let store = cad_stack::ObjectStore::open_rw(
+                args.layer[0].join("store"),
+                args.layer.iter().skip(1).map(|p| p.join("store")),
+            )
+            .context("while opening root store")?;
+            extract_root_dir(
+                &store,
+                &Dir::open_ambient_dir(tmpdir.path(), ambient_authority())
+                    .context("while opening new root")?,
+            )
+            .context("while re-hydrating cad-stack")?;
+            (tmpdir.path().to_path_buf(), Some(tmpdir))
+        }
+    };
+
+    let src = src_root.join_abs(&args.path);
     let meta = std::fs::metadata(&src)?;
     if meta.is_dir() {
         create_dirs.insert(args.out.clone());
