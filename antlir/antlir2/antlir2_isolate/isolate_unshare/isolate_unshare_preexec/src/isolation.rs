@@ -461,9 +461,9 @@ pub(crate) fn setup_isolation(isol: &IsolationContext) -> Result<()> {
     // set by systemd-nspawn, so a read-write proc mount is denied with EPERM.
     //
     // Fallback: mount proc read-only. mnt_already_visible() can then match
-    // against /run/host/proc (a read-only parent proc view exposed by
-    // Sandcastle). The resulting proc is for the correct PID namespace but
-    // read-only (MNT_LOCK_READONLY inherited from the match).
+    // against /run/host/sandcastle-proc (a read-only parent proc view exposed
+    // by Sandcastle). The resulting proc is for the correct PID
+    // namespace but read-only (MNT_LOCK_READONLY inherited from the match).
     if let Err(rw_err) = crate::new_mount_api::mount_proc(&proc_mountpoint, false) {
         crate::new_mount_api::mount_proc(&proc_mountpoint, true).with_context(|| {
             format!(

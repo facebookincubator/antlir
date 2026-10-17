@@ -91,9 +91,9 @@ pub(crate) fn make_mount_readonly(path: &Path) -> Result<()> {
 ///
 /// On systemd-nspawn hosts, the container's /proc has locked masking mounts
 /// (on /proc/kmsg, /proc/sys/kernel/random/boot_id, etc.) making it "not fully
-/// visible". However, /run/host/proc is mounted by Sandcastle
+/// visible". However, /run/host/sandcastle-proc is mounted by Sandcastle
 /// (https://fburl.com/code/3pkk22bj) as a read-only view of the parent
-/// process's procfs for exactly this usage within antlir. Since /run/host/proc
+/// process's procfs for exactly this usage within antlir. Since that mount
 /// has MNT_LOCK_READONLY, `mnt_already_visible()` only matches it for mounts
 /// that also request MNT_READONLY. Mounting proc readonly allows this match,
 /// producing a fresh proc for the correct PID namespace.
