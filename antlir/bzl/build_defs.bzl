@@ -124,7 +124,9 @@ def _split_rust_kwargs(kwargs):
     return kwargs, test_kwargs
 
 def _normalize_rust_dep(dep):
-    if ":" in dep:
+    # Anything that looks like a target label (including the `//foo/bar`
+    # shorthand for `//foo/bar:bar`) is already fully specified.
+    if ":" in dep or "//" in dep:
         return dep
     return shim.third_party.library(dep, platform = "rust")
 
