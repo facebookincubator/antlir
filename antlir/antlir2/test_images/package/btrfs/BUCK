@@ -82,6 +82,8 @@ image.layer(
 
 FREE_MB = 1024
 
+SIZE_MB = 2048
+
 [
     package.btrfs(
         name = name,
@@ -90,6 +92,7 @@ FREE_MB = 1024
         free_mb = options.get("free_mb"),
         label = label,
         seed_device = options.get("seed_device", False),
+        size_mb = options.get("size_mb"),
         subvols = {
             "/bar": BtrfsSubvol(layer = ":bar", writable = True),
             "/foo": BtrfsSubvol(layer = ":foo"),
@@ -101,6 +104,7 @@ FREE_MB = 1024
         ("btrfs", "mylabel", {}),
         ("btrfs-seed", "seed", {"seed_device": True}),
         ("btrfs-free-space", "free-space", {"free_mb": FREE_MB}),
+        ("btrfs-sized", "sized", {"size_mb": SIZE_MB}),
         ("btrfs-cad-stack", "mylabel", {"working_format": "cad-stack"}),
         ("btrfs-cad-stack-remote", "mylabel", {"exec_mode": "force-remote", "working_format": "cad-stack"}),
     ]
@@ -145,6 +149,8 @@ python_unittest(
         "PACKAGER": "$(exe //antlir/antlir2/antlir2_packager:antlir2-packager)",
         "SEED": "$(location :btrfs-seed)",
         "SIMPLE": "$(location :btrfs)",
+        "SIZED": "$(location :btrfs-sized)",
+        "SIZE_MB": str(SIZE_MB),
     },
     network_access = network_access_utils.all(),
     deps = [

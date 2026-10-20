@@ -27,6 +27,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "free_mb": ctx.attrs.free_mb,
                 "label": ctx.attrs.label,
                 "seed_device": ctx.attrs.seed_device,
+                "size_mb": ctx.attrs.size_mb,
                 "subvols": {
                     path: {
                         "layers": [subvol["layer"][LayerInfo].contents.subvol_symlink]
@@ -74,6 +75,11 @@ _btrfs = rule(
         "label": attrs.option(attrs.string(), default = None),
         "labels": attrs.list(attrs.string(), default = []),
         "seed_device": attrs.bool(default = False),
+        "size_mb": attrs.option(
+            attrs.int(),
+            default = None,
+            doc = "Total filesystem size; the free space is whatever the contents leave. The build fails if the contents don't fit. Mutually exclusive with free_mb.",
+        ),
         "subvols": attrs.option(
             attrs.dict(
                 attrs.string(doc = "subvol name"),

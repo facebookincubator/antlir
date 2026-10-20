@@ -105,3 +105,16 @@ class Test(unittest.TestCase):
         # The actual free space (size-used) should be at least the amount of
         # space that was requested
         self.assertGreaterEqual(size - used, int(os.environ["FREE_MB"]) * 1024 * 1024)
+
+    def test_size(self) -> None:
+        size_bytes = int(os.environ["SIZE_MB"]) * 1024 * 1024
+        self.assertEqual(os.path.getsize(os.environ["SIZED"]), size_bytes)
+        proc = subprocess.run(
+            ["btrfs", "filesystem", "show", os.environ["SIZED"], "--raw"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        match = re.search(r"\bsize\s+(\d+)\s+used\s+(\d+)\b", proc.stdout)
+        self.assertIsNotNone(match, f"{proc.stdout!r} did not match")
+        self.assertEqual(int(match.group(1)), size_bytes)
