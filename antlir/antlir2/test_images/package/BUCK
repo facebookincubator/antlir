@@ -1,20 +1,20 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary")
 load(":defs.bzl", "package_feature", "standard_features", "test_in_layer")
 
 oncall("antlir")
 
+python_binary(
+    name = "make-large-file",
+    srcs = ["make_large_file.py"],
+    main_module = "antlir.antlir2.test_images.package.make_large_file",
+)
+
 buck_genrule(
     name = "antlir2-large-file-256M",
     out = "f",
-    bash = """
-        echo antlir2-large-file > $OUT
-        head -c 128M /dev/urandom >> $OUT
-        echo antlir2-large-file >> $OUT
-        head -c 128M /dev/urandom >> $OUT
-        echo antlir2-large-file >> $OUT
-    """,
+    bash = "$(exe :make-large-file) $OUT",
 )
 
 image.layer(
