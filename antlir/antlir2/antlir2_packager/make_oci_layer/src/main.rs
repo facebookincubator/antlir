@@ -430,18 +430,32 @@ fn main() -> Result<()> {
         }
     }
 
+    // Whiteout markers for files that were deleted and not recreated. Skip
+    // redundant nested whiteouts - if a parent directory is being deleted, we
+    // don't need whiteout markers for its children.
+    let whiteouts: Vec<&PathBuf> = pending_whiteouts
+        .iter()
+        .filter(|wh_path| path_filter.should_keep(wh_path))
+        .filter(|wh_path| {
+            !wh_path
+                .ancestors()
+                .skip(1) // Skip the path itself
+                .any(|ancestor| pending_whiteouts.contains(ancestor))
+        })
+        .collect();
+
     // Add missing parent directories to the tar.
-    // When creating subdirectories, parent directories may exist in the child layer
-    // (inherited from parent layers with custom ownership) but don't appear in
-    // the change stream if they weren't modified. Container runtimes implicitly
-    // create missing parents as root:root, losing the correct ownership from
-    // parent layers.
+    // When creating subdirectories or whiteout markers, parent directories may
+    // exist in the child layer (inherited from parent layers with custom
+    // ownership or mode) but don't appear in the change stream if they weren't
+    // modified. Container runtimes implicitly create missing parents as
+    // root:root 0755, losing the correct ownership and mode from parent layers.
     // Solution: Explicitly include all parent directories from the child layer.
     // PathBuf orders by component, so iterating this writes every directory
     // before its subdirectories.
     let mut parents_to_add: BTreeSet<PathBuf> = BTreeSet::new();
 
-    for path in &written_to_tar {
+    for path in written_to_tar.iter().chain(whiteouts.iter().copied()) {
         let mut current_parent = path.parent();
         while let Some(parent) = current_parent {
             if parent == Path::new("") {
@@ -471,7 +485,7 @@ fn main() -> Result<()> {
             let mut header = Header::new_ustar();
             header.set_mtime(FIXED_MTIME);
             header.set_size(0);
-            header.set_mode(meta.mode());
+            header.set_mode(meta.mode() & 0o7777);
             header.set_uid(meta.uid() as u64);
             header.set_gid(meta.gid() as u64);
             header.set_entry_type(EntryType::Directory);
@@ -479,25 +493,7 @@ fn main() -> Result<()> {
         }
     }
 
-    // Write all pending whiteout markers for files that were deleted and not recreated.
-    // Skip redundant nested whiteouts - if a parent directory is being deleted,
-    // we don't need whiteout markers for its children.
-    for wh_path in &pending_whiteouts {
-        if !path_filter.should_keep(wh_path) {
-            continue;
-        }
-
-        // Check if any ancestor of this path is also being deleted
-        let has_deleted_ancestor = wh_path
-            .ancestors()
-            .skip(1) // Skip the path itself
-            .any(|ancestor| pending_whiteouts.contains(ancestor));
-
-        if has_deleted_ancestor {
-            // Parent directory is being deleted, so this child whiteout is redundant
-            continue;
-        }
-
+    for wh_path in whiteouts {
         let mut wh_name = OsString::from(".wh.");
         wh_name.push(wh_path.file_name().expect("root dir cannot be deleted"));
         let wh_full_path = wh_path.parent().unwrap_or(Path::new("")).join(wh_name);

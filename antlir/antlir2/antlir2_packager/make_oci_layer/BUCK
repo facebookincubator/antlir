@@ -249,3 +249,67 @@ image_python_test(
     layer = ":test-layer",
     typing = True,
 )
+
+# A layer that only deletes files must keep the mode and ownership of the
+# deleted files' parent directories. Its OCI layer holds only whiteout markers,
+# so the marker's parent directories have to be written too, or container
+# runtimes recreate them as root 0755.
+
+image.layer(
+    name = "parent-layer-with-shared-dir",
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
+        feature.ensure_dirs_exist(
+            dirs = "/opt/shared",
+            mode = 0o777,
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/opt/shared",
+            subdirs_to_create = "lib",
+        ),
+        feature.install_text(
+            dst = "/opt/shared/lib/big.debug",
+            mode = 0o644,
+            text = "debuginfo\n",
+        ),
+        feature.install_text(
+            dst = "/opt/shared/lib/keep.so",
+            mode = 0o755,
+            text = "library\n",
+        ),
+    ],
+)
+
+image.layer(
+    name = "child-layer-with-only-a-removal",
+    features = [
+        feature.remove(path = "/opt/shared/lib/big.debug"),
+    ],
+    parent_layer = ":parent-layer-with-shared-dir",
+)
+
+docker_archive(
+    name = "whiteout-parent-mode-docker-archive",
+    entrypoint = [],
+    layer = ":child-layer-with-only-a-removal",
+)
+
+image_python_test(
+    name = "test-whiteout-parent-mode",
+    srcs = ["tests/test_whiteout_parent_mode.py"],
+    env = {
+        "DOCKER_ARCHIVE": "$(location :whiteout-parent-mode-docker-archive)",
+    },
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # @oss-disable[end= ]: labels = ci.labels(ci.remove(ci.aarch64())),
+    layer = ":test-layer",
+    typing = True,
+)
