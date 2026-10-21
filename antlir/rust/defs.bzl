@@ -26,7 +26,7 @@ def antlir_rust_extension(*, name, srcs, typestub, deps = (), labels = (), rust_
         crate = name,
         srcs = srcs,
         deps = deps,
-        visibility = ["antlir//antlir/rust:native_antlir_impl-lib"] + (rust_visibility or []),
+        visibility = ["antlir//antlir/rust:native_antlir_impl"] + (rust_visibility or []),
         labels = labels,
         unittests = False,
         **kwargs,
