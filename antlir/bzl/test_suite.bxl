@@ -11,7 +11,7 @@ def _cleanup_package_path(package) -> (str, str):
         package, _suffix = package.split("/...")
     return (cell, package)
 
-def _find_tests(ctx, package) -> bxl.UnconfiguredTargetSet:
+def _find_tests(ctx, package) -> bxl.TargetSet[bxl.UnconfiguredTargetNode]:
     tests = ctx.uquery().kind("_test$", package)
     tests = tests - ctx.uquery().attrregexfilter("labels", "^disabled$", tests)
     tests = tests - ctx.uquery().attrregexfilter("name", "-type-checking$", tests)
