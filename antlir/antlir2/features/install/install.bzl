@@ -608,10 +608,20 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             extract_par_elfs(ctx.attrs.src),
         )
     else:
+        # First-party shared libs (e.g. a prebuilt from a wheel) are installed
+        # with the binary from its rpath tree, so no RPM provides them. Distro
+        # libs still come from RPMs. Every RPM-backed shared lib is produced
+        # by a rule in antlir/distro/deps/; first-party libs live anywhere else.
+        bundled = [
+            so.target
+            for so in (shared_libraries.so_targets if shared_libraries else [])
+            if not (so.target.owner and so.target.owner.package.startswith("antlir/distro/deps/"))
+        ]
         requires_cmd = cmd_args(
             ctx.attrs._rpm_find_requires[RunInfo],
             rpm_subjects.as_output(),
             src,
+            bundled,
         )
     ctx.actions.run(requires_cmd, category = "rpm_find_requires")
 
