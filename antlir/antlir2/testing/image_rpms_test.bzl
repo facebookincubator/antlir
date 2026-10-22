@@ -31,6 +31,7 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
                 src,
                 cmd_args(ctx.attrs.layer[LayerInfo].facts_db, format = "--facts-db={}"),
                 cmd_args("--not-installed") if ctx.attrs.not_installed else cmd_args(),
+                cmd_args("--subset") if ctx.attrs.subset else cmd_args(),
                 cmd_args("--source-names") if ctx.attrs.source_names else cmd_args(),
                 cmd_args("$@"),
                 delimiter = " ",
@@ -67,6 +68,7 @@ _rpm_names_test = rule(
         "not_installed": attrs.bool(default = False),
         "source_names": attrs.bool(default = False),
         "src": attrs.option(attrs.source(), default = None),
+        "subset": attrs.bool(default = False),
     }
     | cfg_attrs(),
     cfg = layer_cfg,

@@ -22,6 +22,9 @@ pub(crate) struct Names {
     facts_db: PathBuf,
     #[clap(long)]
     not_installed: bool,
+    #[clap(long, conflicts_with = "not_installed")]
+    /// Only check that the expected rpms are installed: others may be too
+    subset: bool,
     #[clap(long)]
     /// Print details about installed rpms, don't run test
     print: bool,
@@ -94,7 +97,17 @@ impl Names {
                     .to_string()
             })
             .collect();
-        if !self.not_installed {
+        if self.subset {
+            let missing: Vec<String> = expected_names
+                .into_iter()
+                .filter(|i| !installed_names.contains(i))
+                .collect();
+            ensure!(
+                missing.is_empty(),
+                "Expected rpms not installed in image: {}",
+                missing.join(", ")
+            );
+        } else if !self.not_installed {
             similar_asserts::assert_eq!(
                 expected: expected_names,
                 installed: installed_names,
