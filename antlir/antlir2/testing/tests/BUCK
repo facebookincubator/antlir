@@ -67,6 +67,7 @@ test_variants(
     srcs = ["test.py"],
     lang = "py",
     test_rule = image_python_test,
+    # @oss-disable[end= ]: use_opt_by_default = False,
 )
 
 test_variants(
