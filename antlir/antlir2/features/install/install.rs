@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::fs::FileTimes;
 use std::fs::Permissions;
+use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::fs::fchown;
 use std::path::Path;
@@ -442,12 +443,7 @@ impl antlir2_compile::CompileFeature for Install {
                     continue;
                 }
 
-                copy_with_metadata()
-                    .src(entry.path())
-                    .dst(&dst_path)
-                    .uid(uid.as_raw())
-                    .gid(gid.as_raw())
-                    .call()?;
+                copy_output(entry.path(), &dst_path, uid, gid)?;
             }
 
             let dir_path = ctx.dst_path(&self.dst)?;
@@ -489,31 +485,16 @@ impl antlir2_compile::CompileFeature for Install {
                         if self.always_use_gnu_debuglink {
                             let debug_dst = dst.with_extension("debug");
                             cp_debug_symbols(debuginfo, &debug_dst, dwp, uid, gid)?;
-                            copy_with_metadata()
-                                .src(&self.src)
-                                .dst(&dst)
-                                .uid(uid.as_raw())
-                                .gid(gid.as_raw())
-                                .call()?;
+                            copy_output(&self.src, &dst, uid, gid)?;
                             add_gnu_debuglink(&dst, &debug_dst)?;
                         } else if let Some(buildid) = &metadata.buildid {
                             let debug_dst = ctx
                                 .dst_path(buildid_debug_path(buildid))?
                                 .with_extension("debug");
                             cp_debug_symbols(debuginfo, &debug_dst, dwp, uid, gid)?;
-                            copy_with_metadata()
-                                .src(&self.src)
-                                .dst(&dst)
-                                .uid(uid.as_raw())
-                                .gid(gid.as_raw())
-                                .call()?;
+                            copy_output(&self.src, &dst, uid, gid)?;
                         } else {
-                            copy_with_metadata()
-                                .src(&self.src)
-                                .dst(&dst)
-                                .uid(uid.as_raw())
-                                .gid(gid.as_raw())
-                                .call()?;
+                            copy_output(&self.src, &dst, uid, gid)?;
                         };
                         let dst_file = File::options().write(true).open(&dst)?;
                         Some(dst_file)
@@ -591,23 +572,18 @@ impl antlir2_compile::CompileFeature for Install {
 
                     let dst_path = resources_dir.join(relpath);
                     if !dst_path.exists() {
-                        copy_with_metadata()
-                            .src(std::fs::canonicalize(entry.path())?)
-                            .dst(dst_path)
-                            .uid(uid.as_raw())
-                            .gid(gid.as_raw())
-                            .call()?;
+                        copy_output(&std::fs::canonicalize(entry.path())?, &dst_path, uid, gid)?;
                     }
                 }
-                copy_with_metadata()
-                    .src(&implicit_resources.resources_json)
-                    .dst(dst_parent.join(format!(
+                copy_output(
+                    &implicit_resources.resources_json,
+                    &dst_parent.join(format!(
                         "{}.resources.json",
                         dst.file_name().expect("dst has filename").to_string_lossy()
-                    )))
-                    .uid(uid.as_raw())
-                    .gid(gid.as_raw())
-                    .call()?;
+                    )),
+                    uid,
+                    gid,
+                )?;
             }
             if let Some(BinaryInfo::Installed(installed)) = &self.binary_info
                 && let Some(resources_debuginfo) = &installed.resources_debuginfo
@@ -643,6 +619,23 @@ impl antlir2_compile::CompileFeature for Install {
     }
 }
 
+/// Copies a build output into the layer. buck2 keeps its outputs read-only, and the copy is
+/// the layer's own, so a regular file gets its owner's write bit back; whatever else the mode
+/// says is kept, as is a directory's or a symlink's.
+fn copy_output(src: &Path, dst: &Path, uid: UserId, gid: GroupId) -> antlir2_compile::Result<()> {
+    copy_with_metadata()
+        .src(src)
+        .dst(dst)
+        .uid(uid.as_raw())
+        .gid(gid.as_raw())
+        .call()?;
+    let metadata = std::fs::symlink_metadata(dst)?;
+    if metadata.is_file() {
+        std::fs::set_permissions(dst, Permissions::from_mode(metadata.mode() | 0o200))?;
+    }
+    Ok(())
+}
+
 fn buildid_debug_path(buildid: &str) -> PathBuf {
     Path::new("/usr/lib/debug/.build-id")
         .join(&buildid[..2])
@@ -662,21 +655,11 @@ fn cp_debug_symbols(
             .expect("debug_dst will always have parent"),
     )?;
 
-    copy_with_metadata()
-        .src(debug_src)
-        .dst(debug_dst)
-        .uid(uid.as_raw())
-        .gid(gid.as_raw())
-        .call()?;
+    copy_output(debug_src, debug_dst, uid, gid)?;
     if let Some(dwp) = maybe_dwp {
         // We want dwps to live alongside the split *.debug file as *.debug.dwp such
         // that it's discoverable by lldb
-        copy_with_metadata()
-            .src(dwp)
-            .dst(debug_dst.with_extension("debug.dwp"))
-            .uid(uid.as_raw())
-            .gid(gid.as_raw())
-            .call()?;
+        copy_output(dwp, &debug_dst.with_extension("debug.dwp"), uid, gid)?;
     }
     Ok(())
 }
@@ -709,24 +692,14 @@ fn install_shared_library(
             None
         };
         let Some(link_target) = link_target.filter(|t| t.file_name() == Some(t.as_os_str())) else {
-            copy_with_metadata()
-                .src(&real_path)
-                .dst(&dst)
-                .uid(uid.as_raw())
-                .gid(gid.as_raw())
-                .call()?;
+            copy_output(&real_path, &dst, uid, gid)?;
             return Ok(());
         };
 
         // The soname may coincide with a name further along the chain
         // (libz.so -> libz.so.1 -> libz.so.1.2.13).
         if dst.file_name() != Some(link_target.as_os_str()) {
-            copy_with_metadata()
-                .src(&src)
-                .dst(&dst)
-                .uid(uid.as_raw())
-                .gid(gid.as_raw())
-                .call()?;
+            copy_output(&src, &dst, uid, gid)?;
         }
         src.set_file_name(&link_target);
         dst.set_file_name(&link_target);
