@@ -521,16 +521,17 @@ def driver(spec) -> None:
 
     if any(_is_allowed_unsigned(pkg) for pkg in base.transaction.install_set):
         base._ts.ts.setVSFlags(librpm._RPMVSF_NOSIGNATURES | librpm._RPMVSF_NODIGESTS)
-        # getProbFilter() is not available in all RPM Python binding versions.
-        # When it is missing we fall back to 0, which means setProbFilter below
-        # replaces (rather than augments) the filter dnf configured. To avoid
-        # regressing the package replacements that the resolver already decided
-        # on (downgrades and reinstalls), explicitly re-add OLDPACKAGE and
-        # REPLACEPKG. These only relax "package already installed"/"older
-        # package" problems for a transaction we have already resolved; genuine
-        # missing-dependency and file-conflict problems are still surfaced.
+        # getProbFilter() is not available in all RPM Python binding versions
+        # (CentOS 9's rpm 4.16 lacks it). setProbFilter() returns the previous
+        # mask, so read it that way on older bindings instead of assuming 0;
+        # assuming 0 would drop filters dnf configured, such as the DISKSPACE
+        # exemption that diskspacecheck=False sets. Keep the package
+        # replacement filters for the transaction that the resolver already
+        # decided on; dependency and file conflicts still fail.
         current_filter = (
-            base._ts.ts.getProbFilter() if hasattr(base._ts.ts, "getProbFilter") else 0
+            base._ts.ts.getProbFilter()
+            if hasattr(base._ts.ts, "getProbFilter")
+            else base._ts.ts.setProbFilter(0)
         )
         base._ts.ts.setProbFilter(
             current_filter
