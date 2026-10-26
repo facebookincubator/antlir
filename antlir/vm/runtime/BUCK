@@ -1,4 +1,5 @@
 load("@prelude//:paths.bzl", "paths")
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
@@ -29,6 +30,22 @@ image.layer(
 package.unprivileged_dir(
     name = "qemu-tools-rc.dir",
     layer = ":qemu-tools-rc",
+)
+
+hoist(
+    name = "qemu-system-x86_64-source",
+    executable = True,
+    layer = ":qemu-tools-rc",
+    path = "/bin/qemu-system-x86_64",
+    visibility = ["fbcode//kernel/vmtest/kvm-unit-tests/..."],
+)
+
+hoist(
+    name = "qemu-source-firmware",
+    dir = True,
+    layer = ":qemu-tools-rc",
+    path = "/share/qemu",
+    visibility = ["fbcode//kernel/vmtest/kvm-unit-tests/..."],
 )
 
 alias(
