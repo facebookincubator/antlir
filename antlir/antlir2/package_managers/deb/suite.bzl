@@ -47,7 +47,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.index_checksums:
         index_json = download(
             actions = ctx.actions,
-            out_name = "index.json",
+            out = ctx.actions.declare_output("index.json", has_content_based_path = False).as_output(),
             url = archive_url + "index.json",
             checksums = ctx.attrs.index_checksums,
             allow_nondeterministic_downloads = False,
