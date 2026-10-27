@@ -107,6 +107,11 @@ pub(crate) struct Snapshot {
     /// Path to the buck2 binary. Defaults to `buck2` in PATH.
     #[clap(long, default_value = "buck2")]
     buck2: PathBuf,
+
+    /// How many packages to download and upload at once. Lower this if the
+    /// mirror sheds connections under the default fan-out.
+    #[clap(long, default_value_t = 100)]
+    concurrency: usize,
 }
 
 struct ArchResult {
@@ -121,6 +126,9 @@ struct DebResult {
 
 impl Snapshot {
     pub(crate) async fn run(self, fb: fbinit::FacebookInit) -> Result<()> {
+        if self.concurrency == 0 {
+            bail!("--concurrency must be at least 1");
+        }
         // Timestamp may contain ":" (desired per user), defaults to format with ":".
         let timestamp = self
             .timestamp
@@ -169,7 +177,14 @@ impl Snapshot {
                             "Snapshotting {} [{}]",
                             target.target_name, arch_cfg.arch
                         ));
-                        let ar = snapshot_yum_arch(arch_cfg, target, &project_root, fb).await?;
+                        let ar = snapshot_yum_arch(
+                            arch_cfg,
+                            target,
+                            &project_root,
+                            fb,
+                            self.concurrency,
+                        )
+                        .await?;
                         arch_pb.finish_with_message(format!(
                             "Snapshotted {} [{}]",
                             target.target_name, arch_cfg.arch
@@ -184,7 +199,8 @@ impl Snapshot {
                     info!(target_name = target.target_name, "snapshotting deb suite");
                     let suite_pb =
                         progress::spinner(format!("Snapshotting {} (deb)", target.target_name));
-                    let deb_result = snapshot_deb_target(target, &project_root, fb).await?;
+                    let deb_result =
+                        snapshot_deb_target(target, &project_root, fb, self.concurrency).await?;
                     suite_pb.finish_with_message(format!("Snapshotted {}", target.target_name));
                     let dt = generate_deb_target(target, &deb_result)?;
                     described.push(dt);
@@ -323,6 +339,7 @@ struct SnapshotOneRequest<'a> {
     packages_baseurl: String,
     tree_prefix: String,
     storage_config: &'a StorageConfig,
+    concurrency: usize,
 }
 
 async fn snapshot_one(
@@ -364,6 +381,7 @@ async fn snapshot_one(
         blob_status,
         &all_entries,
         &req.packages_baseurl,
+        req.concurrency,
     )
     .await
     .context("packages snapshot failed")?;
@@ -481,6 +499,7 @@ async fn snapshot_yum_arch(
     target: &TargetConfig,
     project_root: &Path,
     fb: fbinit::FacebookInit,
+    concurrency: usize,
 ) -> Result<ArchResult> {
     let tree_prefix = format!("{}/{}", target.tree_prefix, arch.arch);
     let metadata_tree = project_root.join(&arch.metadata_tree);
@@ -492,6 +511,7 @@ async fn snapshot_yum_arch(
             packages_baseurl: arch.packages_baseurl.clone(),
             tree_prefix,
             storage_config: &target.snapshot_storage,
+            concurrency,
         },
         project_root,
         fb,
@@ -509,6 +529,7 @@ async fn snapshot_deb_target(
     target: &TargetConfig,
     project_root: &Path,
     fb: fbinit::FacebookInit,
+    concurrency: usize,
 ) -> Result<DebResult> {
     let metadata_tree = project_root.join(
         target
@@ -530,6 +551,7 @@ async fn snapshot_deb_target(
             packages_baseurl: baseurl,
             tree_prefix: target.tree_prefix.clone(),
             storage_config: &target.snapshot_storage,
+            concurrency,
         },
         project_root,
         fb,

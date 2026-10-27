@@ -213,6 +213,7 @@ def main() -> int:
                 record = candidate.record
                 filename = record.get("Filename", "") if record else ""
                 sha256 = record.get("SHA256", "") if record else ""
+                sha512 = record.get("SHA512", "") if record else ""
                 install_list.append(
                     {
                         "package": {
@@ -221,6 +222,7 @@ def main() -> int:
                             "arch": candidate.architecture,
                             "filename": filename,
                             "sha256": sha256,
+                            "sha512": sha512,
                         },
                         "archive": distribution,
                     }

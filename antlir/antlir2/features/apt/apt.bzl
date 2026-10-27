@@ -25,6 +25,11 @@ NOBLE_SUITE = internal_external(
     oss = "antlir//antlir/antlir2/package_managers/deb:noble",
 )
 
+STONKING_SUITE = internal_external(
+    fb = "fbcode//bot_generated/antlir/snapshot/antlir/antlir2/package_managers/deb/stonking:stonking",
+    oss = "antlir//antlir/antlir2/package_managers/deb:stonking",
+)
+
 def _common(action: str, *, packages: list[str | Select] | Select, suite: str | None = None):
     return ParseTimeFeature(
         feature_type = "apt",
@@ -38,6 +43,7 @@ def _common(action: str, *, packages: list[str | Select] | Select, suite: str | 
             or select({
                 "DEFAULT": TRIXIE_SUITE,
                 "antlir//antlir/antlir2/os:ubuntu-noble": NOBLE_SUITE,
+                "antlir//antlir/antlir2/os:ubuntu-stonking": STONKING_SUITE,
             }),
         },
         distro_platform_deps = {
@@ -46,6 +52,7 @@ def _common(action: str, *, packages: list[str | Select] | Select, suite: str | 
         },
         exec_deps = {
             "plan": "antlir//antlir/antlir2/features/apt:plan",
+            "_metadata": "antlir//antlir/antlir2/package_managers/snapshot:metadata",
         },
     )
 
@@ -119,6 +126,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 plan = ctx.attrs.plan,
                 resolve_cmd = ctx.attrs.resolve[RunInfo],
                 suite = ctx.attrs.suite,
+                metadata = ctx.attrs._metadata[RunInfo],
             ),
         ),
     ]
@@ -132,6 +140,7 @@ apt_rule = new_feature_rule(
         "resolve": attrs.dep(providers = [RunInfo]),
         "subjects": attrs.list(attrs.string()),
         "suite": attrs.dep(),
+        "_metadata": attrs.exec_dep(providers = [RunInfo]),
     },
 )
 

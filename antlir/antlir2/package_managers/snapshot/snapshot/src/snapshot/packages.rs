@@ -560,6 +560,10 @@ pub(crate) struct Packages {
     /// Base URL to download packages from.
     #[clap(long)]
     base_url: String,
+    /// How many packages to download and upload at once. Lower this if the
+    /// mirror sheds connections under the default fan-out.
+    #[clap(long, default_value_t = 100)]
+    concurrency: usize,
 }
 
 impl Packages {
@@ -573,7 +577,14 @@ impl Packages {
             .into_iter()
             .flat_map(JsonFile::into_inner)
             .collect();
-        let out = snapshot_packages(storage, blob_status, &all_entries, &self.base_url).await?;
+        let out = snapshot_packages(
+            storage,
+            blob_status,
+            &all_entries,
+            &self.base_url,
+            self.concurrency,
+        )
+        .await?;
         let mut outfile = BufWriter::new(stdio_path::create(&self.out)?);
         serde_json::to_writer(&mut outfile, &out)?;
         // BufWriter swallows flush errors on drop; flush explicitly so a
@@ -639,8 +650,12 @@ pub(crate) async fn snapshot_packages(
     blob_status: BlobStatusOutput,
     all_entries: &[Entry],
     base_url: &str,
+    concurrency: usize,
 ) -> Result<Out> {
-    let settings = PackageDownloadSettings::default();
+    let settings = PackageDownloadSettings {
+        concurrency,
+        ..PackageDownloadSettings::default()
+    };
     let downloader = Arc::new(Downloader::new(settings)?);
 
     // Extend TTLs for blobs that exist but are expiring soon
@@ -1105,6 +1120,13 @@ mod tests {
             "checksums": {"sha256": "0".repeat(64)},
         }))
         .expect("test entry should deserialize")
+    }
+
+    #[test]
+    fn default_concurrency_is_unchanged() {
+        // The --concurrency flag defaults to this; pin it so a default change
+        // is deliberate (mirror-facing fan-out).
+        assert_eq!(PackageDownloadSettings::default().concurrency, 100);
     }
 
     #[test]

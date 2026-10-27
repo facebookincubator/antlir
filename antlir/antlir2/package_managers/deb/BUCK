@@ -54,3 +54,23 @@ suite(
     },
     visibility = ["PUBLIC"],
 )
+
+suite(
+    name = "stonking",
+    architectures = [
+        "amd64",
+        "arm64",
+    ],
+    archive_url = "https://mirror.facebook.net/ubuntu",
+    components = [
+        "main",
+        "universe",
+    ],
+    distribution = "stonking",
+    snapshot_storage = {
+        "api_key": "antlir_snapshots-key",
+        "bucket": "antlir_snapshots",
+        "type": "manifold",
+    },
+    visibility = ["PUBLIC"],
+)

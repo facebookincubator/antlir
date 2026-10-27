@@ -155,10 +155,28 @@ fn compression_rank(filetype: &str) -> u8 {
     }
 }
 
+/// Which checksum section an entry line was parsed from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SectionHash {
+    Sha256,
+    Sha512,
+}
+
+/// One checksum-section entry: hashes recorded per file path, merged across
+/// sections (a Release file may carry SHA256, SHA512, or both).
+#[derive(Debug, Default)]
+struct FileHashes {
+    size: u64,
+    sha256: Option<String>,
+    sha512: Option<String>,
+}
+
 fn parse<R: BufRead>(reader: R) -> Result<Out> {
     let mut out = OutBuilder::default();
-    let mut in_sha256 = false;
+    let mut section: Option<SectionHash> = None;
     let mut in_pgp_preamble = false;
+    // path -> hashes, merged across checksum sections
+    let mut files: BTreeMap<String, FileHashes> = BTreeMap::new();
 
     for line in reader.lines() {
         let line = line.context("reading line")?;
@@ -180,16 +198,20 @@ fn parse<R: BufRead>(reader: R) -> Result<Out> {
             break;
         }
 
-        // SHA256 checksum section
+        // Checksum sections (SHA256 and/or SHA512)
         if line == "SHA256:" {
-            in_sha256 = true;
+            section = Some(SectionHash::Sha256);
+            continue;
+        }
+        if line == "SHA512:" {
+            section = Some(SectionHash::Sha512);
             continue;
         }
 
-        // The SHA256 section is a long block that is indented. We remain inside
+        // A checksum section is a long block that is indented. We remain inside
         // that block and record checksums until we see a non-indented line that
         // marks the end
-        if in_sha256 {
+        if let Some(section_hash) = section {
             if let Some(rest) = line.strip_prefix(' ') {
                 let mut parts = rest.split_whitespace();
                 let hash = parts.next().context("missing hash")?.to_owned();
@@ -198,53 +220,16 @@ fn parse<R: BufRead>(reader: R) -> Result<Out> {
                     .context("missing size")?
                     .parse()
                     .context("invalid size")?;
-                let path = parts.next().context("missing path")?;
+                let path = parts.next().context("missing path")?.to_owned();
 
-                let segments: Vec<&str> = path.splitn(4, '/').collect();
-                // Match <component>/binary-<arch>/Packages[.<ext>]
-                if segments.len() < 3 {
-                    continue;
-                }
-                let component = segments[0];
-                let arch = match segments[1].strip_prefix("binary-") {
-                    Some(a) => a,
-                    None => continue,
-                };
-                let filename = segments[2];
-                let (is_packages, filetype) = match filename {
-                    "Packages" => (true, ""),
-                    "Packages.gz" => (true, "gz"),
-                    "Packages.xz" => (true, "xz"),
-                    _ => (false, ""),
-                };
-                // Skip debian-installer paths (segments.len() > 3 means
-                // there's extra nesting like debian-installer/binary-<arch>/...)
-                if !is_packages || segments.len() > 3 {
-                    continue;
-                }
-
-                let entry = BlobDl {
-                    href: path.to_owned(),
-                    size,
-                    checksums: Checksums::builder().sha256(hash).build()?,
-                    filetype: filetype.to_owned(),
-                };
-
-                let comp = out
-                    .components
-                    .entry(component.to_owned())
-                    .or_insert_with(|| Component {
-                        packages: BTreeMap::new(),
-                    });
-
-                let dominated = comp.packages.get(arch).is_some_and(|existing| {
-                    compression_rank(&existing.filetype) >= compression_rank(filetype)
-                });
-                if !dominated {
-                    comp.packages.insert(arch.to_owned(), entry);
+                let entry = files.entry(path).or_default();
+                entry.size = size;
+                match section_hash {
+                    SectionHash::Sha256 => entry.sha256 = Some(hash),
+                    SectionHash::Sha512 => entry.sha512 = Some(hash),
                 }
             } else {
-                // Non-indented line means we've left the SHA256 section
+                // Non-indented line means we've left the checksum sections
                 break;
             }
             continue;
@@ -271,6 +256,58 @@ fn parse<R: BufRead>(reader: R) -> Result<Out> {
                 "ButAutomaticUpgrades" => out.but_automatic_upgrades = value == "yes",
                 _ => {}
             }
+        }
+    }
+
+    // Fold merged per-path hashes into components, keeping the best
+    // compression per (component, arch) like before
+    for (path, hashes) in &files {
+        let segments: Vec<&str> = path.splitn(4, '/').collect();
+        // Match <component>/binary-<arch>/Packages[.<ext>]
+        if segments.len() < 3 {
+            continue;
+        }
+        let component = segments[0];
+        let arch = match segments[1].strip_prefix("binary-") {
+            Some(a) => a,
+            None => continue,
+        };
+        let filename = segments[2];
+        let (is_packages, filetype) = match filename {
+            "Packages" => (true, ""),
+            "Packages.gz" => (true, "gz"),
+            "Packages.xz" => (true, "xz"),
+            _ => (false, ""),
+        };
+        // Skip debian-installer paths (segments.len() > 3 means
+        // there's extra nesting like debian-installer/binary-<arch>/...)
+        if !is_packages || segments.len() > 3 {
+            continue;
+        }
+
+        let checksums = Checksums::builder()
+            .maybe_sha256(hashes.sha256.clone())
+            .maybe_sha512(hashes.sha512.clone())
+            .build()?;
+        let entry = BlobDl {
+            href: path.to_owned(),
+            size: hashes.size,
+            checksums,
+            filetype: filetype.to_owned(),
+        };
+
+        let comp = out
+            .components
+            .entry(component.to_owned())
+            .or_insert_with(|| Component {
+                packages: BTreeMap::new(),
+            });
+
+        let dominated = comp.packages.get(arch).is_some_and(|existing| {
+            compression_rank(&existing.filetype) >= compression_rank(filetype)
+        });
+        if !dominated {
+            comp.packages.insert(arch.to_owned(), entry);
         }
     }
 
@@ -395,6 +432,84 @@ mod tests {
                 )),
                 filetype: "xz".into(),
             },
+        );
+    }
+
+    #[test]
+    fn test_parse_sha512_only() {
+        // Ubuntu 26.10 (stonking) ships an InRelease with only a SHA512
+        // section; the entries must still land in components.
+        let input = concat!(
+            "Origin: Ubuntu\n",
+            "Suite: stonking\n",
+            "Codename: stonking\n",
+            "Date: Thu, 15 Oct 2026 12:18:34 UTC\n",
+            "Architectures: amd64 arm64\n",
+            "Description: Ubuntu Stonking 26.10\n",
+            "SHA512:\n",
+            " a820c19528163ad4db0b1873d56219204a1249d02413b6df0dfdb40a1ece9fca008f40917072f216785d0fa88ca06363db217ed5e80ef6a541f487c309fff7ed 6508829 main/binary-amd64/Packages\n",
+            " 5922e68d2f32b224335d340f020294c04c2e16fbd2b514e3fc071f250208dc9ab8460a0e97528613e1d89d7993dae955176bde0c010ff39f0b2db9f52f70c492 6508829 main/binary-amd64/Packages\n",
+            " 2405a8574932616f05e3ca9585ac180d858525a69f81095b8b86958594162bc8de2939400b986fa058ff1ab84941dcf3a56c6f6700070f1a10a9673989a294b2 6520091 main/binary-arm64/Packages\n",
+        );
+        let out = parse(Cursor::new(input)).expect("failed to parse sha512-only input");
+
+        assert_eq!(out.components.keys().collect::<Vec<_>>(), vec!["main"]);
+        let main = &out.components["main"];
+        assert_eq!(
+            main.packages.keys().collect::<Vec<_>>(),
+            vec!["amd64", "arm64"],
+        );
+        assert_eq!(
+            main.packages["amd64"],
+            BlobDl {
+                href: "main/binary-amd64/Packages".into(),
+                size: 6508829,
+                checksums: Checksums::new_sha512(hex!(
+                    "5922e68d2f32b224335d340f020294c04c2e16fbd2b514e3fc071f250208dc9ab8460a0e97528613e1d89d7993dae955176bde0c010ff39f0b2db9f52f70c492"
+                )),
+                filetype: "".into(),
+            },
+        );
+        assert_eq!(
+            main.packages["arm64"],
+            BlobDl {
+                href: "main/binary-arm64/Packages".into(),
+                size: 6520091,
+                checksums: Checksums::new_sha512(hex!(
+                    "2405a8574932616f05e3ca9585ac180d858525a69f81095b8b86958594162bc8de2939400b986fa058ff1ab84941dcf3a56c6f6700070f1a10a9673989a294b2"
+                )),
+                filetype: "".into(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_parse_sha256_and_sha512_merge() {
+        // When both sections are present, hashes merge per path.
+        let input = concat!(
+            "Suite: stonking\n",
+            "Date: Thu, 15 Oct 2026 12:18:34 UTC\n",
+            "Architectures: amd64\n",
+            "SHA256:\n",
+            " abababababababababababababababababababababababababababababababab 1271815 main/binary-amd64/Packages.gz\n",
+            "SHA512:\n",
+            " a820c19528163ad4db0b1873d56219204a1249d02413b6df0dfdb40a1ece9fca008f40917072f216785d0fa88ca06363db217ed5e80ef6a541f487c309fff7ed 1271815 main/binary-amd64/Packages.gz\n",
+        );
+        let out = parse(Cursor::new(input)).expect("failed to parse mixed input");
+
+        let main = &out.components["main"];
+        let entry = &main.packages["amd64"];
+        assert_eq!(entry.href, "main/binary-amd64/Packages.gz");
+        assert_eq!(entry.filetype, "gz");
+        assert_eq!(
+            entry.checksums.sha256_hex().as_deref(),
+            Some("abababababababababababababababababababababababababababababababab"),
+        );
+        assert_eq!(
+            entry.checksums.sha512_hex().as_deref(),
+            Some(
+                "a820c19528163ad4db0b1873d56219204a1249d02413b6df0dfdb40a1ece9fca008f40917072f216785d0fa88ca06363db217ed5e80ef6a541f487c309fff7ed"
+            ),
         );
     }
 }

@@ -204,6 +204,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         baseurl = archive_url,
         names = ctx.attrs.package_subtargets,
         extension = ".deb",
+        metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
     )
     pkg_subtargets = {name + ".deb": [DefaultInfo(out)] for name, out in pkg_outputs.items()}
 

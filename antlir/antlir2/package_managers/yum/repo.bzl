@@ -137,6 +137,7 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
         baseurl = baseurl,
         names = ctx.attrs.package_subtargets,
         extension = ".rpm",
+        metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
     )
     pkg_subtargets = {name + ".rpm": [DefaultInfo(out)] for name, out in pkg_outputs.items()}
 

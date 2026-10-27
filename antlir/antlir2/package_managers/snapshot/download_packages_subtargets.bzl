@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
+load(":download.bzl", "download")
 
 def _download_packages_subtargets_impl(
     actions: AnalysisActions,
@@ -11,6 +12,7 @@ def _download_packages_subtargets_impl(
     index_json: ArtifactValue | None,
     baseurl: str,
     packages: dict[str, typing.Any],
+    metadata_run_info: RunInfo,
 ):
     all_packages = []
     for _key, packages_json in packages_jsons.items():
@@ -45,18 +47,20 @@ def _download_packages_subtargets_impl(
         # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
 
         # Always use content based paths for package subtargets – they are
-        # content-addressed via sha256.
+        # content-addressed (sha256 when available, otherwise the verified
+        # download below still pins the bytes).
         dl = actions.declare_output(
             name,
             has_content_based_path = True,
         )
-        actions.download_file(
-            dl,
-            url,
-            sha256 = checksums.get("sha256"),
-            sha1 = checksums.get("sha1"),
+        fetched = download(
+            actions = actions,
+            url = url,
+            out = dl,
+            checksums = checksums,
+            metadata_run_info = metadata_run_info,
         )
-        actions.copy_file(out, dl)
+        actions.copy_file(out, fetched)
     return []
 
 _download_packages_subtargets = dynamic_actions(
@@ -64,6 +68,7 @@ _download_packages_subtargets = dynamic_actions(
     attrs = {
         "baseurl": dynattrs.value(str),
         "index_json": dynattrs.option(dynattrs.artifact_value()),
+        "metadata_run_info": dynattrs.value(RunInfo),
         "packages": dynattrs.dict(str, dynattrs.output()),
         "packages_jsons": dynattrs.dict(str, dynattrs.artifact_value()),
     },
@@ -77,6 +82,7 @@ def download_packages_subtargets(
     baseurl: str,
     names: list[str],
     extension: str,
+    metadata_run_info: RunInfo,
 ) -> dict[str, Artifact]:
     """Download individual packages by name using the checksum index.
 
@@ -103,6 +109,7 @@ def download_packages_subtargets(
         _download_packages_subtargets(
             baseurl = baseurl,
             index_json = index_json,
+            metadata_run_info = metadata_run_info,
             packages_jsons = packages_jsons,
             packages = {name: out.as_output() for name, out in outputs.items()},
         ),

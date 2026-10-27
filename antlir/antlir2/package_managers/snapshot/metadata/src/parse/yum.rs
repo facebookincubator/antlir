@@ -46,6 +46,7 @@ fn checksums_from_xml<E: serde::de::Error>(ty: &str, text: String) -> Result<Che
     match ty {
         "sha1" => Checksums::new_sha1_hex(text).map_err(E::custom),
         "sha256" => Checksums::new_sha256_hex(text).map_err(E::custom),
+        "sha512" => Checksums::new_sha512_hex(text).map_err(E::custom),
         _ => Err(E::custom(format!("unknown checksum type: {}", ty))),
     }
 }

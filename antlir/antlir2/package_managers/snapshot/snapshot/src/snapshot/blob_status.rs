@@ -100,9 +100,11 @@ pub(crate) async fn check_blob_status(
     let mut seen = BTreeSet::new();
     let mut deduped = Vec::new();
     for e in entries {
-        // Use sha256 as dedup key if present, else sha1, else filename
+        // Use sha256 as dedup key if present, else sha512, else sha1, else filename
         let dedup_key = if let Some(sha256) = &e.checksums.sha256 {
             format!("sha256:{}", hex::encode(sha256))
+        } else if let Some(sha512) = &e.checksums.sha512 {
+            format!("sha512:{}", hex::encode(sha512))
         } else if let Some(sha1) = &e.checksums.sha1 {
             format!("sha1:{}", hex::encode(sha1))
         } else {

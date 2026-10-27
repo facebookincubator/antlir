@@ -44,7 +44,7 @@ struct RepomdData {
     /// One or more `<checksum>` elements — yum primary.xml typically has a
     /// single sha256, but the snapshot pipeline augments repomd.xml with
     /// an additional sha1 entry so the build can use content-based paths.
-    /// All entries are merged into a single `Checksums` (sha1 + sha256).
+    /// All entries are merged into a single `Checksums` (sha1 + sha256 + sha512).
     #[serde_as(as = "Vec<XmlConv>")]
     #[serde(rename = "checksum")]
     checksum: Vec<Checksums>,
@@ -55,6 +55,7 @@ impl RepomdData {
     fn merged_checksums(&self) -> Result<Checksums> {
         let mut sha1: Option<[u8; 20]> = None;
         let mut sha256: Option<[u8; 32]> = None;
+        let mut sha512: Option<[u8; 64]> = None;
         for c in &self.checksum {
             if let Some(new) = &c.sha1 {
                 if let Some(existing) = &sha1 {
@@ -80,8 +81,24 @@ impl RepomdData {
                 }
                 sha256 = Some(*new);
             }
+            if let Some(new) = &c.sha512 {
+                if let Some(existing) = &sha512 {
+                    anyhow::ensure!(
+                        existing == new,
+                        "conflicting sha512 checksums in repomd.xml for type '{}': {} vs {}",
+                        self.typ,
+                        hex::encode(existing),
+                        hex::encode(new),
+                    );
+                }
+                sha512 = Some(*new);
+            }
         }
-        Ok(Checksums { sha1, sha256 })
+        Ok(Checksums {
+            sha1,
+            sha256,
+            sha512,
+        })
     }
 }
 

@@ -21,12 +21,16 @@ use serde_with::serde_as;
 use sha1::Sha1;
 use sha2::Digest;
 use sha2::Sha256;
+use sha2::Sha512;
 
 /// First-class error type for checksum verification using thiserror.
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 pub enum ChecksumVerificationError {
     #[error("sha256 mismatch: expected {expected} got {actual}")]
     Sha256Mismatch { expected: String, actual: String },
+
+    #[error("sha512 mismatch: expected {expected} got {actual}")]
+    Sha512Mismatch { expected: String, actual: String },
 
     #[error("sha1 mismatch: expected {expected} got {actual}")]
     Sha1Mismatch { expected: String, actual: String },
@@ -35,8 +39,8 @@ pub enum ChecksumVerificationError {
         "no checksum matched – at least one matching checksum required (expected {expected:?} vs actual {actual:?})"
     )]
     NoMatchingChecksum {
-        expected: Checksums,
-        actual: Checksums,
+        expected: Box<Checksums>,
+        actual: Box<Checksums>,
     },
 }
 
@@ -57,6 +61,9 @@ pub struct Checksums {
     #[serde_as(as = "Option<Hex>")]
     #[serde(default)]
     pub sha256: Option<[u8; 32]>,
+    #[serde_as(as = "Option<Hex>")]
+    #[serde(default)]
+    pub sha512: Option<[u8; 64]>,
 }
 
 impl Serialize for Checksums {
@@ -70,6 +77,9 @@ impl Serialize for Checksums {
         }
         if let Some(sha256) = &self.sha256 {
             map.serialize_entry("sha256", &hex::encode(sha256))?;
+        }
+        if let Some(sha512) = &self.sha512 {
+            map.serialize_entry("sha512", &hex::encode(sha512))?;
         }
         map.end()
     }
@@ -95,8 +105,12 @@ fn decode_hex<const N: usize>(s: &str) -> Result<[u8; N]> {
 #[bon]
 impl Checksums {
     #[builder]
-    pub fn new(sha1: Option<String>, sha256: Option<String>) -> Result<Self> {
-        if sha1.is_none() && sha256.is_none() {
+    pub fn new(
+        sha1: Option<String>,
+        sha256: Option<String>,
+        sha512: Option<String>,
+    ) -> Result<Self> {
+        if sha1.is_none() && sha256.is_none() && sha512.is_none() {
             bail!("At least one checksum must be provided");
         }
         let sha1_bytes = sha1
@@ -107,9 +121,14 @@ impl Checksums {
             .map(|s| decode_hex::<32>(&s))
             .transpose()
             .context("invalid sha256")?;
+        let sha512_bytes = sha512
+            .map(|s| decode_hex::<64>(&s))
+            .transpose()
+            .context("invalid sha512")?;
         Ok(Self {
             sha1: sha1_bytes,
             sha256: sha256_bytes,
+            sha512: sha512_bytes,
         })
     }
 }
@@ -120,6 +139,7 @@ impl Checksums {
         let mut input = BufReader::new(reader);
         let mut sha1_hasher = Sha1::new();
         let mut sha256_hasher = Sha256::new();
+        let mut sha512_hasher = Sha512::new();
         let mut buf = [0u8; 64 * 1024];
         loop {
             let n = input.read(&mut buf).context("failed to read input")?;
@@ -128,10 +148,12 @@ impl Checksums {
             }
             sha1_hasher.update(&buf[..n]);
             sha256_hasher.update(&buf[..n]);
+            sha512_hasher.update(&buf[..n]);
         }
         Ok(Self {
             sha1: Some(sha1_hasher.finalize().into()),
             sha256: Some(sha256_hasher.finalize().into()),
+            sha512: Some(sha512_hasher.finalize().into()),
         })
     }
 
@@ -143,6 +165,7 @@ impl Checksums {
         use tokio::io::AsyncReadExt;
         let mut sha1_hasher = Sha1::new();
         let mut sha256_hasher = Sha256::new();
+        let mut sha512_hasher = Sha512::new();
         let mut buf = [0u8; 64 * 1024];
         loop {
             let n = reader
@@ -154,10 +177,12 @@ impl Checksums {
             }
             sha1_hasher.update(&buf[..n]);
             sha256_hasher.update(&buf[..n]);
+            sha512_hasher.update(&buf[..n]);
         }
         Ok(Self {
             sha1: Some(sha1_hasher.finalize().into()),
             sha256: Some(sha256_hasher.finalize().into()),
+            sha512: Some(sha512_hasher.finalize().into()),
         })
     }
 
@@ -176,6 +201,15 @@ impl Checksums {
         Self {
             sha1: None,
             sha256: Some(sha256),
+            sha512: None,
+        }
+    }
+
+    pub fn new_sha512(sha512: [u8; 64]) -> Self {
+        Self {
+            sha1: None,
+            sha256: None,
+            sha512: Some(sha512),
         }
     }
 
@@ -183,6 +217,7 @@ impl Checksums {
         Self {
             sha1: Some(sha1),
             sha256: None,
+            sha512: None,
         }
     }
 
@@ -191,6 +226,16 @@ impl Checksums {
         Ok(Self {
             sha1: None,
             sha256: Some(decode_hex::<32>(hex_str.as_ref())?),
+            sha512: None,
+        })
+    }
+
+    /// Convenience: create from hex string, failing if invalid.
+    pub fn new_sha512_hex<S: AsRef<str>>(hex_str: S) -> Result<Self> {
+        Ok(Self {
+            sha1: None,
+            sha256: None,
+            sha512: Some(decode_hex::<64>(hex_str.as_ref())?),
         })
     }
 
@@ -199,6 +244,7 @@ impl Checksums {
         Ok(Self {
             sha1: Some(decode_hex::<20>(hex_str.as_ref())?),
             sha256: None,
+            sha512: None,
         })
     }
 
@@ -208,6 +254,10 @@ impl Checksums {
 
     pub fn sha256_hex(&self) -> Option<String> {
         self.sha256.as_ref().map(hex::encode)
+    }
+
+    pub fn sha512_hex(&self) -> Option<String> {
+        self.sha512.as_ref().map(hex::encode)
     }
 
     /// Verify that checksums don't disagree and at least one matches.
@@ -223,6 +273,14 @@ impl Checksums {
                 });
             }
         }
+        if let (Some(exp), Some(act)) = (&self.sha512, &actual.sha512) {
+            if exp != act {
+                return Err(ChecksumVerificationError::Sha512Mismatch {
+                    expected: hex::encode(exp),
+                    actual: hex::encode(act),
+                });
+            }
+        }
         if let (Some(exp), Some(act)) = (&self.sha1, &actual.sha1) {
             if exp != act {
                 return Err(ChecksumVerificationError::Sha1Mismatch {
@@ -232,13 +290,14 @@ impl Checksums {
             }
         }
         let matched = (self.sha256.is_some() && actual.sha256.is_some())
+            || (self.sha512.is_some() && actual.sha512.is_some())
             || (self.sha1.is_some() && actual.sha1.is_some());
         if matched {
             Ok(())
         } else {
             Err(ChecksumVerificationError::NoMatchingChecksum {
-                expected: self.clone(),
-                actual: actual.clone(),
+                expected: Box::new(self.clone()),
+                actual: Box::new(actual.clone()),
             })
         }
     }
@@ -261,6 +320,9 @@ mod tests {
                 sha256: Some(hex!(
                     "1894a19c85ba153acbf743ac4e43fc004c891604b26f8c69e1e83ea2afc7c48f"
                 )),
+                sha512: Some(hex!(
+                    "81381f1dacd4824a6c503fd07057763099c12b8309d0abcec4000c9060cbbfa67988b2ada669ab4837fcd3d4ea6e2b8db2b9da9197d5112fb369fd006da545de"
+                )),
             }
         );
     }
@@ -272,10 +334,14 @@ mod tests {
             sha256: Some(hex!(
                 "1894a19c85ba153acbf743ac4e43fc004c891604b26f8c69e1e83ea2afc7c48f"
             )),
+            sha512: Some(hex!(
+                "81381f1dacd4824a6c503fd07057763099c12b8309d0abcec4000c9060cbbfa67988b2ada669ab4837fcd3d4ea6e2b8db2b9da9197d5112fb369fd006da545de"
+            )),
         };
         let json = serde_json::to_string(&cs).expect("serializing checksums should succeed");
         assert!(json.contains("33ab5639bfd8e7b95eb1d8d0b87781d4ffea4d5d"));
         assert!(json.contains("1894a19c85ba153acbf743ac4e43fc004c891604b26f8c69e1e83ea2afc7c48f"));
+        assert!(json.contains("81381f1dacd4824a6c503fd07057763099c12b8309d0abcec4000c9060cbbfa67988b2ada669ab4837fcd3d4ea6e2b8db2b9da9197d5112fb369fd006da545de"));
         let de: Checksums =
             serde_json::from_str(&json).expect("deserializing checksums should succeed");
         assert_eq!(cs, de);
@@ -286,12 +352,17 @@ mod tests {
         let cs = Checksums {
             sha1: None,
             sha256: Some([0xAA; 32]),
+            sha512: None,
         };
         let json = serde_json::to_string(&cs).expect("serializing checksums should succeed");
         assert!(json.contains("sha256"));
         assert!(
             !json.contains("sha1"),
             "sha1 should be skipped when None: {json}"
+        );
+        assert!(
+            !json.contains("sha512"),
+            "sha512 should be skipped when None: {json}"
         );
     }
 
@@ -305,6 +376,7 @@ mod tests {
             sha256: Some(hex!(
                 "1894a19c85ba153acbf743ac4e43fc004c891604b26f8c69e1e83ea2afc7c48f"
             )),
+            sha512: None,
         };
         let starlark = serde_starlark::to_string(&cs).expect("serializing to starlark");
         assert!(
@@ -352,36 +424,64 @@ mod tests {
         let exp = Checksums {
             sha256: Some([0xAA; 32]),
             sha1: Some([0xCC; 20]),
+            sha512: None,
         };
         let act = Checksums {
             sha256: Some([0xAA; 32]),
             sha1: None,
+            sha512: None,
         };
         assert!(exp.verify_against(&act).is_ok());
 
         let exp2 = Checksums {
             sha256: Some([0xAA; 32]),
             sha1: None,
+            sha512: None,
         };
         let act2 = Checksums {
             sha256: Some([0xAA; 32]),
             sha1: Some([0xDD; 20]),
+            sha512: None,
         };
         assert!(exp2.verify_against(&act2).is_ok());
 
         let exp3 = Checksums {
             sha256: Some([0xAA; 32]),
             sha1: None,
+            sha512: None,
         };
         let act3 = Checksums {
             sha256: None,
             sha1: Some([0xCC; 20]),
+            sha512: None,
         };
         assert!(exp3.verify_against(&act3).is_err());
+
+        // sha512-only expected matches sha512-capable actual
+        let exp4 = Checksums {
+            sha256: None,
+            sha1: None,
+            sha512: Some([0xBB; 64]),
+        };
+        let act4 = Checksums {
+            sha256: Some([0xAA; 32]),
+            sha1: Some([0xCC; 20]),
+            sha512: Some([0xBB; 64]),
+        };
+        assert!(exp4.verify_against(&act4).is_ok());
+
+        // sha512 mismatch is an error
+        let act5 = Checksums {
+            sha256: None,
+            sha1: None,
+            sha512: Some([0xCC; 64]),
+        };
+        assert!(exp4.verify_against(&act5).is_err());
 
         let empty = Checksums {
             sha256: None,
             sha1: None,
+            sha512: None,
         };
         assert!(empty.verify_against(&empty).is_err());
     }

@@ -126,6 +126,8 @@ pub struct Package {
     pub filename: String,
     #[serde(default)]
     pub sha256: String,
+    #[serde(default)]
+    pub sha512: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
@@ -270,14 +272,17 @@ impl Apt {
             for InstallPackage { package, .. } in &install {
                 let args = match previous_versions.get(&package.name) {
                     Some(old) => vec!["upgrade", old.as_str()],
-                    None => vec!["install"],
+                    // dpkg passes the old version as $2, empty when there
+                    // is none; `set -u` scripts (e.g. libselinux1) rely on
+                    // it being set
+                    None => vec!["install", ""],
                 };
                 run_maintainer_script(ctx, &package.name, &package.arch, "preinst", &args)?;
             }
             for InstallPackage { package, .. } in &install {
                 let args = match previous_versions.get(&package.name) {
                     Some(old) => vec!["configure", old.as_str()],
-                    None => vec!["configure"],
+                    None => vec!["configure", ""],
                 };
                 run_maintainer_script(ctx, &package.name, &package.arch, "postinst", &args)?;
             }

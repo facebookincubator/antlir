@@ -110,6 +110,7 @@ mod tests {
                 checksums: Checksums {
                     sha1: Some([0xAA; 20]),
                     sha256: Some([0xBB; 32]),
+                    sha512: None,
                 },
             },
             Entry {
@@ -118,6 +119,7 @@ mod tests {
                 checksums: Checksums {
                     sha1: Some([0xCC; 20]),
                     sha256: Some([0xDD; 32]),
+                    sha512: None,
                 },
             },
         ];

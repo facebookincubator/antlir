@@ -118,6 +118,11 @@ OSES = [
         architectures = [new_arch_t("x86_64")],
         has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
     ),
+    _new_os(
+        name = "ubuntu-stonking",
+        flavor = "antlir//antlir/antlir2/flavor/ubuntu-stonking:ubuntu-stonking",
+        has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
+    ),
 ]
 
 if is_facebook:

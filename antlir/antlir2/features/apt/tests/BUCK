@@ -1,11 +1,9 @@
-load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
-load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/package_managers/deb:local_suite.bzl", "local_suite")
 load("//antlir/antlir2/testing:image_debs_test.bzl", "image_test_deb_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load(":defs.bzl", "test_deb")
+load(":defs.bzl", "test_deb", "test_on_all_flavors")
 
 oncall("antlir")
 
@@ -23,7 +21,8 @@ image.layer(
     ],
 )
 
-image_test_deb_names(
+test_on_all_flavors(
+    image_test_deb_names,
     name = "test-bash-installed",
     layer = ":bash-installed",
     names = [
@@ -31,15 +30,6 @@ image_test_deb_names(
         "dash",
         "dpkg",
     ],
-)
-
-antlir2_configured_alias(
-    name = "test-bash-installed-ubuntu-noble",
-    actual = ":test-bash-installed",
-    default_os = "ubuntu-noble",
-    labels = ci.remove_labels(ci.aarch64()),
-    # Noble does not have aarch64 packages
-    target_compatible_with = ["ovr_config//cpu:x86_64"],
 )
 
 image.layer(
@@ -55,7 +45,8 @@ image.layer(
     parent_layer = ":bash-installed",
 )
 
-image_test_deb_names(
+test_on_all_flavors(
+    image_test_deb_names,
     name = "test-bash-removed",
     layer = ":bash-removed",
     names = [
@@ -68,7 +59,8 @@ image_test_deb_names(
 # every installing transaction. None of login, hostname or perl-base is
 # requested here or depended on by bash, dash or dpkg, so their presence
 # proves the seeding.
-image_test_deb_names(
+test_on_all_flavors(
+    image_test_deb_names,
     name = "test-base-seeded",
     layer = ":bash-installed",
     names = [
@@ -76,15 +68,6 @@ image_test_deb_names(
         "login",
         "perl-base",
     ],
-)
-
-antlir2_configured_alias(
-    name = "test-base-seeded-ubuntu-noble",
-    actual = ":test-base-seeded",
-    default_os = "ubuntu-noble",
-    labels = ci.remove_labels(ci.aarch64()),
-    # Noble does not have aarch64 packages
-    target_compatible_with = ["ovr_config//cpu:x86_64"],
 )
 
 # base-files creates the merged-/usr alias symlinks (/bin, /sbin, /lib,
@@ -117,19 +100,11 @@ image.layer(
     parent_layer = ":usrmerge-base",
 )
 
-image_sh_test(
+test_on_all_flavors(
+    image_sh_test,
     name = "test-usrmerge",
     layer = ":usrmerge-child",
     test = "test-usrmerge.sh",
-)
-
-antlir2_configured_alias(
-    name = "test-usrmerge-ubuntu-noble",
-    actual = ":test-usrmerge",
-    default_os = "ubuntu-noble",
-    labels = ci.remove_labels(ci.aarch64()),
-    # Noble does not have aarch64 packages
-    target_compatible_with = ["ovr_config//cpu:x86_64"],
 )
 
 local_suite(
@@ -208,7 +183,8 @@ image.layer(
     parent_layer = ":bash-installed",
 )
 
-image_test_deb_names(
+test_on_all_flavors(
+    image_test_deb_names,
     name = "test-local-debs-installed",
     layer = ":local-debs-installed",
     names = [
@@ -218,19 +194,22 @@ image_test_deb_names(
     ],
 )
 
-image_sh_test(
+test_on_all_flavors(
+    image_sh_test,
     name = "test-local-deb-alternative-installed",
     layer = ":local-debs-installed",
     test = "test-local-deb-alternative-installed.sh",
 )
 
-image_sh_test(
+test_on_all_flavors(
+    image_sh_test,
     name = "test-local-deb-files",
     layer = ":local-debs-installed",
     test = "test-local-deb-files.sh",
 )
 
-image_sh_test(
+test_on_all_flavors(
+    image_sh_test,
     name = "test-local-deb-install-scripts-run",
     layer = ":local-debs-installed",
     test = "test-local-deb-install-scripts-run.sh",
@@ -249,29 +228,23 @@ image.layer(
     parent_layer = ":local-debs-installed",
 )
 
-image_sh_test(
+test_on_all_flavors(
+    image_sh_test,
     name = "test-local-deb-remove-scripts-run",
     layer = ":local-deb-scripts-removed",
     test = "test-local-deb-remove-scripts-run.sh",
 )
 
-image_sh_test(
+test_on_all_flavors(
+    image_sh_test,
     name = "test-local-deb-alternative-removed",
     layer = ":local-deb-scripts-removed",
     test = "test-local-deb-alternative-removed.sh",
 )
 
-image_sh_test(
+test_on_all_flavors(
+    image_sh_test,
     name = "test-dpkg-status-unique",
     layer = ":usrmerge-child",
     test = "test-dpkg-status-unique.sh",
-)
-
-antlir2_configured_alias(
-    name = "test-dpkg-status-unique-ubuntu-noble",
-    actual = ":test-dpkg-status-unique",
-    default_os = "ubuntu-noble",
-    labels = ci.remove_labels(ci.aarch64()),
-    # Noble does not have aarch64 packages
-    target_compatible_with = ["ovr_config//cpu:x86_64"],
 )

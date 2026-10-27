@@ -33,6 +33,7 @@ struct PackageBuilder {
     architecture: Option<String>,
     filename: Option<String>,
     sha256: Option<String>,
+    sha512: Option<String>,
 }
 
 impl PackageBuilder {
@@ -45,8 +46,10 @@ impl PackageBuilder {
                 .context("missing required Architecture field")?,
             filename: self.filename.context("missing required Filename field")?,
             checksums: Checksums::builder()
-                .sha256(self.sha256.context("missing required SHA256 field")?)
-                .build()?,
+                .maybe_sha256(self.sha256)
+                .maybe_sha512(self.sha512)
+                .build()
+                .context("missing required SHA256 or SHA512 field")?,
         })
     }
 
@@ -89,6 +92,7 @@ fn parse<R: BufRead>(reader: R) -> Result<Vec<Package>> {
                 "Architecture" => builder.architecture = Some(value.to_owned()),
                 "Filename" => builder.filename = Some(value.to_owned()),
                 "SHA256" => builder.sha256 = Some(value.to_owned()),
+                "SHA512" => builder.sha512 = Some(value.to_owned()),
                 _ => {}
             }
         }
@@ -192,6 +196,29 @@ mod tests {
     fn test_parse_empty() {
         let packages = parse(Cursor::new("")).expect("failed to parse empty input");
         assert!(packages.is_empty());
+    }
+
+    #[test]
+    fn test_parse_sha512_only() {
+        // Ubuntu 26.10 (stonking) Packages stanzas carry only SHA512.
+        let input = concat!(
+            "Package: 3cpio\n",
+            "Architecture: arm64\n",
+            "Version: 0.14.0-1ubuntu1\n",
+            "Filename: pool/main/r/rust-threecpio/3cpio_0.14.0-1ubuntu1_arm64.deb\n",
+            "SHA512: d3825423aa5c28b80b11c0754edd673a580056c055820f21b3c13a8806b32b0e7a632d67feb52a8724cabdcf46ba4625489cccb9fa29dbec98e3d455e3c3a7bd\n",
+            "\n",
+        );
+        let packages = parse(Cursor::new(input)).expect("failed to parse sha512-only input");
+        assert_eq!(packages.len(), 1);
+        let p = &packages[0];
+        assert_eq!(p.package, "3cpio");
+        assert_eq!(
+            p.checksums,
+            Checksums::new_sha512(hex!(
+                "d3825423aa5c28b80b11c0754edd673a580056c055820f21b3c13a8806b32b0e7a632d67feb52a8724cabdcf46ba4625489cccb9fa29dbec98e3d455e3c3a7bd"
+            ))
+        );
     }
 
     #[test]

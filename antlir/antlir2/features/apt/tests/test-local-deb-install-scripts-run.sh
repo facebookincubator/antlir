@@ -11,9 +11,11 @@ for script in preinst postinst prerm postrm; do
     grep -qF "/antlir2-$script-ran" "/var/lib/dpkg/info/antlir2-scripts.$script"
 done
 
-# Each script records its arguments in the image root
-test "$(cat /antlir2-preinst-ran)" = "install"
-test "$(cat /antlir2-postinst-ran)" = "configure"
+# Each script records its arguments in the image root. dpkg passes the
+# previously-installed version as $2 (empty on a fresh install), so the
+# recorded "$@" ends with a trailing space.
+test "$(cat /antlir2-preinst-ran)" = "install "
+test "$(cat /antlir2-postinst-ran)" = "configure "
 
 test ! -e /antlir2-prerm-ran
 test ! -e /antlir2-postrm-ran

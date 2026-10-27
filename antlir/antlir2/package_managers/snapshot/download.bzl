@@ -43,12 +43,63 @@ def download(
         dl_target = out
 
     if checksums:
-        actions.download_file(
-            dl_target,
-            url,
-            sha256 = checksums.get("sha256", None),
-            sha1 = checksums.get("sha1", None),
-        )
+        if checksums.get("sha256", None) or checksums.get("sha1", None):
+            actions.download_file(
+                dl_target,
+                url,
+                sha256 = checksums.get("sha256", None),
+                sha1 = checksums.get("sha1", None),
+            )
+        elif "sha512" in checksums:
+            # Buck2's download_file only supports sha1/sha256, but some
+            # repositories (e.g. Ubuntu 26.10+) publish only SHA512 checksums.
+            # Download with curl and pin the bytes with the metadata binary
+            # instead; the verify action fails the build on mismatch and
+            # materializes the verified copy as its output.
+            if not metadata_run_info:
+                fail("metadata_run_info is required to download files with only sha512 checksums")
+            raw_target = actions.declare_output(
+                out.short_path + ".unverified",
+                has_content_based_path = False,
+            )
+            actions.run(
+                cmd_args(
+                    "curl",
+                    "--fail-with-body",
+                    "-L",
+                    url,
+                    "-o",
+                    raw_target.as_output(),
+                ),
+                env = internal_external(
+                    fb = {
+                        "http_proxy": "fwdproxy:8080",
+                        "https_proxy": "fwdproxy:8080",
+                        "no_proxy": ".fbcdn.net,.facebook.com,.thefacebook.com,.tfbnw.net,.fb.com,.fburl.com,.facebook.net,.sb.fbsbx.com,.fbinfra.net,localhost,yum",
+                    },
+                    oss = {},
+                ),
+                category = "curl_sha512",
+                identifier = out.short_path,
+                # Must be able to hit network
+                local_only = True,
+                # The verify step below pins the bytes, but this raw download
+                # itself is not content-verified, so don't cache it
+                allow_cache_upload = False,
+            )
+            actions.run(
+                cmd_args(
+                    metadata_run_info,
+                    "verify",
+                    cmd_args(checksums["sha512"], format = "--sha512={}"),
+                    raw_target,
+                    cmd_args(dl_target.as_output(), format = "--out={}"),
+                ),
+                category = "verify_sha512",
+                identifier = out.short_path,
+            )
+        else:
+            fail("unsupported checksums (need sha1, sha256 or sha512): {}".format(sorted(checksums.keys())))
     if not checksums and allow_nondeterministic_downloads:
         # It sucks to have any nondeterministic actions, but sometimes we need
         # to get things up and running super quickly and we need a
