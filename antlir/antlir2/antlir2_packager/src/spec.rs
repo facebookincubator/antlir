@@ -14,6 +14,7 @@ pub enum Spec {
     CadStack(crate::cad_stack::CadStack),
     Cpio(crate::cpio::Cpio),
     Deb(crate::deb::Deb),
+    DmVerity(crate::dm_verity::DmVerity),
     DockerArchive(crate::docker_archive::DockerArchive),
     Erofs(crate::erofs::Erofs),
     Ext3(crate::ext3::Ext3),

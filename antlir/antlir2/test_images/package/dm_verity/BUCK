@@ -1,0 +1,118 @@
+load("//antlir/antlir2/antlir2_vm/bzl:disk.bzl", "vm_disk")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/bzl/package:gpt.bzl", "Partition", "PartitionType", "TargetArchLinuxRootPartitionType")
+
+oncall("antlir")
+
+# Small filesystem with known contents for the VM test to read back through
+# the dm-verity device.
+image.layer(
+    name = "verity-rootfs",
+    features = [
+        feature.install_text(
+            dst = "/hello",
+            text = "hello dm-verity\n",
+        ),
+        feature.ensure_dirs_exist(dirs = "/verity-test"),
+        feature.install_text(
+            dst = "/verity-test/nested-file",
+            text = "nested dm-verity content\n",
+        ),
+        feature.install_text(
+            dst = "/verity-test/another",
+            text = "42\n",
+        ),
+    ],
+)
+
+package.ext4(
+    name = "test.ext4",
+    layer = ":verity-rootfs",
+)
+
+package.dm_verity(
+    name = "test.dm_verity",
+    src = ":test.ext4",
+    # mkfs.ext4 uses 1024-byte blocks for a small filesystem like this one,
+    # and ext4 cannot mount on a device whose logical block size is larger
+    # than its filesystem block size, so the dm-verity device must also use
+    # 1024-byte blocks here.
+    data_block_size = 1024,
+    hash_block_size = 1024,
+)
+
+package.squashfs(
+    name = "test.squashfs",
+    layer = "//antlir/antlir2/test_images/package:standard",
+)
+
+# Wrapping a different filesystem type (squashfs instead of ext4)
+package.dm_verity(
+    name = "test-squashfs.dm_verity",
+    src = ":test.squashfs",
+)
+
+image.layer(
+    name = "gpt-esp-layer",
+    features = [
+        feature.install_text(
+            dst = "/foo",
+            text = "foo",
+        ),
+    ],
+)
+
+package.vfat(
+    name = "gpt-esp",
+    fat_size = 32,
+    layer = ":gpt-esp-layer",
+    size_mb = 128,
+)
+
+# Discoverable Disk Image (systemd DPS): the root partition's src is a
+# dm-verity package, so package.gpt automatically creates the paired
+# root-verity hash partition (same PARTUUID, arch-specific verity type)
+# right after it. No combined image, no hash offset anywhere.
+package.gpt(
+    name = "ddi.raw",
+    partitions = [
+        Partition(
+            src = ":gpt-esp",
+            label = "ESP",
+            type = PartitionType("esp"),
+            uuid = "00000000-0000-4000-8000-000000000000",
+        ),
+        Partition(
+            src = ":test.dm_verity",
+            label = "ROOT",
+            type = TargetArchLinuxRootPartitionType,
+            uuid = "00000000-0000-4000-8000-000000000001",
+        ),
+    ],
+)
+
+# Same auto-verity creation, but with no explicit PARTUUID: the packager
+# must still give the root and verity partitions a shared PARTUUID.
+package.gpt(
+    name = "ddi-no-uuid.raw",
+    partitions = [
+        Partition(
+            src = ":test.dm_verity",
+            label = "ROOT",
+            type = TargetArchLinuxRootPartitionType,
+        ),
+    ],
+)
+
+# Disk for the VM test in facebook/: the DDI above, attached as /dev/vdb.
+# The guest discovers the root and verity partitions by their GPT type
+# GUIDs and shared PARTUUID, exactly like systemd-gpt-auto-generator /
+# systemd-veritysetup do, then mounts the root through dm-verity.
+vm_disk(
+    name = "test-disk",
+    base_image = ":ddi.raw",
+    bootable = False,
+    visibility = ["//antlir/antlir2/test_images/package/dm_verity/..."],
+)

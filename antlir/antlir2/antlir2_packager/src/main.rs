@@ -24,6 +24,7 @@ mod btrfs;
 mod cad_stack;
 mod cpio;
 mod deb;
+mod dm_verity;
 mod docker_archive;
 mod erofs;
 mod ext3;
@@ -191,6 +192,7 @@ fn main() -> Result<()> {
             &args.out,
             &materialize_layer().context("layer required for this format")?,
         ),
+        Spec::DmVerity(p) => p.build(&args.out),
         Spec::DockerArchive(p) => p.build(&args.out),
         Spec::Erofs(p) => p.build(
             &args.out,

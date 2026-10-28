@@ -13,6 +13,7 @@ load(":btrfs.bzl", "btrfs")
 load(":cfg.bzl", "package_cfg")
 load(":deb.bzl", "deb")
 load(":disk_image.bzl", "DiskImage")
+load(":dm_verity.bzl", "dm_verity")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":macro.bzl", "package_macro")
 load(":qcow2.bzl", "qcow2")
@@ -447,6 +448,7 @@ package = struct(
     cpio_lz4 = package_macro(_cpio_lz4),
     cpio_zst = package_macro(_cpio_zst),
     deb = deb,
+    dm_verity = dm_verity,
     erofs = package_macro(_erofs),
     ext3 = package_macro(_ext3),
     ext4 = package_macro(_ext4),

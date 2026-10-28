@@ -36,6 +36,8 @@ enum PartitionType {
     Linux,
     LinuxRootX64,
     LinuxRootArm64,
+    LinuxRootX64Verity,
+    LinuxRootArm64Verity,
 }
 
 bitflags! {
@@ -82,6 +84,17 @@ impl PartitionType {
             Self::Linux => gpt::partition_types::LINUX_FS,
             Self::LinuxRootX64 => gpt::partition_types::LINUX_ROOT_X64,
             Self::LinuxRootArm64 => gpt::partition_types::LINUX_ROOT_ARM_64,
+            // systemd Discoverable Partitions root-verity types (SD_GPT_ROOT_*_VERITY)
+            Self::LinuxRootX64Verity => gpt::partition_types::Type {
+                guid: Uuid::parse_str("2c7357ed-ebd2-46d9-aec1-23d437ec2bf5")
+                    .expect("valid verity partition GUID"),
+                os: gpt::partition_types::OperatingSystem::Linux,
+            },
+            Self::LinuxRootArm64Verity => gpt::partition_types::Type {
+                guid: Uuid::parse_str("df3300ce-d69f-4c92-978c-9bfb0f38d820")
+                    .expect("valid verity partition GUID"),
+                os: gpt::partition_types::OperatingSystem::Linux,
+            },
         }
     }
 }
@@ -96,6 +109,12 @@ struct Partition {
     name: Option<String>,
     alignment: Option<u64>,
     uuid: Option<Uuid>,
+    /// Partitions sharing a `verity_pair` value must share a PARTUUID
+    /// (systemd Discoverable Partitions pairs a root partition with its
+    /// verity hash partition this way). The pair reuses the uuid of the
+    /// first partition in the group when no explicit uuid is given.
+    #[serde(default)]
+    verity_pair: Option<String>,
 }
 
 impl Gpt {
@@ -151,6 +170,8 @@ impl Gpt {
         // In 4.1.0, there is no clean API to replace the part UUID with a custom one
         // https://github.com/Quyzi/gpt/issues/112#issuecomment-3831215604
         let mut partition_replace_ids = Vec::new();
+        let mut verity_pair_uuids: std::collections::HashMap<String, Uuid> =
+            std::collections::HashMap::new();
 
         for partition in self.partitions.iter() {
             let src_size = ByteSize::b(partition.src.metadata()?.len());
@@ -181,6 +202,18 @@ impl Gpt {
 
             if let Some(uuid) = partition.uuid {
                 partition_replace_ids.push((id, uuid));
+            }
+
+            if let Some(pair) = &partition.verity_pair {
+                // All partitions in a verity pair share a PARTUUID. The
+                // explicit uuid above (applied later) wins; otherwise reuse
+                // the uuid assigned to the first partition in the pair.
+                let pair_uuid = *verity_pair_uuids
+                    .entry(pair.clone())
+                    .or_insert(partition.uuid.unwrap_or(part.part_guid));
+                if pair_uuid != part.part_guid {
+                    partition_replace_ids.push((id, pair_uuid));
+                }
             }
         }
 

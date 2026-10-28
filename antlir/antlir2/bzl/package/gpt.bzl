@@ -7,15 +7,29 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":disk_image.bzl", "DiskImage")
+load(":dm_verity_info.bzl", "DmVerityInfo")
 
 GptPartitionSource = provider(fields = ["src"])
 
-PartitionType = enum("linux", "linux-root-x64", "linux-root-arm64", "esp")
+PartitionType = enum("linux", "linux-root-x64", "linux-root-arm64", "linux-root-x64-verity", "linux-root-arm64-verity", "esp")
 
 TargetArchLinuxRootPartitionType = select({
     "ovr_config//cpu:arm64": PartitionType("linux-root-arm64"),
     "ovr_config//cpu:x86_64": PartitionType("linux-root-x64"),
 })
+
+TargetArchLinuxRootVerityPartitionType = select({
+    "ovr_config//cpu:arm64": PartitionType("linux-root-arm64-verity"),
+    "ovr_config//cpu:x86_64": PartitionType("linux-root-x64-verity"),
+})
+
+# systemd Discoverable Partitions: a verity hash partition has the
+# arch-specific root-verity type and shares its PARTUUID with the data
+# (root) partition it protects.
+_VERITY_TYPE_FOR_ROOT_TYPE = {
+    "linux-root-arm64": "linux-root-arm64-verity",
+    "linux-root-x64": "linux-root-x64-verity",
+}
 
 PartitionFlags = enum("grow_file_system")
 
@@ -43,14 +57,49 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         if alignment == 0 or (alignment != None and alignment % ctx.attrs.block_size != 0):
             fail("alignment must be a multiple of block size")
 
-        partitions.append({
-            "alignment": alignment,
-            "flags": " | ".join([f.upper() for f in flags]),
-            "name": label,
-            "src": src[GptPartitionSource].src,
-            "type": type,
-            "uuid": uuid,
-        })
+        if DmVerityInfo in src:
+            # systemd Discoverable Partitions layout: do not put the
+            # combined dm-verity image in one partition. Split it into the
+            # data partition (as requested) plus a hash partition right
+            # after it, typed as the matching root-verity partition and
+            # sharing the data partition's PARTUUID. The packager pairs
+            # them up (see `verity_pair`) when no explicit uuid is given.
+            verity_type = _VERITY_TYPE_FOR_ROOT_TYPE.get(type)
+            if verity_type == None:
+                fail(
+                    "dm-verity partition ({}) must use a root partition type (linux-root-x64 or linux-root-arm64, e.g. TargetArchLinuxRootPartitionType), not '{}', so a matching verity partition can be created".format(
+                        src.label, type
+                    )
+                )
+            info = src[DmVerityInfo]
+            pair = "verity-{}".format(len(partitions))
+            partitions.append({
+                "alignment": alignment,
+                "flags": " | ".join([f.upper() for f in flags]),
+                "name": label,
+                "src": info.data_image,
+                "type": type,
+                "uuid": uuid,
+                "verity_pair": pair,
+            })
+            partitions.append({
+                "alignment": alignment,
+                "flags": "",
+                "name": (label + "-verity") if label else "verity",
+                "src": info.hash_image,
+                "type": verity_type,
+                "uuid": uuid,
+                "verity_pair": pair,
+            })
+        else:
+            partitions.append({
+                "alignment": alignment,
+                "flags": " | ".join([f.upper() for f in flags]),
+                "name": label,
+                "src": src[GptPartitionSource].src,
+                "type": type,
+                "uuid": uuid,
+            })
 
     if not partitions:
         fail("must have at least one partition")
