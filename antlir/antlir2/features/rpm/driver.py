@@ -311,12 +311,18 @@ def driver(spec) -> None:
         spec = spec_backup
         base, local_rpms = base_init(spec)
 
+    # hermetic_driver.sh does these mounts before starting Hermit.
+    premounted = os.environ.get("ANTLIR2_HERMETIC_RPM_PREMOUNTED")
+    if premounted is not None and premounted != spec["install_root"]:
+        raise RuntimeError(f"premounted {premounted}, not {spec['install_root']}")
     for path, mode in [
         ("/dev", 0o755),
         ("/proc", 0o555),
         ("/sys", 0o555),
         ("/tmp", 0o1777),
     ]:
+        if premounted is not None:
+            break
         dst = os.path.join(spec["install_root"], path.lstrip("/"))
         # Normally I don't like to implicitly create things in the image, there
         # is a lot of baggage that one must get when they use `rpm` - plus, the

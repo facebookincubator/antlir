@@ -82,6 +82,15 @@ simple = test_rpms(
     ],
 )
 
+# The build appliance's rpm database layout differs on CentOS 10
+# (/var/lib/rpm is a symlink to /usr/lib/sysimage/rpm), and so do rpm and dnf
+# (4.19/4.20 vs 4.16/4.14 on CentOS 9).
+antlir2_configured_alias(
+    name = "simple-centos10",
+    actual = ":simple",
+    default_os = "centos10",
+)
+
 python_binary(
     name = "test-installed-rpms",
     srcs = ["test_installed_rpms.py"],

@@ -1,5 +1,6 @@
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load(":hermetic.bzl", "hermetic_driver")
 
 oncall("antlir")
 
@@ -37,10 +38,41 @@ rust_binary(
 
 prelude = native
 
-prelude.python_bootstrap_binary(
+_source_date_epoch = read_config("antlir2", "source_date_epoch", "")
+
+# Every rpm feature, including the implicit ones from feature.install, runs
+# this driver. With hermetic RPM installs enabled (the
+# antlir//antlir/antlir2/cfg:hermetic_rpm[enabled] modifier) the dnf
+# transaction runs under Hermit; otherwise it is the plain python driver,
+# unchanged.
+prelude.alias(
     name = "driver",
-    main = "driver.py",
+    actual = select({
+        "DEFAULT": ":dnf-driver",
+        "antlir//antlir/antlir2/cfg:hermetic_rpm[enabled]": ":hermetic-driver",
+    }),
     visibility = ["PUBLIC"],
+)
+
+hermetic_driver(
+    name = "hermetic-driver",
+    driver = ":dnf-driver",
+    # @oss-disable[end= ]: hermit = "fbcode//hermetic_infra/hermit/hermit-cli:hermit",
+    # Required when hermetic RPM installs are enabled: the commit time of the
+    # revision being built, in seconds since the epoch. See hermetic.bzl.
+    source_date_epoch = int(_source_date_epoch) if _source_date_epoch.isdigit() else None,
+    # Only meaningful, and only analyzable (it needs the epoch), when hermetic
+    # RPM installs are enabled; plain builds of this package skip it.
+    target_compatible_with = select({
+        "DEFAULT": ["ovr_config//:none"],
+        "antlir//antlir/antlir2/cfg:hermetic_rpm[enabled]": ["ovr_config//cpu:x86_64"],
+    }),
+    wrapper = "hermetic_driver.sh",
+)
+
+prelude.python_bootstrap_binary(
+    name = "dnf-driver",
+    main = "driver.py",
     deps = [
         ":antlir2_features_rpm_common",
         "//antlir/antlir2/package_managers/dnf/build_appliance:antlir2_dnf_base",

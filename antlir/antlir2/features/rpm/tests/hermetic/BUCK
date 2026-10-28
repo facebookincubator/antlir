@@ -1,0 +1,51 @@
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
+
+oncall("antlir")
+
+# Only meaningful with hermetic RPM installs enabled (see
+# //antlir/antlir2/features/rpm:hermetic.bzl): two layers that run the
+# same rpm feature (so the dnf driver gets byte-identical input) must end up
+# with byte-identical RPM database and dnf history.
+
+feature.new(
+    name = "rpms",
+    features = [feature.rpms_install(rpms = ["basesystem"])],
+)
+
+# CentOS 10 (layer-a, layer-b) and CentOS 9 (layer-a-centos9, layer-b-centos9):
+# the build appliances differ in rpm (4.19 vs 4.16), dnf (4.20 vs 4.14) and
+# Python (3.12 vs 3.9), and Hermit is built for each appliance's distro.
+_OSES = {
+    "centos10": "",
+    "centos9": "-centos9",
+}
+
+[
+    image.layer(
+        name = name + suffix,
+        default_os = os,
+        features = [":rpms"],
+    )
+    for os, suffix in _OSES.items()
+    for name in ("layer-a", "layer-b")
+]
+
+[
+    python_unittest(
+        name = "test-hermetic-rpm" + suffix,
+        srcs = ["test_hermetic_rpm.py"],
+        env = {
+            "LAYER_A": "$(location :layer-a{})".format(suffix),
+            "LAYER_B": "$(location :layer-b{})".format(suffix),
+        },
+        # @oss-disable[end= ]: network_access = network_access_utils.none(),
+        target_compatible_with = select({
+            "DEFAULT": ["ovr_config//:none"],
+            "antlir//antlir/antlir2/cfg:hermetic_rpm[enabled]": ["ovr_config//cpu:x86_64"],
+        }),
+    )
+    for suffix in _OSES.values()
+]

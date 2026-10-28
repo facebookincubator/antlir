@@ -613,6 +613,18 @@ fn run_dnf_driver(
         // already the behavior that systemd would have had
         .setenv(("SYSTEMD_OFFLINE", "1"))
         .build();
+    // dnf and librpm open the build appliance's own rpm database too (its
+    // SQLite -shm file is written even for a read-only open). The appliance
+    // is shared by every rpm step that uses it, so without a private view
+    // concurrent steps contend on the same database and lock files, which
+    // makes their timing, and anything recorded with it, depend on what else
+    // was running. Give each step a private writable overlay instead.
+    for rpmdb in ["usr/lib/sysimage/rpm", "var/lib/rpm"] {
+        let dir = ctx.build_appliance().join(rpmdb);
+        if dir.is_dir() && !dir.is_symlink() {
+            isol.tmpfs_overlay(Path::new("/").join(rpmdb));
+        }
+    }
     if ctx.is_planning() {
         isol.inputs((Path::new("/__antlir2__/root"), root.deref()))
             .tmpfs_overlay(Path::new("/__antlir2__/root"));

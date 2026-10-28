@@ -55,6 +55,10 @@ def configure_base(
             base.conf.installroot, base.conf.persistdir.lstrip("/")
         )
     base.conf.arch = arch or platform.uname().machine
+    if "ANTLIR2_HERMETIC_RPM_PREMOUNTED" in os.environ:
+        # Under Hermit, statfs reports a fixed 4 GB free, so rpm's disk space
+        # check rejects large transactions (e.g. CUDA).
+        base.conf.diskspacecheck = False
 
 
 def ensure_no_implicit_removes(

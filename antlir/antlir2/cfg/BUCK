@@ -12,6 +12,19 @@ constraint(
     visibility = ["PUBLIC"],
 )
 
+# Run rpm features' dnf transactions under Hermit, so the RPM database, dnf
+# history and scriptlet outputs are reproducible. Off by default; see
+# //antlir/antlir2/features/rpm:hermetic.bzl.
+constraint(
+    name = "hermetic_rpm",
+    default = "disabled",
+    values = [
+        "disabled",
+        "enabled",
+    ],
+    visibility = ["PUBLIC"],
+)
+
 constraint(
     name = "exec_mode",
     default = "prefer-local",
