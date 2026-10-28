@@ -70,15 +70,6 @@ _prelude_reexport = struct(
 def _is_none(x) -> bool:
     return x == None
 
-def _is_autodeps_magicmock(x) -> bool:
-    """
-    autodeps "parsing" of buck macros is pathetically broken and does not handle
-    tons and tons of completely legitimate starlark.
-    For cases where we have buck macros that sadly have to run in autodeps, this
-    is a nice escape hatch until autodeps gets its act together.
-    """
-    return repr(x).startswith("<MagicMock id=")
-
 types = struct(
     # primitive types
     bool = bool,
@@ -115,6 +106,5 @@ types = struct(
     lint_noop = _lint_noop,
     # runtime type checking
     is_none = _is_none,
-    is_autodeps_magicmock = _is_autodeps_magicmock,
     **structs.to_dict(_prelude_reexport),
 )
