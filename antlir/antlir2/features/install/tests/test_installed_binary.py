@@ -97,9 +97,19 @@ class TestInstalledBinary(unittest.TestCase):
         path = (
             "/usr/local/libexec/python_outplace/antlir_antlir2_features_install_tests/"
         )
-        par = os.path.join(path, "true-py-outplace#par")
+        release = os.path.join(path, "true-py#outplace", "0")
+        par = os.path.join(release, "true-py-outplace#par")
         self.assertTrue(os.path.isfile(par))
         self.assertFalse(os.path.islink(par))
-        self.assertTrue(os.path.isdir(os.path.join(path, "true-py#link-tree")))
-        self.assertTrue(os.path.islink("/usr/bin/true-py"))
+        self.assertTrue(os.path.isdir(os.path.join(release, "true-py#link-tree")))
+        self.assertEqual(
+            os.readlink(os.path.join(path, "true-py#outplace/~current")), "0"
+        )
+        self.assertEqual(
+            os.readlink(os.path.join(path, "true-py-outplace#par")),
+            "true-py#outplace/~current/true-py-outplace#par",
+        )
+        self.assertEqual(
+            os.readlink("/usr/bin/true-py"), os.path.join(path, "true-py-outplace#par")
+        )
         self.assertEqual(os.path.realpath("/usr/bin/true-py"), par)

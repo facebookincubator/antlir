@@ -21,8 +21,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     package = ctx.actions.declare_output(output_name, has_content_based_path = False)
 
     disable_build_id_links = ctx.attrs.disable_build_id_links
-    python_outplace_link_trees = layer[LayerInfo].supplements.get("python_outplace", [])
-    if python_outplace_link_trees:
+    python_outplace_dirs = layer[LayerInfo].supplements.get("python_outplace", [])
+    if python_outplace_dirs:
         # Some Python outplace binaries ship prebuilt ELFs (like libnuma) at per-binary
         # paths, so their /usr/lib/.build-id links conflict between RPMs.
         disable_build_id_links = True
@@ -45,7 +45,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "extra_files": ctx.attrs.extra_files,
         "license": ctx.attrs.license,
         "os": ctx.attrs.os,
-        "owned_dir_trees": python_outplace_link_trees,
+        "owned_dir_trees": python_outplace_dirs,
         "packager": ctx.attrs.packager,
         "post_install_script": ctx.attrs.post_install_script,
         "post_uninstall_script": ctx.attrs.post_uninstall_script,

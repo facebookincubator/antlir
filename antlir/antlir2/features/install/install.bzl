@@ -211,9 +211,17 @@ def install(
                 "xattrs": xattrs,
                 "_binaries_require_repo": binaries_require_repo.select_value,
                 "_is_macos": on_macos,
+                "_version_release": _version_release(),
             },
         ),
     )
+
+def _version_release() -> str | None:
+    version = native.read_config("build_info", "package_version")
+    release = native.read_config("build_info", "package_release")
+    if not version or not release:
+        return None
+    return "{}-{}".format(version, release)
 
 def install_text(
     *,
@@ -270,11 +278,11 @@ implicit_resources_record = record(
     resources_dir_name = field(str),
 )
 
-# package.rpm reads this to disable build-id links and own the link-tree dirs
-def _mark_python_outplace(link_tree: str, supplements: dict[str, typing.Any]) -> dict[str, typing.Any]:
-    link_trees = supplements.get("python_outplace", [])
-    if link_tree not in link_trees:
-        supplements["python_outplace"] = link_trees + [link_tree]
+# package.rpm reads this to disable build-id links and own the outplace dirs
+def _mark_python_outplace(container: str, supplements: dict[str, typing.Any]) -> dict[str, typing.Any]:
+    containers = supplements.get("python_outplace", [])
+    if container not in containers:
+        supplements["python_outplace"] = containers + [container]
     return supplements
 
 def _python_outplace_features(
@@ -318,13 +326,17 @@ def _python_outplace_features(
     )
     outplace_base = paths.join(outplace_package_base, installed_name)
 
+    # A release dir per version so upgrades never write into a running tree.
+    container = outplace_base + "#outplace"
+    release = ctx.attrs._version_release or "0"
+    release_dir = paths.join(container, release)
+
     # This will fail analysis if src does not have an outplace subtarget. The
     # link-tree is installed as a sibling of the par under its original
     # basename so the par's baked-in `LINKTREEDIR` resolves correctly.
-    link_tree_dst = paths.join(outplace_package_base, link_tree_dir_name)
     srcs = {
-        link_tree_dst: link_tree,
-        outplace_base + "-outplace#par": par,
+        paths.join(release_dir, link_tree_dir_name): link_tree,
+        paths.join(release_dir, installed_name + "-outplace#par"): par,
     }
     features = [
         FeatureAnalysis(
@@ -348,7 +360,7 @@ def _python_outplace_features(
             required_artifacts = required_artifacts,
             required_run_infos = required_run_infos,
             plugin = ctx.attrs.plugin,
-            mutate_supplements = partial(_mark_python_outplace, link_tree_dst),
+            mutate_supplements = partial(_mark_python_outplace, container),
         )
         for dst, src in srcs.items()
     ]
@@ -366,13 +378,36 @@ def _python_outplace_features(
                 plugin = ctx.attrs._ensure_dir_exists_plugin,
             )
             for dir in [
-                outplace_base,
+                release_dir,
+                container,
                 outplace_package_base,
                 "/usr/local/libexec",
                 "/usr/local/libexec/python_outplace",
             ]
         ]
         + [
+            FeatureAnalysis(
+                feature_type = "ensure_dir_symlink",
+                data = struct(
+                    link = paths.join(container, "~current"),
+                    target = release,
+                    is_directory = True,
+                    unsafe_dangling_symlink = False,
+                ),
+                build_phase = BuildPhase(ctx.attrs.build_phase),
+                plugin = ctx.attrs._symlink_plugin,
+            ),
+            FeatureAnalysis(
+                feature_type = "ensure_file_symlink",
+                data = struct(
+                    link = outplace_base + "-outplace#par",
+                    target = paths.join(installed_name + "#outplace", "~current", installed_name + "-outplace#par"),
+                    is_directory = False,
+                    unsafe_dangling_symlink = False,
+                ),
+                build_phase = BuildPhase(ctx.attrs.build_phase),
+                plugin = ctx.attrs._symlink_plugin,
+            ),
             FeatureAnalysis(
                 feature_type = "ensure_file_symlink",
                 data = struct(
@@ -705,5 +740,6 @@ install_rule = new_feature_rule(
         "_rpm_plugin": attrs.option(attrs.label(), default = None),
         "_rpm_resolve": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
         "_symlink_plugin": attrs.option(attrs.label(), default = None),
+        "_version_release": attrs.option(attrs.string(), default = None),
     },
 )
