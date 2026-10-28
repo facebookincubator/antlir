@@ -270,9 +270,11 @@ implicit_resources_record = record(
     resources_dir_name = field(str),
 )
 
-# package.rpm reads this to disable build-id links
-def _mark_python_outplace(supplements: dict[str, typing.Any]) -> dict[str, typing.Any]:
-    supplements["python_outplace"] = True
+# package.rpm reads this to disable build-id links and own the link-tree dirs
+def _mark_python_outplace(link_tree: str, supplements: dict[str, typing.Any]) -> dict[str, typing.Any]:
+    link_trees = supplements.get("python_outplace", [])
+    if link_tree not in link_trees:
+        supplements["python_outplace"] = link_trees + [link_tree]
     return supplements
 
 def _python_outplace_features(
@@ -319,8 +321,9 @@ def _python_outplace_features(
     # This will fail analysis if src does not have an outplace subtarget. The
     # link-tree is installed as a sibling of the par under its original
     # basename so the par's baked-in `LINKTREEDIR` resolves correctly.
+    link_tree_dst = paths.join(outplace_package_base, link_tree_dir_name)
     srcs = {
-        paths.join(outplace_package_base, link_tree_dir_name): link_tree,
+        link_tree_dst: link_tree,
         outplace_base + "-outplace#par": par,
     }
     features = [
@@ -345,7 +348,7 @@ def _python_outplace_features(
             required_artifacts = required_artifacts,
             required_run_infos = required_run_infos,
             plugin = ctx.attrs.plugin,
-            mutate_supplements = _mark_python_outplace,
+            mutate_supplements = partial(_mark_python_outplace, link_tree_dst),
         )
         for dst, src in srcs.items()
     ]

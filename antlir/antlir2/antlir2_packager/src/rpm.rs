@@ -77,6 +77,8 @@ pub struct Rpm {
     #[serde(default)]
     dirs: Vec<String>,
     #[serde(default)]
+    owned_dir_trees: Vec<PathBuf>,
+    #[serde(default)]
     python_bytecompile: bool,
     #[serde(default)]
     autoreq: bool,
@@ -293,9 +295,6 @@ AutoProv: {autoprov}
             spec.push_str("%files\n");
             for entry in walkdir::WalkDir::new(layer) {
                 let entry = entry.context("while walking layer")?;
-                if entry.file_type().is_dir() {
-                    continue;
-                }
                 let relpath = Path::new("/").join(
                     entry
                         .path()
@@ -305,7 +304,16 @@ AutoProv: {autoprov}
                 if relpath == Path::new("/") {
                     continue;
                 }
-                if !entry.file_type().is_symlink() {
+                let is_dir = entry.file_type().is_dir();
+                if is_dir
+                    && !self
+                        .owned_dir_trees
+                        .iter()
+                        .any(|tree| relpath.starts_with(tree))
+                {
+                    continue;
+                }
+                if !is_dir && !entry.file_type().is_symlink() {
                     let f = std::fs::File::open(entry.path())?;
                     #[cfg(feature = "libcap")]
                     if let Some(caps) = f.get_capabilities()? {
@@ -327,6 +335,9 @@ AutoProv: {autoprov}
                 spec.push_str(
                     format!("%attr(-, {}, {}) ", user_name.name, group_name.name).as_str(),
                 );
+                if is_dir {
+                    spec.push_str("%dir ");
+                }
 
                 let mut path_str = relpath
                     .to_str()
