@@ -14,6 +14,7 @@ use std::io::BufRead;
 use std::io::BufWriter;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Component;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -629,6 +630,28 @@ fn main() -> Result<()> {
     }
 }
 
+/// Where a library found relative to the binary is copied under `libs_dir`.
+///
+/// `relpath` comes from an `$ORIGIN`-relative RPATH and can contain any
+/// number of `..` (dev-mode binaries point back into `buck-out` with several).
+/// Each `..` becomes a `__parent` component so the copy always stays inside
+/// `libs_dir`, which is all that survives when the action runs remotely.
+fn relative_lib_src_relpath(relpath: &Path) -> PathBuf {
+    debug_assert!(
+        relpath.is_relative(),
+        "an absolute relpath would replace the __relative base: {}",
+        relpath.display()
+    );
+    let inner: PathBuf = relpath
+        .components()
+        .map(|c| match c {
+            Component::ParentDir => OsStr::new("__parent"),
+            other => other.as_os_str(),
+        })
+        .collect();
+    Path::new("__relative").join(inner)
+}
+
 fn buck_binary(args: BuckBinaryArgs, rootless: Option<&Rootless>) -> Result<()> {
     let default_interp = default_interpreter(args.target_arch);
     let src = args.src.canonicalize()?;
@@ -657,8 +680,7 @@ fn buck_binary(args: BuckBinaryArgs, rootless: Option<&Rootless>) -> Result<()> 
                         relpath = relpath.display().to_string(),
                         "installing library at path relative to dst"
                     );
-                    let src_relpath =
-                        Path::new("__relative").join(relpath.strip_prefix("..").unwrap_or(relpath));
+                    let src_relpath = relative_lib_src_relpath(relpath);
                     let abs_dst = args
                         .dst
                         .parent()
@@ -855,6 +877,44 @@ fn from_layer(args: FromLayerArgs, rootless: Option<&Rootless>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_relative_lib_src_relpath_stays_inside_libs_dir() {
+        let cases = [
+            ("lib/libfoo.so", "__relative/lib/libfoo.so"),
+            ("../lib/libfoo.so", "__relative/__parent/lib/libfoo.so"),
+            (
+                "../../../../../cfg/pkg/__bin__/__bin-tmp__shared_libs_symlink_tree/libfoo.so",
+                "__relative/__parent/__parent/__parent/__parent/__parent/cfg/pkg/__bin__/__bin-tmp__shared_libs_symlink_tree/libfoo.so",
+            ),
+            // Transitive deps keep their lexical $ORIGIN form, so `..` can sit mid-path.
+            (
+                "../a/../b/libfoo.so",
+                "__relative/__parent/a/__parent/b/libfoo.so",
+            ),
+        ];
+        for (relpath, expected) in cases {
+            assert_eq!(
+                relative_lib_src_relpath(Path::new(relpath)),
+                Path::new(expected),
+                "for {relpath}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_relative_lib_src_relpath_keeps_different_depths_apart() {
+        for (a, b) in [
+            ("x/libfoo.so", "../x/libfoo.so"),
+            ("../x/libfoo.so", "../../x/libfoo.so"),
+        ] {
+            assert_ne!(
+                relative_lib_src_relpath(Path::new(a)),
+                relative_lib_src_relpath(Path::new(b)),
+                "{a} and {b} must not overwrite each other in libs_dir"
+            );
+        }
+    }
 
     fn make_entry(
         soname: &str,
