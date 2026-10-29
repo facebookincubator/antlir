@@ -29,9 +29,41 @@ DebSuiteInfo = provider(
         # downloading from archive_url
         "debs_dir": provider_field(Artifact | None, default = None),
         "distribution": str,
+        # Resolver for a single .deb: `(actions, pkg) -> Artifact`, where
+        # `pkg` is a resolved package dict from the apt transaction. Backed
+        # by `_suite_get_deb`; consumers call this instead of branching on
+        # how the suite exports its .debs.
+        "get_deb": provider_field(typing.Any),
         "suite_baseurl": str,
     }
 )
+
+def _suite_get_deb(
+    actions: AnalysisActions,
+    archive_url: str,
+    pkg: dict[str, typing.Any],
+    metadata_run_info: RunInfo,
+) -> Artifact:
+    """Backing implementation for the `get_deb` provider field: download a
+    single .deb for a resolved apt transaction package with checksum
+    verification.
+    """
+    filename = pkg["filename"]
+    sha256 = pkg.get("sha256") or None
+    sha512 = pkg.get("sha512") or None
+    checksums = {}
+    if sha256:
+        checksums["sha256"] = sha256
+    elif sha512:
+        checksums["sha512"] = sha512
+    return download(
+        actions = actions,
+        url = archive_url + filename,
+        out_name = filename,
+        checksums = checksums,
+        allow_nondeterministic_downloads = not checksums,
+        metadata_run_info = metadata_run_info,
+    )
 
 def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     archive_url = ctx.attrs.archive_url
@@ -232,6 +264,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             base_variant = ctx.attrs.base_variant,
             distribution = distribution,
             components = components,
+            get_deb = lambda actions, pkg, _md = ctx.attrs._metadata_bin[RunInfo]: _suite_get_deb(actions, archive_url, pkg, _md),
             suite_baseurl = suite_baseurl,
         ),
         SnapshottableInfo(

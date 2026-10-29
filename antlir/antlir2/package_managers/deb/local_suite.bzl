@@ -38,6 +38,15 @@ def _local_suite_impl(ctx: AnalysisContext) -> list[Provider]:
             components = [],
             debs_dir = debs_dir,
             distribution = distribution,
+            # Local suites serve every deb from `pool`, keyed by filename –
+            # the same keys the apt driver requests.
+            get_deb = lambda actions, pkg: (
+                pool[pkg["filename"]]
+                if pkg["filename"] in pool
+                else fail(
+                    "package '{}' is not built by this local suite".format(pkg["filename"]),
+                )
+            ),
             suite_baseurl = "",
         ),
     ]

@@ -126,7 +126,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 plan = ctx.attrs.plan,
                 resolve_cmd = ctx.attrs.resolve[RunInfo],
                 suite = ctx.attrs.suite,
-                metadata = ctx.attrs._metadata[RunInfo],
             ),
         ),
     ]

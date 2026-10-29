@@ -15,7 +15,6 @@ load(
     "feature_record",  # @unused Used as type
 )
 load("//antlir/antlir2/package_managers/deb:suite.bzl", "DebSuiteInfo")
-load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 
 def _plan_fn(*, ctx: AnalysisContext, identifier: str, feature: feature_record | typing.Any, resolve_cmd: RunInfo, **kwargs) -> list[PlanInfo]:
     # rootless is always passed by layer.bzl but not needed since we never
@@ -62,7 +61,6 @@ def plan(
     resolve_cmd: RunInfo,
     plan: Dependency,
     suite: Dependency,
-    metadata: RunInfo,
     parent_dpkg_status: Artifact | None = None,
 ) -> struct:
     tx = ctx.actions.declare_output(identifier, "apt/transaction.json", has_content_based_path = False)
@@ -92,16 +90,16 @@ def plan(
     if not debs_dir:
         debs_dir = ctx.actions.declare_output(identifier, "apt/debs", dir = True, has_content_based_path = False)
 
-        # Dynamically download the resolved .deb files after the plan action
-        # produces the transaction JSON. This uses Buck's download_file for
-        # hermetic, cached downloads with integrity verification (falling back
-        # to curl + metadata verification for sha512-only repositories).
+        # Dynamically materialize the resolved .deb files after the plan
+        # action produces the transaction JSON. For snapshotted suites the
+        # .debs come straight from the suite's member artifacts (downloaded
+        # once on the repo target and shared by every image) instead of
+        # separate per-image downloads.
         ctx.actions.dynamic_output_new(
             _download_debs(
-                archive_url = suite[DebSuiteInfo].archive_url,
+                suite = suite[DebSuiteInfo],
                 tx = tx,
                 debs_dir = debs_dir.as_output(),
-                metadata = metadata,
             ),
         )
 
@@ -124,50 +122,27 @@ def plan(
         dpkg_status_out = dpkg_status_out,
     )
 
-def _download_debs_impl(actions: AnalysisActions, archive_url: str, tx: ArtifactValue, debs_dir: OutputArtifact, metadata: RunInfo) -> list[Provider]:
+def _download_debs_impl(actions: AnalysisActions, suite: DebSuiteInfo, tx: ArtifactValue, debs_dir: OutputArtifact) -> list[Provider]:
     transaction = tx.read_json()
-    install_pkgs = transaction.get("install", [])
-
     debs_map = {}
-    for pkg_info in install_pkgs:
+    for pkg_info in transaction.get("install", []):
         pkg = pkg_info["package"]
-        filename = pkg["filename"]
-        sha256 = pkg.get("sha256") or None
-        sha512 = pkg.get("sha512") or None
-        if not filename:
+        if not pkg["filename"]:
             continue
-
-        url = archive_url + filename
-        checksums = {}
-        if sha256:
-            checksums["sha256"] = sha256
-        elif sha512:
-            checksums["sha512"] = sha512
-
-        deb_artifact = download(
-            actions = actions,
-            url = url,
-            out_name = filename,
-            checksums = checksums,
-            allow_nondeterministic_downloads = not checksums,
-            metadata_run_info = metadata,
-        )
-        debs_map[filename] = deb_artifact
-
+        debs_map[pkg["filename"]] = suite.get_deb(actions, pkg)
     actions.symlinked_dir(debs_dir, debs_map)
     return []
 
 _download_debs = dynamic_actions(
     impl = _download_debs_impl,
     attrs = {
-        "archive_url": dynattrs.value(str),
         "debs_dir": dynattrs.output(),
-        "metadata": dynattrs.value(RunInfo),
+        "suite": dynattrs.value(DebSuiteInfo),
         "tx": dynattrs.artifact_value(),
     },
 )
 
-def apt_planner(*, plan: Dependency, resolve_cmd: RunInfo, suite: Dependency, metadata: RunInfo) -> Planner:
+def apt_planner(*, plan: Dependency, resolve_cmd: RunInfo, suite: Dependency) -> Planner:
     return Planner(
         fn = _plan_fn,
         parent_layer_contents = False,
@@ -177,7 +152,6 @@ def apt_planner(*, plan: Dependency, resolve_cmd: RunInfo, suite: Dependency, me
         flavor = False,
         target_arch = True,
         kwargs = {
-            "metadata": metadata,
             "plan": plan,
             "resolve_cmd": resolve_cmd,
             "suite": suite,
