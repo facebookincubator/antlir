@@ -6,13 +6,21 @@
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 load("//antlir/antlir2/package_managers/snapshot:download_from_index.bzl", "download_from_index")
-load("//antlir/antlir2/package_managers/snapshot:download_packages_subtargets.bzl", "download_packages_subtargets")
+load(
+    "//antlir/antlir2/package_managers/snapshot:download_packages_subtargets.bzl",
+    "download_members",
+    "download_packages_subtargets",
+)
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":repodata.bzl", "download_repodata")
 
 YumRepoInfo = provider(
     fields = {
         "baseurl": str,
+        # Member .rpm artifacts keyed by `{name}_{version}_{arch}`. This is
+        # the view for the current analysis arch: only members for this
+        # arch (plus arch-independent ones like `noarch`) are present.
+        "members": dict[str, Artifact],
         "packages_json": Artifact,
     }
 )
@@ -128,18 +136,32 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
         },
     )
 
-    # Use the renamed download_packages_subtargets which uses the checksum index
-    # and always uses content based paths.
-    pkg_outputs = download_packages_subtargets(
+    # Package aliases expose individual .rpms by name (first match wins),
+    # using the checksum index with content based paths.
+    aliases = sorted({a: True for a in ctx.attrs.package_subtargets + ctx.attrs.package_aliases_subtargets}.keys())
+    alias_outputs = download_packages_subtargets(
         actions = ctx.actions,
         packages_jsons = {"packages": repodata.packages_json},
         index_json = index_json,
         baseurl = baseurl,
-        names = ctx.attrs.package_subtargets,
+        names = aliases,
         extension = ".rpm",
         metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
     )
-    pkg_subtargets = {name + ".rpm": [DefaultInfo(out)] for name, out in pkg_outputs.items()}
+    alias_subtargets = {name + ".rpm": [DefaultInfo(out)] for name, out in alias_outputs.items()}
+
+    # Members expose every package in the repo by `{name}_{version}_{arch}`.
+    # This analysis only sees one arch's baseurl, so members for other repo
+    # arches are filtered out (the `members` attr itself still carries the
+    # global list so snapshots round-trip identically).
+    member_outputs = download_members(
+        actions = ctx.actions,
+        packages_jsons = {"packages": repodata.packages_json},
+        index_json = index_json,
+        baseurl = baseurl,
+        nevras = ctx.attrs.members,
+    )
+    member_subtargets = {nevra: [DefaultInfo(out)] for nevra, out in member_outputs.items()}
 
     return [
         DefaultInfo(
@@ -151,11 +173,13 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
                         }
                     )
                 ],
-                "packages": [DefaultInfo(sub_targets = pkg_subtargets)],
+                "package_aliases_subtargets": [DefaultInfo(sub_targets = alias_subtargets)],
+                "packages": [DefaultInfo(sub_targets = member_subtargets)],
             }
         ),
         YumRepoInfo(
             baseurl = baseurl,
+            members = member_outputs,
             packages_json = repodata.packages_json,
         ),
         SnapshottableInfo(
@@ -163,7 +187,7 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
             packages_indexes = [repodata.packages_json],
             packages_baseurl = baseurl,
             arches = ctx.attrs.arches,
-            package_subtargets = ctx.attrs.package_subtargets,
+            package_subtargets = aliases,
             snapshot_storage = ctx.attrs.snapshot_storage,
             snapshot_buck_file = ctx.attrs.snapshot_buck_file,
         ),
@@ -184,7 +208,13 @@ _repo = rule(
             default = {},
             doc = "Checksum for the index file (repomd.xml) that contains sha1+sha256 of other blobs",
         ),
-        "package_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as subtargets"),
+        "members": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "`{name}_{version}_{arch}` identifiers of every package in the repo. The snapshot binary emits this; the rule downloads all applicable members (via the index) and exposes them as `packages` subtargets and in `YumRepoInfo`. Only members for the current analysis arch are materialized.",
+        ),
+        "package_aliases_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as `package_aliases_subtargets`"),
+        "package_subtargets": attrs.list(attrs.string(), default = [], doc = "Deprecated alias for `package_aliases_subtargets`"),
         "snapshot_buck_file": attrs.option(
             attrs.string(),
             default = None,

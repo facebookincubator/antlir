@@ -6,7 +6,7 @@
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 load("//antlir/antlir2/package_managers/snapshot:download_from_index.bzl", "download_from_index")
-load("//antlir/antlir2/package_managers/snapshot:download_packages_subtargets.bzl", "download_packages_subtargets")
+load("//antlir/antlir2/package_managers/snapshot:download_packages_subtargets.bzl", "download_members", "download_packages_subtargets")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":packages_index.bzl", "download_component_package_indexes")
 
@@ -34,6 +34,9 @@ DebSuiteInfo = provider(
         # by `_suite_get_deb`; consumers call this instead of branching on
         # how the suite exports its .debs.
         "get_deb": provider_field(typing.Any),
+        # Member .deb artifacts keyed by `{name}_{version}_{arch}`,
+        # covering every package in the suite.
+        "members": dict[str, Artifact],
         "suite_baseurl": str,
     }
 )
@@ -41,14 +44,29 @@ DebSuiteInfo = provider(
 def _suite_get_deb(
     actions: AnalysisActions,
     archive_url: str,
+    members: dict[str, Artifact],
     pkg: dict[str, typing.Any],
     metadata_run_info: RunInfo,
 ) -> Artifact:
-    """Backing implementation for the `get_deb` provider field: download a
-    single .deb for a resolved apt transaction package with checksum
-    verification.
+    """Backing implementation for the `get_deb` provider field: resolve a
+    single .deb for a resolved apt transaction package.
+
+    Suites with `members` reuse those artifacts (registered once on the
+    repo target and shared by every image); suites without them download
+    inline with checksum verification.
     """
     filename = pkg["filename"]
+    if members:
+        nevra = "{}_{}_{}".format(pkg["name"], pkg["version"], pkg["arch"])
+        member = members.get(nevra)
+        if member == None:
+            fail(
+                "package '{}' (filename '{}') is not in the suite members, the suite snapshot is stale".format(
+                    nevra,
+                    filename,
+                )
+            )
+        return member
     sha256 = pkg.get("sha256") or None
     sha512 = pkg.get("sha512") or None
     checksums = {}
@@ -229,16 +247,32 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
 
     all_packages_indexes = [p.json for arch_indexes in per_arch_indexes.values() for p in arch_indexes.values()]
 
-    pkg_outputs = download_packages_subtargets(
+    # Package aliases expose individual .debs by name (first match wins),
+    # using the checksum index with content based paths.
+    aliases = sorted({a: True for a in ctx.attrs.package_subtargets + ctx.attrs.package_aliases_subtargets}.keys())
+    alias_outputs = download_packages_subtargets(
         actions = ctx.actions,
         packages_jsons = {arch + "/" + cname: p.json for arch, arch_indexes in per_arch_indexes.items() for cname, p in arch_indexes.items()},
         index_json = index_json if ctx.attrs.index_checksums else None,
         baseurl = archive_url,
-        names = ctx.attrs.package_subtargets,
+        names = aliases,
         extension = ".deb",
         metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
     )
-    pkg_subtargets = {name + ".deb": [DefaultInfo(out)] for name, out in pkg_outputs.items()}
+    alias_subtargets = {name + ".deb": [DefaultInfo(out)] for name, out in alias_outputs.items()}
+
+    # Members expose every package in the suite by
+    # `{name}_{version}_{arch}`. Unlike yum, one suite analysis covers all
+    # architectures against a single archive url, so every member is
+    # downloadable here.
+    member_outputs = download_members(
+        actions = ctx.actions,
+        packages_jsons = {arch + "/" + cname: p.json for arch, arch_indexes in per_arch_indexes.items() for cname, p in arch_indexes.items()},
+        index_json = index_json if ctx.attrs.index_checksums else None,
+        baseurl = archive_url,
+        nevras = ctx.attrs.members,
+    )
+    member_subtargets = {nevra: [DefaultInfo(out)] for nevra, out in member_outputs.items()}
 
     return [
         DefaultInfo(
@@ -255,7 +289,8 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
                         }
                     )
                 ],
-                "packages": [DefaultInfo(sub_targets = pkg_subtargets)],
+                "package_aliases_subtargets": [DefaultInfo(sub_targets = alias_subtargets)],
+                "packages": [DefaultInfo(sub_targets = member_subtargets)],
             }
         ),
         DebSuiteInfo(
@@ -264,7 +299,8 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             base_variant = ctx.attrs.base_variant,
             distribution = distribution,
             components = components,
-            get_deb = lambda actions, pkg, _md = ctx.attrs._metadata_bin[RunInfo]: _suite_get_deb(actions, archive_url, pkg, _md),
+            get_deb = lambda actions, pkg, _md = ctx.attrs._metadata_bin[RunInfo]: _suite_get_deb(actions, archive_url, member_outputs, pkg, _md),
+            members = member_outputs,
             suite_baseurl = suite_baseurl,
         ),
         SnapshottableInfo(
@@ -272,7 +308,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             packages_indexes = all_packages_indexes,
             packages_baseurl = archive_url,
             arches = ctx.attrs.architectures,
-            package_subtargets = ctx.attrs.package_subtargets,
+            package_subtargets = aliases,
             snapshot_storage = ctx.attrs.snapshot_storage,
             snapshot_buck_file = ctx.attrs.snapshot_buck_file,
         ),
@@ -302,7 +338,13 @@ _suite = rule(
             default = {},
             doc = "Checksum for the index file (InRelease) that contains sha1+sha256 of other blobs",
         ),
-        "package_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as subtargets"),
+        "members": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "Full `{name}_{version}_{arch}` NEVRAs: arch-independent members plus (via select) single-arch members for the current arch. The snapshot binary emits this as a plain list plus a per-arch select(); the rule downloads all members (via the index) and exposes them as `packages` subtargets and in `DebSuiteInfo`.",
+        ),
+        "package_aliases_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as `package_aliases_subtargets`"),
+        "package_subtargets": attrs.list(attrs.string(), default = [], doc = "Deprecated alias for `package_aliases_subtargets`"),
         "snapshot_buck_file": attrs.option(
             attrs.string(),
             default = None,

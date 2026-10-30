@@ -20,6 +20,7 @@ use find_root::find_repo_root;
 use futures::StreamExt as _;
 use serde::Deserialize;
 use snapshot_common::Checksums;
+use snapshot_common::Package;
 use tokio::process::Command;
 use tracing::info;
 
@@ -192,7 +193,13 @@ impl Snapshot {
                         arch_results.push(ar);
                         overall_pb.inc(1);
                     }
-                    let dt = generate_yum_target(target, &arch_results)?;
+                    let index_paths: Vec<PathBuf> = target
+                        .arches
+                        .iter()
+                        .flat_map(|a| a.packages_indexes.clone())
+                        .collect();
+                    let members = read_member_nevras(&project_root, &index_paths).await?;
+                    let dt = generate_yum_target(target, &arch_results, members)?;
                     described.push(dt);
                 }
                 RepoKind::Deb => {
@@ -202,7 +209,9 @@ impl Snapshot {
                     let deb_result =
                         snapshot_deb_target(target, &project_root, fb, self.concurrency).await?;
                     suite_pb.finish_with_message(format!("Snapshotted {}", target.target_name));
-                    let dt = generate_deb_target(target, &deb_result)?;
+                    let members =
+                        read_member_nevras(&project_root, &target.packages_indexes).await?;
+                    let dt = generate_deb_target(target, &deb_result, members)?;
                     described.push(dt);
                     overall_pb.inc(1);
                 }
@@ -591,6 +600,43 @@ async fn read_all_entries(project_root: &Path, paths: &[PathBuf]) -> Result<Vec<
     Ok(per_index.into_iter().flatten().collect())
 }
 
+/// Read every packages index and return member NEVRAs mapped to their
+/// architecture (from [`Package::architecture`], never parsed back out
+/// of the NEVRA string) for the generated `members` attr (see
+/// [`Package::nevra`] – the Starlark rule side recomputes the same
+/// strings to map members back to files).
+async fn read_member_nevras(
+    project_root: &Path,
+    paths: &[PathBuf],
+) -> Result<BTreeMap<String, String>> {
+    let project_root_owned = project_root.to_owned();
+    let paths_owned = paths.to_owned();
+    tokio::task::spawn_blocking(move || -> Result<BTreeMap<String, String>> {
+        use cap_std::fs::Dir;
+        let dir = Dir::open_ambient_dir(&project_root_owned, cap_std::ambient_authority())
+            .with_context(|| {
+                format!(
+                    "failed to open project root {}",
+                    project_root_owned.display()
+                )
+            })?;
+        let mut members = BTreeMap::new();
+        for rel in &paths_owned {
+            let contents = dir
+                .read_to_string(rel)
+                .with_context(|| format!("failed to read {}", rel.display()))?;
+            let parsed: Vec<Package> = serde_json::from_str(&contents)
+                .with_context(|| format!("failed to parse {}", rel.display()))?;
+            for pkg in &parsed {
+                members.insert(pkg.nevra(), pkg.architecture.clone());
+            }
+        }
+        Ok(members)
+    })
+    .await
+    .context("spawn_blocking failed")?
+}
+
 fn common_parts(
     target: &TargetConfig,
 ) -> Result<(
@@ -604,7 +650,7 @@ fn common_parts(
         .into_iter()
         .map(|(k, v)| (k.to_owned(), v))
         .collect();
-    let package_subtargets = target
+    let package_aliases_subtargets = target
         .package_subtargets
         .iter()
         .cloned()
@@ -616,12 +662,13 @@ fn common_parts(
         ),
         None => None,
     };
-    Ok((storage_map, package_subtargets, snapshot_source))
+    Ok((storage_map, package_aliases_subtargets, snapshot_source))
 }
 
 fn generate_yum_target(
     target: &TargetConfig,
     arch_results: &[ArchResult],
+    members: BTreeMap<String, String>,
 ) -> Result<DescribedTarget> {
     if arch_results.is_empty() {
         bail!("no architectures found for target {}", target.target_name);
@@ -646,13 +693,14 @@ fn generate_yum_target(
         .collect();
     let index_checksums = make_repomd_checksums(&entries)?;
 
-    let (storage_map, package_subtargets, snapshot_source) = common_parts(target)?;
+    let (storage_map, package_aliases_subtargets, snapshot_source) = common_parts(target)?;
 
     let repo = YumRepo {
         name: target.target_name.clone(),
         arches: arch_names,
         baseurl,
-        package_subtargets,
+        members,
+        package_aliases_subtargets,
         index_checksums,
         snapshot_source,
         snapshot_storage: storage_map,
@@ -665,7 +713,11 @@ fn generate_yum_target(
     })
 }
 
-fn generate_deb_target(target: &TargetConfig, result: &DebResult) -> Result<DescribedTarget> {
+fn generate_deb_target(
+    target: &TargetConfig,
+    result: &DebResult,
+    members: BTreeMap<String, String>,
+) -> Result<DescribedTarget> {
     let tree_base_url = target
         .snapshot_storage
         .tree_base_url_with_prefix(&target.tree_prefix);
@@ -677,7 +729,7 @@ fn generate_deb_target(target: &TargetConfig, result: &DebResult) -> Result<Desc
         .context("deb target missing distribution")?
         .to_owned();
 
-    let (storage_map, package_subtargets, snapshot_source) = common_parts(target)?;
+    let (storage_map, package_aliases_subtargets, snapshot_source) = common_parts(target)?;
 
     let suite = DebSuite {
         name: target.target_name.clone(),
@@ -686,7 +738,8 @@ fn generate_deb_target(target: &TargetConfig, result: &DebResult) -> Result<Desc
         components: target.components.clone(),
         distribution,
         index_checksums: result.index_checksums.clone(),
-        package_subtargets,
+        members,
+        package_aliases_subtargets,
         snapshot_source,
         snapshot_storage: storage_map,
         visibility: vec!["PUBLIC".to_owned()],

@@ -47,6 +47,7 @@ def _local_suite_impl(ctx: AnalysisContext) -> list[Provider]:
                     "package '{}' is not built by this local suite".format(pkg["filename"]),
                 )
             ),
+            members = {},
             suite_baseurl = "",
         ),
     ]

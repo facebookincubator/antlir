@@ -36,8 +36,20 @@ pub struct YumRepo {
     pub name: String,
     pub arches: Vec<String>,
     pub baseurl: String,
-    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
-    pub package_subtargets: BTreeSet<String>,
+    /// `{name}_{version}_{arch}` identifiers of every package in the repo.
+    /// The `repo()` rule downloads all of these (via the index) and
+    /// exposes them as `packages` subtargets and in `YumRepoInfo`.
+    /// Rendered manually (see `members_starlark`), so serde skips it.
+    #[serde(default, skip_serializing)]
+    pub members: BTreeMap<String, String>,
+    /// Package names exposed as individually-buildable
+    /// `package_aliases_subtargets` (resolved by name, first match wins).
+    #[serde(
+        default,
+        skip_serializing_if = "BTreeSet::is_empty",
+        alias = "package_subtargets"
+    )]
+    pub package_aliases_subtargets: BTreeSet<String>,
     #[serde(
         rename = "index_checksums",
         alias = "repomd_checksums",
@@ -50,7 +62,99 @@ pub struct YumRepo {
     pub visibility: Vec<String>,
 }
 
-buck_targets::impl_to_starlark_via_serde!(YumRepo);
+/// Architectures whose packages are identical modulo the arch suffix.
+/// Members with one of these arches are arch-independent and always
+/// belong in the plain list (as full NEVRAs).
+const ARCH_INDEPENDENT: [&str; 3] = ["all", "any", "noarch"];
+
+fn cpu_constraint(arch: &str) -> Option<Label> {
+    match arch {
+        "amd64" | "x86_64" => Label::new("ovr_config//cpu:x86_64").ok(),
+        "arm64" | "aarch64" => Label::new("ovr_config//cpu:arm64").ok(),
+        _ => None,
+    }
+}
+
+/// Render the `members` attr value as `[...] + select({...})`:
+/// arch-independent members (e.g. `_all`, `_noarch`) form the plain
+/// list, and every binary-arch member goes into a `select()` branch
+/// for its `ovr_config//cpu` constraint as a full NEVRA. All grouping
+/// decisions are made here; the Starlark rules consume the resolved
+/// list verbatim. Falls back to a plain list when a select is
+/// impossible (single-arch repos, unknown arches).
+fn members_starlark(
+    members: &BTreeMap<String, String>,
+) -> Result<Option<String>, buck_targets::Error> {
+    if members.is_empty() {
+        return Ok(None);
+    }
+    let render_list = |items: &BTreeSet<String>| -> Result<String, buck_targets::Error> {
+        Ok(buck_targets::serde_starlark::to_string(&items)?
+            .trim_end()
+            .to_owned())
+    };
+    let binary_arches: BTreeSet<&str> = members
+        .values()
+        .map(|a| a.as_str())
+        .filter(|a| !ARCH_INDEPENDENT.contains(a))
+        .collect();
+    if binary_arches.len() < 2 || binary_arches.iter().any(|a| cpu_constraint(a).is_none()) {
+        return Ok(Some(render_list(&members.keys().cloned().collect())?));
+    }
+
+    let mut independent: BTreeSet<String> = BTreeSet::new();
+    let mut by_arch: BTreeMap<Label, Vec<String>> = BTreeMap::new();
+    for (nevra, arch) in members {
+        if ARCH_INDEPENDENT.contains(&arch.as_str()) {
+            independent.insert(nevra.clone());
+        } else {
+            by_arch
+                .entry(cpu_constraint(arch).expect("checked above"))
+                .or_default()
+                .push(nevra.clone());
+        }
+    }
+
+    let mut parts: Vec<String> = Vec::new();
+    if !independent.is_empty() {
+        parts.push(render_list(&independent)?);
+    }
+    if !by_arch.is_empty() {
+        let select = Select::Other {
+            by_constraint: by_arch,
+            default: Some(Box::new(Vec::new())),
+        };
+        parts.push(
+            buck_targets::serde_starlark::to_string(&select)?
+                .trim_end()
+                .to_owned(),
+        );
+    }
+    Ok(Some(parts.join(" + ")))
+}
+
+/// Render a target struct with serde, then splice in the manually
+/// rendered `members` attr (skipped by serde) when non-empty.
+fn render_target<T: Serialize>(
+    target: &T,
+    members: &BTreeMap<String, String>,
+) -> Result<String, buck_targets::Error> {
+    let rendered = buck_targets::serde_starlark::to_string(target)?;
+    let Some(expr) = members_starlark(members)? else {
+        return Ok(rendered);
+    };
+    let body = rendered.trim_end();
+    let Some(body) = body.strip_suffix(')') else {
+        return Ok(rendered);
+    };
+    Ok(format!("{body}    members = {expr},\n)\n"))
+}
+
+impl buck_targets::ToStarlark for YumRepo {
+    fn to_starlark(&self) -> Result<String, buck_targets::Error> {
+        render_target(self, &self.members)
+    }
+}
 
 #[typetag::serde(name = "repo")]
 impl BuckTarget for YumRepo {
@@ -87,15 +191,29 @@ pub struct DebSuite {
         alias = "snapshot_index_checksums"
     )]
     pub index_checksums: Checksums,
-    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
-    pub package_subtargets: BTreeSet<String>,
+    /// `{name}_{version}_{arch}` identifiers of every package in the suite.
+    /// The `suite()` rule downloads all of these (via the index) and
+    /// exposes them as `packages` subtargets and in `DebSuiteInfo`.
+    /// Rendered manually (see `members_starlark`), so serde skips it.
+    #[serde(default, skip_serializing)]
+    pub members: BTreeMap<String, String>,
+    #[serde(
+        default,
+        skip_serializing_if = "BTreeSet::is_empty",
+        alias = "package_subtargets"
+    )]
+    pub package_aliases_subtargets: BTreeSet<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub snapshot_source: Option<Label>,
     pub snapshot_storage: BTreeMap<String, String>,
     pub visibility: Vec<String>,
 }
 
-buck_targets::impl_to_starlark_via_serde!(DebSuite);
+impl buck_targets::ToStarlark for DebSuite {
+    fn to_starlark(&self) -> Result<String, buck_targets::Error> {
+        render_target(self, &self.members)
+    }
+}
 
 #[typetag::serde(name = "suite")]
 impl BuckTarget for DebSuite {
@@ -208,7 +326,8 @@ mod tests {
             name: "my-repo".to_owned(),
             arches: vec!["x86_64".to_owned(), "aarch64".to_owned()],
             baseurl: "https://example.com/{arch}/".to_owned(),
-            package_subtargets: BTreeSet::new(),
+            members: BTreeMap::new(),
+            package_aliases_subtargets: BTreeSet::new(),
             index_checksums: RepomdChecksums::Single(cs),
             snapshot_source: None,
             snapshot_storage: storage_map(),
@@ -234,10 +353,14 @@ mod tests {
             "should serialize as dict, not Checksums(): {starlark}"
         );
         assert!(starlark.contains("snapshot_storage ="), "storage");
-        // package_subtargets should be omitted when empty
+        // members and package_aliases_subtargets should be omitted when empty
         assert!(
-            !starlark.contains("package_subtargets"),
+            !starlark.contains("package_aliases_subtargets"),
             "empty subtargets should be omitted"
+        );
+        assert!(
+            !starlark.contains("members"),
+            "empty members should be omitted"
         );
     }
 
@@ -257,11 +380,17 @@ mod tests {
 
         let mut subtargets = BTreeSet::new();
         subtargets.insert("basesystem".to_owned());
+        let mut members = BTreeMap::new();
+        members.insert(
+            "basesystem_0:11-13.el9_noarch".to_owned(),
+            "noarch".to_owned(),
+        );
         let repo = YumRepo {
             name: "my-repo".to_owned(),
             arches: vec!["aarch64".to_owned(), "x86_64".to_owned()],
             baseurl: "https://example.com/{arch}/".to_owned(),
-            package_subtargets: subtargets,
+            members,
+            package_aliases_subtargets: subtargets,
             index_checksums: repomd,
             snapshot_source: None,
             snapshot_storage: storage_map(),
@@ -273,7 +402,15 @@ mod tests {
         assert!(starlark.contains("ovr_config//cpu:x86_64"), "x86 key");
         assert!(starlark.contains(&"a".repeat(64)), "aaa hex");
         assert!(starlark.contains(&"b".repeat(64)), "bbb hex");
-        assert!(starlark.contains("package_subtargets"), "subtargets");
+        assert!(
+            starlark.contains("package_aliases_subtargets"),
+            "subtargets: {starlark}"
+        );
+        assert!(starlark.contains("members = ["), "members: {starlark}");
+        assert!(
+            starlark.contains("basesystem_0:11-13.el9_noarch"),
+            "member nevra: {starlark}"
+        );
         assert!(
             starlark.contains("index_checksums ="),
             "should be generic index_checksums: {starlark}"
@@ -296,7 +433,8 @@ mod tests {
             components: vec!["main".to_owned()],
             distribution: "trixie".to_owned(),
             index_checksums: cs,
-            package_subtargets: BTreeSet::new(),
+            members: BTreeMap::from([("bash_5.2-5_amd64".to_owned(), "amd64".to_owned())]),
+            package_aliases_subtargets: BTreeSet::new(),
             snapshot_source: None,
             snapshot_storage: storage_map(),
             visibility: vec!["PUBLIC".to_owned()],
@@ -316,10 +454,88 @@ mod tests {
             !starlark.contains("Checksums("),
             "should serialize checksums as dict, not Checksums(): {starlark}"
         );
+        assert!(
+            starlark.contains("bash_5.2-5_amd64"),
+            "members should be rendered: {starlark}"
+        );
+        assert!(
+            !starlark.contains("package_aliases_subtargets"),
+            "empty aliases should be omitted: {starlark}"
+        );
     }
 
     #[test]
-    fn package_subtargets_sorted() {
+    fn members_dedupe_across_arches() {
+        let cs = Checksums::new_sha256(hex!(
+            "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        ));
+        let suite = DebSuite {
+            name: "trixie".to_owned(),
+            architectures: vec!["amd64".to_owned(), "arm64".to_owned()],
+            archive_url: "https://example.com/archive".to_owned(),
+            components: vec!["main".to_owned()],
+            distribution: "trixie".to_owned(),
+            index_checksums: cs,
+            members: BTreeMap::from([
+                ("bash_5.2-5_amd64".to_owned(), "amd64".to_owned()),
+                ("bash_5.2-5_arm64".to_owned(), "arm64".to_owned()),
+                ("data_1.0_all".to_owned(), "all".to_owned()),
+                ("onlyx_1.0_amd64".to_owned(), "amd64".to_owned()),
+            ]),
+            package_aliases_subtargets: BTreeSet::new(),
+            snapshot_source: None,
+            snapshot_storage: storage_map(),
+            visibility: vec!["PUBLIC".to_owned()],
+        };
+        let starlark = suite.to_starlark().expect("renders");
+        // Binary-arch members go into the select as full NEVRAs
+        assert!(
+            starlark.contains("select({"),
+            "binary members should select: {starlark}"
+        );
+        assert!(
+            starlark.contains("bash_5.2-5_amd64"),
+            "amd64 nevra in select: {starlark}"
+        );
+        assert!(
+            starlark.contains("bash_5.2-5_arm64"),
+            "arm64 nevra in select: {starlark}"
+        );
+        assert!(
+            starlark.contains("onlyx_1.0_amd64"),
+            "single should be rendered: {starlark}"
+        );
+        // Arch-independent member stays in the plain members list
+        assert!(
+            starlark.contains("data_1.0_all"),
+            "independent member: {starlark}"
+        );
+        assert!(
+            !starlark.contains("members_pairs"),
+            "no pairs attr: {starlark}"
+        );
+    }
+
+    #[test]
+    fn yum_members_dedupe_x86_64() {
+        // Arch comes from Package::architecture, so x86_64 (which
+        // contains an underscore) needs no string parsing at all.
+        let members = BTreeMap::from([
+            ("bash_5.2-5_x86_64".to_owned(), "x86_64".to_owned()),
+            ("bash_5.2-5_aarch64".to_owned(), "aarch64".to_owned()),
+            ("onlyarm_1.0-1_aarch64".to_owned(), "aarch64".to_owned()),
+        ]);
+        let expr = members_starlark(&members)
+            .expect("renders")
+            .expect("non-empty");
+        assert!(expr.contains("select({"), "binary members select: {expr}");
+        assert!(expr.contains("bash_5.2-5_x86_64"), "x86_64 nevra: {expr}");
+        assert!(expr.contains("bash_5.2-5_aarch64"), "aarch64 nevra: {expr}");
+        assert!(expr.contains("onlyarm_1.0-1_aarch64"), "single: {expr}");
+    }
+
+    #[test]
+    fn package_aliases_subtargets_sorted() {
         // BTreeSet should sort
         let mut set = BTreeSet::new();
         set.insert("zebra".to_owned());
@@ -332,7 +548,8 @@ mod tests {
             name: "test".to_owned(),
             arches: vec!["x86_64".to_owned()],
             baseurl: "https://example.com/{arch}/".to_owned(),
-            package_subtargets: set,
+            members: BTreeMap::new(),
+            package_aliases_subtargets: set,
             index_checksums: RepomdChecksums::Single(cs),
             snapshot_source: None,
             snapshot_storage: storage_map(),
