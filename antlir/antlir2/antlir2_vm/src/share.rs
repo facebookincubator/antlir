@@ -230,7 +230,9 @@ impl VirtiofsShare {
                 .arg("--shared-dir")
                 .arg(&self.opts.path)
                 .arg("--cache")
-                .arg("always"),
+                .arg("always")
+                .arg("--sandbox")
+                .arg("chroot"),
         )
         .spawn()
         .map_err(ShareError::VirtiofsdError)
