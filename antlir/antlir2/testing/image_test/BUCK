@@ -22,6 +22,7 @@ rust_binary(
         ["src/**/*.rs"],
         exclude = ["src/lib.rs"],
     ),
+    build_info_as_shared_library = False,
     crate_root = "src/main.rs",
     resources = {
         "antlir2_image_test_shell.conf": "antlir2_image_test_shell.conf",

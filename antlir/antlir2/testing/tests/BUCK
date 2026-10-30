@@ -1,3 +1,4 @@
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
@@ -123,6 +124,7 @@ image_python_test(
     srcs = ["test_hostname.py"],
     boot = True,
     hostname = "antlir2-test-hostname",
+    # @oss-disable[end= ]: labels = ci.labels(ci.linux(ci.mode("fbcode//mode/opt-asan")), ci.linux(ci.mode("fbcode//mode/opt-tsan"))),
     layer = ":base",
 )
 
