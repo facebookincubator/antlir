@@ -84,10 +84,40 @@ image.layer(
             binaries = [
                 "/usr/lib/systemd/systemd-shutdown",
             ],
-            layer = "//antlir/antlir2/features/extract/tests:binaries-clone-src",
+            layer = ":shutdown-src",
         ),
     ],
     parent_layer = "//antlir/antlir2/features/extract/tests:base",
+)
+
+image.layer(
+    name = "shutdown-src-tools",
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "binutils",
+                "coreutils",
+            ],
+        ),
+        feature.install(
+            src = "stamp-dlopen-note.sh",
+            dst = "/stamp-dlopen-note.sh",
+            mode = "a+rx",
+        ),
+    ],
+    parent_layer = "//antlir/antlir2/features/extract/tests:binaries-clone-src",
+)
+
+image.layer(
+    name = "shutdown-src",
+    features = [
+        feature.genrule(
+            cmd = ["/stamp-dlopen-note.sh"],
+            user = "root",
+        ),
+    ],
+    parent_layer = ":shutdown-src-tools",
 )
 
 image_sh_test(
