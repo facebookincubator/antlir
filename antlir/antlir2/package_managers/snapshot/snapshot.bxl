@@ -39,6 +39,23 @@ def _buck_package(label, custom_path):
             label.name,
         )
 
+def _snapshot_label(buck_package, target_name):
+    # Label of the previously generated target for this snapshot, e.g.
+    # "fbcode//bot_generated/antlir/snapshot/<package>:<name>".
+    package = buck_package
+    if package.startswith("fbcode/"):
+        package = package[len("fbcode/") :]
+    if package.endswith("/BUCK"):
+        package = package[: -len("/BUCK")]
+    return "fbcode//{}:{}".format(package, target_name)
+
+def _existing_snapshot_labels(ctx: bxl.Context) -> dict[str, bool]:
+    # Every target already generated under the snapshot root. Checking
+    # membership here lets prepare reference the previous snapshot's
+    # `SnapshottableInfo` without failing when a target has never been
+    # snapshotted.
+    return {str(t.label): True for t in ctx.uquery().eval("fbcode//bot_generated/antlir/snapshot/...")}
+
 def _tree_prefix(kind, label, timestamp):
     return "{}/{}/snap-{}".format(kind, label.package + "/" + label.name, timestamp)
 
@@ -47,15 +64,35 @@ def _require_storage(snapshottable, target_label):
         fail("Target {} missing snapshot_storage".format(target_label))
     return snapshottable.snapshot_storage
 
+def _metadata_checksums(actions, metadata_bin, tree, identifier: str):
+    checksums = actions.declare_output(
+        "metadata-checksums-{}.json".format(identifier),
+        has_content_based_path = True,
+    )
+    actions.run(
+        cmd_args(
+            metadata_bin,
+            "directory-checksums",
+            cmd_args(tree, format = "--tree={}"),
+            cmd_args(checksums.as_output(), format = "--out={}"),
+        ),
+        category = "snapshot_metadata_checksums",
+        identifier = identifier,
+    )
+    return checksums
+
 def _prepare_impl(ctx: bxl.Context):
-    bxl_actions = ctx.bxl_actions()
+    metadata_bin_target = ctx.unconfigured_sub_targets("//antlir/antlir2/package_managers/snapshot:metadata")
+    bxl_actions = ctx.bxl_actions(exec_deps = [metadata_bin_target])
     actions = bxl_actions.actions
+    metadata_bin = bxl_actions.exec_deps[metadata_bin_target][RunInfo]
     timestamp = ctx.cli_args.timestamp
 
     targets_config = []
+    existing_snapshots = _existing_snapshot_labels(ctx)
 
     flat_targets = [t for targets in ctx.cli_args.target for t in targets]
-    for target_label in flat_targets:
+    for target_index, target_label in enumerate(flat_targets):
         # Avoid stacking conflicting cpu modifiers: if ctx.modifiers already contains a cpu modifier,
         # we need to handle yum arch modifier carefully.
         base_modifiers = [m for m in ctx.modifiers if "cpu:" not in m]
@@ -66,28 +103,44 @@ def _prepare_impl(ctx: bxl.Context):
         snapshottable = providers[SnapshottableInfo]
         storage = _require_storage(snapshottable, target_label)
 
+        buck_package = _buck_package(target.label, snapshottable.snapshot_buck_file)
+        snapshot_label = _snapshot_label(buck_package, target.label.name)
+        has_previous = snapshot_label in existing_snapshots
+
         if YumRepoInfo in providers:
             # Yum: collect per-arch metadata in one grouped entry so Rust
             # doesn't need to re-group by (package, name).
             arches = []
-            for arch_name in snapshottable.arches:
+            for arch_index, arch_name in enumerate(snapshottable.arches):
                 modifier = arch_to_platform(arch_name)
                 arch_target = ctx.configured_targets(
                     target_label,
                     modifiers = base_modifiers + [modifier],
                 )
                 arch_snap = ctx.analysis(arch_target).providers()[SnapshottableInfo]
+                previous_metadata_tree = None
+                if has_previous:
+                    previous_target = ctx.configured_targets(
+                        snapshot_label,
+                        modifiers = base_modifiers + [modifier],
+                    )
+                    previous_metadata_tree = ctx.analysis(previous_target).providers()[SnapshottableInfo].metadata_tree
+                identifier = "{}-{}".format(target_index, arch_index)
                 arches.append({
                     "arch": arch_name,
                     "arch_modifier": modifier,
+                    "metadata_checksums": _metadata_checksums(actions, metadata_bin, arch_snap.metadata_tree, identifier + "-new"),
                     "metadata_tree": arch_snap.metadata_tree,
                     "packages_baseurl": arch_snap.packages_baseurl,
                     "packages_indexes": arch_snap.packages_indexes,
+                    "previous_metadata_checksums": _metadata_checksums(actions, metadata_bin, previous_metadata_tree, identifier + "-previous")
+                    if previous_metadata_tree
+                    else None,
                 })
 
             targets_config.append({
                 "arches": arches,
-                "buck_package": _buck_package(target.label, snapshottable.snapshot_buck_file),
+                "buck_package": buck_package,
                 "kind": "yum",
                 "package_subtargets": snapshottable.package_subtargets,
                 "snapshot_storage": storage,
@@ -99,16 +152,28 @@ def _prepare_impl(ctx: bxl.Context):
             deb_info = providers[DebSuiteInfo]
             components = sorted({c.name: True for c in deb_info.components}.keys())
 
+            previous_metadata_tree = None
+            if has_previous:
+                previous_target = ctx.configured_targets(
+                    snapshot_label,
+                    modifiers = base_modifiers,
+                )
+                previous_metadata_tree = ctx.analysis(previous_target).providers()[SnapshottableInfo].metadata_tree
+
             targets_config.append({
                 "architectures": snapshottable.arches,
-                "buck_package": _buck_package(target.label, snapshottable.snapshot_buck_file),
+                "buck_package": buck_package,
                 "components": components,
                 "distribution": deb_info.distribution,
                 "kind": "deb",
+                "metadata_checksums": _metadata_checksums(actions, metadata_bin, snapshottable.metadata_tree, "{}-new".format(target_index)),
                 "metadata_tree": snapshottable.metadata_tree,
                 "package_subtargets": snapshottable.package_subtargets,
                 "packages_baseurl": snapshottable.packages_baseurl,
                 "packages_indexes": snapshottable.packages_indexes,
+                "previous_metadata_checksums": _metadata_checksums(actions, metadata_bin, previous_metadata_tree, "{}-previous".format(target_index))
+                if previous_metadata_tree
+                else None,
                 "snapshot_storage": storage,
                 "source_label": str(target_label),
                 "target_name": target.label.name,
@@ -123,10 +188,16 @@ def _prepare_impl(ctx: bxl.Context):
         if tc["kind"] == "yum":
             for arch in tc["arches"]:
                 ctx.output.ensure(arch["metadata_tree"])
+                ctx.output.ensure(arch["metadata_checksums"])
+                if arch["previous_metadata_checksums"]:
+                    ctx.output.ensure(arch["previous_metadata_checksums"])
                 for idx in arch["packages_indexes"]:
                     ctx.output.ensure(idx)
         else:
             ctx.output.ensure(tc["metadata_tree"])
+            ctx.output.ensure(tc["metadata_checksums"])
+            if tc["previous_metadata_checksums"]:
+                ctx.output.ensure(tc["previous_metadata_checksums"])
             for idx in tc["packages_indexes"]:
                 ctx.output.ensure(idx)
 

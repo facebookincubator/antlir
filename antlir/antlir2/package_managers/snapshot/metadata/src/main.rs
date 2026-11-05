@@ -16,6 +16,7 @@ use tracing::error;
 use tracing_subscriber::prelude::*;
 
 mod decompress;
+mod directory_checksums;
 mod generate;
 mod parse;
 mod verify;
@@ -33,6 +34,7 @@ struct Args {
 #[derive(Debug, Parser)]
 enum Sub {
     Decompress(decompress::Decompress),
+    DirectoryChecksums(directory_checksums::DirectoryChecksums),
     Generate(generate::Generate),
     Parse(parse::Parse),
     Verify(verify::Verify),
@@ -72,6 +74,7 @@ fn do_main() -> Result<()> {
         .init();
     match args.sub {
         Sub::Decompress(sub) => sub.run(),
+        Sub::DirectoryChecksums(sub) => sub.run(),
         Sub::Generate(sub) => sub.run(),
         Sub::Parse(sub) => sub.run(),
         Sub::Verify(sub) => sub.run(),

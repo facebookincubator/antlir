@@ -18,6 +18,7 @@ pub(crate) mod packages;
 pub(crate) mod progress;
 pub(crate) mod snapshot;
 pub(crate) mod storage;
+pub(crate) mod unchanged;
 
 #[derive(Debug, Serialize)]
 pub(crate) struct Out {

@@ -46,6 +46,13 @@ enum Sub {
 #[fbinit::main]
 async fn main(fb: fbinit::FacebookInit) -> ExitCode {
     if let Err(e) = do_main(fb).await {
+        if e.downcast_ref::<snapshot::unchanged::SkippedNoChanges>()
+            .is_some()
+        {
+            // Already logged with the skip marker at the skip site.
+            error!("{e:#}");
+            return ExitCode::from(snapshot::unchanged::EXIT_CODE_SKIPPED_NO_CHANGES);
+        }
         error!("{e:#}");
         return ExitCode::FAILURE;
     }

@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr as _;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -18,11 +19,13 @@ use chrono::Utc;
 use clap::Parser;
 use find_root::find_repo_root;
 use futures::StreamExt as _;
+use json_arg::JsonFile;
 use serde::Deserialize;
 use snapshot_common::Checksums;
 use snapshot_common::Package;
 use tokio::process::Command;
 use tracing::info;
+use tracing::warn;
 
 use super::blob_status::Entry;
 use super::buck_files;
@@ -32,6 +35,7 @@ use super::buck_target::YumRepo;
 use super::buck_target::make_repomd_checksums;
 use super::progress;
 use super::storage::StorageConfig;
+use super::unchanged::SkippedNoChanges;
 
 const BXL_TARGET: &str = "fbcode//antlir/antlir2/package_managers/snapshot:snapshot.bxl:prepare";
 
@@ -47,6 +51,13 @@ struct YumArchConfig {
     metadata_tree: PathBuf,
     packages_baseurl: String,
     packages_indexes: Vec<PathBuf>,
+    #[serde(default)]
+    metadata_checksums: Option<PathBuf>,
+    /// Checksums of the previously generated snapshot's metadata tree
+    /// for this arch (from `snapshot.bxl`), if it has ever been
+    /// snapshotted.
+    #[serde(default)]
+    previous_metadata_checksums: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -68,6 +79,10 @@ struct TargetConfig {
     // Deb-only
     #[serde(default)]
     metadata_tree: Option<PathBuf>,
+    #[serde(default)]
+    metadata_checksums: Option<PathBuf>,
+    #[serde(default)]
+    previous_metadata_checksums: Option<PathBuf>,
     #[serde(default)]
     packages_baseurl: Option<String>,
     #[serde(default)]
@@ -148,12 +163,38 @@ impl Snapshot {
             .context("buck2 bxl preparation failed")?;
         bxl_pb.finish_with_message("buck2 bxl prepare complete");
 
+        // As early as possible after prepare (which materializes the
+        // metadata trees): the BXL also materialized the previous
+        // snapshot's metadata tree for every target, so just compare
+        // the two checksum files produced by the BXL. The metadata
+        // determines the package indexes, so equality means nothing
+        // could have changed. Skip all uploads/downloads and BUCK
+        // rewrites for unchanged targets.
+        let skipped = unchanged_targets(&config, &project_root);
+        for target in &config.targets {
+            if skipped.contains(&target.target_name) {
+                info!(
+                    target_name = target.target_name,
+                    "skipping snapshot: metadata unchanged"
+                );
+            }
+        }
+        if !config.targets.is_empty() && skipped.len() == config.targets.len() {
+            warn!(
+                "{}: metadata unchanged for {} target(s), skipping snapshot",
+                super::unchanged::SKIP_MARKER,
+                skipped.len()
+            );
+            return Err(SkippedNoChanges.into());
+        }
+
         let mut described = Vec::new();
 
         // Compute progress total; skip targets with 0 arches (they will bail later with clear error)
         let total: usize = config
             .targets
             .iter()
+            .filter(|t| !skipped.contains(&t.target_name))
             .map(|t| match t.kind {
                 RepoKind::Yum => t.arches.len(),
                 RepoKind::Deb => 1,
@@ -162,6 +203,9 @@ impl Snapshot {
         let overall_pb = progress::bar(total.max(1), "Snapshotting targets");
 
         for target in &config.targets {
+            if skipped.contains(&target.target_name) {
+                continue;
+            }
             match target.kind {
                 RepoKind::Yum => {
                     if target.arches.is_empty() {
@@ -665,6 +709,77 @@ fn common_parts(
     Ok((storage_map, package_aliases_subtargets, snapshot_source))
 }
 
+/// Load the checksum JSON produced for a metadata tree by
+/// `snapshot.bxl`.
+fn load_checksums(path: &Path) -> Result<JsonFile<BTreeMap<String, Checksums>>> {
+    let path = path
+        .to_str()
+        .with_context(|| format!("non-utf8 checksum path {}", path.display()))?;
+    JsonFile::from_str(path).with_context(|| format!("failed to load checksums from {path}"))
+}
+
+/// Whether two metadata checksum files are identical. Any error is
+/// treated as changed, so missing data can never cause a wrong skip.
+fn metadata_checksums_equal(new: &Path, previous: &Path) -> bool {
+    match (load_checksums(new), load_checksums(previous)) {
+        // An empty checksum set is no evidence of equality.
+        (Ok(new), Ok(previous)) => !new.is_empty() && new == previous,
+        (Err(e), _) | (_, Err(e)) => {
+            warn!("failed to compare metadata checksums, snapshotting normally: {e:#}");
+            false
+        }
+    }
+}
+
+/// Names of targets whose metadata is unchanged. Targets sharing a
+/// BUCK file are skipped only as a group, so a rewrite of that file can
+/// never drop a co-located target.
+fn unchanged_targets(config: &SnapshotConfig, project_root: &Path) -> BTreeSet<String> {
+    let per_target: Vec<bool> = config
+        .targets
+        .iter()
+        .map(|target| match target.kind {
+            RepoKind::Deb => match (
+                &target.metadata_checksums,
+                &target.previous_metadata_checksums,
+            ) {
+                (Some(new), Some(previous)) => {
+                    metadata_checksums_equal(&project_root.join(new), &project_root.join(previous))
+                }
+                _ => false,
+            },
+            RepoKind::Yum => {
+                !target.arches.is_empty()
+                    && target.arches.iter().all(|arch| {
+                        match (&arch.metadata_checksums, &arch.previous_metadata_checksums) {
+                            (Some(new), Some(previous)) => metadata_checksums_equal(
+                                &project_root.join(new),
+                                &project_root.join(previous),
+                            ),
+                            _ => false,
+                        }
+                    })
+            }
+        })
+        .collect();
+    let mut by_package: BTreeMap<PathBuf, Vec<usize>> = BTreeMap::new();
+    for (idx, target) in config.targets.iter().enumerate() {
+        by_package
+            .entry(target.buck_package.clone())
+            .or_default()
+            .push(idx);
+    }
+    let mut skipped = BTreeSet::new();
+    for indices in by_package.values() {
+        if indices.iter().all(|&idx| per_target[idx]) {
+            for &idx in indices {
+                skipped.insert(config.targets[idx].target_name.clone());
+            }
+        }
+    }
+    skipped
+}
+
 fn generate_yum_target(
     target: &TargetConfig,
     arch_results: &[ArchResult],
@@ -749,4 +864,35 @@ fn generate_deb_target(
         package_path: target.buck_package.clone(),
         target: Box::new(suite),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn metadata_checksums_equal_compares_json_files() {
+        let dir =
+            std::env::temp_dir().join(format!("snapshot-checksums-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("create test dir");
+        let first = dir.join("first.json");
+        let second = dir.join("second.json");
+        let different = dir.join("different.json");
+        let checksums_json = format!("{{\"a.txt\":{{\"sha256\":\"{}\"}}}}", "0".repeat(64));
+        std::fs::write(&first, &checksums_json).expect("write first checksums");
+        std::fs::write(&second, &checksums_json).expect("write second checksums");
+        std::fs::write(
+            &different,
+            format!("{{\"a.txt\":{{\"sha256\":\"{}\"}}}}", "1".repeat(64)),
+        )
+        .expect("write different checksums");
+
+        assert!(metadata_checksums_equal(&first, &second));
+        assert!(!metadata_checksums_equal(&first, &different));
+        std::fs::write(&first, "{}").expect("write empty checksums");
+        std::fs::write(&second, "{}").expect("write empty checksums");
+        assert!(!metadata_checksums_equal(&first, &second));
+        assert!(!metadata_checksums_equal(&first, &dir.join("missing.json")));
+        std::fs::remove_dir_all(&dir).ok();
+    }
 }

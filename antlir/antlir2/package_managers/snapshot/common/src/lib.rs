@@ -6,8 +6,11 @@
  */
 
 mod checksums;
+mod directory;
 mod package;
 
 pub use checksums::ChecksumVerificationError;
 pub use checksums::Checksums;
+pub use directory::directory_checksums;
+pub use directory::directory_files;
 pub use package::Package;

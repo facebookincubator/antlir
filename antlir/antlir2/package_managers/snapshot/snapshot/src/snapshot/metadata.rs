@@ -57,79 +57,11 @@ pub(crate) async fn snapshot_metadata(
 ) -> Result<Out> {
     debug!("walking {tree:?}");
 
-    // Use cap-std Dir for safe traversal, preventing symlink escape.
-    // We do NOT follow symlinks – follow_links(false) avoids loop DoS and
-    // outside-tree reads via symlinked dirs.
     let tree_owned = tree.to_owned();
-    let file_entries = tokio::task::spawn_blocking(move || -> Result<Vec<(PathBuf, String)>> {
-        use std::collections::VecDeque;
-
-        use cap_std::fs::Dir;
-
-        let dir = Dir::open_ambient_dir(&tree_owned, cap_std::ambient_authority())
-            .with_context(|| format!("failed to open metadata tree {}", tree_owned.display()))?;
-
-        // BFS walk without following symlinks for containment.
-        // We use cap-std to ensure we never escape tree root.
-        let mut entries = Vec::new();
-        let mut queue: VecDeque<PathBuf> = VecDeque::new();
-        queue.push_back(PathBuf::new());
-
-        while let Some(rel_dir) = queue.pop_front() {
-            let subdir = if rel_dir.as_os_str().is_empty() {
-                // root dir handle already
-                // Clone dir for iteration to avoid borrow issues, we keep re-opening via open_dir
-                dir.open_dir(".").context("failed to open root dir")?
-            } else {
-                match dir.open_dir(&rel_dir) {
-                    Ok(d) => d,
-                    Err(e) => {
-                        // Might be symlink or non-dir file – skip
-                        debug!("skipping non-dir {:?}: {}", rel_dir, e);
-                        continue;
-                    }
-                }
-            };
-
-            for entry_res in subdir.entries()? {
-                let entry = entry_res?;
-                let file_name = entry.file_name();
-                let file_name_str = file_name
-                    .to_str()
-                    .ok_or_else(|| anyhow::anyhow!("non-utf8 entry {:?}", file_name))?;
-
-                let entry_path = if rel_dir.as_os_str().is_empty() {
-                    PathBuf::from(file_name_str)
-                } else {
-                    rel_dir.join(file_name_str)
-                };
-
-                let meta = entry.metadata()?;
-                if meta.is_symlink() {
-                    // For containment we do NOT follow symlinks to avoid outside-tree access.
-                    // This mirrors WalkDir follow_links(false) behavior.
-                    debug!("skipping symlink {:?}", entry_path);
-                    continue;
-                }
-                if meta.is_dir() {
-                    queue.push_back(entry_path);
-                } else if meta.is_file() {
-                    // key is rel path string with forward slashes
-                    let key = entry_path
-                        .to_str()
-                        .ok_or_else(|| anyhow::anyhow!("non-utf8 path {:?}", entry_path))?
-                        .to_owned();
-                    // Full filesystem path for storage
-                    let full_path = tree_owned.join(&entry_path);
-                    entries.push((full_path, key));
-                }
-            }
-        }
-
-        Ok(entries)
-    })
-    .await
-    .context("spawn_blocking failed")??;
+    let file_entries =
+        tokio::task::spawn_blocking(move || snapshot_common::directory_files(&tree_owned))
+            .await
+            .context("spawn_blocking failed")??;
 
     let pb = progress::bar(file_entries.len(), "Uploading metadata");
 
