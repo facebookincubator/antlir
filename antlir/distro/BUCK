@@ -1,0 +1,22 @@
+# @oss-enable
+# OSS-only stub: This file provides a placeholder config_setting so that
+# selectors referencing antlir//antlir/distro:build-for-distro don't break
+# OSS builds. The constraint is never set in OSS, so this never matches.
+# Internal Meta builds have the real implementation.
+
+constraint_setting(
+    name = "build-for-distro-constraint",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "building-for-distro",
+    constraint_setting = ":build-for-distro-constraint",
+    visibility = ["PUBLIC"],
+)
+
+config_setting(
+    name = "build-for-distro",
+    constraint_values = [":building-for-distro"],
+    visibility = ["PUBLIC"],
+)
