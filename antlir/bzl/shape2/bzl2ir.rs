@@ -41,8 +41,9 @@ use starlark::values::StarlarkValue;
 use starlark::values::StringValue;
 use starlark::values::UnpackValue;
 use starlark::values::Value;
-use starlark::values::dict::UnpackDictEntries;
-use starlark::values::list_or_tuple::UnpackListOrTuple;
+use starlark::values::ValueOf;
+use starlark::values::dict::DictType;
+use starlark::values::list_or_tuple::ListOrTupleType;
 use starlark::values::starlark_value;
 use starlark::values::structs::AllocStruct;
 
@@ -238,22 +239,24 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> anyhow::Result<&'a TypeRegistry
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
-        #[starlark(require = named)] __thrift: Option<UnpackDictEntries<u32, &'v str>>,
-        #[starlark(kwargs)] kwargs: UnpackDictEntries<&'v str, Value<'v>>,
+        #[starlark(require = named)] __thrift: Option<ValueOf<'v, DictType<u32, &'v str>>>,
+        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<&'v str, Value<'v>>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
-        let fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = kwargs
-            .entries
-            .into_iter()
-            .filter(|(key, _)| (*key != "__I_AM_TARGET__") && (*key != "__thrift_fields"))
-            .map(|(key, val)| val.try_to_field(&reg).map(|f| (key.into(), Arc::new(f))))
-            .collect::<anyhow::Result<_>>()?;
+        let mut fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = BTreeMap::new();
+        for entry in kwargs.try_items() {
+            let (key, val) = entry.map_err(starlark::Error::into_anyhow)?;
+            if key == "__I_AM_TARGET__" || key == "__thrift_fields" {
+                continue;
+            }
+            fields.insert(key.into(), Arc::new(val.try_to_field(&reg)?));
+        }
         let thrift_fields = __thrift
             .map(|t| {
-                t.entries
-                    .into_iter()
-                    .map(|(k, v)| {
+                t.try_items()
+                    .map(|entry| {
+                        let (k, v) = entry.map_err(starlark::Error::into_anyhow)?;
                         let field_name = ir::FieldName(v.to_owned());
                         let field = fields
                             .get(&field_name)
@@ -335,12 +338,17 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn new<'v>(
         shape: Value<'v>,
-        #[starlark(kwargs)] kwargs: UnpackDictEntries<StringValue<'v>, Value<'v>>,
+        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<StringValue<'v>, Value<'v>>>,
     ) -> anyhow::Result<AllocStruct<Vec<(StringValue<'v>, Value<'v>)>>> {
         let _ = shape;
         // no need to type-check, since it will already be done at buck parse
         // time, and will also be done when loading the json
-        Ok(AllocStruct(kwargs.entries))
+        Ok(AllocStruct(
+            kwargs
+                .try_items()
+                .collect::<starlark::Result<_>>()
+                .map_err(starlark::Error::into_anyhow)?,
+        ))
     }
 
     fn dict<'v>(
@@ -363,7 +371,7 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
-        #[starlark(require = named)] __thrift: Option<UnpackListOrTuple<u32>>,
+        #[starlark(require = named)] __thrift: Option<ValueOf<'v, ListOrTupleType<u32>>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> starlark::Result<TypeId> {
         let mut reg = get_type_registry(eval)?
@@ -379,10 +387,11 @@ fn shape(builder: &mut GlobalsBuilder) {
             .collect::<anyhow::Result<_>>()?;
         let thrift_types = match __thrift {
             Some(t) => {
+                let t = t.try_to_vec()?;
                 // Closure to convert the `anyhow` error to a `starlark::Error`
                 (|| {
                     ensure!(
-                        t.items.len() == types.len(),
+                        t.len() == types.len(),
                         "Mismatched number of fields. This would have already failed in Buck."
                     );
                     Ok(())
