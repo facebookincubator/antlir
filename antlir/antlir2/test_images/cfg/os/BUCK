@@ -23,7 +23,7 @@ OSES = internal_external(
 # rely on DEFAULT
 test_rpm_root = internal_external(
     fb = select({
-        "//antlir/antlir2/os/facebook:rou-stable": "test-rpm-root",
+        "//antlir/antlir2/os/facebook:rou[stable]": "test-rpm-root",
     }),
     oss = "test-rpm-root",
 )
