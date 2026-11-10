@@ -34,7 +34,6 @@ use starlark::starlark_module;
 use starlark::starlark_simple_value;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
-use starlark::values::AllocValue;
 use starlark::values::FreezeErrorContext;
 use starlark::values::NoSerialize;
 use starlark::values::StarlarkValue;
@@ -244,7 +243,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         #[starlark(require = named)] __thrift: Option<ValueOf<'v, DictType<IntView<'v>, &'v str>>>,
         #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<&'v str, Value<'v>>>,
         eval: &mut Evaluator<'v, '_, '_>,
-    ) -> anyhow::Result<TypeId> {
+    ) -> anyhow::Result<ValueOf<'v, TypeId>> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let mut fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = BTreeMap::new();
         for entry in kwargs.try_items() {
@@ -281,21 +280,24 @@ fn shape(builder: &mut GlobalsBuilder) {
             name: None,
         };
         let ty = ir::Type::Complex(ir::ComplexType::Struct(s));
-        Ok(reg.add(ty))
+        Ok(ValueOf::alloc(eval.heap(), reg.add(ty)))
     }
 
-    fn list<'v>(ty: Value<'v>, eval: &mut Evaluator) -> anyhow::Result<StarlarkType> {
+    fn list<'v>(
+        ty: Value<'v>,
+        eval: &mut Evaluator<'v, '_, '_>,
+    ) -> anyhow::Result<ValueOf<'v, StarlarkType>> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         ty.try_to_type(&reg)
             .map(|ty| ir::Type::List { item_type: ty })
             .map(Arc::new)
-            .map(StarlarkType)
+            .map(|ty| ValueOf::alloc(eval.heap(), StarlarkType(ty)))
     }
 
     fn r#enum<'v>(
         #[starlark(args)] args: Value<'v>,
         eval: &mut Evaluator<'v, '_, '_>,
-    ) -> anyhow::Result<TypeId> {
+    ) -> anyhow::Result<ValueOf<'v, TypeId>> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let options = args
             .iterate(eval.heap())
@@ -313,15 +315,15 @@ fn shape(builder: &mut GlobalsBuilder) {
             name: None,
         };
         let ty = ir::Type::Complex(ir::ComplexType::Enum(enm));
-        Ok(reg.add(ty))
+        Ok(ValueOf::alloc(eval.heap(), reg.add(ty)))
     }
 
     fn field<'v>(
         ty: Value<'v>,
         #[starlark(default = false)] optional: bool,
         default: Option<Value<'v>>,
-        eval: &mut Evaluator,
-    ) -> anyhow::Result<StarlarkField> {
+        eval: &mut Evaluator<'v, '_, '_>,
+    ) -> anyhow::Result<ValueOf<'v, StarlarkField>> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         ty.try_to_type(&reg)
             .and_then(|ty| {
@@ -337,7 +339,7 @@ fn shape(builder: &mut GlobalsBuilder) {
                         .transpose()?,
                 })
             })
-            .map(StarlarkField)
+            .map(|field| ValueOf::alloc(eval.heap(), StarlarkField(field)))
     }
 
     fn new<'v>(
@@ -362,8 +364,8 @@ fn shape(builder: &mut GlobalsBuilder) {
     fn dict<'v>(
         key_type: Value<'v>,
         value_type: Value<'v>,
-        eval: &mut Evaluator,
-    ) -> anyhow::Result<StarlarkType> {
+        eval: &mut Evaluator<'v, '_, '_>,
+    ) -> anyhow::Result<ValueOf<'v, StarlarkType>> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         let key_type = key_type
             .try_to_type(&reg)
@@ -371,17 +373,20 @@ fn shape(builder: &mut GlobalsBuilder) {
         let value_type = value_type
             .try_to_type(&reg)
             .context("dict value must be a type")?;
-        Ok(StarlarkType(Arc::new(ir::Type::Map {
-            key_type,
-            value_type,
-        })))
+        Ok(ValueOf::alloc(
+            eval.heap(),
+            StarlarkType(Arc::new(ir::Type::Map {
+                key_type,
+                value_type,
+            })),
+        ))
     }
 
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
         #[starlark(require = named)] __thrift: Option<ValueOf<'v, ListOrTupleType<IntView<'v>>>>,
         eval: &mut Evaluator<'v, '_, '_>,
-    ) -> starlark::Result<TypeId> {
+    ) -> starlark::Result<ValueOf<'v, TypeId>> {
         let mut reg = get_type_registry(eval)?
             .try_borrow_mut()
             .map_err(starlark::Error::new_native)?;
@@ -423,10 +428,10 @@ fn shape(builder: &mut GlobalsBuilder) {
             name: None,
         };
         let ty = ir::Type::Complex(ir::ComplexType::Union(u));
-        Ok(reg.add(ty))
+        Ok(ValueOf::alloc(eval.heap(), reg.add(ty)))
     }
 
-    fn path() -> anyhow::Result<StarlarkField> {
+    fn path<'v>() -> anyhow::Result<ValueOf<'v, StarlarkField>> {
         Err(anyhow!("shape.path is no longer a callable function"))
     }
 }
@@ -483,7 +488,7 @@ fn ir_to_module(m: ir::Module) -> anyhow::Result<FrozenModule> {
                 target: m.target.clone(),
                 name: name.clone(),
             }));
-            module.set(&name, ty.alloc_value(module.heap()));
+            module.set(&name, module.heap().alloc_representation(ty).to_value());
         }
         Ok::<_, anyhow::Error>(module.freeze()?)
     })
