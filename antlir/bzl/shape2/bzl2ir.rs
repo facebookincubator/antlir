@@ -46,6 +46,7 @@ use starlark::values::dict::DictType;
 use starlark::values::int::IntView;
 use starlark::values::list_or_tuple::ListOrTupleType;
 use starlark::values::starlark_value;
+use starlark::values::string::StarlarkStr;
 use starlark::values::structs::AllocStruct;
 
 fn bzl_globals() -> GlobalsBuilder {
@@ -341,14 +342,18 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn new<'v>(
         shape: Value<'v>,
-        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<StringValue<'v>, Value<'v>>>,
+        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<StarlarkStr, Value<'v>>>,
     ) -> anyhow::Result<AllocStruct<Vec<(StringValue<'v>, Value<'v>)>>> {
         let _ = shape;
         // no need to type-check, since it will already be done at buck parse
         // time, and will also be done when loading the json
         Ok(AllocStruct(
             kwargs
-                .try_items()
+                .iter()
+                .map(|entry| {
+                    let (k, v) = entry?;
+                    Ok((k.get(), v.get()))
+                })
                 .collect::<starlark::Result<_>>()
                 .map_err(starlark::Error::into_anyhow)?,
         ))
