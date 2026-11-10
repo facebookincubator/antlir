@@ -43,6 +43,7 @@ use starlark::values::UnpackValue;
 use starlark::values::Value;
 use starlark::values::ValueOf;
 use starlark::values::dict::DictType;
+use starlark::values::int::IntView;
 use starlark::values::list_or_tuple::ListOrTupleType;
 use starlark::values::starlark_value;
 use starlark::values::structs::AllocStruct;
@@ -239,7 +240,7 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> anyhow::Result<&'a TypeRegistry
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
-        #[starlark(require = named)] __thrift: Option<ValueOf<'v, DictType<u32, &'v str>>>,
+        #[starlark(require = named)] __thrift: Option<ValueOf<'v, DictType<IntView<'v>, &'v str>>>,
         #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<&'v str, Value<'v>>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<TypeId> {
@@ -257,6 +258,8 @@ fn shape(builder: &mut GlobalsBuilder) {
                 t.try_items()
                     .map(|entry| {
                         let (k, v) = entry.map_err(starlark::Error::into_anyhow)?;
+                        let k = u32::unpack_value_err(k.to_value())
+                            .map_err(starlark::Error::into_anyhow)?;
                         let field_name = ir::FieldName(v.to_owned());
                         let field = fields
                             .get(&field_name)
@@ -371,7 +374,7 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
-        #[starlark(require = named)] __thrift: Option<ValueOf<'v, ListOrTupleType<u32>>>,
+        #[starlark(require = named)] __thrift: Option<ValueOf<'v, ListOrTupleType<IntView<'v>>>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> starlark::Result<TypeId> {
         let mut reg = get_type_registry(eval)?
@@ -387,7 +390,10 @@ fn shape(builder: &mut GlobalsBuilder) {
             .collect::<anyhow::Result<_>>()?;
         let thrift_types = match __thrift {
             Some(t) => {
-                let t = t.try_to_vec()?;
+                let t = t
+                    .try_items()
+                    .map(|i| u32::unpack_value_err(i?.to_value()))
+                    .collect::<starlark::Result<Vec<_>>>()?;
                 // Closure to convert the `anyhow` error to a `starlark::Error`
                 (|| {
                     ensure!(
