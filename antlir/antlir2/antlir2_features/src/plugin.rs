@@ -67,8 +67,10 @@ impl Plugin {
     fn register(src: String, dispatch: tracing::Dispatch) -> Result<&'static Self> {
         // Rust's runtime state must be shared by every plugin, so load with RLTD_GLOBAL to
         // ensure a single copy.
+        // SAFETY: plugins are trusted antlir2 feature libraries whose initializers are sound.
         let lib: Box<Library> = Box::new(
-            libloading::os::unix::Library::open(Some(&src), RTLD_NOW | RTLD_GLOBAL)?.into(),
+            unsafe { libloading::os::unix::Library::open(Some(&src), RTLD_NOW | RTLD_GLOBAL) }?
+                .into(),
         );
 
         let label: libloading::Symbol<fn() -> &'static str> = unsafe { lib.get(b"label\0")? };
