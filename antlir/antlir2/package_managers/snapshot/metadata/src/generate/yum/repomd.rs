@@ -30,7 +30,7 @@ use snapshot_common::Checksums;
 ///   - Includes both sha1 and sha256 for each `<data>` block (computed
 ///     from the on-disk file content).
 ///
-/// Conceptually parallel to `metadata generate deb inrelease`.
+/// Conceptually parallel to `metadata generate deb release`.
 #[derive(Parser, Debug)]
 pub(crate) struct GenerateRepomd {
     #[clap(long)]

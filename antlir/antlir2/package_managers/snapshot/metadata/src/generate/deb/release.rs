@@ -15,25 +15,15 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use json_arg::JsonFile;
-use sequoia_openpgp::Cert;
-use sequoia_openpgp::parse::Parse;
-use sequoia_openpgp::policy::StandardPolicy;
-use sequoia_openpgp::serialize::stream::Message;
-use sequoia_openpgp::serialize::stream::Signer;
 use serde::Deserialize;
 use snapshot_common::Checksums;
 
-const POLICY: &StandardPolicy = &StandardPolicy::new();
-
 #[derive(Parser, Debug)]
-pub(crate) struct GenerateInRelease {
+pub(crate) struct GenerateRelease {
     /// Path to release.json (output of `snapshot parse deb release`)
     #[clap(long)]
     release_json: JsonFile<ReleaseJson>,
-    /// Path to PGP secret key for signing
-    #[clap(long)]
-    signing_key: PathBuf,
-    /// Output path for the generated InRelease file
+    /// Output path for the generated Release file
     out: PathBuf,
     #[clap(long)]
     components_json: JsonFile<Vec<ComponentArg>>,
@@ -64,7 +54,7 @@ struct ComponentEntry {
     checksums: Checksums,
 }
 
-impl GenerateInRelease {
+impl GenerateRelease {
     pub(crate) fn run(self) -> Result<()> {
         let mut entries = Vec::new();
         for comp in self.components_json.into_inner() {
@@ -81,41 +71,18 @@ impl GenerateInRelease {
             });
         }
 
+        // The Release file is intentionally unsigned: the only signing
+        // key ever used here was a dummy whose secret is checked into
+        // the repo, so a signature would prove nothing. Consumers read
+        // the archive as a trusted source, and integrity is enforced
+        // by the checksums Buck pins for every downloaded file.
         let release_content = build_release_content(self.release_json.as_inner(), &entries)?;
-
-        let key_data = std::fs::read(&self.signing_key)
-            .with_context(|| format!("reading signing key {}", self.signing_key.display()))?;
-        let cert = Cert::from_bytes(&key_data).context("parsing PGP signing key")?;
-
-        let signing_key = cert
-            .keys()
-            .with_policy(POLICY, None)
-            .supported()
-            .alive()
-            .revoked(false)
-            .for_signing()
-            .next()
-            .context("no valid signing key found in cert")?
-            .key()
-            .clone()
-            .parts_into_secret()
-            .map_err(|_| anyhow::anyhow!("signing key has no secret material"))?
-            .into_keypair()
-            .context("creating keypair from secret key")?;
-
-        let mut output = Vec::new();
-        {
-            let message = Message::new(&mut output);
-            let mut signer = Signer::new(message, signing_key)?.cleartext().build()?;
-            signer.write_all(release_content.as_bytes())?;
-            signer.finalize()?;
-        }
 
         let mut outfile = std::io::BufWriter::new(
             stdio_path::create(&self.out)
                 .with_context(|| format!("creating {}", self.out.display()))?,
         );
-        outfile.write_all(&output)?;
+        outfile.write_all(release_content.as_bytes())?;
 
         Ok(())
     }
@@ -185,4 +152,41 @@ fn build_release_content(release: &ReleaseJson, entries: &[ComponentEntry]) -> R
     }
 
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn release_content_is_unsigned_and_deterministic() {
+        let release = ReleaseJson {
+            origin: Some("Test".to_owned()),
+            label: None,
+            suite: Some("testsuite".to_owned()),
+            codename: None,
+            date: "Thu, 01 Jan 1970 00:00:00 UTC".to_owned(),
+            description: None,
+        };
+        let entries = vec![ComponentEntry {
+            arch: "amd64".to_owned(),
+            name: "main".to_owned(),
+            size: 42,
+            checksums: Checksums::builder()
+                .sha1("cd".repeat(20))
+                .sha256("ab".repeat(32))
+                .build()
+                .expect("test checksums"),
+        }];
+
+        let first = build_release_content(&release, &entries).expect("build release content");
+        let second = build_release_content(&release, &entries).expect("rebuild release content");
+        assert_eq!(first, second, "release content must be deterministic");
+        assert!(
+            !first.contains("PGP"),
+            "release content must not be signed: {first}"
+        );
+        assert!(first.starts_with("Origin: Test\n"));
+        assert!(first.contains("main/binary-amd64/Packages"));
+    }
 }

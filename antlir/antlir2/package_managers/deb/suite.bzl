@@ -91,7 +91,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     suite_baseurl = archive_url + "dists/" + distribution + "/"
 
     # If index_checksums is provided (snapshotted repo), download index.json
-    # and use it to fetch InRelease and Packages indexes via dynamic deps for determinism.
+    # and use it to fetch Release and Packages indexes via dynamic deps for determinism.
     index_json = None
     per_arch_packages_from_index = None
     if ctx.attrs.index_checksums:
@@ -103,16 +103,14 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             allow_nondeterministic_downloads = False,
         )
 
-        # Download InRelease via index
+        release_relpath = "dists/{}/Release".format(distribution)
         from_index = download_from_index(
             actions = ctx.actions,
             index_json = index_json,
             baseurl = archive_url,
-            relpaths = [
-                "dists/{}/InRelease".format(distribution),
-            ],
+            relpaths = [release_relpath],
         )
-        inrelease = from_index["dists/{}/InRelease".format(distribution)]
+        release_file = from_index[release_relpath]
 
         # Also download Packages indexes via index for determinism when snapshotted
         needed_packages_relpaths = []
@@ -126,7 +124,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             relpaths = needed_packages_relpaths,
         )
     else:
-        inrelease = download(
+        release_file = download(
             actions = ctx.actions,
             out_name = "InRelease",
             url = suite_baseurl + "InRelease",
@@ -145,7 +143,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             "parse",
             "deb",
             "release",
-            inrelease,
+            release_file,
             release_json.as_output(),
         ),
         category = "parse",
@@ -204,31 +202,33 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             components_subtargets[key] = [DefaultInfo(sub_targets = {"packages.json": [DefaultInfo(c.json)]})]
             metadata_tree["components/" + key + "/packages.json"] = c.json
 
-    # Generate a custom InRelease that only lists the components we care
-    # about, signed with a dummy key so apt can verify it.
-    generated_inrelease = ctx.actions.declare_output(
-        "generated-InRelease",
+    # Generate a custom Release that only lists the components we care
+    # about. It is unsigned: consumers read the archive as a trusted
+    # source, and integrity is enforced by the checksums Buck pins for
+    # every downloaded file, so a signature would prove nothing (the
+    # only key ever used here was a dummy with its secret in-tree).
+    generated_release = ctx.actions.declare_output(
+        "generated-Release",
         has_content_based_path = True,
     )
     generate_cmd = cmd_args(
         ctx.attrs._metadata_bin[RunInfo],
         "generate",
         "deb",
-        "inrelease",
+        "release",
         cmd_args(release_json, format = "--release-json={}"),
-        cmd_args(ctx.attrs._signing_key, format = "--signing-key={}"),
         cmd_args(components_json, format = "--components-json={}"),
-        generated_inrelease.as_output(),
+        generated_release.as_output(),
     )
     ctx.actions.run(
         generate_cmd,
         category = "generate",
-        identifier = "InRelease",
+        identifier = "Release",
     )
 
     dist_prefix = "dists/" + distribution + "/"
     archive_dir_srcs = {
-        dist_prefix + "InRelease": generated_inrelease,
+        dist_prefix + "Release": generated_release,
     }
     for arch, arch_indexes in per_arch_indexes.items():
         for cname, c in arch_indexes.items():
@@ -281,7 +281,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
                 "debug_only": [
                     DefaultInfo(
                         sub_targets = {
-                            "InRelease": [DefaultInfo(inrelease)],
+                            "Release": [DefaultInfo(release_file)],
                             "archive": [DefaultInfo(archive_dir)],
                             "components": [DefaultInfo(sub_targets = components_subtargets)],
                             "index.json": [DefaultInfo(index_json)],
@@ -336,7 +336,7 @@ _suite = rule(
             attrs.string(),
             attrs.string(),
             default = {},
-            doc = "Checksum for the index file (InRelease) that contains sha1+sha256 of other blobs",
+            doc = "Checksum for the index file (Release) that contains sha1+sha256 of other blobs",
         ),
         "members": attrs.list(
             attrs.string(),
@@ -364,11 +364,6 @@ _suite = rule(
             attrs.exec_dep(
                 providers = [RunInfo],
                 default = "//antlir/antlir2/package_managers/snapshot:metadata",
-            ),
-        ),
-        "_signing_key": attrs.default_only(
-            attrs.source(
-                default = "//antlir/antlir2/package_managers/deb:dummy_signing_key",
             ),
         ),
     },

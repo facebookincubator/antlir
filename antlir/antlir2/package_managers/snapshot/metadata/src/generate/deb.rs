@@ -9,7 +9,7 @@ use anyhow::Result;
 use clap::Parser;
 use clap::Subcommand;
 
-mod inrelease;
+mod release;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Generate {
@@ -19,15 +19,15 @@ pub(crate) struct Generate {
 
 #[derive(Debug, Subcommand)]
 enum Sub {
-    /// Generate a signed InRelease file from a release.json and component
+    /// Generate an unsigned Release file from a release.json and component
     /// Packages files.
-    Inrelease(inrelease::GenerateInRelease),
+    Release(release::GenerateRelease),
 }
 
 impl Generate {
     pub(crate) fn run(self) -> Result<()> {
         match self.sub {
-            Sub::Inrelease(sub) => sub.run(),
+            Sub::Release(sub) => sub.run(),
         }
     }
 }
