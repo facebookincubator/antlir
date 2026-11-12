@@ -531,6 +531,20 @@ impl Downloader {
             BlobStatus::Missing => {}
         }
 
+        // Cheap backend-native copy (e.g. Manifold `copyObj`) avoids
+        // downloading and re-uploading the bytes entirely. Always try it:
+        // `Ok(None)` means this blob cannot be fast-copied and is
+        // downloaded as usual, so one snapshot may mix copied and
+        // downloaded blobs. Any other copy failure hard-fails the package.
+        if let Some(copied) = storage
+            .fast_copy_flat(&entry.checksums, &entry.filename)
+            .await
+            .with_context(|| format!("failed to fast-copy {}", entry.filename))?
+        {
+            info!(filename = entry.filename, "fast-copied package blob");
+            return Ok(Some(copied));
+        }
+
         let download_url = format!("{}/{}", base_url, entry.filename);
         debug!(
             filename = entry.filename,
@@ -1120,6 +1134,142 @@ mod tests {
             "checksums": {"sha256": "0".repeat(64)},
         }))
         .expect("test entry should deserialize")
+    }
+
+    struct FakeStorage {
+        /// Whether `fast_copy_flat` copies the blob (`Ok(Some(_))`); when
+        /// false it reports the blob cannot be copied (`Ok(None)`).
+        copies: bool,
+        /// Whether `fast_copy_flat` fails outright (`Err`).
+        fails: bool,
+    }
+
+    #[async_trait::async_trait]
+    impl Storage for FakeStorage {
+        async fn store(&self, _file: &std::path::Path, _key: &str) -> Result<UrlWithChecksums> {
+            anyhow::bail!("store not used in these tests")
+        }
+
+        async fn store_flat_with_checksums(
+            &self,
+            _file: &std::path::Path,
+            checksums: &snapshot_common::Checksums,
+        ) -> Result<UrlWithChecksums> {
+            Ok(UrlWithChecksums {
+                url: url::Url::parse("mf://test@bucket/flat/uploaded").expect("valid url"),
+                checksums: checksums.clone(),
+            })
+        }
+
+        async fn blob_status(&self, _checksums: &snapshot_common::Checksums) -> Result<BlobStatus> {
+            Ok(BlobStatus::Missing)
+        }
+
+        async fn extend_ttl(&self, _checksums: &snapshot_common::Checksums) -> Result<()> {
+            Ok(())
+        }
+
+        async fn symlink_flat_to_tree(
+            &self,
+            _checksums: &snapshot_common::Checksums,
+            _key: &str,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        async fn get_file_checksums(&self, _key: &str) -> Result<snapshot_common::Checksums> {
+            Ok(snapshot_common::Checksums::new_sha256([0; 32]))
+        }
+
+        async fn fast_copy_flat(
+            &self,
+            checksums: &snapshot_common::Checksums,
+            _filename: &str,
+        ) -> Result<Option<UrlWithChecksums>> {
+            if self.fails {
+                anyhow::bail!("copy exploded");
+            }
+            if !self.copies {
+                return Ok(None);
+            }
+            Ok(Some(UrlWithChecksums {
+                url: url::Url::parse("mf://test@bucket/flat/copied").expect("valid url"),
+                checksums: checksums.clone(),
+            }))
+        }
+    }
+
+    fn entry_with_checksums(filename: &str, checksums: snapshot_common::Checksums) -> Entry {
+        serde_json::from_value(serde_json::json!({
+            "filename": filename,
+            "checksums": serde_json::to_value(checksums).expect("checksums serialize"),
+        }))
+        .expect("test entry should deserialize")
+    }
+
+    #[tokio::test]
+    async fn fast_copy_hit_skips_download() {
+        let storage = FakeStorage {
+            copies: true,
+            fails: false,
+        };
+        let downloader = Downloader::new(PackageDownloadSettings::default()).expect("downloader");
+        let entry = entry_with_checksums(
+            "Packages/pkg.rpm",
+            snapshot_common::Checksums::new_sha256([0xAA; 32]),
+        );
+
+        // Nothing listens here: any HTTP attempt would fail after retries.
+        let result = downloader
+            .snapshot_one_package(&storage, "http://127.0.0.1:1", &entry)
+            .await
+            .expect("fast copy should succeed without downloading")
+            .expect("fast copy should report a stored blob");
+        assert_eq!(result.url.as_str(), "mf://test@bucket/flat/copied");
+    }
+
+    #[tokio::test]
+    async fn uncopyable_blob_falls_back_to_download() {
+        let expected = body(4096);
+        let checksums = snapshot_common::Checksums::from_reader(&expected[..]).expect("checksums");
+        let mirror = FakeMirror::start(expected, vec![Behavior::Serve]).await;
+        let storage = FakeStorage {
+            copies: false,
+            fails: false,
+        };
+        let downloader = Downloader::new(PackageDownloadSettings::default()).expect("downloader");
+        let entry = entry_with_checksums("pkg.deb", checksums);
+
+        let result = downloader
+            .snapshot_one_package(&storage, &format!("http://{}", mirror.addr), &entry)
+            .await
+            .expect("download fallback should succeed")
+            .expect("download should report a stored blob");
+        assert_eq!(result.url.as_str(), "mf://test@bucket/flat/uploaded");
+    }
+
+    #[tokio::test]
+    async fn fast_copy_error_hard_fails_without_downloading() {
+        let storage = FakeStorage {
+            copies: true,
+            fails: true,
+        };
+        let downloader = Downloader::new(PackageDownloadSettings::default()).expect("downloader");
+        let entry = entry_with_checksums(
+            "pkg.deb",
+            snapshot_common::Checksums::new_sha256([0xAA; 32]),
+        );
+
+        // Nothing listens here, and no download may be attempted: a failed
+        // fast copy is the failure, not a cue to fetch over HTTP.
+        let err = downloader
+            .snapshot_one_package(&storage, "http://127.0.0.1:1", &entry)
+            .await
+            .expect_err("a failed fast copy must fail the package");
+        assert!(
+            format!("{err:#}").contains("failed to fast-copy pkg.deb"),
+            "error should name the fast copy, got: {err:#}"
+        );
     }
 
     #[test]

@@ -78,6 +78,33 @@ pub(crate) trait Storage: Send + Sync {
         checksums: &Checksums,
     ) -> Result<UrlWithChecksums>;
 
+    /// Populate the flat namespace for `filename` with a backend-native
+    /// cheap copy instead of a download + re-upload -- e.g. a Manifold
+    /// `copyObj` reflink within a bucket, or (in a future backend) an
+    /// `fbpkg clone`. The destination must be exactly the flat,
+    /// content-addressed object that [`Storage::store_flat_with_checksums`]
+    /// would have created for the same bytes, so tree symlinks, TTL and
+    /// index building are unchanged.
+    ///
+    /// Try to copy the blob for `filename` into the flat namespace.
+    /// Callers always invoke this and download only on `Ok(None)`, which
+    /// means this blob cannot be fast-copied -- no fast-copy source is
+    /// configured at all, or not for this particular blob (e.g. its
+    /// source object is absent). A snapshot may therefore mix copied and
+    /// downloaded blobs. Any other copy failure is an error. On
+    /// `Ok(Some(_))` the flat object holds the bytes described by
+    /// `checksums`; backends whose copy primitive cannot hash the bytes
+    /// (Manifold `copyObj` included) trust the configured source to name
+    /// those bytes, exactly as the repo metadata that produced
+    /// `checksums` does.
+    async fn fast_copy_flat(
+        &self,
+        _checksums: &Checksums,
+        _filename: &str,
+    ) -> Result<Option<UrlWithChecksums>> {
+        Ok(None)
+    }
+
     /// Check the status of a blob in storage: whether it is missing, expiring
     /// soon, or fresh. This is a single round-trip operation.
     async fn blob_status(&self, checksums: &Checksums) -> Result<BlobStatus>;
@@ -195,17 +222,28 @@ impl StorageConfig {
     }
 
     /// Render this config as the user-facing dict that would appear in a
-    /// rule's `snapshot_storage` attr (i.e. without `tree_prefix`, which is
-    /// derived per-target). api_key is intentionally included – it is a non-secret
-    /// public identifier separate from access controls per user guidance.
+    /// rule's `snapshot_storage` attr. A configured `tree_prefix` is a base
+    /// prefix (the per-target prefix is derived underneath it at snapshot
+    /// time), so it round-trips here; without one the dict omits it.
+    /// api_key is intentionally included – it is a non-secret public
+    /// identifier separate from access controls per user guidance.
     pub(crate) fn as_user_dict(&self) -> Vec<(&'static str, String)> {
         match self {
             #[cfg(facebook)]
-            StorageConfig::Manifold(c) => vec![
-                ("type", "manifold".to_owned()),
-                ("bucket", c.bucket().to_owned()),
-                ("api_key", c.api_key().to_owned()),
-            ],
+            StorageConfig::Manifold(c) => {
+                let mut dict = vec![
+                    ("type", "manifold".to_owned()),
+                    ("bucket", c.bucket().to_owned()),
+                    ("api_key", c.api_key().to_owned()),
+                ];
+                if let Some(tree_prefix) = c.tree_prefix() {
+                    dict.push(("tree_prefix", tree_prefix.to_owned()));
+                }
+                if let Some(copy_obj_src_key) = c.copy_obj_src_key() {
+                    dict.push(("copy_obj_src_key", copy_obj_src_key.to_owned()));
+                }
+                dict
+            }
             #[cfg(not(facebook))]
             StorageConfig::Unsupported => vec![],
         }

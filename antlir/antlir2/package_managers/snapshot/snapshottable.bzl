@@ -50,8 +50,8 @@ SnapshottableInfo = provider(
         #
         # Shape matches the snapshot binary's StorageConfig serde format —
         # for Manifold: `{"type": "manifold", "bucket": "...", "api_key":
-        # "..."}`. `tree_prefix` is derived per-target by the binary and
-        # must NOT be set here.
+        # "..."}`. An optional `tree_prefix` here is a base prefix: the
+        # per-target prefix the binary derives lives underneath it.
         "snapshot_storage": [dict[str, str], None],
     },
 )
