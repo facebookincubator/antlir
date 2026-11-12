@@ -393,6 +393,9 @@ struct SnapshotOneRequest<'a> {
     tree_prefix: String,
     storage_config: &'a StorageConfig,
     concurrency: usize,
+    /// Arch being snapshotted (yum only; deb snapshots all arches at
+    /// once), used to substitute `{arch}` in storage patterns.
+    arch: Option<String>,
 }
 
 async fn snapshot_one(
@@ -405,7 +408,7 @@ async fn snapshot_one(
     // avoid creating multiple clients.
     let storage: std::sync::Arc<dyn super::storage::Storage> = req
         .storage_config
-        .build_with_tree_prefix(fb, &req.tree_prefix)
+        .build_with_tree_prefix(fb, &req.tree_prefix, req.arch.as_deref())
         .with_context(|| format!("failed to build storage for {}", req.tree_prefix))?
         .into();
 
@@ -565,6 +568,7 @@ async fn snapshot_yum_arch(
             tree_prefix,
             storage_config: &target.snapshot_storage,
             concurrency,
+            arch: Some(arch.arch.clone()),
         },
         project_root,
         fb,
@@ -605,6 +609,7 @@ async fn snapshot_deb_target(
             tree_prefix: target.tree_prefix.clone(),
             storage_config: &target.snapshot_storage,
             concurrency,
+            arch: None,
         },
         project_root,
         fb,

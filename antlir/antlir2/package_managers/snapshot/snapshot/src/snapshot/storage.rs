@@ -189,21 +189,27 @@ impl StorageConfig {
         }
     }
 
+    /// Build storage for one snapshot tree. `arch` is the arch being
+    /// snapshotted (yum snapshots run once per arch; deb passes `None`)
+    /// and substitutes any `{arch}` placeholder in backend patterns such
+    /// as Manifold's `copy_obj_src_key`.
     pub(crate) fn build_with_tree_prefix(
         &self,
         fb: fbinit::FacebookInit,
         tree_prefix: &str,
+        arch: Option<&str>,
     ) -> Result<Box<dyn Storage>> {
         match self {
             #[cfg(facebook)]
             StorageConfig::Manifold(c) => Ok(Box::new(ManifoldStorage::new(
                 fb,
-                c.with_tree_prefix(tree_prefix),
+                c.with_tree_prefix(tree_prefix).with_arch(arch),
             )?)),
             #[cfg(not(facebook))]
             StorageConfig::Unsupported => {
                 let _ = fb;
                 let _ = tree_prefix;
+                let _ = arch;
                 anyhow::bail!("Manifold storage is only available in facebook builds")
             }
         }
