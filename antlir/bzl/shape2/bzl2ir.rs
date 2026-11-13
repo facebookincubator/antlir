@@ -240,8 +240,10 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> anyhow::Result<&'a TypeRegistry
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
-        #[starlark(require = named)] __thrift: Option<ValueOf<'v, DictType<IntView<'v>, &'v str>>>,
-        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<&'v str, Value<'v>>>,
+        #[starlark(require = named)] __thrift: Option<
+            ValueOf<'v, DictType<IntView<'v>, StarlarkStr>>,
+        >,
+        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<StarlarkStr, Value<'v>>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<ValueOf<'v, TypeId>> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
@@ -255,11 +257,9 @@ fn shape(builder: &mut GlobalsBuilder) {
         }
         let thrift_fields = __thrift
             .map(|t| {
-                t.try_items::<IntView, &str>()
+                t.try_items::<u32, &str>()
                     .map(|entry| {
                         let (k, v) = entry.map_err(starlark::Error::into_anyhow)?;
-                        let k = u32::unpack_value_err(k.to_value())
-                            .map_err(starlark::Error::into_anyhow)?;
                         let field_name = ir::FieldName(v.to_owned());
                         let field = fields
                             .get(&field_name)
@@ -304,8 +304,8 @@ fn shape(builder: &mut GlobalsBuilder) {
             .map_err(starlark::Error::into_anyhow)
             .context("while collecting enum variants")?
             .map(|v| {
-                String::unpack_param(v)
-                    .map(|s| s.into())
+                <&str>::unpack_param(v)
+                    .map(|s| s.to_owned().into())
                     .map_err(starlark::Error::into_anyhow)
             })
             .collect::<anyhow::Result<_>>()?;
