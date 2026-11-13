@@ -246,7 +246,7 @@ fn shape(builder: &mut GlobalsBuilder) {
     ) -> anyhow::Result<ValueOf<'v, TypeId>> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let mut fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = BTreeMap::new();
-        for entry in kwargs.try_items() {
+        for entry in kwargs.try_items::<&str, Value>() {
             let (key, val) = entry.map_err(starlark::Error::into_anyhow)?;
             if key == "__I_AM_TARGET__" || key == "__thrift_fields" {
                 continue;
@@ -255,7 +255,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         }
         let thrift_fields = __thrift
             .map(|t| {
-                t.try_items()
+                t.try_items::<IntView, &str>()
                     .map(|entry| {
                         let (k, v) = entry.map_err(starlark::Error::into_anyhow)?;
                         let k = u32::unpack_value_err(k.to_value())
@@ -400,10 +400,7 @@ fn shape(builder: &mut GlobalsBuilder) {
             .collect::<anyhow::Result<_>>()?;
         let thrift_types = match __thrift {
             Some(t) => {
-                let t = t
-                    .try_items()
-                    .map(|i| u32::unpack_value_err(i?.to_value()))
-                    .collect::<starlark::Result<Vec<_>>>()?;
+                let t = t.try_items::<u32>().collect::<starlark::Result<Vec<_>>>()?;
                 // Closure to convert the `anyhow` error to a `starlark::Error`
                 (|| {
                     ensure!(
