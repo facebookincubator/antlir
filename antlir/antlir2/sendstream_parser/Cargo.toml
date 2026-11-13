@@ -31,7 +31,7 @@ uuid = { version = "1.29.1", features = ["rng-getrandom", "serde", "v4", "v5", "
 [dev-dependencies]
 quickcheck = "1.1"
 serde = { version = "1.0.229", features = ["derive", "rc"] }
-similar-asserts = "1.4.2"
+similar-asserts = "2.0.0"
 
 [features]
 default = ["serde", "serde"]
