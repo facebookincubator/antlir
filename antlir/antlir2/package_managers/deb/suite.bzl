@@ -7,6 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/package_managers/snapshot:download.bzl", "download")
 load("//antlir/antlir2/package_managers/snapshot:download_from_index.bzl", "download_from_index")
 load("//antlir/antlir2/package_managers/snapshot:download_packages_subtargets.bzl", "download_members", "download_packages_subtargets")
+load("//antlir/antlir2/package_managers/snapshot:members.bzl", "expand_members")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":packages_index.bzl", "download_component_package_indexes")
 
@@ -264,13 +265,20 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     # Members expose every package in the suite by
     # `{name}_{version}_{arch}`. Unlike yum, one suite analysis covers all
     # architectures against a single archive url, so every member is
-    # downloadable here.
+    # downloadable here. Snapshotted suites carry `members_compressed`
+    # (expanded for this platform's arch); `members` stays as full
+    # NEVRAs for hand-written targets.
+    member_nevras = list(ctx.attrs.members) + expand_members(
+        ctx.attrs.members_compressed,
+        arch_names = ["all", "amd64", "arm64"],
+        current_arch = ctx.attrs._arch,
+    )
     member_outputs = download_members(
         actions = ctx.actions,
         packages_jsons = {arch + "/" + cname: p.json for arch, arch_indexes in per_arch_indexes.items() for cname, p in arch_indexes.items()},
         index_json = index_json if ctx.attrs.index_checksums else None,
         baseurl = archive_url,
-        nevras = ctx.attrs.members,
+        nevras = member_nevras,
     )
     member_subtargets = {nevra: [DefaultInfo(out)] for nevra, out in member_outputs.items()}
 
@@ -343,6 +351,12 @@ _suite = rule(
             default = [],
             doc = "Full `{name}_{version}_{arch}` NEVRAs: arch-independent members plus (via select) single-arch members for the current arch. The snapshot binary emits this as a plain list plus a per-arch select(); the rule downloads all members (via the index) and exposes them as `packages` subtargets and in `DebSuiteInfo`.",
         ),
+        "members_compressed": attrs.dict(
+            attrs.string(),
+            attrs.list(attrs.string()),
+            default = {},
+            doc = "Compressed form of `members` emitted by the snapshot binary for multi-arch suites (see `expand_members` in `//antlir/antlir2/package_managers/snapshot:members.bzl`). Expanded in the rule impl for the current arch and merged with `members`.",
+        ),
         "package_aliases_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as `package_aliases_subtargets`"),
         "package_subtargets": attrs.list(attrs.string(), default = [], doc = "Deprecated alias for `package_aliases_subtargets`"),
         "snapshot_buck_file": attrs.option(
@@ -359,6 +373,15 @@ _suite = rule(
             attrs.dict(attrs.string(), attrs.string()),
             default = None,
             doc = 'Storage config for `snapshot run-all` (e.g. `{"type": "manifold", "bucket": "...", "api_key": "..."}`).',
+        ),
+        "_arch": attrs.default_only(
+            attrs.string(
+                default = select({
+                    "DEFAULT": "",
+                    "ovr_config//cpu:arm64": "arm64",
+                    "ovr_config//cpu:x86_64": "amd64",
+                }),
+            ),
         ),
         "_metadata_bin": attrs.default_only(
             attrs.exec_dep(

@@ -39,7 +39,9 @@ pub struct YumRepo {
     /// `{name}_{version}_{arch}` identifiers of every package in the repo.
     /// The `repo()` rule downloads all of these (via the index) and
     /// exposes them as `packages` subtargets and in `YumRepoInfo`.
-    /// Rendered manually (see `members_starlark`), so serde skips it.
+    /// Rendered manually (see `render_target`: `members_compressed`
+    /// when `compress_members` applies, else `members_starlark`), so
+    /// serde skips it.
     #[serde(default, skip_serializing)]
     pub members: BTreeMap<String, String>,
     /// Package names exposed as individually-buildable
@@ -67,12 +69,158 @@ pub struct YumRepo {
 /// belong in the plain list (as full NEVRAs).
 const ARCH_INDEPENDENT: [&str; 3] = ["all", "any", "noarch"];
 
+/// Canonical arch spellings for one package manager, in mask-bit order
+/// (see `compress_members`): arch-independent, x86, arm. The Starlark
+/// rule impls expand compressed members with the same spellings.
+struct MemberArchNames {
+    independent: &'static str,
+    x86: &'static str,
+    arm: &'static str,
+}
+
+const DEB_ARCH_NAMES: MemberArchNames = MemberArchNames {
+    independent: "all",
+    x86: "amd64",
+    arm: "arm64",
+};
+
+const YUM_ARCH_NAMES: MemberArchNames = MemberArchNames {
+    independent: "noarch",
+    x86: "x86_64",
+    arm: "aarch64",
+};
+
+/// Minimum number of stems that must share a `-`-terminated name
+/// prefix for `compress_members` to factor it out as a group. Smaller
+/// families stay in the ungrouped (`""`) bucket as full stems.
+const MEMBERS_MIN_GROUP: usize = 4;
+
 fn cpu_constraint(arch: &str) -> Option<Label> {
     match arch {
         "amd64" | "x86_64" => Label::new("ovr_config//cpu:x86_64").ok(),
         "arm64" | "aarch64" => Label::new("ovr_config//cpu:arm64").ok(),
         _ => None,
     }
+}
+
+/// Group member stems by shared name prefix, or `None` when the
+/// members cannot be represented this way (the caller then falls back
+/// to the plain `members` list).
+///
+/// A *stem* is a NEVRA without its `_{arch}` suffix. The result maps a
+/// shared prefix to the stem remainders under it, one entry per stem
+/// as `{rest}|{arches}`, where `arches` names the arches the stem
+/// exists for using the letters `a` (arch-independent), `x` (x86) and
+/// `r` (arm) in that order -- e.g. `us_1.0-1|a` or `dev_2.0-1|xr`. A
+/// stem present for both binary arches is stored once.
+///
+/// Prefixes are discovered, not hardcoded: every `-`-terminated
+/// prefix of a package name (the part of the stem before the first
+/// `_`) shared by at least `MEMBERS_MIN_GROUP` stems is a candidate,
+/// and each stem joins the longest candidate it matches (so
+/// `asterisk-core-sounds-en-` wins over `asterisk-`). Groups that
+/// still end up with fewer than `MEMBERS_MIN_GROUP` entries (their
+/// stems mostly chose longer prefixes) are dissolved back into the
+/// `""` group, whose stems stay whole. Keeping
+/// one line per package inside its family group keeps the generated
+/// file glanceable and makes member changes single-line diffs next
+/// to their relatives. The Starlark decoder is `expand_members` in
+/// `//antlir/antlir2/package_managers/snapshot:members.bzl`; keep the
+/// two in sync.
+///
+/// Compression applies whenever the members are representable (any
+/// combination of the canonical arches, single-arch included);
+/// `render_target` only picks it when it renders smaller than the
+/// plain list, so tiny member sets keep the plain form. Members that
+/// cannot be represented (non-canonical arch spelling, separator in
+/// a stem) keep the plain rendering.
+fn compress_members(
+    members: &BTreeMap<String, String>,
+    arch_names: &MemberArchNames,
+) -> Option<BTreeMap<String, Vec<String>>> {
+    let mut stem_masks: BTreeMap<String, u8> = BTreeMap::new();
+    for (nevra, arch) in members {
+        let bit = if arch == arch_names.independent {
+            1
+        } else if arch == arch_names.x86 {
+            2
+        } else if arch == arch_names.arm {
+            4
+        } else {
+            return None;
+        };
+        let stem = nevra.strip_suffix(&format!("_{arch}"))?;
+        if !stem.is_ascii() || stem.contains('|') {
+            return None;
+        }
+        *stem_masks.entry(stem.to_owned()).or_default() |= bit;
+    }
+
+    // Count how many stems share each `-`-terminated name prefix.
+    let mut prefix_counts: BTreeMap<String, usize> = BTreeMap::new();
+    for stem in stem_masks.keys() {
+        for prefix in name_prefixes(stem) {
+            *prefix_counts.entry(prefix.to_owned()).or_default() += 1;
+        }
+    }
+
+    // Assign each stem to its longest qualifying prefix, then
+    // dissolve groups that end up below the threshold anyway.
+    let mut assigned: Vec<(&str, &str, u8)> = Vec::new();
+    let mut group_sizes: BTreeMap<&str, usize> = BTreeMap::new();
+    for (stem, mask) in &stem_masks {
+        let prefix = name_prefixes(stem)
+            .into_iter()
+            .filter(|p| prefix_counts.get(*p).copied().unwrap_or(0) >= MEMBERS_MIN_GROUP)
+            .max_by_key(|p| p.len())
+            .unwrap_or("");
+        *group_sizes.entry(prefix).or_default() += 1;
+        assigned.push((prefix, stem, *mask));
+    }
+
+    let mut groups: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for (prefix, stem, mask) in assigned {
+        let prefix = if prefix.is_empty() || group_sizes[prefix] >= MEMBERS_MIN_GROUP {
+            prefix
+        } else {
+            ""
+        };
+        let arches: String = [(1, 'a'), (2, 'x'), (4, 'r')]
+            .into_iter()
+            .filter(|(bit, _)| mask & bit != 0)
+            .map(|(_, c)| c)
+            .collect();
+        groups
+            .entry(prefix.to_owned())
+            .or_default()
+            .push(format!("{}|{arches}", &stem[prefix.len()..]));
+    }
+    Some(groups)
+}
+
+/// Every `-`-terminated prefix of the package name in a stem (the part
+/// before the first `_`), shortest first: `libfoo-bar_1.0` yields
+/// `libfoo-`.
+fn name_prefixes(stem: &str) -> Vec<&str> {
+    let name = stem.split('_').next().unwrap_or("");
+    name.match_indices('-').map(|(i, _)| &name[..=i]).collect()
+}
+
+/// Render the `members_compressed` attr value (a prefix-grouped dict
+/// from [`compress_members`]), or `None` to fall back to the plain
+/// `members` list.
+fn members_compressed_starlark(
+    members: &BTreeMap<String, String>,
+    arch_names: &MemberArchNames,
+) -> Result<Option<String>, buck_targets::Error> {
+    let Some(groups) = compress_members(members, arch_names) else {
+        return Ok(None);
+    };
+    Ok(Some(
+        buck_targets::serde_starlark::to_string(&groups)?
+            .trim_end()
+            .to_owned(),
+    ))
 }
 
 /// Render the `members` attr value as `[...] + select({...})`:
@@ -133,26 +281,57 @@ fn members_starlark(
     Ok(Some(parts.join(" + ")))
 }
 
+/// Indent every line of a rendered `members` expression after the
+/// first by one level. `serde_starlark` renders the list/select at
+/// indent 0, but it is spliced in as an attribute value (indent 1), so
+/// its entries belong at indent 2, its closing brackets at indent 1.
+fn indent_members_expr(expr: &str) -> String {
+    let mut lines = expr.lines();
+    let mut indented = lines.next().unwrap_or_default().to_owned();
+    for line in lines {
+        indented.push('\n');
+        if !line.is_empty() {
+            indented.push_str("    ");
+            indented.push_str(line);
+        }
+    }
+    indented
+}
+
 /// Render a target struct with serde, then splice in the manually
-/// rendered `members` attr (skipped by serde) when non-empty.
+/// rendered members attr (skipped by serde) when non-empty: the
+/// compressed form when [`compress_members`] renders smaller,
+/// otherwise the plain `members` list (see `members_starlark`).
 fn render_target<T: Serialize>(
     target: &T,
     members: &BTreeMap<String, String>,
+    arch_names: &MemberArchNames,
 ) -> Result<String, buck_targets::Error> {
     let rendered = buck_targets::serde_starlark::to_string(target)?;
-    let Some(expr) = members_starlark(members)? else {
+    if members.is_empty() {
         return Ok(rendered);
+    }
+    let plain = members_starlark(members)?;
+    let compressed = members_compressed_starlark(members, arch_names)?;
+    let (attr, expr) = match (plain, compressed) {
+        (Some(p), Some(c)) if c.len() < p.len() => ("members_compressed", c),
+        (Some(p), _) => ("members", p),
+        (None, Some(c)) => ("members_compressed", c),
+        (None, None) => return Ok(rendered),
     };
     let body = rendered.trim_end();
     let Some(body) = body.strip_suffix(')') else {
         return Ok(rendered);
     };
-    Ok(format!("{body}    members = {expr},\n)\n"))
+    Ok(format!(
+        "{body}    {attr} = {},\n)\n",
+        indent_members_expr(&expr)
+    ))
 }
 
 impl buck_targets::ToStarlark for YumRepo {
     fn to_starlark(&self) -> Result<String, buck_targets::Error> {
-        render_target(self, &self.members)
+        render_target(self, &self.members, &YUM_ARCH_NAMES)
     }
 }
 
@@ -194,7 +373,9 @@ pub struct DebSuite {
     /// `{name}_{version}_{arch}` identifiers of every package in the suite.
     /// The `suite()` rule downloads all of these (via the index) and
     /// exposes them as `packages` subtargets and in `DebSuiteInfo`.
-    /// Rendered manually (see `members_starlark`), so serde skips it.
+    /// Rendered manually (see `render_target`: `members_compressed`
+    /// when `compress_members` applies, else `members_starlark`), so
+    /// serde skips it.
     #[serde(default, skip_serializing)]
     pub members: BTreeMap<String, String>,
     #[serde(
@@ -211,7 +392,7 @@ pub struct DebSuite {
 
 impl buck_targets::ToStarlark for DebSuite {
     fn to_starlark(&self) -> Result<String, buck_targets::Error> {
-        render_target(self, &self.members)
+        render_target(self, &self.members, &DEB_ARCH_NAMES)
     }
 }
 
@@ -315,6 +496,35 @@ mod tests {
             ("bucket".to_owned(), "test".to_owned()),
             ("api_key".to_owned(), "key".to_owned()),
         ])
+    }
+
+    /// Reference decoder mirroring `expand_members` in
+    /// `//antlir/antlir2/package_managers/snapshot:members.bzl`:
+    /// reconstruct the NEVRAs visible for `current_arch` (the empty
+    /// string models a platform matching neither binary arch).
+    fn expand_for_test(
+        groups: &BTreeMap<String, Vec<String>>,
+        arch_names: &MemberArchNames,
+        current_arch: &str,
+    ) -> BTreeSet<String> {
+        let spellings = [
+            (arch_names.independent, 'a'),
+            (arch_names.x86, 'x'),
+            (arch_names.arm, 'r'),
+        ];
+        let mut out = BTreeSet::new();
+        for (prefix, entries) in groups {
+            for entry in entries {
+                let (rest, arches) = entry.split_once('|').expect("entry has arch letters");
+                let stem = format!("{prefix}{rest}");
+                for (spelling, letter) in spellings {
+                    if arches.contains(letter) && (letter == 'a' || spelling == current_arch) {
+                        out.insert(format!("{stem}_{spelling}"));
+                    }
+                }
+            }
+        }
+        out
     }
 
     #[test]
@@ -488,36 +698,92 @@ mod tests {
             visibility: vec!["PUBLIC".to_owned()],
         };
         let starlark = suite.to_starlark().expect("renders");
-        // Binary-arch members go into the select as full NEVRAs
+        // Both binary arches present: members render compressed, with
+        // each stem stored once, and expand back to the same NEVRAs
+        // per arch as the plain rendering would select.
         assert!(
-            starlark.contains("select({"),
-            "binary members should select: {starlark}"
+            starlark.contains("members_compressed = {"),
+            "members should be compressed: {starlark}"
         );
         assert!(
-            starlark.contains("bash_5.2-5_amd64"),
-            "amd64 nevra in select: {starlark}"
+            !starlark.contains("bash_5.2-5_amd64"),
+            "full nevras should not appear: {starlark}"
+        );
+        let groups = compress_members(&suite.members, &DEB_ARCH_NAMES).expect("compressible");
+        for (current, arches) in [
+            ("amd64", &["all", "amd64"][..]),
+            ("arm64", &["all", "arm64"][..]),
+            ("", &["all"][..]),
+        ] {
+            let expected: BTreeSet<String> = suite
+                .members
+                .iter()
+                .filter(|(_, a)| arches.contains(&a.as_str()))
+                .map(|(n, _)| n.clone())
+                .collect();
+            assert_eq!(
+                expand_for_test(&groups, &DEB_ARCH_NAMES, current),
+                expected,
+                "expansion for arch '{current}'"
+            );
+        }
+    }
+
+    #[test]
+    fn members_are_indented_as_an_attribute_value() {
+        let cs = Checksums::new_sha256(hex!(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ));
+        // Enough members that serde_starlark renders the grouped dict
+        // multi-line rather than inlining it.
+        let mut members = BTreeMap::from([
+            ("bash_5.2-5_x86_64".to_owned(), "x86_64".to_owned()),
+            ("bash_5.2-5_aarch64".to_owned(), "aarch64".to_owned()),
+        ]);
+        for i in 0..200 {
+            members.insert(format!("data-{i}_1.0_noarch"), "noarch".to_owned());
+        }
+        let repo = YumRepo {
+            name: "my-repo".to_owned(),
+            arches: vec!["aarch64".to_owned(), "x86_64".to_owned()],
+            baseurl: "https://example.com/{arch}/".to_owned(),
+            members,
+            package_aliases_subtargets: BTreeSet::new(),
+            index_checksums: RepomdChecksums::Single(cs),
+            snapshot_source: None,
+            snapshot_storage: storage_map(),
+            visibility: vec!["PUBLIC".to_owned()],
+        };
+        let starlark = repo.to_starlark().expect("renders");
+        // Compressed groups sit at indent 2 and the dict closes at
+        // indent 1, like any other attribute value. The `data-`
+        // family (200 stems) is factored out as its own group.
+        assert!(
+            starlark.contains("    members_compressed = {\n        \""),
+            "compressed members indentation: {starlark}"
         );
         assert!(
-            starlark.contains("bash_5.2-5_arm64"),
-            "arm64 nevra in select: {starlark}"
+            starlark.contains("\"data-\": ["),
+            "family group should be factored out: {starlark}"
         );
         assert!(
-            starlark.contains("onlyx_1.0_amd64"),
-            "single should be rendered: {starlark}"
+            starlark.ends_with("    },\n)\n"),
+            "compressed dict and target closing indentation: {starlark}"
         );
-        // Arch-independent member stays in the plain members list
-        assert!(
-            starlark.contains("data_1.0_all"),
-            "independent member: {starlark}"
-        );
-        assert!(
-            !starlark.contains("members_pairs"),
-            "no pairs attr: {starlark}"
+        let groups = compress_members(&repo.members, &YUM_ARCH_NAMES).expect("compressible");
+        assert_eq!(
+            expand_for_test(&groups, &YUM_ARCH_NAMES, "x86_64"),
+            repo.members
+                .iter()
+                .filter(|(_, a)| a.as_str() != "aarch64")
+                .map(|(n, _)| n.clone())
+                .collect::<BTreeSet<_>>(),
+            "x86_64 expansion"
         );
     }
 
     #[test]
-    fn yum_members_dedupe_x86_64() {
+    fn yum_members_compress_x86_64() {
         // Arch comes from Package::architecture, so x86_64 (which
         // contains an underscore) needs no string parsing at all.
         let members = BTreeMap::from([
@@ -525,13 +791,158 @@ mod tests {
             ("bash_5.2-5_aarch64".to_owned(), "aarch64".to_owned()),
             ("onlyarm_1.0-1_aarch64".to_owned(), "aarch64".to_owned()),
         ]);
-        let expr = members_starlark(&members)
+        let groups = compress_members(&members, &YUM_ARCH_NAMES).expect("compressible");
+        // The stem shared by both binary arches is stored once.
+        assert_eq!(
+            groups.values().map(Vec::len).sum::<usize>(),
+            2,
+            "stems stored once: {groups:?}"
+        );
+        assert_eq!(
+            expand_for_test(&groups, &YUM_ARCH_NAMES, "x86_64"),
+            BTreeSet::from(["bash_5.2-5_x86_64".to_owned()]),
+            "x86_64 expansion"
+        );
+        assert_eq!(
+            expand_for_test(&groups, &YUM_ARCH_NAMES, "aarch64"),
+            BTreeSet::from([
+                "bash_5.2-5_aarch64".to_owned(),
+                "onlyarm_1.0-1_aarch64".to_owned(),
+            ]),
+            "aarch64 expansion"
+        );
+    }
+
+    #[test]
+    fn compressed_members_round_trip_across_groups() {
+        // A large family is factored into its own prefix group; the
+        // longest shared prefix wins over shorter ones.
+        let mut members = BTreeMap::new();
+        for i in 0..200 {
+            for arch in ["amd64", "arm64"] {
+                members.insert(
+                    format!("asterisk-core-sounds-en-{:03}_1.0-1_{arch}", i),
+                    arch.to_owned(),
+                );
+            }
+        }
+        members.insert("zz-data_1.0-1_all".to_owned(), "all".to_owned());
+        let groups = compress_members(&members, &DEB_ARCH_NAMES).expect("compressible");
+        let family = groups
+            .get("asterisk-core-sounds-en-")
+            .expect("family group should exist");
+        assert_eq!(family.len(), 200, "family entries: {family:?}");
+        assert!(
+            family.iter().all(|e| e.ends_with("|xr")),
+            "both-arch entries carry xr: {family:?}"
+        );
+        assert!(
+            groups
+                .get("")
+                .expect("ungrouped bucket")
+                .contains(&"zz-data_1.0-1|a".to_owned()),
+            "ungrouped stem stays whole: {groups:?}"
+        );
+        for current in ["amd64", "arm64"] {
+            let expected: BTreeSet<String> = members
+                .iter()
+                .filter(|(_, a)| a.as_str() == "all" || a.as_str() == current)
+                .map(|(n, _)| n.clone())
+                .collect();
+            assert_eq!(
+                expand_for_test(&groups, &DEB_ARCH_NAMES, current),
+                expected,
+                "expansion for {current}"
+            );
+        }
+        // Compressed rendering must actually shrink the plain one.
+        let plain = members_starlark(&members)
             .expect("renders")
             .expect("non-empty");
-        assert!(expr.contains("select({"), "binary members select: {expr}");
-        assert!(expr.contains("bash_5.2-5_x86_64"), "x86_64 nevra: {expr}");
-        assert!(expr.contains("bash_5.2-5_aarch64"), "aarch64 nevra: {expr}");
-        assert!(expr.contains("onlyarm_1.0-1_aarch64"), "single: {expr}");
+        let compressed = members_compressed_starlark(&members, &DEB_ARCH_NAMES)
+            .expect("renders")
+            .expect("compressed");
+        assert!(
+            compressed.len() < plain.len(),
+            "compressed {} should beat plain {}",
+            compressed.len(),
+            plain.len()
+        );
+    }
+
+    #[test]
+    fn compress_members_dissolves_small_groups() {
+        // `arctica-` is shared by 5 stems, but 4 of them prefer the
+        // longer `arctica-session-` prefix, leaving `arctica-` with a
+        // single entry. Factoring out a prefix for one stem saves
+        // nothing, so the group is dissolved into the `""` bucket.
+        let mut members = BTreeMap::new();
+        members.insert("arctica-greeter_1.0_amd64".to_owned(), "amd64".to_owned());
+        for name in ["alpha", "beta", "gamma", "delta"] {
+            members.insert(
+                format!("arctica-session-{name}_1.0_amd64"),
+                "amd64".to_owned(),
+            );
+        }
+        let groups = compress_members(&members, &DEB_ARCH_NAMES).expect("compressible");
+        assert!(
+            !groups.contains_key("arctica-"),
+            "single-entry group should be dissolved: {groups:?}"
+        );
+        assert_eq!(
+            groups.get("arctica-session-").map(Vec::len),
+            Some(4),
+            "full group survives: {groups:?}"
+        );
+        assert!(
+            groups
+                .get("")
+                .expect("ungrouped bucket")
+                .contains(&"arctica-greeter_1.0|x".to_owned()),
+            "dissolved stem stays whole: {groups:?}"
+        );
+        assert_eq!(
+            expand_for_test(&groups, &DEB_ARCH_NAMES, "amd64"),
+            members.keys().cloned().collect::<BTreeSet<_>>(),
+            "expansion still complete"
+        );
+    }
+
+    #[test]
+    fn compress_members_falls_back() {
+        // Single binary arch compresses like any other representable
+        // set (this is what lets single-arch suites such as noble
+        // shrink); `render_target` decides plain-vs-compressed by
+        // rendered size, not here.
+        let single = BTreeMap::from([
+            ("bash_5.2-5_amd64".to_owned(), "amd64".to_owned()),
+            ("data_1.0_all".to_owned(), "all".to_owned()),
+        ]);
+        let groups = compress_members(&single, &DEB_ARCH_NAMES).expect("compressible");
+        assert_eq!(
+            expand_for_test(&groups, &DEB_ARCH_NAMES, "amd64"),
+            single.keys().cloned().collect::<BTreeSet<_>>(),
+            "single-arch expansion"
+        );
+        assert_eq!(
+            expand_for_test(&groups, &DEB_ARCH_NAMES, "arm64"),
+            BTreeSet::from(["data_1.0_all".to_owned()]),
+            "other arch sees only arch-independent members"
+        );
+        // Non-canonical arch spelling (`any` is arch-independent but not
+        // the canonical `all` a deb decoder would emit).
+        let any_arch = BTreeMap::from([
+            ("bash_5.2-5_amd64".to_owned(), "amd64".to_owned()),
+            ("bash_5.2-5_arm64".to_owned(), "arm64".to_owned()),
+            ("data_1.0_any".to_owned(), "any".to_owned()),
+        ]);
+        assert_eq!(compress_members(&any_arch, &DEB_ARCH_NAMES), None);
+        // Separator character in a stem.
+        let separator = BTreeMap::from([
+            ("ba|sh_5.2-5_amd64".to_owned(), "amd64".to_owned()),
+            ("ba|sh_5.2-5_arm64".to_owned(), "arm64".to_owned()),
+        ]);
+        assert_eq!(compress_members(&separator, &DEB_ARCH_NAMES), None);
     }
 
     #[test]

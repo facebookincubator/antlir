@@ -100,6 +100,8 @@ def _prepare_impl(ctx: bxl.Context):
         target = ctx.configured_targets(target_label, modifiers = base_modifiers)
         analysis = ctx.analysis(target)
         providers = analysis.providers()
+        if SnapshottableInfo not in providers:
+            continue
         snapshottable = providers[SnapshottableInfo]
         storage = _require_storage(snapshottable, target_label)
 

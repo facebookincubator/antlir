@@ -11,6 +11,7 @@ load(
     "download_members",
     "download_packages_subtargets",
 )
+load("//antlir/antlir2/package_managers/snapshot:members.bzl", "expand_members")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":repodata.bzl", "download_repodata")
 
@@ -153,13 +154,19 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
     # Members expose every package in the repo by `{name}_{version}_{arch}`.
     # This analysis only sees one arch's baseurl, so members for other repo
     # arches are filtered out (the `members` attr itself still carries the
-    # global list so snapshots round-trip identically).
+    # global list so snapshots round-trip identically). Snapshotted repos
+    # may instead carry `members_compressed`, expanded for this arch here.
+    member_nevras = list(ctx.attrs.members) + expand_members(
+        ctx.attrs.members_compressed,
+        arch_names = ["noarch", "x86_64", "aarch64"],
+        current_arch = ctx.attrs._arch,
+    )
     member_outputs = download_members(
         actions = ctx.actions,
         packages_jsons = {"packages": repodata.packages_json},
         index_json = index_json,
         baseurl = baseurl,
-        nevras = ctx.attrs.members,
+        nevras = member_nevras,
     )
     member_subtargets = {nevra: [DefaultInfo(out)] for nevra, out in member_outputs.items()}
 
@@ -212,6 +219,12 @@ _repo = rule(
             attrs.string(),
             default = [],
             doc = "`{name}_{version}_{arch}` identifiers of every package in the repo. The snapshot binary emits this; the rule downloads all applicable members (via the index) and exposes them as `packages` subtargets and in `YumRepoInfo`. Only members for the current analysis arch are materialized.",
+        ),
+        "members_compressed": attrs.dict(
+            attrs.string(),
+            attrs.list(attrs.string()),
+            default = {},
+            doc = "Compressed form of `members` emitted by the snapshot binary for multi-arch repos (see `expand_members` in `//antlir/antlir2/package_managers/snapshot:members.bzl`). Expanded in the rule impl for the current arch and merged with `members`.",
         ),
         "package_aliases_subtargets": attrs.list(attrs.string(), default = [], doc = "List of package names to expose as `package_aliases_subtargets`"),
         "package_subtargets": attrs.list(attrs.string(), default = [], doc = "Deprecated alias for `package_aliases_subtargets`"),
