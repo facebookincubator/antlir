@@ -128,6 +128,12 @@ pub(crate) struct Snapshot {
     /// mirror sheds connections under the default fan-out.
     #[clap(long, default_value_t = 100)]
     concurrency: usize,
+
+    /// Rewrite BUCK files even if we believe the snapshot to be unchanged. Use
+    /// for any format changes to the BUCK files that do not change the actual
+    /// underlying representation of the snapshot.
+    #[clap(long)]
+    rewrite_unchanged: bool,
 }
 
 struct ArchResult {
@@ -170,7 +176,7 @@ impl Snapshot {
         // determines the package indexes, so equality means nothing
         // could have changed. Skip all uploads/downloads and BUCK
         // rewrites for unchanged targets.
-        let skipped = unchanged_targets(&config, &project_root);
+        let mut skipped = unchanged_targets(&config, &project_root);
         for target in &config.targets {
             if skipped.contains(&target.target_name) {
                 info!(
@@ -180,12 +186,20 @@ impl Snapshot {
             }
         }
         if !config.targets.is_empty() && skipped.len() == config.targets.len() {
-            warn!(
-                "{}: metadata unchanged for {} target(s), skipping snapshot",
-                super::unchanged::SKIP_MARKER,
-                skipped.len()
-            );
-            return Err(SkippedNoChanges.into());
+            if self.rewrite_unchanged {
+                skipped.clear();
+                warn!(
+                    "metadata unchanged for {} target(s), but snapshotting anyway",
+                    skipped.len()
+                );
+            } else {
+                warn!(
+                    "{}: metadata unchanged for {} target(s), skipping snapshot",
+                    super::unchanged::SKIP_MARKER,
+                    skipped.len()
+                );
+                return Err(SkippedNoChanges.into());
+            }
         }
 
         let mut described = Vec::new();
