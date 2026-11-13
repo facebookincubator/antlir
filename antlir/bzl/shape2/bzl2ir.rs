@@ -351,11 +351,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         // time, and will also be done when loading the json
         Ok(AllocStruct(
             kwargs
-                .iter()
-                .map(|entry| {
-                    let (k, v) = entry?;
-                    Ok((k.get(), v.get()))
-                })
+                .try_items()
                 .collect::<starlark::Result<_>>()
                 .map_err(starlark::Error::into_anyhow)?,
         ))
