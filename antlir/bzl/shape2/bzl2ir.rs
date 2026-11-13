@@ -129,7 +129,7 @@ impl<'v> StarlarkValue<'v> for TypeId {
                 args.no_positional_args(eval.heap())?;
                 // no need to type-check, since it will already be done at buck parse
                 // time, and will also be done when loading the json
-                Ok(eval.heap().alloc(AllocStruct(args.names_map()?)))
+                Ok(eval.heap().alloc(AllocStruct(args.names_map()?)).to_value())
             }
             ir::Type::Complex(ir::ComplexType::Enum(_)) => {
                 args.no_named_args()?;
