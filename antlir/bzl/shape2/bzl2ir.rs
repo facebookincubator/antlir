@@ -485,7 +485,7 @@ fn ir_to_module(m: ir::Module) -> anyhow::Result<FrozenModule> {
                 target: m.target.clone(),
                 name: name.clone(),
             }));
-            module.set(&name, module.heap().alloc_representation(ty).to_value());
+            module.set(&name, module.heap().alloc(ty).to_value());
         }
         Ok::<_, anyhow::Error>(module.freeze()?)
     })
