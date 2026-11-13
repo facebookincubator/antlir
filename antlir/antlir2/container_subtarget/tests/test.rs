@@ -11,7 +11,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
 use anyhow::Result;
-use rexpect::process::wait::WaitStatus;
+use rexpect::process::WaitStatus;
 use rexpect::session::PtySession;
 use tempfile::TempDir;
 
@@ -34,7 +34,7 @@ fn test_exit_code(exe: &str, code: i32) {
     p.send_line(&format!("exit {code}"))
         .expect("failed to send exit command");
     p.exp_eof().expect("didn't get EOF");
-    let status = p.process.wait().expect("failed to wait for process");
+    let status = p.process().wait().expect("failed to wait for process");
     match status {
         WaitStatus::Exited(_, real_code) => assert_eq!(code, real_code),
         status => panic!("unexpected exit status: {status:?}"),
@@ -78,7 +78,7 @@ fn test_rooted_boot_exit_code() {
         .expect("didn't get 'running' response from systemctl is-system-running");
     p.send_line("exit 42")
         .expect("failed to write shell command line");
-    let status = p.process.wait().expect("failed to wait for process");
+    let status = p.process().wait().expect("failed to wait for process");
     match status {
         WaitStatus::Exited(_, real_code) => assert_eq!(42, real_code),
         status => panic!("unexpected exit status: {status:?}"),
@@ -98,7 +98,7 @@ fn test_rootless_boot_exit_code() {
         .expect("didn't get 'running' response from systemctl is-system-running");
     p.send_line("exit 42")
         .expect("failed to write shell command line");
-    let status = p.process.wait().expect("failed to wait for process");
+    let status = p.process().wait().expect("failed to wait for process");
     match status {
         WaitStatus::Exited(_, real_code) => assert_eq!(42, real_code),
         status => panic!("unexpected exit status: {status:?}"),

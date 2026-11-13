@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use rexpect::process::wait::WaitStatus;
+use rexpect::process::WaitStatus;
 use rexpect::session::PtySession;
 
 fn booted_test_base(exe: &str) -> PtySession {
@@ -31,7 +31,7 @@ fn booted_test_exit_code(exe: &str, code: i32) {
     p.send_line(&format!("exit {code}"))
         .expect("failed to send exit command");
     p.exp_eof().expect("didn't get EOF");
-    let status = p.process.wait().expect("failed to wait for process");
+    let status = p.process().wait().expect("failed to wait for process");
     match status {
         WaitStatus::Exited(_, real_code) => assert_eq!(code, real_code),
         status => panic!("unexpected exit status: {status:?}"),
