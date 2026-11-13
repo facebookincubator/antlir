@@ -19,7 +19,7 @@ repo_set(
         | {
             os.select_key: internal_external(
                 fb = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:" + os.name],
-                oss = ["generated//snapshot/rpm/{}:repos".format(os.name)],
+                oss = [],
             )
             for os in OSES
         }

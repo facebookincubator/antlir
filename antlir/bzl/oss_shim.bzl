@@ -10,6 +10,8 @@
 # This bzl file is provided to make split internal/oss loads a little easier
 #
 
+load("@fbsource//tools/target_determinator/macros:ci.bzl", _ci = "ci")
+
 def ret_none(*_args, **_kwargs):
     return None
 
@@ -31,7 +33,33 @@ special_tags = struct(
     test_is_invisible_to_testpilot = "OSS_NO_OP",
 )
 
+tpx_labels = special_tags
+
+network_access_utils = struct(
+    all = lambda: "all",
+)
+
 rollout = struct(
     check_base_path = ret_false,
     create_feature = ret_false,
+)
+
+def _remove_labels(*_args):
+    # Removing CI labels only steers internal CI scheduling; no-op in OSS.
+    return []
+
+# The buck2-shims `ci` struct predates `remove_labels`; wrap it and provide a
+# dummy implementation so callsites can use the full internal API unchanged.
+ci = struct(
+    package = _ci.package,
+    linux = _ci.linux,
+    mac = _ci.mac,
+    windows = _ci.windows,
+    skip_test = _ci.skip_test,
+    aarch64 = _ci.aarch64,
+    mode = _ci.mode,
+    opt = _ci.opt,
+    labels = _ci.labels,
+    modifiers = _ci.modifiers,
+    remove_labels = _remove_labels,
 )

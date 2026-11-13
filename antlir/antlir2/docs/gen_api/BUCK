@@ -1,5 +1,4 @@
-load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
-load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "network_access_utils", "python_unittest", "rust_binary")
 load(":register_templates_src.bzl", "register_templates_src")
 
 oncall("antlir")
