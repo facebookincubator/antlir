@@ -129,6 +129,7 @@ jiff = { version = "=0.2.35", features = ["alloc", "perf-inline", "serde", "std"
 libc = { version = "=0.2.189", features = ["extra_traits", "std"] }
 libfuzzer-sys = { version = "=0.4.13", features = ["link_libfuzzer"] }
 libloading = { version = "=0.8.9", default-features = false }
+liblzma = { version = "=0.4.9", default-features = false }
 linked-hash-map = { version = "=0.5.6", features = ["serde_impl"], default-features = false }
 linkme = { version = "=0.3.37", features = ["used_linker"], default-features = false }
 log = { version = "=0.4.34", features = ["alloc", "kv", "kv_std", "kv_unstable", "kv_unstable_std", "std"], default-features = false }

@@ -1,3 +1,5 @@
+load("//antlir/bzl:internal_external.bzl", "internal_external")
+load(":bootstrap.bzl", "BOOTSTRAP_PACKAGES", "bootstrap")
 load(":suite.bzl", "suite")
 
 oncall("antlir")
@@ -16,11 +18,15 @@ suite(
         "amd64",
         "arm64",
     ],
-    archive_url = "https://mirror.facebook.net/debian",
+    archive_url = internal_external(
+        fb = "https://mirror.facebook.net/debian",
+        oss = "https://deb.debian.org/debian",
+    ),
     components = [
         "main",
         "contrib",
     ],
+    package_aliases_subtargets = BOOTSTRAP_PACKAGES,
     snapshot_storage = {
         "api_key": "antlir_snapshots-key",
         "bucket": "antlir_snapshots",
@@ -35,7 +41,10 @@ suite(
         "amd64",
         # Noble does not have aarch64 packages
     ],
-    archive_url = "https://mirror.facebook.net/ubuntu",
+    archive_url = internal_external(
+        fb = "https://mirror.facebook.net/ubuntu",
+        oss = "https://archive.ubuntu.com/ubuntu",
+    ),
     components = [
         "main",
         "universe",
@@ -55,7 +64,10 @@ suite(
         "amd64",
         "arm64",
     ],
-    archive_url = "https://mirror.facebook.net/ubuntu",
+    archive_url = internal_external(
+        fb = "https://mirror.facebook.net/ubuntu",
+        oss = "https://archive.ubuntu.com/ubuntu",
+    ),
     components = [
         "main",
         "universe",
@@ -66,5 +78,11 @@ suite(
         "bucket": "antlir_snapshots",
         "type": "manifold",
     },
+    visibility = ["PUBLIC"],
+)
+
+bootstrap(
+    name = "build-appliance",
+    debs = [":trixie[package_aliases_subtargets][{}.deb]".format(pkg) for pkg in BOOTSTRAP_PACKAGES],
     visibility = ["PUBLIC"],
 )

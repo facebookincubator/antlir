@@ -251,9 +251,12 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     # Package aliases expose individual .debs by name (first match wins),
     # using the checksum index with content based paths.
     aliases = sorted({a: True for a in ctx.attrs.package_subtargets + ctx.attrs.package_aliases_subtargets}.keys())
+    # Each architecture's index also contains Architecture: all packages.
+    # Select aliases from the current architecture, so multi-arch suites do
+    # not produce duplicate matches or aliases for another architecture.
     alias_outputs = download_packages_subtargets(
         actions = ctx.actions,
-        packages_jsons = {arch + "/" + cname: p.json for arch, arch_indexes in per_arch_indexes.items() for cname, p in arch_indexes.items()},
+        packages_jsons = {arch + "/" + cname: p.json for arch, arch_indexes in per_arch_indexes.items() for cname, p in arch_indexes.items() if arch == ctx.attrs._arch},
         index_json = index_json if ctx.attrs.index_checksums else None,
         baseurl = archive_url,
         names = aliases,

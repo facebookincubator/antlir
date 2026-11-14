@@ -21,6 +21,11 @@ system_cxx_toolchain(
     cxx_flags = [
         "--std=c++17",
     ],
+    # Use the system linker on Linux without requiring an lld installation.
+    linker = select({
+        "ovr_config//os:linux": "g++",
+        "DEFAULT": None,
+    }),
     visibility = ["PUBLIC"],
 )
 

@@ -56,7 +56,7 @@ def _download_packages_subtargets_impl(
         fetched = download(
             actions = actions,
             url = url,
-            out = dl,
+            out = dl.as_output(),
             checksums = checksums,
             metadata_run_info = metadata_run_info,
         )
