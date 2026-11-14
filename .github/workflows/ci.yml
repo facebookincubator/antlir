@@ -42,12 +42,6 @@ jobs:
         with:
           path: ${{ runner.temp }}/apt-archives/*.deb
           key: ${{ steps.apt-cache.outputs.cache-primary-key }}
-      - name: Resolve Reindeer revision
-        id: reindeer-revision
-        run: |
-          revision="$(git ls-remote https://github.com/facebookincubator/reindeer HEAD | cut -f1)"
-          test -n "$revision"
-          echo "revision=$revision" >> "$GITHUB_OUTPUT"
       - name: Restore generated Rust targets
         id: rust-targets-cache
         uses: actions/cache/restore@v4
@@ -56,7 +50,14 @@ jobs:
             third-party/rust/BUCK
             third-party/rust/vendor
             third-party/rust/.cargo/config.toml
-          key: rust-targets-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.reindeer-revision.outputs.revision }}-${{ hashFiles('third-party/rust/Cargo.toml', 'third-party/rust/Cargo.lock', 'third-party/rust/reindeer.toml', 'third-party/rust/fixups/**', 'third-party/rust/top/**', 'third-party/rust/bindgen/**') }}
+          key: rust-targets-${{ hashFiles('third-party/rust/Cargo.lock', 'third-party/rust/fixups/**', 'third-party/rust/reindeer.toml') }}
+      - name: Resolve Reindeer revision
+        if: steps.rust-targets-cache.outputs.cache-hit != 'true'
+        id: reindeer-revision
+        run: |
+          revision="$(git ls-remote https://github.com/facebookincubator/reindeer HEAD | cut -f1)"
+          test -n "$revision"
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
       - name: Restore Reindeer installation
         if: steps.rust-targets-cache.outputs.cache-hit != 'true'
         id: reindeer-cache
