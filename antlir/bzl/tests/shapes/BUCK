@@ -1,6 +1,5 @@
-load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 # @noautodeps
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest", "rust_unittest")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "network_access_utils", "python_unittest", "rust_unittest")
 load("//antlir/bzl:make_target_t.bzl", "make_target_t")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")

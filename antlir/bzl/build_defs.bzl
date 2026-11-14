@@ -96,6 +96,10 @@ def rust_bindgen_library(**kwargs):
 
 def _rust_implicit_test(kwargs, test_kwargs):
     if kwargs.pop("unittests", True):
+        if kwargs.get("proc_macro", False) and not is_facebook:
+            # The oss rust rules don't handle unittests for proc-macro crates
+            # very well, so skip it for now
+            return
         test_kwargs["name"] = kwargs["name"] + "-unittest"
         test_kwargs["crate"] = kwargs.get("crate") or kwargs["name"].replace("-", "_")
         test_kwargs.pop("autocargo", None)
@@ -152,6 +156,8 @@ target_utils = shim.target_utils
 alias = shim.alias
 toolchain_alias = shim.toolchain_alias
 add_test_framework_label = shim.add_test_framework_label
+network_access_utils = shim.network_access_utils
+tpx_labels = shim.tpx_labels
 third_party = struct(
     library = shim.third_party.library,
     source = shim.third_party.source,

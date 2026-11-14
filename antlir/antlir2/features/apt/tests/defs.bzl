@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
+# @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
+load("//antlir/bzl:oss_shim.bzl", "ci") # @oss-enable
 load("//antlir/bzl:types.bzl", "types")
 
 types.lint_noop()

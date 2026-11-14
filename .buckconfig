@@ -1,23 +1,34 @@
+# Standard Meta buck2 shims cell, defined inline so the project does not
+# depend on rev_sync/external_cells landing (see
+# fbcode/github/standard/rev_sync/external_cells_shim_migration/). Bump
+# commit_hash to adopt newer shims.
 [cells]
     antlir = .
     prelude = prelude
     toolchains = toolchains
     none = none
+    gh_facebook_buck2_shims_meta = gh_facebook_buck2_shims_meta
+
+[external_cells]
+    prelude = bundled
+    gh_facebook_buck2_shims_meta = git
+
+[external_cell_gh_facebook_buck2_shims_meta]
+    git_origin = https://github.com/facebook/buck2-shims-meta.git
+    commit_hash = 8fed12ccbbda1f2f626d17dbeeab3c7459425094
 
 [cell_aliases]
     config = prelude
     ovr_config = prelude
-    fbcode = none
-    fbsource = none
-    fbcode_macros = none
-    buck = none
-    # .buckconfig.d/common.buckconfig (shipped by add_buck2_support) aliases
-    # `toolchains` at the shim cell. Antlir has its own toolchains cell, so
-    # re-assert it here -- .buckconfig takes precedence over .buckconfig.d.
-    toolchains = toolchains
-
-[external_cells]
-    prelude = bundled
+    # Aliases formerly provided by the vendored .buckconfig.d/common.buckconfig,
+    # which is no longer shipped (it aliases `antlir` to none, conflicting
+    # with the `antlir` cell). bazel_skylib is intentionally not aliased:
+    # antlir code uses @prelude//:paths.bzl instead.
+    buck = gh_facebook_buck2_shims_meta
+    fbcode = gh_facebook_buck2_shims_meta
+    fbcode_macros = gh_facebook_buck2_shims_meta
+    fbsource = gh_facebook_buck2_shims_meta
+    shim = gh_facebook_buck2_shims_meta
 
 [parser]
     target_platform_detector_spec = target:antlir//...->prelude//platforms:default target:shim//...->prelude//platforms:default
