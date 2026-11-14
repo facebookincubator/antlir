@@ -64,6 +64,7 @@ console = { version = "=0.16.4", features = ["alloc", "ansi-parsing", "std"] }
 const_format = "=0.2.36"
 constant_time_eq = { version = "=0.6.0", features = ["std"] }
 convert_case = { version = "=0.12.0", default-features = false }
+crc32c-hw = "=0.1.3"
 criterion = { version = "=0.8.2", features = ["async", "async_tokio", "cargo_bench_support", "csv_output", "plotters", "rayon"] }
 crossbeam = { version = "=0.8.5", features = ["alloc", "std"] }
 crossbeam-channel = { version = "=0.5.17", features = ["std"] }
@@ -97,6 +98,7 @@ fxhash = { version = "=0.2.1", default-features = false }
 glob = { version = "=0.3.4", default-features = false }
 globset = { version = "=0.4.20", features = ["serde1"] }
 hashbrown = { version = "=0.17.1", features = ["default-hasher", "inline-more", "raw-entry"] }
+gpt = "=4.1.0"
 hex = { version = "=0.4.3", features = ["alloc", "std"] }
 hostname = "=0.4.2"
 http = { version = "=1.5.0", features = ["std"] }
@@ -155,6 +157,7 @@ num-traits = { version = "=0.2.19", features = ["i128", "libm", "std"] }
 num_cpus = { version = "=1.17.0", default-features = false }
 num_enum = { version = "=0.7.6", features = ["std"] }
 object = { version = "=0.40.0", features = ["archive", "coff", "compression", "elf", "macho", "pe", "read", "read_core", "std", "write", "write_core", "write_std", "xcoff"] }
+oci-spec = { version = "=0.10.0", default-features = false, features = ["image"] }
 oid-registry = { version = "=0.8.1", features = ["crypto", "kdf", "nist_algs", "pkcs1", "pkcs12", "pkcs7", "pkcs9", "registry", "x509", "x962"] }
 once_cell = { version = "=1.21.4", features = ["alloc", "race", "std"] }
 openat2 = { version = "=0.1.2", default-features = false }
@@ -187,6 +190,7 @@ rand_xoshiro = { version = "=0.8.1", default-features = false }
 ref-cast = { version = "=1.0.27", default-features = false }
 regex = { version = "=1.13.1", features = ["perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"] }
 relative-path = { version = "=2.0.1", features = ["alloc", "serde", "std"] }
+retry = "=2.2.0"
 ring = { version = "=0.17.14", features = ["alloc", "dev_urandom_fallback"] }
 ruff_formatter = { version = "=0.0.11", features = ["serde"], default-features = false }
 ruff_python_ast = { version = "=0.0.11", features = ["get-size", "serde"], default-features = false }

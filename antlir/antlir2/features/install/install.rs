@@ -332,9 +332,11 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
                     }
                 }
             }
-            if let Some(implicit_resources) = &self.implicit_resources
-                // dev mode binaries are symlinked and thus already alongside resources
-                && self.binary_info != Some(BinaryInfo::Dev)
+            // Dev mode binaries are symlinked and thus already alongside resources.
+            if let Some(implicit_resources) = self
+                .implicit_resources
+                .as_ref()
+                .filter(|_| self.binary_info != Some(BinaryInfo::Dev))
             {
                 let dst_parent = self.dst.parent().expect("must have parent");
                 let resources_dir = dst_parent.join(&implicit_resources.resources_dir_name);
@@ -396,9 +398,7 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
             ));
         }
         // For relative dest paths (or `/`), parent() could be the empty string
-        if let Some(parent) = self.dst.parent()
-            && !parent.as_os_str().is_empty()
-        {
+        if let Some(parent) = self.dst.parent().filter(|p| !p.as_os_str().is_empty()) {
             requires.push(Requirement::ordered(
                 ItemKey::Path(parent.to_owned()),
                 Validator::FileType(FileType::Directory),
@@ -556,9 +556,11 @@ impl antlir2_compile::CompileFeature for Install {
                     }
                 }
             }
-            if let Some(implicit_resources) = &self.implicit_resources
-                // dev mode binaries are symlinked and thus already alongside resources
-                && self.binary_info != Some(BinaryInfo::Dev)
+            // Dev mode binaries are symlinked and thus already alongside resources.
+            if let Some(implicit_resources) = self
+                .implicit_resources
+                .as_ref()
+                .filter(|_| self.binary_info != Some(BinaryInfo::Dev))
             {
                 let dst_parent = dst.parent().expect("must have parent");
                 let resources_dir = dst_parent.join(&implicit_resources.resources_dir_name);
@@ -585,9 +587,11 @@ impl antlir2_compile::CompileFeature for Install {
                     gid,
                 )?;
             }
-            if let Some(BinaryInfo::Installed(installed)) = &self.binary_info
-                && let Some(resources_debuginfo) = &installed.resources_debuginfo
-                && let Some(resources_metadata) = &installed.resources_metadata
+            if let Some(BinaryInfo::Installed(InstalledBinary {
+                resources_debuginfo: Some(resources_debuginfo),
+                resources_metadata: Some(resources_metadata),
+                ..
+            })) = &self.binary_info
             {
                 for entry in WalkDir::new(resources_metadata) {
                     let entry = entry.map_err(std::io::Error::from)?;

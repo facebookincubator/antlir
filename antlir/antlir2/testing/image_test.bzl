@@ -18,6 +18,7 @@ load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", 
 load("//antlir/bzl:oss_shim.bzl", "tpx_labels") # @oss-enable
 
 load("//antlir/bzl:internal_external.bzl", "internal_external", "is_facebook")
+load(":hidden_sh_test.bzl", "hidden_sh_test")
 
 HIDE_TEST_LABELS = [tpx_labels.disabled, tpx_labels.test_is_invisible_to_testpilot]
 
@@ -358,7 +359,7 @@ def _implicit_image_test(
         name = name,
         layer = layer,
         run_as_user = run_as_user,
-        test = ":" + name + "_image_test_inner",
+        test = ":" + name + "_image_test_inner" + ("[test]" if test_rule == hidden_sh_test else ""),
         labels = labels + [tpx_labels.enable_artifact_reporting],
         boot = boot,
         boot_requires_units = boot_requires_units,
@@ -400,7 +401,7 @@ image_rust_test = partial(
     _static_list_wrapper = "antlir//antlir/antlir2/testing/image_test:static-list-rust",
     _static_list_embeds_test_command = True,
 )
-image_sh_test = partial(_implicit_image_test, buck_sh_test)
+image_sh_test = partial(_implicit_image_test, internal_external(fb = buck_sh_test, oss = hidden_sh_test))
 
 def image_python_test(
     name: str,

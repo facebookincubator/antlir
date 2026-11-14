@@ -123,6 +123,11 @@ OSES = [
     ),
     _new_os(
         name = "ubuntu-noble",
+        build_appliance = internal_external(
+            fb = "antlir//antlir/antlir2/facebook/images/build_appliance/ubuntu-noble:build-appliance",
+            # The Debian appliance can resolve and unpack Ubuntu packages too.
+            oss = "antlir//antlir/antlir2/package_managers/deb:build-appliance",
+        ),
         flavor = "antlir//antlir/antlir2/flavor/ubuntu-noble:ubuntu-noble",
         # Noble does not have aarch64 packages
         architectures = [new_arch_t("x86_64")],
@@ -130,6 +135,11 @@ OSES = [
     ),
     _new_os(
         name = "ubuntu-stonking",
+        build_appliance = internal_external(
+            fb = "antlir//antlir/antlir2/facebook/images/build_appliance/ubuntu-stonking:build-appliance",
+            # The Debian appliance can resolve and unpack Ubuntu packages too.
+            oss = "antlir//antlir/antlir2/package_managers/deb:build-appliance",
+        ),
         flavor = "antlir//antlir/antlir2/flavor/ubuntu-stonking:ubuntu-stonking",
         has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
     ),
