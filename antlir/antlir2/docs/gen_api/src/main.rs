@@ -32,11 +32,12 @@ struct Args {
 
 fn format_ty(
     value: &tera::Value,
-    _args: &HashMap<String, tera::Value>,
-) -> tera::Result<tera::Value> {
+    _kwargs: tera::Kwargs,
+    _state: &tera::State,
+) -> tera::TeraResult<tera::Value> {
     let mut possible_types = value
         .as_str()
-        .ok_or(tera::Error::msg("expected string"))?
+        .ok_or(tera::Error::message("expected string"))?
         .split('|')
         .map(|t| t.trim())
         .filter(|t| !t.is_empty())
@@ -75,6 +76,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     let mut tera = Tera::default();
+    tera.register_filter("format_ty", format_ty);
     register_templates::register_templates(&mut tera).context("while registering templates")?;
 
     for (starlark_path, template) in starlark_path_to_template {
@@ -92,8 +94,6 @@ fn main() -> Result<()> {
             .collect();
 
         context.insert("funcs", &feature_funcs);
-
-        tera.register_filter("format_ty", format_ty);
 
         let feature_defs = tera.render(template.input, &context)?;
 

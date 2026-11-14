@@ -5,7 +5,7 @@
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     src = """
-    pub(crate) fn register_templates(tera: &mut ::tera::Tera) -> ::tera::Result<()> {
+    pub(crate) fn register_templates(tera: &mut ::tera::Tera) -> ::tera::TeraResult<()> {
         tera.add_raw_templates(vec![
     """
     src += ",".join(['("{}", include_str!("../{}"))'.format(f.short_path, f.short_path) for f in ctx.attrs.templates])

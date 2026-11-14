@@ -16,7 +16,7 @@ sidebar_position: 2
     {%- for param in func.params %}
 
     {%if param.kind != "arg" %}{%continue%}{%endif%}
-    {% if param.name is starting_with("_") %}{%continue%}{%endif%}
+    {% if param.name is starting_with(pat="_") %}{%continue%}{%endif%}
 
 **{{param.name}}**: _{{param.ty | format_ty}}_{%if param.default_value%} = `{{param.default_value}}`{%endif%}{% if param.docs %}
 
