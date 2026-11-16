@@ -108,8 +108,11 @@ OSES = [
     ),
     _new_os(
         name = "debian-trixie",
+        # TODO(T256160849) the aarch64 build appliance is not snapshotted yet
+        architectures = [new_arch_t("x86_64")],
         flavor = "antlir//antlir/antlir2/flavor/debian-trixie:debian-trixie",
-        has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
+        has_platform_toolchain = True,
+        python = new_python_t(interpreter = "/usr/bin/python3"),
     ),
     _new_os(
         name = "ubuntu-noble",

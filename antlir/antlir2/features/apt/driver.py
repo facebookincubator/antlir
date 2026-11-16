@@ -25,6 +25,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 
 def _remove_status_entry(status_path: str, pkg_name: str) -> None:
@@ -146,25 +147,35 @@ def main() -> int:
         # same path as a real directory, matching what dpkg itself does.
         # Plain extraction replaces the symlink and strands the files
         # under the legacy path.
-        dpkg_deb = subprocess.Popen(
-            ["dpkg-deb", "--fsys-tarfile", deb_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        assert dpkg_deb.stdout is not None
-        tar = subprocess.run(
-            ["tar", "--keep-directory-symlink", "-x", "-C", install_root],
-            stdin=dpkg_deb.stdout,
-            capture_output=True,
-            text=True,
-            errors="replace",
-        )
-        dpkg_deb.stdout.close()
-        _, dpkg_stderr = dpkg_deb.communicate()
-        if tar.returncode != 0 or dpkg_deb.returncode != 0:
-            # Child stderr may not be UTF-8 (e.g. raw filename bytes);
-            # degrade to replacement chars rather than crash error reporting.
-            err = tar.stderr.strip() or dpkg_stderr.decode(errors="replace").strip()
+        # Stream the filesystem tar through a seekable temporary file
+        # rather than a pipe (GNU tar reading from a pipe cannot seek), and
+        # check dpkg-deb's exit code before extracting so its stderr is
+        # not discarded in favour of tar's.
+        with tempfile.TemporaryFile() as tar_stream:
+            dpkg_result = subprocess.run(
+                ["dpkg-deb", "--fsys-tarfile", deb_path],
+                stdout=tar_stream,
+                stderr=subprocess.PIPE,
+            )
+            if dpkg_result.returncode != 0:
+                err = dpkg_result.stderr.decode(errors="replace").strip()
+                json.dump(
+                    {"tx_error": f"Failed to extract {pkg['name']}: {err}"},
+                    sys.stdout,
+                )
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+                return 1
+            tar_stream.seek(0)
+            tar = subprocess.run(
+                ["tar", "--keep-directory-symlink", "-x", "-C", install_root],
+                stdin=tar_stream,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+        if tar.returncode != 0:
+            err = tar.stderr.strip()
             json.dump(
                 {"tx_error": f"Failed to extract {pkg['name']}: {err}"},
                 sys.stdout,

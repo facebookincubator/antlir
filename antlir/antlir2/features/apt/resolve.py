@@ -127,6 +127,12 @@ def main() -> int:
             apt_pkg.config.set("APT::Architecture", arch)
             apt_pkg.config.set("APT::Architectures", arch)
 
+        # Suggests are advisory only and never installed. Recommends are
+        # left at apt's default (installed) for every distro: images rely
+        # on them for parts of the intended system (e.g. dbus and
+        # systemd-resolved/sysv via systemd on ubuntu).
+        apt_pkg.config.set("APT::Install-Suggests", "false")
+
         # Update the package lists
         import apt
 
