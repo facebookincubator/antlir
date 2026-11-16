@@ -16,6 +16,7 @@ def download(
     out: OutputArtifact | None = None,
     checksums: dict[str, str] = {},
     allow_nondeterministic_downloads: bool = False,
+    cache_buster: str = "",
 ) -> Artifact:
     # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
 
@@ -106,6 +107,15 @@ def download(
         # non-deterministic entrypoint (for example if we are downloading
         # upstream artifacts that may change but give us deterministic data
         # after that initial entrypoint)
+        #
+        # A cache buster (the snapshot run's timestamp, passed by the
+        # snapshot binary via buckconfig) is folded into the action
+        # identifier so each snapshot run gets a fresh action key and
+        # really re-downloads, instead of reusing the first cached
+        # copy forever. Checksum-pinned downloads don't need it: their
+        # bytes are controlled by the checksum in the action key.
+        buster = cache_buster.replace(":", "-").replace("+", "-")
+        identifier = out.short_path if not buster else "{}/{}".format(out.short_path, buster)
         actions.run(
             cmd_args(
                 "curl",
@@ -124,7 +134,7 @@ def download(
                 oss = {},
             ),
             category = "curl_nondeterministic",
-            identifier = out.short_path,
+            identifier = identifier,
             # Must be able to hit network
             local_only = True,
             # Everything after this is hopefully well-behaved and deterministic,

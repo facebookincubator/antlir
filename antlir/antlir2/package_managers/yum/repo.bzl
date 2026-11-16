@@ -15,6 +15,13 @@ load("//antlir/antlir2/package_managers/snapshot:members.bzl", "expand_members")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load(":repodata.bzl", "download_repodata")
 
+# Per-snapshot-run cache buster for the nondeterministic repomd.xml
+# download, set by the snapshot binary (`-c
+# antlir_snapshot.cache_buster=<timestamp>`) when it invokes the
+# prepare bxl. Empty in normal builds, where the download keeps its
+# usual cache behaviour.
+_SNAPSHOT_CACHE_BUSTER = read_config("antlir_snapshot", "cache_buster", "")
+
 YumRepoInfo = provider(
     fields = {
         "baseurl": str,
@@ -80,6 +87,7 @@ def _repo_impl(ctx: AnalysisContext) -> list[Provider]:
             metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
             checksums = {},
             allow_nondeterministic_downloads = True,
+            cache_buster = ctx.attrs._cache_buster,
         )
 
         repomd_json = ctx.actions.declare_output("repomd.json")
@@ -250,6 +258,9 @@ _repo = rule(
                     "ovr_config//cpu:x86_64": "x86_64",
                 })
             )
+        ),
+        "_cache_buster": attrs.default_only(
+            attrs.string(default = _SNAPSHOT_CACHE_BUSTER),
         ),
         "_metadata_bin": attrs.default_only(
             attrs.exec_dep(

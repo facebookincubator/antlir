@@ -340,6 +340,15 @@ async fn run_bxl_prepare(
 ) -> Result<SnapshotConfig> {
     let mut args: Vec<String> = vec![
         "bxl".to_owned(),
+        // The snapshot timestamp doubles as a cache buster: the
+        // prepare analyses read it via `read_config` (see
+        // `_cache_buster` in the yum/deb rules) and fold it into the
+        // nondeterministic entrypoint downloads (repomd.xml,
+        // InRelease), which are the one unpinned input and would
+        // otherwise serve a stale cached copy forever. Everything
+        // downstream is checksum-pinned and stays cached.
+        "-c".to_owned(),
+        format!("antlir_snapshot.cache_buster={timestamp}"),
         BXL_TARGET.to_owned(),
         "--".to_owned(),
         "--timestamp".to_owned(),
