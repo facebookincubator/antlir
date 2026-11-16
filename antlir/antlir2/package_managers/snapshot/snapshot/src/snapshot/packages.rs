@@ -532,10 +532,10 @@ impl Downloader {
         }
 
         // Cheap backend-native copy (e.g. Manifold `copyObj`) avoids
-        // downloading and re-uploading the bytes entirely. Always try it:
-        // `Ok(None)` means this blob cannot be fast-copied and is
-        // downloaded as usual, so one snapshot may mix copied and
-        // downloaded blobs. Any other copy failure hard-fails the package.
+        // downloading and re-uploading the bytes entirely. Always try
+        // it: `Ok(None)` means no fast-copy source is configured, so
+        // the blob is downloaded as usual. Any copy failure (including
+        // a missing configured source) hard-fails the package.
         if let Some(copied) = storage
             .fast_copy_flat(&entry.checksums, &entry.filename)
             .await
@@ -705,7 +705,7 @@ pub(crate) async fn snapshot_packages(
         base_url,
         entries,
         settings.concurrency,
-        "Downloading & uploading packages",
+        "Preserving packages",
     )
     .await;
 

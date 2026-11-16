@@ -88,10 +88,11 @@ pub(crate) trait Storage: Send + Sync {
     ///
     /// Try to copy the blob for `filename` into the flat namespace.
     /// Callers always invoke this and download only on `Ok(None)`, which
-    /// means this blob cannot be fast-copied -- no fast-copy source is
-    /// configured at all, or not for this particular blob (e.g. its
-    /// source object is absent). A snapshot may therefore mix copied and
-    /// downloaded blobs. Any other copy failure is an error. On
+    /// means no fast-copy source is configured at all. When a source
+    /// *is* configured but the copy fails (including a missing source
+    /// object), that is a hard error: the configuration promises every
+    /// blob is copyable, and a silent download would mask a broken
+    /// pattern. On
     /// `Ok(Some(_))` the flat object holds the bytes described by
     /// `checksums`; backends whose copy primitive cannot hash the bytes
     /// (Manifold `copyObj` included) trust the configured source to name
