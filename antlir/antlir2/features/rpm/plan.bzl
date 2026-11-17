@@ -79,6 +79,9 @@ def plan(
             cmd_args(parent_layer_contents.subvol_symlink, format = "--parent-subvol-symlink={}")
             if parent_layer_contents and parent_layer_contents.subvol_symlink
             else cmd_args(),
+            cmd_args(parent_layer_contents.cad_stack, format = "--parent-cad-stack={}")
+            if parent_layer_contents and not parent_layer_contents.subvol_symlink and parent_layer_contents.cad_stack
+            else cmd_args(),
             cmd_args(build_appliance.dir, format = "--build-appliance={}"),
             cmd_args(dnf_repodatas, format = "--repodatas={}"),
             cmd_args(dnf_versionlock, format = "--versionlock={}") if dnf_versionlock else cmd_args(),

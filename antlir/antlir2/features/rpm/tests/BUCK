@@ -1,3 +1,4 @@
+# @oss-disable[end= ]: load("@fbsource//tools/build_defs/testinfra:network_access_utils.bzl", "network_access_utils")
 # @oss-disable[end= ]: load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")
 load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
@@ -10,6 +11,44 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":defs.bzl", "expected_t", "test_rpms")
 
 oncall("antlir")
+
+image.layer(
+    name = "planner-parent",
+    dnf_additional_repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
+    features = [feature.rpms_install(rpms = ["foo-2"])],
+)
+
+image.layer(
+    name = "planner-reuse-provider",
+    dnf_additional_repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
+    features = [feature.rpms_install(rpms = ["requires-any-foo"])],
+    parent_layer = ":planner-parent",
+)
+
+image.layer(
+    name = "planner-remove-installed",
+    features = [feature.rpms_remove_if_exists(rpms = ["foo"])],
+    parent_layer = ":planner-parent",
+)
+
+[
+    python_unittest(
+        name = "test-planner-parent-" + working_format,
+        srcs = ["test_planner_parent.py"],
+        env = {
+            "INSTALL": "$(location :planner-reuse-provider[debug][package_manager][plan][rpm][tx])",
+            "REMOVE": "$(location :planner-remove-installed[debug][package_manager][plan][rpm][tx])",
+        },
+        modifiers = [
+            "antlir//antlir/antlir2/cfg:working_format[{}]".format(working_format),
+            "antlir//antlir/antlir2/cfg:exec_mode[{}]".format("force-remote" if working_format == "cad-stack" else "force-local"),
+            "antlir//antlir/antlir2/antlir2_rootless:config[rootless]",
+        ],
+        # @oss-disable[end= ]: network_access = network_access_utils.none(),
+        # @oss-disable[end= ]: par_style = "live",
+    )
+    for working_format in ["btrfs", "cad-stack"]
+]
 
 repo_set(
     name = "test-repo-set",

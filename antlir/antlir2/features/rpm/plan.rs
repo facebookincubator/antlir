@@ -15,11 +15,15 @@ use antlir2_compile::Arch;
 use anyhow::Context;
 use anyhow::Result;
 use buck_label::Label;
+use cad_stack_fs::extract_root_dir;
+use cap_std::ambient_authority;
+use cap_std::fs::Dir;
 use clap::Parser;
 use json_arg::Json;
 use json_arg::JsonFile;
 use rpm::DriverContext;
 use rpm::RpmItem;
+use tempfile::TempDir;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -29,8 +33,10 @@ struct Args {
     label: Label,
     #[clap(long)]
     build_appliance: PathBuf,
-    #[clap(long)]
+    #[clap(long, conflicts_with = "parent_cad_stack")]
     parent_subvol_symlink: Option<PathBuf>,
+    #[clap(long)]
+    parent_cad_stack: Vec<PathBuf>,
     #[clap(long)]
     repodatas: PathBuf,
     #[clap(long)]
@@ -53,13 +59,37 @@ struct Args {
 
 enum Parent {
     Subvol(PathBuf),
+    CadStack(TempDir),
     None,
 }
 
 impl Parent {
+    fn open(subvol: Option<PathBuf>, layers: &[PathBuf]) -> Result<Self> {
+        if let Some(subvol) = subvol {
+            return Ok(Self::Subvol(subvol));
+        }
+        let Some(top) = layers.first() else {
+            return Ok(Self::None);
+        };
+        let tmpdir = TempDir::new().context("while creating parent materialization tmpdir")?;
+        let store = cad_stack::ObjectStore::open_rw(
+            top.join("store"),
+            layers.iter().skip(1).map(|p| p.join("store")),
+        )
+        .context("while opening parent cad-stack store")?;
+        extract_root_dir(
+            &store,
+            &Dir::open_ambient_dir(tmpdir.path(), ambient_authority())
+                .context("while opening parent root")?,
+        )
+        .context("while materializing parent cad-stack")?;
+        Ok(Self::CadStack(tmpdir))
+    }
+
     fn path(&self) -> Option<&Path> {
         match self {
             Self::Subvol(p) => Some(p),
+            Self::CadStack(tmpdir) => Some(tmpdir.path()),
             Self::None => None,
         }
     }
@@ -98,9 +128,7 @@ fn main() -> Result<()> {
 
     antlir2_isolate::unshare_and_privatize_mount_ns().context("while isolating mount ns")?;
 
-    let parent = args
-        .parent_subvol_symlink
-        .map_or(Parent::None, Parent::Subvol);
+    let parent = Parent::open(args.parent_subvol_symlink, &args.parent_cad_stack)?;
 
     let rpm = rpm::Rpm {
         items: args.items.into_inner(),
