@@ -151,7 +151,7 @@ pub(crate) fn extract_oci_layers(
 
     let layers_manifest = LayersManifest {
         layers: layer_entries,
-        history: config.history().clone(),
+        history: config.history().clone().unwrap_or_default(),
     };
     serde_json::to_writer_pretty(
         File::create(oci_layers_out.join("manifest.json"))
