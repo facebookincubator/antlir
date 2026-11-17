@@ -111,6 +111,8 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             allow_nondeterministic_downloads = False,
         )
 
+        # Intentionally skip verifying the inrelease_checksums attr because we
+        # use the unsigned Release file inside the antlir2 managed snapshots
         release_relpath = "dists/{}/Release".format(distribution)
         from_index = download_from_index(
             actions = ctx.actions,
@@ -137,7 +139,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             out_name = "InRelease",
             url = suite_baseurl + "InRelease",
             metadata_run_info = ctx.attrs._metadata_bin[RunInfo],
-            checksums = {},
+            checksums = ctx.attrs.inrelease_checksums,
             allow_nondeterministic_downloads = True,
             cache_buster = ctx.attrs._cache_buster,
         )
@@ -352,7 +354,13 @@ _suite = rule(
             attrs.string(),
             attrs.string(),
             default = {},
-            doc = "Checksum for the index file (Release) that contains sha1+sha256 of other blobs",
+            doc = "Checksum for the snapshot index.json file that contains sha1+sha256 of other blobs",
+        ),
+        "inrelease_checksums": attrs.dict(
+            attrs.string(),
+            attrs.string(),
+            default = {},
+            doc = "Checksum for the repo InRelease file that recursively has hashes for all other blobs",
         ),
         "members": attrs.list(
             attrs.string(),
