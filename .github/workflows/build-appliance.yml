@@ -10,7 +10,8 @@ name: build-appliance
 # can be added once there is a previous appliance and a way to test it.
 #
 # Adding a variant: add one row to the `include:` matrix below (variant name,
-# debootstrap suite, mirror, arch). Everything else is variant-agnostic.
+# debootstrap suite, mirror, arch, runner matching that arch).
+# Everything else is variant-agnostic.
 
 on:
   workflow_dispatch:
@@ -46,25 +47,36 @@ env:
 jobs:
   build:
     name: build-appliance (${{ matrix.variant }}, ${{ matrix.arch }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # --- Debian trixie (only variant for now) -----------------------
           - variant: debian-trixie
             suite: trixie
             mirror: http://deb.debian.org/debian
             arch: amd64
-          # --- Future variants: copy the row above, e.g. ------------------
-          # - variant: debian-bookworm
-          #   suite: bookworm
-          #   mirror: http://deb.debian.org/debian
-          #   arch: amd64
-          # - variant: ubuntu-noble
-          #   suite: noble
-          #   mirror: http://archive.ubuntu.com/ubuntu
-          #   arch: amd64
+            runner: ubuntu-26.04
+          - variant: debian-trixie
+            suite: trixie
+            mirror: http://deb.debian.org/debian
+            arch: arm64
+            runner: ubuntu-26.04-arm
+          - variant: ubuntu-noble
+            suite: noble
+            mirror: http://archive.ubuntu.com/ubuntu
+            arch: amd64
+            runner: ubuntu-26.04
+          - variant: ubuntu-stonking
+            suite: stonking
+            mirror: http://archive.ubuntu.com/ubuntu
+            arch: amd64
+            runner: ubuntu-26.04
+          - variant: ubuntu-stonking
+            suite: stonking
+            mirror: http://archive.ubuntu.com/ubuntu
+            arch: arm64
+            runner: ubuntu-26.04-arm
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -131,12 +143,9 @@ jobs:
           # itself, so consumers can extract it straight into a root dir.
           sudo tar -C "$ROOTFS" \
             --numeric-owner --xattrs --acls \
+            --exclude "dev" \
             -I 'zstd -T0 -19' \
             -cf "${{ github.workspace }}/$TARBALL" .
-          # Record a bare filename (not the runner's absolute path) so
-          # consumers can verify a downloaded tarball with `sha256sum -c`.
-          (cd "${{ github.workspace }}" && sha256sum "$TARBALL") \
-            | tee "${{ github.workspace }}/$TARBALL.sha256"
           ls -lh "${{ github.workspace }}/$TARBALL"
 
       - name: Upload workflow artifact
@@ -145,7 +154,6 @@ jobs:
           name: ${{ steps.meta.outputs.artifact_name }}
           path: |
             ${{ steps.meta.outputs.tarball }}
-            ${{ steps.meta.outputs.tarball }}.sha256
           if-no-files-found: error
           retention-days: 90
 
@@ -155,5 +163,4 @@ jobs:
         with:
           files: |
             ${{ steps.meta.outputs.tarball }}
-            ${{ steps.meta.outputs.tarball }}.sha256
           fail_on_unmatched_files: true
