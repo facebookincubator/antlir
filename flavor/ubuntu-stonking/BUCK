@@ -1,0 +1,24 @@
+load("//antlir/antlir2/bzl/image:build_appliance.bzl", "build_appliance")
+load("//antlir/bzl:build_defs.bzl", "http_archive")
+
+http_archive(
+    name = "build-appliance.tar.zst",
+    urls = select({
+        "ovr_config//cpu:arm64": [
+            "https://github.com/facebookincubator/antlir/releases/download/bootstrap-build-appliances/build-appliance-ubuntu-stonking-arm64.tar.zst",
+        ],
+        "ovr_config//cpu:x86_64": [
+            "https://github.com/facebookincubator/antlir/releases/download/bootstrap-build-appliances/build-appliance-ubuntu-stonking-amd64.tar.zst",
+        ],
+    }),
+    sha256 = select({
+        "ovr_config//cpu:arm64": "96e8721983dcf69f314ad68db04b76c17f6dc9c3bd12d8e9276df28c1b079c24",
+        "ovr_config//cpu:x86_64": "b7e03b876b790999710086d7a10df0e99eb7cb0387af6b006d5b39f66e5dd293",
+    }),
+)
+
+build_appliance(
+    name = "build-appliance",
+    src = ":build-appliance.tar.zst",
+    visibility = ["PUBLIC"],
+)
