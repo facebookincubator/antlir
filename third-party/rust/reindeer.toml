@@ -14,6 +14,12 @@
 # Parse Rust code to work out the precise set of source files for each crate.
 precise_srcs = true
 
+# Supply the same package metadata that Cargo exposes to crates and build scripts.
+cargo_env = true
+
+# Commit generated targets that download checksum-pinned crates at build time.
+vendor = false
+
 # Include a public top-level target which depends on all other targets.
 include_top_level = true
 include_workspace_members = true
@@ -23,6 +29,7 @@ include_workspace_members = true
 bindeps = true
 
 [buck]
+file_name = "BUCK.oss"
 platform_compatibility_on_all_targets = true
 
 # Rules used for various kinds of targets.
