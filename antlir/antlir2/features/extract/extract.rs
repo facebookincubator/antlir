@@ -193,7 +193,7 @@ pub fn copy_dep(dep: &Path, dst: &Path, mode: u32, uid: u32, gid: u32) -> Result
     // different RE containers these are pulled from might have slightly
     // different versions of the fbcode platform, but the same thing could
     // easily happen for builds so just let it slide.
-    !dep.display().to_string().contains("/usr/local/fbcode/")
+    !(cfg!(facebook) && dep.display().to_string().contains("/usr/local/fbcode/"))
     {
         let dst_contents = std::fs::read(dst)
             .with_context(|| format!("while reading already-installed '{}'", dst.display()))?;

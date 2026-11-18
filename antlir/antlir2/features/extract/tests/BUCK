@@ -1,8 +1,9 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "tpx_labels")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
+load(":defs.bzl", "library_path")
 
 oncall("antlir")
 
@@ -10,8 +11,8 @@ image.layer(
     name = "base",
     features = [
         # dependencies of the test
-        feature.rpms_install(
-            rpms = [
+        feature.package_install(
+            subjects = [
                 "bash",
                 "util-linux",
             ]
@@ -34,24 +35,18 @@ rust_binary(
 image.layer(
     name = "extract-buck",
     features = [
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
         feature.extract_buck_binary(
             src = ":binary_1",
             dst = "/usr/bin/test-binary-extracted",
         ),
     ],
-    labels = internal_external(
-        fb = [],
-        oss = [tpx_labels.disabled],
-    ),
     parent_layer = ":base",
 )
 
 image_sh_test(
     name = "extract-buck-test",
-    labels = internal_external(
-        fb = [],
-        oss = [tpx_labels.disabled],
-    ),
+    env = {"ANTLIR_TEST_FACEBOOK": internal_external(fb = "1", oss = "0")},
     layer = ":extract-buck",
     test = "test-extract-buck.sh",
 )
@@ -59,7 +54,7 @@ image_sh_test(
 image.layer(
     name = "binaries-clone-src",
     features = [
-        feature.rpms_install(rpms = ["systemd"]),
+        feature.package_install(subjects = ["systemd"]),
         feature.ensure_file_symlink(
             link = "/usr/bin/systemctl.link",
             target = "/usr/bin/systemctl",
@@ -99,7 +94,7 @@ image.layer(
             binaries = [
                 # This binary extract overlaps with a subset of
                 # files extracted above.
-                "/usr/lib64/libc.so.6",
+                library_path("libc.so.6"),
             ],
             layer = ":binaries-clone-src",
         ),
@@ -127,7 +122,7 @@ image.layer(
             binaries = [
                 # This symlink extract overlaps with a subset of
                 # files extracted above.
-                "/usr/lib64/libsystemd.so.0",
+                library_path("libsystemd.so.0"),
             ],
             layer = ":binaries-clone-src",
         ),
@@ -144,7 +139,22 @@ image_sh_test(
 image.layer(
     name = "sudo-src",
     features = [
-        feature.rpms_install(rpms = ["sudo"]),
+        feature.package_install(subjects = ["sudo"]),
+        # Ubuntu selects sudo-rs by default. Keep this fixture on the C sudo
+        # binary to test extracting its plugin and execute-only setuid mode.
+        select({
+            "//antlir/antlir2/os/family:family[debian]": feature.genrule(
+                bash = """
+                    if test -f /usr/bin/sudo.ws; then
+                        rm /usr/bin/sudo
+                        cp /usr/bin/sudo.ws /usr/bin/sudo
+                    fi
+                    chmod 4111 /usr/bin/sudo
+                """,
+                user = "root",
+            ),
+            "DEFAULT": [],
+        }),
     ],
 )
 

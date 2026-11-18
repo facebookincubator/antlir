@@ -10,10 +10,15 @@ echo "=== checking systemd-shutdown exists ==="
 test -f /usr/lib/systemd/systemd-shutdown
 echo "shutdown binary present"
 
+libdir=/usr/lib64
+if test -f /usr/lib/"$(uname -m)"-linux-gnu/libc.so.6; then
+  libdir=/usr/lib/"$(uname -m)"-linux-gnu
+fi
+
 echo "=== checking direct deps via DT_NEEDED are extracted ==="
 # libsystemd-shared should be extracted as direct DT_NEEDED
-ls /usr/lib64/systemd/libsystemd-shared* 2>&1 | head
-test -f /usr/lib64/libc.so.6 || test -f /usr/lib64/libc.so.6  # at least some lib
+ls "$libdir"/systemd/libsystemd-shared* 2>&1 | head
+test -f "$libdir"/libc.so.6  # at least some lib
 echo "direct deps present"
 
 echo "=== checking .note.dlopen transitive deps are extracted ==="
@@ -25,7 +30,7 @@ echo "=== checking .note.dlopen transitive deps are extracted ==="
 
 missing=0
 for lib in libacl.so.1 libblkid.so.1 libseccomp.so.2 libselinux.so.1 libcap.so.2; do
-  if test -f /usr/lib64/$lib || test -f /lib64/$lib; then
+  if test -f "$libdir/$lib" || test -f /lib64/$lib; then
     echo "found dlopen dep $lib"
   else
     echo "MISSING dlopen dep $lib (expected via .note.dlopen)"
@@ -35,8 +40,8 @@ done
 
 if [ $missing -ne 0 ]; then
   echo "FAILED: $missing dlopen deps missing, .note.dlopen handling not working"
-  echo "Listing /usr/lib64:"
-  ls /usr/lib64/libacl* /usr/lib64/libblkid* /usr/lib64/libseccomp* /usr/lib64/libselinux* 2>&1 || true
+  echo "Listing $libdir:"
+  ls "$libdir"/libacl* "$libdir"/libblkid* "$libdir"/libseccomp* "$libdir"/libselinux* 2>&1 || true
   exit 1
 fi
 

@@ -18,6 +18,7 @@ struct Expectation {
     absent: Vec<String>,
 }
 
+#[cfg(facebook)]
 fn try_unmount() {
     let output = std::process::Command::new("umount")
         .arg("/usr/local/fbcode")
@@ -76,6 +77,7 @@ fn matches_expected(found: &str, expected: &str) -> bool {
 
 #[test]
 fn check_dso() {
+    #[cfg(facebook)]
     try_unmount();
 
     let json_str = std::env::var("DSO_CHECK").expect(
@@ -84,7 +86,14 @@ fn check_dso() {
     let exp: Expectation = serde_json::from_str(&json_str)
         .expect("DSO_CHECK should be valid JSON with present/absent arrays");
 
-    let found = collect_filenames_under(Path::new("/usr/local/fbcode"));
+    #[cfg(facebook)]
+    let roots = ["/usr/local/fbcode"];
+    #[cfg(not(facebook))]
+    let roots = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"];
+    let found: HashSet<String> = roots
+        .iter()
+        .flat_map(|root| collect_filenames_under(Path::new(root)))
+        .collect();
 
     for lib in &exp.present {
         if !found.iter().any(|f| matches_expected(f, lib)) {

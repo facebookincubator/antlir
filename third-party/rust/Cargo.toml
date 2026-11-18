@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 # Definitions of third-party Rust libraries used by the OSS build.
-# The `rust/BUCK` file is generated from this manifest by reindeer
-# and is NOT committed; CI regenerates it (see .github/workflows/ci.yml).
+# The `rust/BUCK` file is generated from this manifest by reindeer and
+# committed so CI can download checksum-pinned crates directly.
 #
 # The direct dependency set covers everything targets in this repo
 # need, plus crates shared with the fbcode build of antlir, so the
@@ -99,6 +99,7 @@ futures-intrusive = { version = "=0.5.0", features = ["alloc", "std"] }
 fxhash = { version = "=0.2.1", default-features = false }
 glob = { version = "=0.3.4", default-features = false }
 globset = { version = "=0.4.20", features = ["serde1"] }
+goblin = { version = "=0.10.7", features = ["elf32", "elf64", "endian_fd"], default-features = false }
 hashbrown = { version = "=0.17.1", features = ["default-hasher", "inline-more", "raw-entry"] }
 gpt = "=4.1.0"
 hex = { version = "=0.4.3", features = ["alloc", "std"] }
@@ -258,6 +259,7 @@ tower-service = { version = "=0.3.3", default-features = false }
 tracing = { version = "=0.1.44", features = ["attributes", "std", "valuable"] }
 tracing-core = { version = "=0.1.36", features = ["std"] }
 tracing-subscriber = { version = "=0.3.23", features = ["alloc", "ansi", "env-filter", "fmt", "json", "local-time", "nu-ansi-term", "registry", "std"] }
+tracing-test = { version = "=0.2.6", features = ["no-env-filter"] }
 triomphe = { version = "=0.1.16", features = ["std"] }
 twox-hash = { version = "=2.1.4", features = ["alloc", "random", "std", "xxhash32", "xxhash3_128", "xxhash3_64", "xxhash64"] }
 typed-arena = { version = "=2.0.2", features = ["std"] }

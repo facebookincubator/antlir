@@ -75,7 +75,7 @@ add_dlopen_note = rule(
         "out": attrs.string(default = "dlopen_binary"),
         "src": attrs.dep(),
         "_generator": attrs.exec_dep(
-            default = "fbcode//antlir/antlir2/features/extract/tests/dlopen:dlopen-notes",
+            default = "antlir//antlir/antlir2/features/extract/tests/dlopen:dlopen-notes",
         ),
     },
 )

@@ -6,7 +6,7 @@
 load("//antlir/antlir2/features/apt:apt.bzl", "apt_install", "apt_remove")
 load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_install", "rpms_remove")
 
-def package_install(*, subjects: list[str]):
+def package_install(*, subjects: list[str | Select] | Select):
     """
     Install packages by name, automatically selecting the correct package
     manager (apt or dnf) based on the OS configuration.
@@ -20,7 +20,7 @@ def package_install(*, subjects: list[str]):
         "DEFAULT": select_fail("cannot install packages without a package manager"),
     })
 
-def package_remove(*, subjects: list[str]):
+def package_remove(*, subjects: list[str | Select] | Select):
     """
     Remove packages by name, automatically selecting the correct package
     manager (apt or dnf) based on the OS configuration.

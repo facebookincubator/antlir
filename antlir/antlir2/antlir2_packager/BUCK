@@ -166,23 +166,29 @@ feature.new(
 
 image.layer(
     name = "packager-appliance.layer",
-    default_os = "centos10",
+    default_os = internal_external(fb = "centos10", oss = "ubuntu-stonking"),
     features = [
         ":build-appliance-features",
+        # Packaging mounts inputs and scratch space into a read-only appliance.
+        feature.ensure_dirs_exist(dirs = "/__antlir2__/out"),
+        feature.ensure_dirs_exist(dirs = "/__antlir2__/root"),
+        feature.ensure_dirs_exist(dirs = "/__antlir2__/working_directory"),
     ],
     visibility = [],
 )
 
 package.unprivileged_dir(
     name = "packager-appliance.dir",
-    default_os = "centos10",
+    default_os = internal_external(fb = "centos10", oss = "ubuntu-stonking"),
     layer = ":packager-appliance.layer",
     visibility = ["//antlir/antlir2/antlir2_packager/facebook/..."],
 )
 
 build_appliance(
     name = "packager-appliance.impl",
-    src = ":packager-appliance.dir",
+    # Keep Debian's backslash-containing systemd unit names in the local
+    # subvolume; Buck cannot represent them in a directory output.
+    src = internal_external(fb = ":packager-appliance.dir", oss = ":packager-appliance.layer[subvol_symlink]"),
     visibility = ["PUBLIC"],
 )
 

@@ -28,13 +28,13 @@ jobs:
           restore-keys: |
             apt-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/ci.yml') }}-
             apt-v1-${{ runner.os }}-${{ runner.arch }}-
-      - name: Install apt test dependencies
+      - name: Install test dependencies
         run: |
           mkdir -p "$RUNNER_TEMP/apt-archives"
           sudo apt-get update
           sudo apt-get -o Dir::Cache::archives="$RUNNER_TEMP/apt-archives" \
             -o APT::Keep-Downloaded-Packages=true \
-            install -y btrfs-progs clang libcap-dev libclang-dev pkg-config uidmap
+            install -y btrfs-progs clang libbz2-1.0 libcap-dev libclang-dev libffi8 liblzma5 pkg-config uidmap zlib1g
       - name: Save apt package downloads
         if: steps.apt-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -62,6 +62,36 @@ jobs:
             sudo usermod --add-subgids 100000-165535 "$(id -un)"
           fi
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - name: Test apt features
+      - name: Test features
+        # Buck-binary extraction needs an OSS runtime compatible with the image
+        # libc. Keep its unit and layer-extraction tests covered in the meantime.
         run: |
-          ./buck2 test //antlir/antlir2/features/apt/tests: --exclude disabled
+          ./buck2 test --exclude disabled \
+            //antlir/antlir2/features/apt/... \
+            //antlir/antlir2/features/clone/... \
+            //antlir/antlir2/features/dot_meta/... \
+            //antlir/antlir2/features/ensure_dir_exists/... \
+            //antlir/antlir2/features/extract: \
+            //antlir/antlir2/features/extract/tests:binary-clone-fails \
+            //antlir/antlir2/features/extract/tests:extract-layer-test \
+            //antlir/antlir2/features/extract/tests:extract-sudo-test \
+            //antlir/antlir2/features/extract/tests:extract-symlink-layer-test \
+            //antlir/antlir2/features/extract/tests/dlopen:dlopen-notes-unittest \
+            //antlir/antlir2/features/extract/tests/dlopen:extract-shutdown-test \
+            //antlir/antlir2/features/genrule/... \
+            //antlir/antlir2/features/group/... \
+            //antlir/antlir2/features/hardlink/... \
+            //antlir/antlir2/features/install/... \
+            //antlir/antlir2/features/mount/... \
+            //antlir/antlir2/features/oci/... \
+            //antlir/antlir2/features/remove/... \
+            //antlir/antlir2/features/requires/... \
+            //antlir/antlir2/features/rpm: \
+            //antlir/antlir2/features/symlink/... \
+            //antlir/antlir2/features/tarball/... \
+            //antlir/antlir2/features/user/... \
+            //antlir/antlir2/features/usermod/... \
+            //antlir/antlir2/features/test_only_features/build_environment/... \
+            //antlir/antlir2/features/test_only_features/extend_facts/... \
+            //antlir/antlir2/features/test_only_features/supplements/... \
+            //antlir/antlir2/features/test_only_features/trace/...

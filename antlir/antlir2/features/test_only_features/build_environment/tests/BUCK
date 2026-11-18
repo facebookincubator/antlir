@@ -8,7 +8,7 @@ oncall("antlir")
 image.layer(
     name = "layer",
     features = [
-        feature.rpms_install(rpms = ["python3"]),
+        feature.package_install(subjects = ["python3"]),
         build_environment(path = "/.build_environment.json"),
     ],
 )

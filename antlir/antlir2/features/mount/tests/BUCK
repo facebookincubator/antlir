@@ -18,8 +18,8 @@ image.layer(
 image.layer(
     name = "parent",
     features = [
-        feature.rpms_install(
-            rpms = [
+        feature.package_install(
+            subjects = [
                 "bash",
                 "coreutils",
                 "util-linux",

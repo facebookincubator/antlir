@@ -20,7 +20,14 @@ pad=$(( (4 - descsz % 4) % 4 ))
   head -c "$pad" /dev/zero
 } > "$note"
 
-for lib in /usr/lib64/systemd/libsystemd-shared-*.so; do
+libdir=/usr/lib64
+if test -d /usr/lib/"$(uname -m)"-linux-gnu/systemd; then
+  libdir=/usr/lib/"$(uname -m)"-linux-gnu
+fi
+for lib in "$libdir"/systemd/libsystemd-shared-*.so; do
+  # Newer systemd releases already carry a .note.dlopen section. Replace it
+  # with this fixture's controlled dependency list.
+  objcopy --remove-section .note.dlopen "$lib"
   objcopy \
     --add-section .note.dlopen="$note" \
     --set-section-flags .note.dlopen=alloc,readonly \

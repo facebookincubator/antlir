@@ -192,7 +192,7 @@ def _python_library(**kwargs):
     _wrap_internal(fb_native.python_library, [], kwargs)
 
 def _python_binary(*, name: str, main_function: str | None = None, main_module: str | None = None, **kwargs):
-    kwargs.pop("package_style", None)
+    package_style = kwargs.pop("package_style", None)
     _python_library(name = name + "-library", **kwargs)
 
     _wrap_internal(
@@ -203,7 +203,7 @@ def _python_binary(*, name: str, main_function: str | None = None, main_module: 
             "main_function": main_function,
             "main_module": main_module,
             "name": name,
-        },
+        } | ({"package_style": package_style} if package_style else {}),
     )
 
 def _python_unittest(*args, **kwargs):

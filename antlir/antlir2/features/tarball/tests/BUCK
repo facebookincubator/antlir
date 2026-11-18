@@ -9,7 +9,7 @@ oncall("antlir")
 image.layer(
     name = "base",
     features = [
-        feature.rpms_install(rpms = ["bash"]),
+        feature.package_install(subjects = ["bash"]),
         feature.user_add(
             home_dir = "/",
             primary_group = "antlir",

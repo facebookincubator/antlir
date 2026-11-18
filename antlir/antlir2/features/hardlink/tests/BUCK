@@ -7,7 +7,12 @@ oncall("antlir")
 image.layer(
     name = "layer",
     features = [
-        feature.rpms_install(rpms = ["basesystem"]),
+        feature.package_install(
+            subjects = select({
+                "//antlir/antlir2/os/family:family[debian]": ["base-files"],
+                "DEFAULT": ["basesystem"],
+            }),
+        ),
         feature.install_text(
             dst = "/hello.txt",
             text = "Hello world\n",

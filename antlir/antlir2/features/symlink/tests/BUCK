@@ -90,8 +90,8 @@ image_diff_test(
 image.layer(
     name = "features-under-symlinks-base",
     features = [
-        feature.rpms_install(
-            rpms = [
+        feature.package_install(
+            subjects = [
                 "bash",
                 "coreutils",
             ]

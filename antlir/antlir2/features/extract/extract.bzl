@@ -158,7 +158,7 @@ def extract_buck_binary(
         },
         exec_deps = {
             "_analyze": _EXTRACT_ANALYZE,
-            "_debuginfo_splitter": "fbcode//antlir/antlir2/tools:debuginfo-splitter",
+            "_debuginfo_splitter": "antlir//antlir/antlir2/tools:debuginfo-splitter",
             "_objcopy": internal_external(
                 fb = "fbsource//third-party/binutils:objcopy",
                 oss = "toolchains//:objcopy",

@@ -9,8 +9,8 @@ oncall("antlir")
 image.layer(
     name = "base",
     features = [
-        feature.rpms_install(
-            rpms = [
+        feature.package_install(
+            subjects = [
                 "bash",
                 "coreutils",
                 "systemd",
@@ -174,7 +174,10 @@ image.layer(
     features = [
         feature.ensure_dirs_exist(
             dirs = "/nobody-out",
-            group = "nobody",
+            group = select({
+                "//antlir/antlir2/os/family:family[debian]": "nogroup",
+                "DEFAULT": "nobody",
+            }),
             user = "nobody",
         ),
         feature.install(
@@ -199,7 +202,10 @@ image.layer(
 
 image_diff_test(
     name = "nobody-test",
-    diff = "nobody.toml",
+    diff = select({
+        "//antlir/antlir2/os/family:family[debian]": "nobody.debian.toml",
+        "DEFAULT": "nobody.toml",
+    }),
     diff_type = "file",
     layer = ":nobody",
 )
@@ -226,7 +232,7 @@ image.layer(
 image.layer(
     name = "SemLock",
     features = [
-        feature.rpms_install(rpms = ["python3"]),
+        feature.package_install(subjects = ["python3"]),
         feature.genrule(
             cmd = [
                 "/usr/bin/python3",

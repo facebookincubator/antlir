@@ -12,6 +12,8 @@ test-binary-extracted | grep "Hello world!"
 
 # It should keep working even if we unmount the deps provided by the test
 # environment
-umount /usr/local/fbcode
-umount /mnt/gvfs
+if [[ "$ANTLIR_TEST_FACEBOOK" == 1 ]]; then
+  umount /usr/local/fbcode
+  umount /mnt/gvfs
+fi
 test-binary-extracted | grep "Hello world!"

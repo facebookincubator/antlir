@@ -2,6 +2,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":add_dlopen_note.bzl", "add_dlopen_note")
 
 oncall("antlir")
@@ -48,7 +49,10 @@ add_dlopen_note(
                 "description": "recommended dep",
                 "feature": "prio-recommended",
                 "priority": "recommended",
-                "soname": ["libbz2.so.1"],
+                "soname": internal_external(
+                    fb = ["libbz2.so.1"],
+                    oss = ["libbz2.so.1", "libbz2.so.1.0"],
+                ),
             },
         ],
         ".note.foobar": [
@@ -68,7 +72,7 @@ add_dlopen_note(
                 "description": "feature b dep",
                 "feature": "feature-b",
                 "priority": "recommended",
-                "soname": ["libffi.so.6"],
+                "soname": [internal_external(fb = "libffi.so.6", oss = "libffi.so.8")],
             },
         ],
     },
@@ -93,12 +97,18 @@ image.layer(
 image.layer(
     name = "shutdown-src-tools",
     features = [
-        feature.rpms_install(
-            rpms = [
+        feature.package_install(
+            subjects = [
                 "bash",
                 "binutils",
                 "coreutils",
             ],
+        ),
+        feature.package_install(
+            subjects = select({
+                "//antlir/antlir2/os/family:family[debian]": ["libacl1", "libblkid1", "libcap2", "libseccomp2", "libselinux1"],
+                "DEFAULT": ["libacl", "libblkid", "libcap", "libseccomp", "libselinux"],
+            }),
         ),
         feature.install(
             src = "stamp-dlopen-note.sh",
