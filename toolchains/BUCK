@@ -10,7 +10,7 @@ load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
 load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
 load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain", "system_python_toolchain")
 load("@prelude//toolchains:remote_test_execution.bzl", "remote_test_execution_toolchain")
-load("@prelude//toolchains:rust.bzl", "system_rust_toolchain")
+load(":rust.bzl", "download_rust_toolchain")
 
 """
 All the default toolchains, suitable for a quick demo or early prototyping.
@@ -44,9 +44,22 @@ system_python_bootstrap_toolchain(
     visibility = ["PUBLIC"],
 )
 
-system_rust_toolchain(
+download_rust_toolchain(
     name = "rust",
-    default_edition = "2024",
+    version = "1.100.0",
+    date = "2026-11-12",
+    checksums = {
+        "aarch64-unknown-linux-gnu": {
+            "clippy": "941f71acaf2a181d66776b3b889b72d64a90cc405b8f6c41a4b5ac8cd99a36b1",
+            "rust-std": "c73f62fbe5d837f9807ed9e0076575dd8d3475c79af2b30e3570d328e6713f8f",
+            "rustc": "fcbfa5b8a0cb28f0c4edfb6dda6910ee910993db31f05258613f5cd5b851263a",
+        },
+        "x86_64-unknown-linux-gnu": {
+            "clippy": "0d18df3bff6c852ef8243727fed075ecb33dbf93b8ab8c138c2f45e3f270102a",
+            "rust-std": "4591b6486594ded52ecd6135db95bf9355bbd3ca7a380888b141528bbcf9a5d4",
+            "rustc": "f1d0b1dec81dab6f523cd098507763487b0d4bd7fd2c87582f154128719be03b",
+        },
+    },
     visibility = ["PUBLIC"],
 )
 

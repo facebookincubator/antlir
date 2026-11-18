@@ -16,10 +16,6 @@ jobs:
         with:
           submodules: recursive
       - uses: facebook/install-dotslash@latest
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
-          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
       - name: Set apt cache date
         id: apt-cache-date
         run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
