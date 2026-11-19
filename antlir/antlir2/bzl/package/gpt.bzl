@@ -132,6 +132,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ),
         category = "antlir2_package",
         identifier = "gpt",
+        # btrfs partition images are local_only outputs; copying them on the
+        # same filesystem can reflink instead of shipping tens of GB to RE.
+        prefer_local = ctx.attrs._working_format == "btrfs",
     )
     return [
         DefaultInfo(
