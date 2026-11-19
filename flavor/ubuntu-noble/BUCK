@@ -1,0 +1,16 @@
+load("//antlir/antlir2/bzl/image:build_appliance.bzl", "build_appliance")
+load("//antlir/bzl:build_defs.bzl", "http_archive")
+
+http_archive(
+    name = "build-appliance.tar.zst",
+    urls = [
+        "https://github.com/facebookincubator/antlir/releases/download/bootstrap-build-appliances/build-appliance-ubuntu-noble-amd64.tar.zst",
+    ],
+    sha256 = "0cd5ae6a38db383df6e60a3034825772e51ee24dacc97055a90a1b2a1b8c9949",
+)
+
+build_appliance(
+    name = "build-appliance",
+    src = ":build-appliance.tar.zst",
+    visibility = ["PUBLIC"],
+)

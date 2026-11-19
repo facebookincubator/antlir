@@ -1,0 +1,24 @@
+load("//antlir/antlir2/bzl/image:build_appliance.bzl", "build_appliance")
+load("//antlir/bzl:build_defs.bzl", "http_archive")
+
+http_archive(
+    name = "build-appliance.tar.zst",
+    urls = select({
+        "ovr_config//cpu:arm64": [
+            "https://github.com/facebookincubator/antlir/releases/download/bootstrap-build-appliances/build-appliance-debian-trixie-arm64.tar.zst",
+        ],
+        "ovr_config//cpu:x86_64": [
+            "https://github.com/facebookincubator/antlir/releases/download/bootstrap-build-appliances/build-appliance-debian-trixie-amd64.tar.zst",
+        ],
+    }),
+    sha256 = select({
+        "ovr_config//cpu:arm64": "ae02a67738472bf6ea47df940e09bf039729028776fa434ea507100498fadb03",
+        "ovr_config//cpu:x86_64": "ac65effb58762953ee968cb08176dd1f3067883e1ae5bc9cba93a789d024364e",
+    }),
+)
+
+build_appliance(
+    name = "build-appliance",
+    src = ":build-appliance.tar.zst",
+    visibility = ["PUBLIC"],
+)
