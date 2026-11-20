@@ -102,6 +102,38 @@ distro_rust_toolchain(
     sysroot = ":rust-host-dist",
 )
 
+# The suites apt_install and the distro toolchains install from when they
+# name none (antlir//antlir/antlir2/features/apt:apt.bzl)
+[
+    alias(
+        name = "apt-suite-" + os,
+        actual = "antlir//antlir/antlir2/package_managers/deb:" + suite,
+        visibility = ["PUBLIC"],
+    )
+    for os, suite in [
+        ("debian-trixie", "trixie"),
+        ("ubuntu-noble", "noble"),
+        ("ubuntu-stonking", "stonking"),
+    ]
+]
+
+# The build appliance each OS builds its images with (antlir//antlir/antlir2/os:oses.bzl)
+[
+    alias(
+        name = "build-appliance-" + os,
+        actual = "antlir//flavor/{}:build-appliance".format(os),
+        visibility = ["PUBLIC"],
+    )
+    for os in ["centos9", "debian-trixie", "ubuntu-noble", "ubuntu-stonking"]
+]
+
+# The build appliance package rules package with (antlir//antlir/antlir2/antlir2_packager:packager-appliance)
+alias(
+    name = "packager-appliance",
+    actual = "antlir//antlir/antlir2/antlir2_packager:packager-appliance.impl",
+    visibility = ["PUBLIC"],
+)
+
 remote_test_execution_toolchain(
     name = "remote_test_execution",
     visibility = ["PUBLIC"],

@@ -67,7 +67,7 @@ def _new_os(name: str, **kwargs):
         "build_appliance",
         internal_external(
             fb = "antlir//antlir/antlir2/facebook/images/build_appliance/{}:build-appliance".format(name),
-            oss = "antlir//flavor/{}:build-appliance".format(name),
+            oss = "toolchains//:build-appliance-{}".format(name),
         ),
     )
     kwargs.setdefault("target", "antlir//antlir/antlir2/os:" + name)
@@ -84,7 +84,7 @@ OSES = [
         # installed, but is not strictly necessary right now
         build_appliance = internal_external(
             fb = "antlir//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
-            oss = "//flavor/centos9:build-appliance",
+            oss = "toolchains//:build-appliance-centos9",
         ),
         has_platform_toolchain = False,
     ),

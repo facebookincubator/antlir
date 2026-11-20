@@ -186,11 +186,36 @@ build_appliance(
     visibility = ["PUBLIC"],
 )
 
+# The same packaging tools on ubuntu-noble, for a repo whose packages all come
+# from apt suites
+image.layer(
+    name = "packager-appliance-ubuntu-noble.layer",
+    default_os = "ubuntu-noble",
+    features = [
+        ":build-appliance-features",
+    ],
+    visibility = [],
+)
+
+package.unprivileged_dir(
+    name = "packager-appliance-ubuntu-noble.dir",
+    default_os = "ubuntu-noble",
+    layer = ":packager-appliance-ubuntu-noble.layer",
+    visibility = [],
+)
+
+build_appliance(
+    name = "packager-appliance-ubuntu-noble.impl",
+    src = ":packager-appliance-ubuntu-noble.dir",
+    visibility = ["PUBLIC"],
+)
+
+# Outside fbsource the toolchains cell picks the packager appliance
 alias(
     name = "packager-appliance",
     actual = internal_external(
         fb = "//antlir/antlir2/antlir2_packager/facebook:msdk-packager-appliance",
-        oss = ":packager-appliance.impl",
+        oss = "toolchains//:packager-appliance",
     ),
     visibility = ["PUBLIC"],
 )

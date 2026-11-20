@@ -15,19 +15,22 @@ load("//antlir/bzl:internal_external.bzl", "internal_external")
 load("//antlir/bzl:structs.bzl", "structs")
 load(":plan.bzl", "apt_planner")
 
+# Outside fbsource the toolchains cell picks the suites, as it picks the
+# compilers: antlir's own are live mirrors, and a repo with pinned snapshots
+# points these at them.
 TRIXIE_SUITE = internal_external(
     fb = "fbcode//bot_generated/antlir/snapshot/antlir/antlir2/package_managers/deb/trixie:trixie",
-    oss = "antlir//antlir/antlir2/package_managers/deb:trixie",
+    oss = "toolchains//:apt-suite-debian-trixie",
 )
 
 NOBLE_SUITE = internal_external(
     fb = "fbcode//bot_generated/antlir/snapshot/antlir/antlir2/package_managers/deb/noble:noble",
-    oss = "antlir//antlir/antlir2/package_managers/deb:noble",
+    oss = "toolchains//:apt-suite-ubuntu-noble",
 )
 
 STONKING_SUITE = internal_external(
     fb = "fbcode//bot_generated/antlir/snapshot/antlir/antlir2/package_managers/deb/stonking:stonking",
-    oss = "antlir//antlir/antlir2/package_managers/deb:stonking",
+    oss = "toolchains//:apt-suite-ubuntu-stonking",
 )
 
 # The suite matching the configured OS
