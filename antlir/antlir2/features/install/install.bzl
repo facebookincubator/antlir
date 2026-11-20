@@ -175,8 +175,12 @@ def install(
         exec_deps["_rpm_find_requires_py"] = "antlir//antlir/distro/rpm:find-requires.py"
         uses_plugins["_rpm_plugin"] = "antlir//antlir/antlir2/features/rpm:rpm"
         exec_deps["_rpm_plan"] = "antlir//antlir/antlir2/features/rpm:plan"
-        distro_platform_deps["_python_pex_deps"] = "antlir//antlir/distro/facebook/toolchain/python:pex-deps"
-        distro_platform_deps["_python_xar_deps"] = "antlir//antlir/distro/facebook/toolchain/python:xar-deps"
+        distro_platform_deps["_python_pex_deps"] = internal_external(
+            fb = "antlir//antlir/distro/facebook/toolchain/python:pex-deps",
+            oss = "antlir//antlir/distro/toolchain/python:pex-deps",
+        )
+        if internal_external(fb = True, oss = False):
+            distro_platform_deps["_python_xar_deps"] = "antlir//antlir/distro/facebook/toolchain/python:xar-deps"
         distro_platform_deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
         distro_platform_deps["_rpm_resolve"] = "antlir//antlir/antlir2/features/rpm:resolve"
         # The deb equivalents. Which set is used is decided at analysis time by

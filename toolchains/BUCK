@@ -11,13 +11,26 @@ load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
 load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain", "system_python_toolchain")
 load("@prelude//toolchains:remote_test_execution.bzl", "remote_test_execution_toolchain")
 load(":rust.bzl", "download_rust_toolchain")
+load("@antlir//antlir/distro/toolchain/rust:defs.bzl", "distro_rust_toolchain")
 
 """
 All the default toolchains, suitable for a quick demo or early prototyping.
 Most real projects should copy/paste the implementation to configure them.
 """
-system_cxx_toolchain(
+# Targets configured for an antlir distro platform build with antlir's distro
+# toolchains (the distro's clang and libraries); everything else with the
+# system's.
+toolchain_alias(
     name = "cxx",
+    actual = select({
+        "DEFAULT": ":cxx-system",
+        "antlir//antlir/distro:build-for-distro": "antlir//antlir/distro/toolchain/cxx:toolchain",
+    }),
+    visibility = ["PUBLIC"],
+)
+
+system_cxx_toolchain(
+    name = "cxx-system",
     cxx_flags = [
         "--std=c++17",
     ],
@@ -26,7 +39,6 @@ system_cxx_toolchain(
         "ovr_config//os:linux": "g++",
         "DEFAULT": None,
     }),
-    visibility = ["PUBLIC"],
 )
 
 system_genrule_toolchain(
@@ -44,8 +56,17 @@ system_python_bootstrap_toolchain(
     visibility = ["PUBLIC"],
 )
 
-download_rust_toolchain(
+toolchain_alias(
     name = "rust",
+    actual = select({
+        "DEFAULT": ":rust-host",
+        "antlir//antlir/distro:build-for-distro": ":rust-distro",
+    }),
+    visibility = ["PUBLIC"],
+)
+
+download_rust_toolchain(
+    name = "rust-host",
     version = "1.100.0",
     date = "2026-11-12",
     checksums = {
@@ -61,6 +82,16 @@ download_rust_toolchain(
         },
     },
     visibility = ["PUBLIC"],
+)
+
+# The same downloaded rustc, linking through the distro cxx toolchain
+distro_rust_toolchain(
+    name = "rust-distro",
+    clippy_driver = ":rust-host-dist[clippy]",
+    compiler = ":rust-host-dist[rustc]",
+    default_edition = "2024",
+    rustdoc = ":rust-host-dist[rustdoc]",
+    sysroot = ":rust-host-dist",
 )
 
 remote_test_execution_toolchain(

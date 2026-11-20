@@ -34,15 +34,24 @@ def download_rust_toolchain(name: str, version: str, date: str, checksums: dict,
         )
         components.append(":" + archive_name)
 
+    # The installed toolchain, with rustc, rustdoc and clippy subtargets: a
+    # plain dep (unlike the toolchain rule) that other toolchains can use
+    _rust_dist(
+        name = name + "-dist",
+        components = components,
+        target_compatible_with = ["prelude//os:linux"],
+        visibility = visibility,
+    )
+
     rust_toolchain(
         name = name,
-        components = components,
+        dist = ":" + name + "-dist",
         target_triple = select(_LINUX_TRIPLES),
         target_compatible_with = ["prelude//os:linux"],
         visibility = visibility,
     )
 
-def _rust_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
+def _rust_dist_impl(ctx: AnalysisContext) -> list[Provider]:
     # rust-dist components share an installation prefix. Keep the compiler's
     # shared libraries and the standard library beside the executables so that
     # rustc, rustdoc, and Clippy can find them without rustup or host Rust.
@@ -72,6 +81,20 @@ def _rust_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             default_output = sysroot,
             sub_targets = {name: [DefaultInfo(default_output = sysroot), tool] for name, tool in tools.items()},
         ),
+    ]
+
+_rust_dist = rule(
+    impl = _rust_dist_impl,
+    attrs = {
+        "components": attrs.list(attrs.source()),
+    },
+)
+
+def _rust_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
+    dist = ctx.attrs.dist[DefaultInfo]
+    tools = {name: providers[RunInfo] for name, providers in dist.sub_targets.items()}
+    return [
+        dist,
         RustToolchainInfo(
             compiler = tools["rustc"],
             clippy_driver = tools["clippy"],
@@ -80,14 +103,14 @@ def _rust_toolchain_impl(ctx: AnalysisContext) -> list[Provider]:
             nightly_features = True,
             panic_runtime = PanicRuntime("unwind"),
             rustc_target_triple = ctx.attrs.target_triple,
-            sysroot_path = sysroot,
+            sysroot_path = dist.default_outputs[0],
         ),
     ]
 
 rust_toolchain = rule(
     impl = _rust_toolchain_impl,
     attrs = {
-        "components": attrs.list(attrs.source()),
+        "dist": attrs.exec_dep(),
         "target_triple": attrs.string(),
     },
     is_toolchain_rule = True,
