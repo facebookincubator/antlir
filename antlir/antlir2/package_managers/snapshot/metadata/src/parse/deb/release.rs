@@ -6,6 +6,7 @@
  */
 
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::BufWriter;
@@ -60,9 +61,25 @@ impl OutBuilder {
             codename: self.codename,
             date: self.date.context("missing required Date field")?,
             valid_until: self.valid_until,
-            architectures: self
-                .architectures
-                .context("missing required Architectures field")?,
+            // Optional in practice: apt-archive.postgresql.org omits it. The
+            // indexes the file lists name the architectures just as well.
+            architectures: match self.architectures {
+                Some(architectures) => architectures,
+                None => {
+                    let listed: Vec<String> = self
+                        .components
+                        .values()
+                        .flat_map(|c| c.packages.keys().cloned())
+                        .collect::<BTreeSet<_>>()
+                        .into_iter()
+                        .collect();
+                    anyhow::ensure!(
+                        !listed.is_empty(),
+                        "no Architectures field and no Packages indexes"
+                    );
+                    listed
+                }
+            },
             description: self.description,
             acquire_by_hash: self.acquire_by_hash,
             changelogs: self.changelogs,
@@ -102,8 +119,8 @@ struct Out {
     /// Optional. The time at which the Release file should be considered expired.
     /// Same format as `date`.
     valid_until: Option<String>,
-    /// Required. Whitespace-separated list of supported Debian machine
-    /// architectures. The presence of "all" indicates that arch-independent
+    /// Whitespace-separated list of supported Debian machine architectures,
+    /// or those with Packages indexes when the field is absent. The presence of "all" indicates that arch-independent
     /// packages have their own separate index files.
     architectures: Vec<String>,
     /// Optional. Free form text describing the release
@@ -560,6 +577,26 @@ SHA256:
         assert_eq!(
             out.components["universe"].contents["amd64"].href,
             "universe/Contents-amd64.gz",
+        );
+    }
+
+    #[test]
+    fn test_parse_without_architectures() {
+        // apt-archive.postgresql.org's Release has no Architectures field
+        let input = concat!(
+            "Codename: noble-pgdg-archive\n",
+            "Date: Wed, 11 Nov 2026 00:05:46 +0000\n",
+            "Suite: noble-pgdg-archive\n",
+            "SHA256:\n",
+            " ac57ac8fb691c2d729371777f9f46ab7863ecb1a7dbccd559a48336ad29039c5 17911376 main/binary-amd64/Packages\n",
+            " d5900e7229d24a642ed794a2a6a35d9f810fd682e206db21d494208f3147fba6 17499259 main/binary-arm64/Packages\n",
+            " 8a83738a58b9c6b378019f3593b9ac740efe32af7c5b53930c521218c1ac8fb2 3303844 main/source/Sources\n",
+        );
+        let out = parse(Cursor::new(input)).expect("failed to parse");
+        assert_eq!(
+            out.architectures,
+            vec!["amd64", "arm64"],
+            "architectures come from the Packages indexes listed",
         );
     }
 
