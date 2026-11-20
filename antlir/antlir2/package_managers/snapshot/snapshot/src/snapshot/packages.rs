@@ -179,21 +179,21 @@ const MAX_REPORTED_FAILURES: usize = 20;
 const TRANSFER_INITIAL_BACKOFF: Duration = Duration::from_secs(1);
 const TRANSFER_MAX_BACKOFF: Duration = Duration::from_secs(30);
 
-/// Attempt-bounded retry helper for package transfers. Sleeps between attempts
+/// Attempt-bounded retry helper for package and metadata transfers. Sleeps between attempts
 /// and hands the last error back to the caller once the budget is spent.
 ///
 /// Unlike [`super::storage::retry_policy`] the backoff here is deliberately not bounded by
 /// wall clock: a legitimate multi-gigabyte transfer runs for longer than any
 /// sane `max_elapsed_time`, so an elapsed-time bound would make backoff refuse
 /// to retry after the very first failure.
-struct Retrier {
+pub(crate) struct Retrier {
     backoff: ExponentialBackoff,
     max_attempts: usize,
     attempts_made: usize,
 }
 
 impl Retrier {
-    fn new(max_attempts: usize) -> Self {
+    pub(crate) fn new(max_attempts: usize) -> Self {
         Self {
             backoff: ExponentialBackoffBuilder::new()
                 .with_initial_interval(TRANSFER_INITIAL_BACKOFF)
@@ -207,7 +207,7 @@ impl Retrier {
 
     /// Record that an attempt failed and sleep before the next one. Returns the
     /// error unchanged (with attempt context) when no attempts remain.
-    async fn wait(&mut self, filename: &str, err: anyhow::Error) -> Result<()> {
+    pub(crate) async fn wait(&mut self, filename: &str, err: anyhow::Error) -> Result<()> {
         self.attempts_made += 1;
         if self.attempts_made >= self.max_attempts {
             return Err(err.context(format!(

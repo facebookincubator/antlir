@@ -20,11 +20,13 @@ use json_arg::Json;
 use tracing::debug;
 
 use super::Out;
+use super::packages::Retrier;
 use super::progress;
 use super::storage::Storage;
 use super::storage::StorageConfig;
 
 const METADATA_CONCURRENCY: usize = 50;
+const METADATA_UPLOAD_ATTEMPTS: usize = 5;
 
 #[derive(Parser, Debug)]
 pub(crate) struct Metadata {
@@ -72,10 +74,15 @@ pub(crate) async fn snapshot_metadata(
             let storage = storage_clone.clone();
             let pb = pb.clone();
             async move {
-                let result = storage
-                    .store(&path, &key)
-                    .await
-                    .with_context(|| format!("failed to store metadata file {}", path.display()))?;
+                let mut retrier = Retrier::new(METADATA_UPLOAD_ATTEMPTS);
+                let result = loop {
+                    match storage.store(&path, &key).await.with_context(|| {
+                        format!("failed to store metadata file {}", path.display())
+                    }) {
+                        Ok(result) => break result,
+                        Err(e) => retrier.wait(&key, e).await?,
+                    }
+                };
                 pb.inc(1);
                 Ok::<_, anyhow::Error>((key, result.url.to_string(), result.checksums))
             }
