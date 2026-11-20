@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
+load("//antlir/antlir2/package_managers/snapshot:snapshot_urls.bzl", "resolve_snapshot_url")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
 load(":content_based_path.bzl", "should_use_content_based_path")
 
@@ -19,7 +19,7 @@ def download(
     cache_buster: str = "",
     decompress: bool = True,
 ) -> Artifact:
-    # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
+    url = resolve_snapshot_url(url)
 
     if not allow_nondeterministic_downloads and not checksums:
         fail("when allow_nondeterministic_downloads=False, at least one checksum must be provided")

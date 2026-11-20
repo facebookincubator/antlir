@@ -11,6 +11,7 @@ load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
 load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain", "system_python_toolchain")
 load("@prelude//toolchains:remote_test_execution.bzl", "remote_test_execution_toolchain")
 load(":rust.bzl", "download_rust_toolchain")
+load("@antlir//antlir/distro/toolchain/cxx:template_placeholders.bzl", "cxx_toolchain_with_template_placeholders")
 load("@antlir//antlir/distro/toolchain/rust:defs.bzl", "distro_rust_toolchain")
 
 """
@@ -29,8 +30,15 @@ toolchain_alias(
     visibility = ["PUBLIC"],
 )
 
-system_cxx_toolchain(
+# The system's compiler, with the template placeholders (`$(cc)`, ...) that
+# cxx_genrule expands, which system_cxx_toolchain does not provide
+cxx_toolchain_with_template_placeholders(
     name = "cxx-system",
+    base = ":cxx-system-base",
+)
+
+system_cxx_toolchain(
+    name = "cxx-system-base",
     cxx_flags = [
         "--std=c++17",
     ],

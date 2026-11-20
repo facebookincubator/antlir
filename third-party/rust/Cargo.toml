@@ -37,10 +37,11 @@ async-scoped = { version = "=0.9.0", features = ["use-tokio"], default-features 
 async-stream = { version = "=0.3.6", default-features = false }
 async-trait = { version = "=0.1.92", default-features = false }
 atomic = { version = "=0.6.1", features = ["fallback"] }
+backoff = { version = "=0.4.0", features = ["futures", "tokio"] }
 backtrace = { version = "=0.3.76", features = ["std"] }
 base64 = { version = "=0.23.1", features = ["alloc", "simd-unsafe", "std"] }
 bincode = { version = "=2.0.1", features = ["alloc", "derive", "std"] }
-bindgen = { version = "=0.72.1", features = ["runtime"], default-features = false }
+bindgen = { version = "=0.72.1", features = ["logging", "prettyplease", "runtime"], default-features = false }
 bit-set = { version = "=0.11.1", features = ["std"] }
 bit-vec = { version = "=0.10.1", features = ["std"] }
 bitflags = { version = "=2.13.1", features = ["serde", "std"], default-features = false }
@@ -55,7 +56,7 @@ bytes = { version = "=1.12.1", features = ["std"] }
 bytesize = { version = "=2.7.0", features = ["std"] }
 cap-std = "=4.0.3"
 chrono = { version = "=0.4.45", features = ["alloc", "clock", "now", "std", "winapi"], default-features = false }
-clang-sys = { version = "=1.9.1", features = ["runtime"] }
+clang-sys = { version = "=1.9.1", features = ["clang_12_0", "runtime"] }
 clap = { version = "=4.6.6", features = ["color", "derive", "env", "error-context", "help", "std", "string", "suggestions", "unicode", "unstable-ext", "usage", "wrap_help"] }
 clap_complete = { version = "=4.6.9", features = ["unstable-dynamic"] }
 close-err = { version = "=1.0.2", default-features = false }
@@ -66,6 +67,7 @@ console = { version = "=0.16.4", features = ["alloc", "ansi-parsing", "std"] }
 const_format = "=0.2.36"
 constant_time_eq = { version = "=0.6.0", features = ["std"] }
 convert_case = { version = "=0.12.0", default-features = false }
+cpio = "=0.4.2"
 crc32c-hw = "=0.1.3"
 criterion = { version = "=0.8.2", features = ["async", "async_tokio", "cargo_bench_support", "csv_output", "plotters", "rayon"] }
 crossbeam = { version = "=0.8.5", features = ["alloc", "std"] }
@@ -76,6 +78,7 @@ ctor = { version = "=1.0.13", features = ["priority", "proc_macro", "std"] }
 dashmap = { version = "=6.2.1", default-features = false }
 debugserver-types = { version = "=0.5.0", default-features = false }
 derivative = { version = "=2.2.0", default-features = false }
+derive_builder = { version = "=0.20.2", features = ["alloc"], default-features = false }
 derive_more = { version = "=2.1.1", features = ["add", "add_assign", "as_ref", "constructor", "debug", "deref", "deref_mut", "display", "eq", "error", "from", "from_str", "full", "index", "index_mut", "into", "into_iterator", "is_variant", "mul", "mul_assign", "not", "std", "sum", "try_from", "try_into", "try_unwrap", "unwrap"] }
 digest-010 = { package = "digest", version = "=0.10.7", features = ["alloc", "core-api", "rand_core", "std"] }
 dirs = { version = "=6.0.0", default-features = false }
@@ -99,9 +102,12 @@ futures-intrusive = { version = "=0.5.0", features = ["alloc", "std"] }
 fxhash = { version = "=0.2.1", default-features = false }
 glob = { version = "=0.3.4", default-features = false }
 globset = { version = "=0.4.20", features = ["serde1"] }
-hashbrown = { version = "=0.17.1", features = ["default-hasher", "inline-more", "raw-entry"] }
+goblin = { version = "=0.10.7", features = ["elf32", "elf64", "endian_fd"], default-features = false }
 gpt = "=4.1.0"
+handlebars = { version = "=6.4.4", features = ["dir_source", "no_logging"] }
+hashbrown = { version = "=0.17.1", features = ["default-hasher", "inline-more", "raw-entry"] }
 hex = { version = "=0.4.3", features = ["alloc", "std"] }
+hex-literal = "=1.1.0"
 hostname = "=0.4.2"
 http = { version = "=1.5.0", features = ["std"] }
 http-body = { version = "=1.1.0", default-features = false }
@@ -121,6 +127,7 @@ indent_write = { version = "=2.2.0", features = ["std"] }
 indenter = "=0.3.4"
 index_vec = "=0.1.4"
 indexmap = { version = "=2.14.2", features = ["serde", "std"] }
+indicatif = { version = "=0.18.6", features = ["futures", "improved_unicode", "rayon", "tokio"] }
 indoc = { version = "=2.0.7", default-features = false }
 inferno = { version = "=0.12.8", default-features = false }
 internment = { version = "=0.8.6", features = ["arc", "intern"] }
@@ -130,10 +137,11 @@ is_proc_translated = { version = "=0.1.1", default-features = false }
 itertools = { version = "=0.15.0", features = ["use_alloc", "use_std"] }
 jemallocator = { package = "tikv-jemallocator", version = "=0.7.0", features = ["background_threads_runtime_support"] }
 jiff = { version = "=0.2.35", features = ["alloc", "perf-inline", "serde", "std", "tz-fat", "tz-system", "tzdb-bundle-platform", "tzdb-concatenated", "tzdb-zoneinfo"] }
+jwalk = "=0.9.0"
 libc = { version = "=0.2.189", features = ["extra_traits", "std"] }
 libfuzzer-sys = { version = "=0.4.13", features = ["link_libfuzzer"] }
 libloading = { version = "=0.8.9", default-features = false }
-liblzma = { version = "=0.4.9", default-features = false }
+liblzma = { version = "=0.4.9", default-features = false, features = ["parallel", "static"] }
 linked-hash-map = { version = "=0.5.6", features = ["serde_impl"], default-features = false }
 linkme = { version = "=0.3.37", features = ["used_linker"], default-features = false }
 log = { version = "=0.4.34", features = ["alloc", "kv", "kv_std", "kv_unstable", "kv_unstable_std", "std"], default-features = false }
@@ -147,6 +155,7 @@ memchr = { version = "=2.8.3", features = ["alloc", "std"] }
 memfd = { version = "=0.6.6", default-features = false }
 memmap2 = { version = "=0.9.11", default-features = false }
 mimalloc = { version = "=0.1.52", default-features = false }
+mockall = "=0.15.0"
 multimap = { version = "=0.10.1", features = ["serde_impl"] }
 native-tls = "=0.2.18"
 nix = { version = "=0.31.3", features = ["dir", "event", "feature", "fs", "hostname", "inotify", "ioctl", "mman", "mount", "net", "poll", "process", "ptrace", "reboot", "resource", "sched", "signal", "socket", "term", "time", "uio", "user", "zerocopy"] }
@@ -154,7 +163,9 @@ nom = { version = "=8.0.0", features = ["alloc", "std"] }
 nom-language = { version = "=0.1.0", default-features = false }
 nonempty = { version = "=0.12.0", features = ["std"] }
 notify = { version = "=8.2.0", features = ["macos_fsevent"] }
+num = "=0.4.3"
 num-bigint = { version = "=0.5.1", features = ["rand_0_10", "rand_core_0_10", "serde", "std"] }
+num-derive = "=0.5.1"
 num-traits = { version = "=0.2.19", features = ["i128", "libm", "std"] }
 num_cpus = { version = "=1.17.0", default-features = false }
 num_enum = { version = "=0.7.6", features = ["std"] }
@@ -173,6 +184,7 @@ petgraph = { version = "=0.8.3", features = ["graphmap", "matrix_graph", "stable
 pin-project = { version = "=1.1.13", default-features = false }
 plist = "=1.10.1"
 postcard = { version = "=1.1.3", features = ["alloc", "crc", "heapless", "heapless-cas", "use-crc", "use-std"] }
+proc-mounts = "=0.3.0"
 pyo3 = { version = "=0.27.2", features = ["anyhow", "multiple-pymethods", "py-clone"] }
 pretty_assertions = { version = "=1.4.1", features = ["alloc"], default-features = false }
 proc-macro-error2 = { version = "=2.0.1", features = ["syn-error"] }
@@ -192,8 +204,11 @@ rand_xoshiro = { version = "=0.8.1", default-features = false }
 ref-cast = { version = "=1.0.27", default-features = false }
 regex = { version = "=1.13.1", features = ["perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"] }
 relative-path = { version = "=2.0.1", features = ["alloc", "serde", "std"] }
+reqwest = { version = "=0.13.5", features = ["blocking", "json", "rustls", "stream"], default-features = false }
 retry = "=2.2.0"
+rexpect = "=0.7.1"
 ring = { version = "=0.17.14", features = ["alloc", "dev_urandom_fallback"] }
+rstest = { version = "=0.28.0", features = ["async-timeout"], default-features = false }
 ruff_formatter = { version = "=0.0.11", features = ["serde"], default-features = false }
 ruff_python_ast = { version = "=0.0.11", features = ["get-size", "serde"], default-features = false }
 ruff_python_formatter = { version = "=0.0.11", features = ["serde"] }
@@ -213,15 +228,19 @@ scopeguard = { version = "=1.2.0", features = ["use_std"] }
 sequence_trie = { version = "=0.3.6", default-features = false }
 serde = { version = "=1.0.229", features = ["alloc", "derive", "rc", "std"] }
 serde_json = { version = "=1.0.151", features = ["alloc", "float_roundtrip", "raw_value", "std", "unbounded_depth"] }
+serde_starlark = "=0.1.19"
 serde_with = { version = "=3.23.0", features = ["alloc", "hex", "macros", "std"] }
 sha1-010 = { package = "sha1", version = "=0.10.7", features = ["std"] }
 sha2-010 = { package = "sha2", version = "=0.10.9", features = ["std"] }
 shlex = { version = "=2.0.1", features = ["std"] }
 similar = { version = "=3.2.0", features = ["bytes", "inline", "std", "text", "unicode"] }
+similar-asserts = "=2.0.0"
 siphasher = { version = "=1.0.3", features = ["std"] }
 slab = { version = "=0.4.12", features = ["std"] }
 sled = { version = "=0.34.7", features = ["no_metrics"] }
 slog = { version = "=2.8.2", features = ["max_level_trace", "nested-values", "std"] }
+slog-term = "=2.9.2"
+slotmap = "=1.1.1"
 smallvec = { version = "=1.16.0", features = ["const_generics", "const_new", "impl_bincode", "specialization", "union", "write"], default-features = false }
 sorted_vector_map = { version = "=0.2.1", default-features = false }
 static_assertions = { version = "=1.1.0", default-features = false }
@@ -235,6 +254,7 @@ sysinfo = { version = "=0.39.6", features = ["component", "disk", "network", "sy
 take_mut = { version = "=0.2.2", default-features = false }
 tar = "=0.4.46"
 tempfile = "=3.27.0"
+tera = "=2.4.0"
 termimad = { version = "=0.35.4", features = ["special-renders"] }
 termios = { version = "=0.3.3", default-features = false }
 test-case = { version = "=3.3.1", default-features = false }
@@ -257,7 +277,9 @@ tower-lsp-server = { version = "=0.22.1", features = ["runtime-tokio"] }
 tower-service = { version = "=0.3.3", default-features = false }
 tracing = { version = "=0.1.44", features = ["attributes", "std", "valuable"] }
 tracing-core = { version = "=0.1.36", features = ["std"] }
+tracing-glog = { version = "=0.4.1", features = ["ansi", "tracing-log"] }
 tracing-subscriber = { version = "=0.3.23", features = ["alloc", "ansi", "env-filter", "fmt", "json", "local-time", "nu-ansi-term", "registry", "std"] }
+tracing-test = { version = "=0.2.6", features = ["no-env-filter"] }
 triomphe = { version = "=0.1.16", features = ["std"] }
 twox-hash = { version = "=2.1.4", features = ["alloc", "random", "std", "xxhash32", "xxhash3_128", "xxhash3_64", "xxhash64"] }
 typed-arena = { version = "=2.0.2", features = ["std"] }
@@ -265,8 +287,10 @@ typed-builder = { version = "=0.23.2", default-features = false }
 typetag = { version = "=0.2.23", default-features = false }
 unicode-segmentation = { version = "=1.13.3", default-features = false }
 unicode-width = { version = "=0.2.2", features = ["cjk"] }
+url = "=2.5.8"
 uuid = { version = "=1.26.0", features = ["atomic", "rng", "rng-getrandom", "serde", "sha1", "std", "v4", "v5", "v6", "v7", "v8"] }
 vt100 = { version = "=0.16.2", default-features = false }
+wait-timeout = "=0.2.1"
 walkdir = { version = "=2.5.0", default-features = false }
 watchman_client = { version = "=0.9.0", default-features = false }
 which = { version = "=8.0.6", features = ["real-sys"] }

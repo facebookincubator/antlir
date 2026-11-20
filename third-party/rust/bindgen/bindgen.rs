@@ -19,6 +19,9 @@ struct Args {
     header: String,
     #[clap(long)]
     out: PathBuf,
+    /// Arguments for clang, e.g. include paths for the header's includes
+    #[clap(last = true)]
+    clang_args: Vec<String>,
 }
 
 fn main() -> Result<()> {
@@ -28,7 +31,10 @@ fn main() -> Result<()> {
         .map_err(Error::msg)
         .context("while loading libclang")?;
 
-    let bindings = builder().header(&args.header).generate()?;
+    let bindings = builder()
+        .header(&args.header)
+        .clang_args(&args.clang_args)
+        .generate()?;
 
     bindings.write_to_file(&args.out)?;
     Ok(())

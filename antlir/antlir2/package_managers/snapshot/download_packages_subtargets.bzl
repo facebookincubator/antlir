@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
+load("//antlir/antlir2/package_managers/snapshot:snapshot_urls.bzl", "resolve_snapshot_url")
 load(":download.bzl", "download")
 
 def _download_packages_subtargets_impl(
@@ -44,7 +44,7 @@ def _download_packages_subtargets_impl(
             checksums = pkg["checksums"]
 
         url = baseurl + filename
-        # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
+        url = resolve_snapshot_url(url)
 
         # Always use content based paths for package subtargets – they are
         # content-addressed (sha256 when available, otherwise the verified
@@ -167,7 +167,7 @@ def _download_members_impl(
             checksums = pkg["checksums"]
 
         url = baseurl + filename
-        # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
+        url = resolve_snapshot_url(url)
 
         # Always use content based paths for member artifacts – they are
         # content-addressed via sha256.

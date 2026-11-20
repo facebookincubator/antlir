@@ -1,0 +1,63 @@
+# libcap, built from source so the host tools do not depend on a system
+# libcap-devel.
+
+oncall("antlir_oss")
+
+http_archive(
+    name = "src",
+    sha256 = "15c40ededb3003d70a283fe587a36b7d19c8b3b554e33f86129c059a4bb466b2",
+    strip_prefix = "libcap-2.66",
+    sub_targets = [
+        "libcap/_makenames.c",
+        "libcap/cap_alloc.c",
+        "libcap/cap_extint.c",
+        "libcap/cap_file.c",
+        "libcap/cap_flag.c",
+        "libcap/cap_proc.c",
+        "libcap/cap_text.c",
+        "libcap/include",
+        "libcap/include/uapi/linux/capability.h",
+        "libcap/libcap.h",
+    ],
+    urls = ["https://mirrors.edge.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.66.tar.xz"],
+)
+
+# cap_names.h, as libcap's Makefile makes it: _makenames, compiled with the
+# `{"name",index},` list of the uapi header's capability numbers (which the
+# Makefile extracts with perl), prints it.
+cxx_genrule(
+    name = "cap_names.h",
+    out = "cap_names.h",
+    cmd = " && ".join([
+        "awk '/^#define[ \\t]+CAP_[A-Z_]+[ \\t]+[0-9]+[ \\t]*$/ { printf \"{\\\"%s\\\",%s},\\n\", tolower($2), $3 }' $(location :src[libcap/include/uapi/linux/capability.h]) > $TMP/cap_names.list.h",
+        "$(cc) $(cflags) -I$TMP $(location :src[libcap/_makenames.c]) -o $TMP/_makenames",
+        "$TMP/_makenames > $OUT",
+    ]),
+)
+
+cxx_library(
+    name = "libcap",
+    srcs = [
+        ":src[libcap/cap_alloc.c]",
+        ":src[libcap/cap_extint.c]",
+        ":src[libcap/cap_file.c]",
+        ":src[libcap/cap_flag.c]",
+        ":src[libcap/cap_proc.c]",
+        ":src[libcap/cap_text.c]",
+    ],
+    header_namespace = "",
+    headers = {
+        "cap_names.h": ":cap_names.h",
+        "libcap.h": ":src[libcap/libcap.h]",
+    },
+    compiler_flags = [
+        "-Dlinux",
+        "-D_LARGEFILE64_SOURCE",
+        "-D_FILE_OFFSET_BITS=64",
+        "-isystem$(location :src[libcap/include])",
+        "-isystem$(location :src[libcap/include])/uapi",
+    ],
+    exported_preprocessor_flags = ["-isystem$(location :src[libcap/include])"],
+    preferred_linkage = "static",
+    visibility = ["PUBLIC"],
+)

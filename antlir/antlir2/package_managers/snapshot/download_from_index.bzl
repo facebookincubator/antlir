@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable[end= ]: load("//antlir/antlir2/package_managers/snapshot/facebook:manifold.bzl", "maybe_resolve_manifold_url")
+load("//antlir/antlir2/package_managers/snapshot:snapshot_urls.bzl", "resolve_snapshot_url")
 load(":content_based_path.bzl", "should_use_content_based_path")
 
 def _download_from_index_impl(
@@ -24,7 +24,7 @@ def _download_from_index_impl(
             fail("no checksums for relpath found '{}' in index {}".format(relpath, index_json))
 
         url = baseurl + relpath
-        # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
+        url = resolve_snapshot_url(url)
 
         has_content_based_path = should_use_content_based_path(actions, checksums)
         dl = actions.declare_output(
