@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/package_managers/deb:local_suite.bzl", "local_suite")
+load("//antlir/antlir2/package_managers/deb:suite_set.bzl", "suite_set")
 load("//antlir/antlir2/testing:image_debs_test.bzl", "image_test_deb_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load(":defs.bzl", "test_deb", "test_on_all_flavors")
@@ -299,4 +300,73 @@ test_on_all_flavors(
     name = "test-required-configured-first",
     layer = ":chrony-installed",
     names = ["chrony"],
+)
+
+# Two distributions carrying different versions of one package, seen as one
+# set of sources.
+[
+    local_suite(
+        name = "versioned-v" + version,
+        debs = [
+            test_deb(
+                name = "antlir2-versioned",
+                features = [
+                    feature.install_text(
+                        dst = "/antlir2-versioned",
+                        text = version + "\n",
+                    ),
+                ],
+                version = version,
+            ),
+        ],
+    )
+    for version in ["1", "2"]
+]
+
+suite_set(
+    name = "versioned",
+    suites = [
+        ":versioned-v1",
+        ":versioned-v2",
+    ],
+)
+
+# The newest version across the set wins, as apt does across sources, and
+# each .deb comes from the suite it resolved from.
+image.layer(
+    name = "versioned-latest",
+    features = [
+        feature.apt_install(
+            packages = ["antlir2-versioned"],
+            suite = ":versioned",
+        ),
+    ],
+    parent_layer = ":bash-installed",
+)
+
+test_on_all_flavors(
+    image_sh_test,
+    name = "test-suite-set-latest",
+    env = {"VERSION": "2"},
+    layer = ":versioned-latest",
+    test = "test-versioned.sh",
+)
+
+image.layer(
+    name = "versioned-pinned",
+    features = [
+        feature.apt_install(
+            packages = ["antlir2-versioned=1"],
+            suite = ":versioned",
+        ),
+    ],
+    parent_layer = ":bash-installed",
+)
+
+test_on_all_flavors(
+    image_sh_test,
+    name = "test-version-pin",
+    env = {"VERSION": "1"},
+    layer = ":versioned-pinned",
+    test = "test-versioned.sh",
 )

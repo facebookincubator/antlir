@@ -14,7 +14,7 @@ load(
     "Planner",
     "feature_record",  # @unused Used as type
 )
-load("//antlir/antlir2/package_managers/deb:suite.bzl", "DebSuiteInfo")
+load("//antlir/antlir2/package_managers/deb:suite_set.bzl", "DebSuiteSetInfo", "suite_set_info")
 
 def _plan_fn(*, ctx: AnalysisContext, identifier: str, feature: feature_record | typing.Any, resolve_cmd: RunInfo, **kwargs) -> list[PlanInfo]:
     # rootless is always passed by layer.bzl but not needed since we never
@@ -66,7 +66,8 @@ def plan(
     tx = ctx.actions.declare_output(identifier, "apt/transaction.json", has_content_based_path = False)
     dpkg_status_out = ctx.actions.declare_output(identifier, "apt/dpkg_status.txt", has_content_based_path = False)
 
-    archive_dir = suite[DebSuiteInfo].archive_dir
+    suites = suite_set_info(suite)
+    archive_dir = suites.archive_dir
 
     ctx.actions.run(
         cmd_args(
@@ -77,7 +78,7 @@ def plan(
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(items, format = "--items={}"),
             cmd_args(resolve_cmd, format = "--resolve-cmd={}"),
-            cmd_args(suite[DebSuiteInfo].base_variant, format = "--base-variant={}"),
+            cmd_args(suites.base_variant, format = "--base-variant={}"),
             cmd_args(tx.as_output(), format = "--out={}"),
             cmd_args(dpkg_status_out.as_output(), format = "--dpkg-status-out={}"),
             cmd_args(parent_dpkg_status, format = "--dpkg-status={}") if parent_dpkg_status else cmd_args(),
@@ -86,7 +87,7 @@ def plan(
         identifier = identifier,
     )
 
-    debs_dir = suite[DebSuiteInfo].debs_dir
+    debs_dir = suites.suites.values()[0].debs_dir if len(suites.suites) == 1 else None
     if not debs_dir:
         debs_dir = ctx.actions.declare_output(identifier, "apt/debs", dir = True, has_content_based_path = False)
 
@@ -97,7 +98,7 @@ def plan(
         # separate per-image downloads.
         ctx.actions.dynamic_output_new(
             _download_debs(
-                suite = suite[DebSuiteInfo],
+                suites = suites,
                 tx = tx,
                 debs_dir = debs_dir.as_output(),
             ),
@@ -122,13 +123,21 @@ def plan(
         dpkg_status_out = dpkg_status_out,
     )
 
-def _download_debs_impl(actions: AnalysisActions, suite: DebSuiteInfo, tx: ArtifactValue, debs_dir: OutputArtifact) -> list[Provider]:
+def _download_debs_impl(actions: AnalysisActions, suites: DebSuiteSetInfo, tx: ArtifactValue, debs_dir: OutputArtifact) -> list[Provider]:
     transaction = tx.read_json()
     debs_map = {}
     for pkg_info in transaction.get("install", []):
         pkg = pkg_info["package"]
         if not pkg["filename"]:
             continue
+
+        # The resolver records the distribution each package resolved from
+        if len(suites.suites) == 1:
+            suite = suites.suites.values()[0]
+        else:
+            suite = suites.suites.get(pkg_info.get("archive"))
+            if not suite:
+                fail("package '{}' resolved from unknown distribution '{}'".format(pkg["filename"], pkg_info.get("archive")))
         debs_map[pkg["filename"]] = suite.get_deb(actions, pkg)
     actions.symlinked_dir(debs_dir, debs_map)
     return []
@@ -137,7 +146,7 @@ _download_debs = dynamic_actions(
     impl = _download_debs_impl,
     attrs = {
         "debs_dir": dynattrs.output(),
-        "suite": dynattrs.value(DebSuiteInfo),
+        "suites": dynattrs.value(DebSuiteSetInfo),
         "tx": dynattrs.artifact_value(),
     },
 )

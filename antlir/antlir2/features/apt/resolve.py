@@ -36,6 +36,21 @@ def _is_required(pkg) -> bool:
     return str(candidate.record.get("Priority", "")).lower() == "required"
 
 
+def _distribution(candidate, distributions: list[str]) -> str | None:
+    """
+    The archive distribution (dists/<distribution>) a candidate comes from,
+    matched against its Release's Suite (e.g. noble-updates), then Codename
+    (Debian's Suite is "stable" for trixie).
+    """
+    for origin in candidate.origins:
+        if origin.archive in distributions:
+            return origin.archive
+    for origin in candidate.origins:
+        if origin.codename in distributions:
+            return origin.codename
+    return None
+
+
 def load_soname_index(dist_path: str, arch: str) -> dict[str, list[str]]:
     """
     soname -> packages that install it, inverted from each component's Contents
@@ -109,20 +124,16 @@ def main() -> int:
         print(f"Error: archive dir {archive_dir} does not exist", file=sys.stderr)
         return 1
 
-    # Discover the distribution name from the archive layout
+    # Discover the distributions from the archive layout (more than one when
+    # the suite is a `suite_set`)
     dists_dir = os.path.join(archive_dir, "dists")
     if not os.path.isdir(dists_dir):
         print(f"Error: {dists_dir} does not exist", file=sys.stderr)
         return 1
-    distributions = os.listdir(dists_dir)
-    if len(distributions) != 1:
-        print(
-            f"Error: expected exactly 1 distribution in {dists_dir}, "
-            f"found {distributions}",
-            file=sys.stderr,
-        )
+    distributions = sorted(os.listdir(dists_dir))
+    if not distributions:
+        print(f"Error: no distributions in {dists_dir}", file=sys.stderr)
         return 1
-    distribution = distributions[0]
 
     with tempfile.TemporaryDirectory() as apt_root:
         # Set up the directory structure apt expects
@@ -156,20 +167,21 @@ def main() -> int:
                 with open(status_path, "w") as f:
                     pass
 
-        # Write sources.list pointing at the local archive
+        # Write sources.list pointing at the local archive, one entry per
+        # distribution with the components in its dists/<distribution>/
         sources_list = os.path.join(apt_conf_dir, "sources.list")
-        # Discover components from the dists/<distribution>/ directory
-        dist_path = os.path.join(dists_dir, distribution)
-        components = [
-            d
-            for d in os.listdir(dist_path)
-            if os.path.isdir(os.path.join(dist_path, d)) and d != "InRelease"
-        ]
-        components_str = " ".join(sorted(components))
         with open(sources_list, "w") as f:
-            f.write(
-                f"deb [trusted=yes] file://{archive_dir} {distribution} {components_str}\n"
-            )
+            for distribution in distributions:
+                dist_path = os.path.join(dists_dir, distribution)
+                components = [
+                    d
+                    for d in os.listdir(dist_path)
+                    if os.path.isdir(os.path.join(dist_path, d)) and d != "InRelease"
+                ]
+                components_str = " ".join(sorted(components))
+                f.write(
+                    f"deb [trusted=yes] file://{archive_dir} {distribution} {components_str}\n"
+                )
 
         # Initialize apt_pkg with our custom root
         apt_pkg.init()
@@ -219,6 +231,27 @@ def main() -> int:
             print(f"Warning: apt update had issues: {e}", file=sys.stderr)
         cache.open()
 
+        # `name=version` installs pin that version as the candidate before
+        # anything is marked, so a package pulled in as a dependency of an
+        # earlier item cannot resolve to a newer version first.
+        for item in items:
+            subject = item["apt"].get("subject") or ""
+            name, _, version = subject.partition("=")
+            if item["action"] != "install" or not version or name not in cache:
+                continue
+            pinned = cache[name].versions.get(version)
+            if pinned is None:
+                available = ", ".join(v.version for v in cache[name].versions)
+                json.dump(
+                    {
+                        "tx_error": f"{name} has no version {version} (available: {available})"
+                    },
+                    sys.stdout,
+                )
+                sys.stdout.write("\n")
+                continue
+            cache[name].candidate = pinned
+
         # Seed the debootstrap base set (Essential + Required, plus
         # Important for the "standard" variant) before processing items,
         # so layers get a complete minimal system instead of only the
@@ -255,7 +288,7 @@ def main() -> int:
         remove_packages = []
 
         requested = {
-            item["apt"]["subject"]
+            item["apt"]["subject"].partition("=")[0]
             for item in items
             if item["action"] == "install" and item["apt"].get("subject")
         }
@@ -266,7 +299,13 @@ def main() -> int:
             source = item["apt"]
             if "soname" in source:
                 if soname_index is None:
-                    soname_index = load_soname_index(dist_path, arch)
+                    soname_index = {}
+                    for distribution in distributions:
+                        dist_index = load_soname_index(
+                            os.path.join(dists_dir, distribution), arch
+                        )
+                        for soname, pkgs in dist_index.items():
+                            soname_index.setdefault(soname, []).extend(pkgs)
                 subject, error = resolve_soname(
                     source["soname"], soname_index, cache, requested
                 )
@@ -275,7 +314,16 @@ def main() -> int:
                     sys.stdout.write("\n")
                     continue
             else:
-                subject = source["subject"]
+                subject, _, version = source["subject"].partition("=")
+                if version and action != "install":
+                    json.dump(
+                        {
+                            "tx_error": f"only installs take a version: {source['subject']}"
+                        },
+                        sys.stdout,
+                    )
+                    sys.stdout.write("\n")
+                    continue
 
             if action == "install":
                 if subject not in cache:
@@ -318,6 +366,17 @@ def main() -> int:
             if pkg.marked_install or pkg.marked_upgrade:
                 candidate = pkg.candidate
                 if candidate is None:
+                    continue
+                distribution = _distribution(candidate, distributions)
+                if distribution is None and len(distributions) > 1:
+                    origins = [(o.archive, o.codename) for o in candidate.origins]
+                    json.dump(
+                        {
+                            "tx_error": f"{pkg.name} {candidate.version} comes from none of {distributions} (origins: {origins})"
+                        },
+                        sys.stdout,
+                    )
+                    sys.stdout.write("\n")
                     continue
                 record = candidate.record
                 filename = record.get("Filename", "") if record else ""

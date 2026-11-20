@@ -80,10 +80,12 @@ def apt_install(
     """
     Install deb packages by name.
 
-    Elements in `packages` are apt package names like `"bash"` or `"systemd"`.
+    Elements in `packages` are apt package names like `"bash"` or `"systemd"`,
+    or `"name=version"` to install that exact version.
 
     `suite` overrides the default suite for the image OS, for example with a
-    `local_suite` of debs built by `package.deb`.
+    `local_suite` of debs built by `package.deb`, or a `suite_set` to resolve
+    across several suites.
 
     `sonames_src` is a file of newline-separated sonames; the package that
     installs each one is looked up in the archive's Contents index at resolve
