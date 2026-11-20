@@ -15,11 +15,30 @@ import hashlib
 import io
 import lzma
 import os
+import subprocess
 import tarfile
+
+try:
+    from compression import zstd
+
+    _zstd_decompress = zstd.decompress
+except ImportError:
+    # compression.zstd is new in Python 3.14; before that, the zstd CLI that
+    # Buck's own archive extraction already needs on the host
+    def _zstd_decompress(data: bytes) -> bytes:
+        return subprocess.run(
+            ["zstd", "--decompress", "--stdout"],
+            input=data,
+            stdout=subprocess.PIPE,
+            check=True,
+        ).stdout
+
 
 _COMPONENT = "main"
 
 _DECOMPRESSORS = {
+    # what Ubuntu's dpkg-deb compresses with
+    "control.tar.zst": _zstd_decompress,
     "control.tar.xz": lzma.decompress,
     "control.tar.gz": gzip.decompress,
     "control.tar": lambda b: b,
