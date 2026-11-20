@@ -29,6 +29,13 @@ def _is_essential(pkg) -> bool:
     return str(candidate.record.get("Essential", "")).lower() == "yes"
 
 
+def _is_required(pkg) -> bool:
+    candidate = pkg.candidate
+    if candidate is None or candidate.record is None:
+        return False
+    return str(candidate.record.get("Priority", "")).lower() == "required"
+
+
 def load_soname_index(dist_path: str, arch: str) -> dict[str, list[str]]:
     """
     soname -> packages that install it, inverted from each component's Contents
@@ -283,7 +290,15 @@ def main() -> int:
         # other essentials) own paths like the merged-/usr alias symlinks
         # that later packages populate, so extracting them out of order
         # fails (creating a symlink over an already-created directory).
-        for pkg in sorted(changes, key=lambda p: (not _is_essential(p), p.name)):
+        # Required packages come next, the way debootstrap installs them in
+        # an earlier stage than everything else: maintainer scripts assume
+        # them without declaring a dependency (e.g. ucf runs awk, whose
+        # /usr/bin/awk alternative only exists once mawk is configured), and
+        # packages unrelated by Depends are configured in this order.
+        for pkg in sorted(
+            changes,
+            key=lambda p: (not _is_essential(p), not _is_required(p), p.name),
+        ):
             if pkg.marked_install or pkg.marked_upgrade:
                 candidate = pkg.candidate
                 if candidate is None:

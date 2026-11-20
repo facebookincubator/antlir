@@ -248,3 +248,21 @@ test_on_all_flavors(
     layer = ":usrmerge-child",
     test = "test-dpkg-status-unique.sh",
 )
+
+# chrony's postinst runs ucf, which needs awk. Nothing chrony depends on pulls
+# in mawk, so this only builds if the seeded Required packages (mawk among
+# them) are configured before everything else.
+image.layer(
+    name = "chrony-installed",
+    default_os = "debian-trixie",
+    features = [
+        feature.apt_install(packages = ["chrony"]),
+    ],
+)
+
+test_on_all_flavors(
+    image_test_deb_names,
+    name = "test-required-configured-first",
+    layer = ":chrony-installed",
+    names = ["chrony"],
+)
