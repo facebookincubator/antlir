@@ -28,8 +28,8 @@ rust_library(
 rust_binary(
     name = "metadata",
     srcs = glob(["metadata/src/**/*.rs"]),
+    crate = "metadata",
     crate_root = "metadata/src/main.rs",
-    link_style = "shared",
     test_deps = [
         "hex-literal",
     ],
@@ -56,11 +56,15 @@ rust_binary(
 rust_binary(
     name = "snapshot",
     srcs = glob(["snapshot/src/**/*.rs"]),
+    crate = "snapshot",
     crate_root = "snapshot/src/main.rs",
     fb_deps = [
         "//manifold/clients/rust:manifold_client",
     ],
-    link_style = "shared",
+    link_style = select({
+        "DEFAULT": "static",
+        # @oss-disable[end= ]: "ovr_config//build_mode/constraints:dev": "shared",
+    }),
     test_deps = [
         "hex-literal",
     ],
