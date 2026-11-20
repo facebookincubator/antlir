@@ -93,6 +93,11 @@ struct TargetConfig {
     components: Vec<String>,
     #[serde(default)]
     distribution: Option<String>,
+    /// Deb-only: file listing the `{name}_{version}_{arch}` members to
+    /// upload, one per line. The snapshot keeps all of the suite's metadata
+    /// but only these packages (those the suite does not have are ignored).
+    #[serde(default)]
+    members_allowlist: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -144,6 +149,27 @@ struct ArchResult {
 
 struct DebResult {
     index_checksums: Checksums,
+}
+
+fn read_allowlist(project_root: &Path, path: &Path) -> Result<BTreeSet<String>> {
+    let contents = std::fs::read_to_string(project_root.join(path))
+        .with_context(|| format!("failed to read members allowlist {}", path.display()))?;
+    Ok(contents
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .map(str::to_owned)
+        .collect())
+}
+
+fn entry_nevra(entry: &Entry) -> Option<String> {
+    let field = |name| entry.rest().get(name)?.as_str();
+    Some(format!(
+        "{}_{}_{}",
+        field("package")?,
+        field("version")?,
+        field("architecture")?
+    ))
 }
 
 impl Snapshot {
@@ -267,8 +293,12 @@ impl Snapshot {
                     let deb_result =
                         snapshot_deb_target(target, &project_root, fb, self.concurrency).await?;
                     suite_pb.finish_with_message(format!("Snapshotted {}", target.target_name));
-                    let members =
+                    let mut members =
                         read_member_nevras(&project_root, &target.packages_indexes).await?;
+                    if let Some(allowlist) = &target.members_allowlist {
+                        let allowlist = read_allowlist(&project_root, allowlist)?;
+                        members.retain(|nevra, _| allowlist.contains(nevra));
+                    }
                     let dt = generate_deb_target(target, &deb_result, members)?;
                     described.push(dt);
                     overall_pb.inc(1);
@@ -419,6 +449,7 @@ struct SnapshotOneRequest<'a> {
     /// Arch being snapshotted (yum only; deb snapshots all arches at
     /// once), used to substitute `{arch}` in storage patterns.
     arch: Option<String>,
+    members_allowlist: Option<PathBuf>,
 }
 
 async fn snapshot_one(
@@ -444,7 +475,15 @@ async fn snapshot_one(
         .await
         .context("metadata snapshot failed")?;
 
-    let all_entries = read_all_entries(project_root, &req.packages_indexes).await?;
+    let mut all_entries = read_all_entries(project_root, &req.packages_indexes).await?;
+    if let Some(allowlist) = &req.members_allowlist {
+        let allowlist = read_allowlist(project_root, allowlist)?;
+        all_entries.retain(|e| entry_nevra(e).is_some_and(|n| allowlist.contains(&n)));
+        info!(
+            count = all_entries.len(),
+            "uploading only the allowlisted packages"
+        );
+    }
 
     let mut blob_status = super::blob_status::check_blob_status(&*storage, all_entries.clone())
         .await
@@ -592,6 +631,7 @@ async fn snapshot_yum_arch(
             storage_config: &target.snapshot_storage,
             concurrency,
             arch: Some(arch.arch.clone()),
+            members_allowlist: None,
         },
         project_root,
         fb,
@@ -633,6 +673,7 @@ async fn snapshot_deb_target(
             storage_config: &target.snapshot_storage,
             concurrency,
             arch: None,
+            members_allowlist: target.members_allowlist.clone(),
         },
         project_root,
         fb,
@@ -767,6 +808,8 @@ fn unchanged_targets(config: &SnapshotConfig, project_root: &Path) -> BTreeSet<S
         .targets
         .iter()
         .map(|target| match target.kind {
+            // The allowlist can change without the metadata changing
+            RepoKind::Deb if target.members_allowlist.is_some() => false,
             RepoKind::Deb => match (
                 &target.metadata_checksums,
                 &target.previous_metadata_checksums,

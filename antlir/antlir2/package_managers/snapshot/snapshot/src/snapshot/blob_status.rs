@@ -39,6 +39,13 @@ pub(crate) struct Entry {
     rest: serde_json::Value,
 }
 
+impl Entry {
+    /// The package record's other fields (`package`, `version`, ...).
+    pub(crate) fn rest(&self) -> &serde_json::Value {
+        &self.rest
+    }
+}
+
 /// The result of checking blob status in storage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct BlobStatusOutput {

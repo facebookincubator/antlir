@@ -69,7 +69,7 @@ def _suite_get_deb(
         member = members.get(nevra)
         if member == None:
             fail(
-                "package '{}' (filename '{}') is not in the suite members, the suite snapshot is stale".format(
+                "package '{}' (filename '{}') is not in the suite members: the suite snapshot is stale, or the package is missing from its members_allowlist".format(
                     nevra,
                     filename,
                 )
@@ -369,6 +369,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
             package_subtargets = aliases,
             snapshot_storage = ctx.attrs.snapshot_storage,
             snapshot_buck_file = ctx.attrs.snapshot_buck_file,
+            members_allowlist = ctx.attrs.members_allowlist,
         ),
     ]
 
@@ -406,6 +407,11 @@ _suite = rule(
             attrs.string(),
             default = [],
             doc = "Full `{name}_{version}_{arch}` NEVRAs: arch-independent members plus (via select) single-arch members for the current arch. The snapshot binary emits this as a plain list plus a per-arch select(); the rule downloads all members (via the index) and exposes them as `packages` subtargets and in `DebSuiteInfo`.",
+        ),
+        "members_allowlist": attrs.option(
+            attrs.source(),
+            default = None,
+            doc = "File listing the `{name}_{version}_{arch}` packages a snapshot uploads, one per line (default: all). `version` is the full Debian version, with any epoch (`foo_1:2.3-1_amd64`). Entries the suite does not have are ignored, so suites can share one list.",
         ),
         "members_compressed": attrs.dict(
             attrs.string(),

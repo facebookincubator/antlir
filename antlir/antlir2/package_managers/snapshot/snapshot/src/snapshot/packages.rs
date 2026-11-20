@@ -545,7 +545,7 @@ impl Downloader {
             return Ok(Some(copied));
         }
 
-        let download_url = format!("{}/{}", base_url, entry.filename);
+        let download_url = format!("{}/{}", base_url.trim_end_matches('/'), entry.filename);
         debug!(
             filename = entry.filename,
             download_url, "downloading package blob"

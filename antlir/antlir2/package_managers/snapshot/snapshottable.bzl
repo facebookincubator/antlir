@@ -16,6 +16,9 @@ SnapshottableInfo = provider(
         #    `architectures` attr on the regenerated `suite()` call so the
         #    snapshotted target re-snapshots identically.
         "arches": list[str],
+        # Deb only: file listing the `{name}_{version}_{arch}` packages to
+        # upload, one per line. Without it every package is uploaded.
+        "members_allowlist": provider_field(Artifact | None, default = None),
         # A directory artifact that should contain all the metadata artifacts that
         # should be snapshotted into persistent storage. This is considered cheap to
         # produce and store, as opposed to package blobs (which are belligerent and

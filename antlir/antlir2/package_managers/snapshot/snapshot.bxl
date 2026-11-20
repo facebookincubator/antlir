@@ -168,6 +168,7 @@ def _prepare_impl(ctx: bxl.Context):
                 "components": components,
                 "distribution": deb_info.distribution,
                 "kind": "deb",
+                "members_allowlist": snapshottable.members_allowlist,
                 "metadata_checksums": _metadata_checksums(actions, metadata_bin, snapshottable.metadata_tree, "{}-new".format(target_index)),
                 "metadata_tree": snapshottable.metadata_tree,
                 "package_subtargets": snapshottable.package_subtargets,
@@ -198,6 +199,8 @@ def _prepare_impl(ctx: bxl.Context):
         else:
             ctx.output.ensure(tc["metadata_tree"])
             ctx.output.ensure(tc["metadata_checksums"])
+            if tc["members_allowlist"]:
+                ctx.output.ensure(tc["members_allowlist"])
             if tc["previous_metadata_checksums"]:
                 ctx.output.ensure(tc["previous_metadata_checksums"])
             for idx in tc["packages_indexes"]:
