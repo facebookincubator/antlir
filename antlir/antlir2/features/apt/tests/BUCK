@@ -249,6 +249,40 @@ test_on_all_flavors(
     test = "test-dpkg-status-unique.sh",
 )
 
+# systemd Recommends systemd-timesyncd on every flavor; apt installs it unless
+# the transaction opts out of Recommends.
+image.layer(
+    name = "systemd-with-recommends",
+    features = [
+        feature.apt_install(packages = ["systemd"]),
+    ],
+)
+
+test_on_all_flavors(
+    image_test_deb_names,
+    name = "test-recommends-installed",
+    layer = ":systemd-with-recommends",
+    names = ["systemd-timesyncd"],
+)
+
+image.layer(
+    name = "systemd-without-recommends",
+    features = [
+        feature.apt_install(
+            install_recommends = False,
+            packages = ["systemd"],
+        ),
+    ],
+)
+
+test_on_all_flavors(
+    image_test_deb_names,
+    name = "test-recommends-not-installed",
+    layer = ":systemd-without-recommends",
+    names = ["systemd-timesyncd"],
+    not_installed = True,
+)
+
 # chrony's postinst runs ucf, which needs awk. Nothing chrony depends on pulls
 # in mawk, so this only builds if the seeded Required packages (mawk among
 # them) are configured before everything else.

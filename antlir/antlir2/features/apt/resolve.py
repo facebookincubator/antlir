@@ -188,10 +188,26 @@ def main() -> int:
             apt_pkg.config.set("APT::Architectures", arch)
 
         # Suggests are advisory only and never installed. Recommends are
-        # left at apt's default (installed) for every distro: images rely
-        # on them for parts of the intended system (e.g. dbus and
-        # systemd-resolved/sysv via systemd on ubuntu).
+        # left at apt's default (installed) unless a feature opts out:
+        # images rely on them for parts of the intended system (e.g. dbus
+        # and systemd-resolved/sysv via systemd on ubuntu).
         apt_pkg.config.set("APT::Install-Suggests", "false")
+        # Only features naming packages count: the deps of a binary installed
+        # with transition_to_distro_platform (sonames) take whatever the
+        # layer's apt features chose
+        install_recommends = {
+            item["install_recommends"]
+            for item in items
+            if item["action"] == "install" and item["apt"].get("subject")
+        }
+        if len(install_recommends) > 1:
+            print(
+                "Error: apt features in one layer disagree on install_recommends",
+                file=sys.stderr,
+            )
+            return 1
+        if install_recommends == {False}:
+            apt_pkg.config.set("APT::Install-Recommends", "false")
 
         # Update the package lists
         import apt

@@ -98,6 +98,7 @@ pub struct AptItem {
     pub action: Action,
     pub apt: AptSource,
     pub feature_label: Label,
+    pub install_recommends: bool,
 }
 
 #[derive(
@@ -714,6 +715,7 @@ fn run_apt_driver(
                         action: item.action,
                         apt: AptSource::Soname(soname.to_owned()),
                         feature_label: item.feature_label.clone(),
+                        install_recommends: item.install_recommends,
                     });
                 }
             }

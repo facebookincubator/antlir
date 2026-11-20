@@ -40,12 +40,20 @@ DEFAULT_SUITE = select({
     "antlir//antlir/antlir2/os:ubuntu-stonking": STONKING_SUITE,
 })
 
-def _common(action: str, *, packages: list[str | Select] | Select, suite: str | None = None, sonames_src: str | Select | None = None):
+def _common(
+    action: str,
+    *,
+    packages: list[str | Select] | Select,
+    suite: str | None = None,
+    sonames_src: str | Select | None = None,
+    install_recommends: bool = True,
+):
     return ParseTimeFeature(
         feature_type = "apt",
         plugin = "antlir//antlir/antlir2/features/apt:apt",
         kwargs = {
             "action": action,
+            "install_recommends": install_recommends,
             "sonames_src": sonames_src,
             "subjects": packages,
         },
@@ -62,7 +70,13 @@ def _common(action: str, *, packages: list[str | Select] | Select, suite: str | 
         },
     )
 
-def apt_install(*, packages: list[str | Select] | Select = [], suite: str | None = None, sonames_src: str | Select | None = None):
+def apt_install(
+    *,
+    packages: list[str | Select] | Select = [],
+    suite: str | None = None,
+    sonames_src: str | Select | None = None,
+    install_recommends: bool = True,
+):
     """
     Install deb packages by name.
 
@@ -74,8 +88,12 @@ def apt_install(*, packages: list[str | Select] | Select = [], suite: str | None
     `sonames_src` is a file of newline-separated sonames; the package that
     installs each one is looked up in the archive's Contents index at resolve
     time. See antlir/distro/deb:find-requires.
+
+    `install_recommends = False` resolves without pulling in Recommends (like
+    `apt-get install --no-install-recommends`). It applies to the whole
+    transaction, so every apt feature in a layer must agree on it.
     """
-    return _common("install", packages = packages, suite = suite, sonames_src = sonames_src)
+    return _common("install", packages = packages, suite = suite, sonames_src = sonames_src, install_recommends = install_recommends)
 
 def apt_remove_if_exists(*, packages: list[str | Select] | Select):
     """
@@ -110,6 +128,7 @@ apt_item_record = record(
     action = action_enum,
     apt = apt_source_record,
     feature_label = TargetLabel,
+    install_recommends = bool,
 )
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -118,6 +137,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             action = action_enum(ctx.attrs.action),
             apt = apt_source_record(subject = pkg, sonames_src = None),
             feature_label = ctx.label.raw_target(),
+            install_recommends = ctx.attrs.install_recommends,
         )
         for pkg in ctx.attrs.subjects
     ]
@@ -128,6 +148,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 action = action_enum(ctx.attrs.action),
                 apt = apt_source_record(subject = None, sonames_src = ctx.attrs.sonames_src),
                 feature_label = ctx.label.raw_target(),
+                install_recommends = ctx.attrs.install_recommends,
             ),
         )
         required_artifacts.append(ctx.attrs.sonames_src)
@@ -157,6 +178,7 @@ apt_rule = new_feature_rule(
     attrs = {
         "action": attrs.enum(["install", "remove", "remove_if_exists"]),
         "driver": attrs.dep(providers = [RunInfo]),
+        "install_recommends": attrs.bool(default = True),
         "plan": attrs.exec_dep(providers = [RunInfo]),
         "resolve": attrs.dep(providers = [RunInfo]),
         "sonames_src": attrs.option(attrs.source(), default = None),
