@@ -98,10 +98,11 @@ OSES = [
     ),
     _new_os(
         name = "ubuntu-noble",
-        flavor = "antlir//antlir/antlir2/flavor/ubuntu-noble:ubuntu-noble",
-        # Noble does not have aarch64 packages
+        # TODO: bootstrap aarch64 build appliance
         architectures = [new_arch_t("x86_64")],
-        has_platform_toolchain = False,  # yikes, this will be a whole can of worms, hope we never need it...
+        flavor = "antlir//antlir/antlir2/flavor/ubuntu-noble:ubuntu-noble",
+        has_platform_toolchain = True,
+        python = new_python_t(interpreter = "/usr/bin/python3"),
     ),
     _new_os(
         name = "ubuntu-stonking",

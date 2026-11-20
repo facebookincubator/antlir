@@ -5,22 +5,24 @@
 
 # All LLVM versions supported by antlir across OS flavors. Not every OS has
 # every version - see `_LLVM_VERSIONS_BY_OS` below.
-ANTLIR_LLVM_VERSIONS = ["19", "20", "21"]
+ANTLIR_LLVM_VERSIONS = ["18", "19", "20", "21"]
 
 # Default LLVM version — standard across all OS flavors that ship it.
 DEFAULT_LLVM_VERSION = "20"
 
 # OSes whose repos cannot provide every version in ANTLIR_LLVM_VERSIONS.
-# CentOS 9 Stream no longer ships clang/lld 20, and debian-trixie packages
-# llvm 19 only. Other OSes ship the default set below (llvm 19 is only
-# packaged by debian, so it is excluded from the default set).
+# CentOS 9 Stream no longer ships clang/lld 20, debian-trixie packages
+# llvm 19 only, and ubuntu-noble packages llvm 18 only. Other OSes ship the
+# default set below (llvm 18/19 are only packaged by those OSes, so they
+# are excluded from the default set).
 _LLVM_VERSIONS_BY_OS = {
     "centos9": ["21"],
     "debian-trixie": ["19"],
+    "ubuntu-noble": ["18"],
 }
 
 def llvm_versions_for_os(os: str) -> list[str]:
-    return _LLVM_VERSIONS_BY_OS.get(os, [v for v in ANTLIR_LLVM_VERSIONS if v != "19"])
+    return _LLVM_VERSIONS_BY_OS.get(os, [v for v in ANTLIR_LLVM_VERSIONS if v not in ("18", "19")])
 
 def default_llvm_version_for_os(os: str) -> str:
     versions = llvm_versions_for_os(os)

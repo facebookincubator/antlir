@@ -143,7 +143,7 @@ struct Component {
     contents: BTreeMap<String, BlobDl>,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 struct BlobDl {
     href: String,
     size: u64,
@@ -192,30 +192,53 @@ fn split_compression<'a>(filename: &'a str, stem: &str) -> Option<&'a str> {
     }
 }
 
+/// Split `Contents-<arch>[.<compression>]` into `(arch, compression)`.
+fn split_contents(filename: &str) -> Option<(&str, &str)> {
+    let rest = filename.strip_prefix("Contents-")?;
+    // arch names never contain a dot, so any suffix is the compression
+    Some(match rest.rsplit_once('.') {
+        Some((arch, "gz")) => (arch, "gz"),
+        Some((arch, "xz")) => (arch, "xz"),
+        _ => (rest, ""),
+    })
+}
+
 /// Classify an index path from a Release file's checksum section into
-/// `(component, arch, kind, compression)`. Anything else (translations, dep11,
+/// `(component, arch, kind, compression)`. The component is `None` for an
+/// index that covers the whole suite. Anything else (translations, dep11,
 /// sources, debian-installer, ...) is not something we download.
-fn classify(path: &str) -> Option<(&str, &str, IndexKind, &str)> {
+fn classify(path: &str) -> Option<(Option<&str>, &str, IndexKind, &str)> {
     let segments: Vec<&str> = path.split('/').collect();
     match *segments.as_slice() {
         // <component>/binary-<arch>/Packages[.<compression>]
         [component, dir, filename] => {
             let arch = dir.strip_prefix("binary-")?;
             let compression = split_compression(filename, "Packages")?;
-            Some((component, arch, IndexKind::Packages, compression))
+            Some((Some(component), arch, IndexKind::Packages, compression))
         }
-        // <component>/Contents-<arch>[.<compression>]
+        // <component>/Contents-<arch>[.<compression>] (debian)
         [component, filename] => {
-            let rest = filename.strip_prefix("Contents-")?;
-            // arch names never contain a dot, so any suffix is the compression
-            let (arch, compression) = match rest.rsplit_once('.') {
-                Some((arch, "gz")) => (arch, "gz"),
-                Some((arch, "xz")) => (arch, "xz"),
-                _ => (rest, ""),
-            };
-            Some((component, arch, IndexKind::Contents, compression))
+            let (arch, compression) = split_contents(filename)?;
+            Some((Some(component), arch, IndexKind::Contents, compression))
+        }
+        // Contents-<arch>[.<compression>] (ubuntu publishes one Contents
+        // index for all components)
+        [filename] => {
+            let (arch, compression) = split_contents(filename)?;
+            Some((None, arch, IndexKind::Contents, compression))
         }
         _ => None,
+    }
+}
+
+/// Record `entry` for `arch` unless a better compressed variant is already
+/// recorded.
+fn insert_best(index: &mut BTreeMap<String, BlobDl>, arch: &str, entry: BlobDl) {
+    let dominated = index.get(arch).is_some_and(|existing| {
+        compression_rank(&existing.filetype) >= compression_rank(&entry.filetype)
+    });
+    if !dominated {
+        index.insert(arch.to_owned(), entry);
     }
 }
 
@@ -309,6 +332,7 @@ fn parse<R: BufRead>(reader: R) -> Result<Out> {
 
     // Fold merged per-path hashes into components, keeping the best
     // compression per (component, arch, kind)
+    let mut suite_contents: BTreeMap<String, BlobDl> = BTreeMap::new();
     for (path, hashes) in &files {
         let Some((component, arch, kind, filetype)) = classify(path) else {
             continue;
@@ -325,17 +349,25 @@ fn parse<R: BufRead>(reader: R) -> Result<Out> {
             filetype: filetype.to_owned(),
         };
 
+        let Some(component) = component else {
+            insert_best(&mut suite_contents, arch, entry);
+            continue;
+        };
         let comp = out.components.entry(component.to_owned()).or_default();
         let index = match kind {
             IndexKind::Packages => &mut comp.packages,
             IndexKind::Contents => &mut comp.contents,
         };
+        insert_best(index, arch, entry);
+    }
 
-        let dominated = index.get(arch).is_some_and(|existing| {
-            compression_rank(&existing.filetype) >= compression_rank(filetype)
-        });
-        if !dominated {
-            index.insert(arch.to_owned(), entry);
+    // A suite-wide Contents index lists files from every component, so it
+    // stands in for any component that does not publish its own.
+    for comp in out.components.values_mut() {
+        for (arch, entry) in &suite_contents {
+            comp.contents
+                .entry(arch.clone())
+                .or_insert_with(|| entry.clone());
         }
     }
 
@@ -480,21 +512,55 @@ mod tests {
     fn test_classify() {
         assert!(matches!(
             classify("main/binary-amd64/Packages.xz"),
-            Some(("main", "amd64", IndexKind::Packages, "xz"))
+            Some((Some("main"), "amd64", IndexKind::Packages, "xz"))
         ));
         assert!(matches!(
             classify("main/Contents-amd64.gz"),
-            Some(("main", "amd64", IndexKind::Contents, "gz"))
+            Some((Some("main"), "amd64", IndexKind::Contents, "gz"))
         ));
         assert!(matches!(
             classify("main/Contents-amd64"),
-            Some(("main", "amd64", IndexKind::Contents, ""))
+            Some((Some("main"), "amd64", IndexKind::Contents, ""))
         ));
+        assert!(matches!(
+            classify("Contents-amd64.gz"),
+            Some((None, "amd64", IndexKind::Contents, "gz"))
+        ));
+        assert!(classify("Release").is_none());
         // Not indexes we ever download
         assert!(classify("main/debian-installer/binary-amd64/Packages").is_none());
         assert!(classify("main/source/Sources.xz").is_none());
         assert!(classify("main/i18n/Translation-en.xz").is_none());
         assert!(classify("main/dep11/Components-amd64.yml.gz").is_none());
+    }
+
+    #[test]
+    fn test_parse_suite_wide_contents() {
+        // ubuntu publishes a single Contents index covering every component,
+        // and debian-style per-component ones take precedence over it
+        let release = "\
+Origin: Ubuntu
+Suite: noble
+Codename: noble
+Date: Thu, 25 Apr 2024 15:10:33 UTC
+Architectures: amd64 arm64
+Components: main universe
+SHA256:
+ 1111111111111111111111111111111111111111111111111111111111111111 100 Contents-amd64
+ 2222222222222222222222222222222222222222222222222222222222222222 10 Contents-amd64.gz
+ 3333333333333333333333333333333333333333333333333333333333333333 20 main/binary-amd64/Packages.xz
+ 4444444444444444444444444444444444444444444444444444444444444444 30 universe/binary-amd64/Packages.xz
+ 5555555555555555555555555555555555555555555555555555555555555555 5 universe/Contents-amd64.gz
+";
+        let out = parse(Cursor::new(release)).expect("failed to parse");
+        assert_eq!(
+            out.components["main"].contents["amd64"].href, "Contents-amd64.gz",
+            "main has no Contents of its own, so it uses the suite-wide one",
+        );
+        assert_eq!(
+            out.components["universe"].contents["amd64"].href,
+            "universe/Contents-amd64.gz",
+        );
     }
 
     #[test]
