@@ -12,49 +12,62 @@ load("//antlir/antlir2/package_managers/deb:suite.bzl", "DebSuiteInfo")
 load("//antlir/antlir2/package_managers/snapshot:snapshottable.bzl", "SnapshottableInfo")
 load("//antlir/antlir2/package_managers/yum:repo.bzl", "YumRepoInfo")
 
-_SNAPSHOT_ROOT = "fbcode/bot_generated/antlir/snapshot"
+def _snapshot_root(ctx: bxl.Context):
+    # `--snapshot_root`, a cell-qualified package prefix such as
+    # "fbcode//bot_generated/antlir/snapshot", and the project-relative
+    # directory it names, where the generated BUCK files are written
+    cell, sep, package = ctx.cli_args.snapshot_root.partition("//")
+    if not sep or not cell:
+        fail("--snapshot_root must be a cell-qualified package such as fbcode//bot_generated/antlir/snapshot, got '{}'".format(ctx.cli_args.snapshot_root))
+    package = package.strip("/")
+    label = cell + "//" + package
+    project_root = ctx.root()
+    cell_path = ctx.audit().cell([cell])[cell]
+    cell_relpath = "" if cell_path == project_root else cell_path.removeprefix(project_root + "/")
+    return struct(
+        cell = cell,
+        package = package,
+        label = label,
+        path = "/".join([p for p in [cell_relpath, package] if p]),
+    )
 
-def _buck_package(label, custom_path):
+def _buck_package(root, label, custom_path):
     if custom_path:
-        if custom_path.startswith(_SNAPSHOT_ROOT + "/"):
+        if custom_path.startswith(root.path + "/"):
             path = custom_path
         else:
             stripped = custom_path.lstrip("/")
             if stripped.endswith("/BUCK"):
-                path = _SNAPSHOT_ROOT + "/" + stripped
+                path = root.path + "/" + stripped
             elif stripped.endswith("/"):
-                path = _SNAPSHOT_ROOT + "/" + stripped + "BUCK"
+                path = root.path + "/" + stripped + "BUCK"
             else:
-                path = _SNAPSHOT_ROOT + "/" + stripped
+                path = root.path + "/" + stripped
                 if not path.endswith("/BUCK"):
                     path = path + "/BUCK"
 
-        if not path.startswith(_SNAPSHOT_ROOT + "/"):
-            fail("snapshot_buck_file must be under {}, got {}".format(_SNAPSHOT_ROOT, custom_path))
+        if not path.startswith(root.path + "/"):
+            fail("snapshot_buck_file must be under {}, got {}".format(root.path, custom_path))
         return path
     else:
         return "{}/{}/{}/BUCK".format(
-            _SNAPSHOT_ROOT,
+            root.path,
             label.package,
             label.name,
         )
 
-def _snapshot_label(buck_package, target_name):
+def _snapshot_label(root, buck_package, target_name):
     # Label of the previously generated target for this snapshot, e.g.
     # "fbcode//bot_generated/antlir/snapshot/<package>:<name>".
-    package = buck_package
-    if package.startswith("fbcode/"):
-        package = package[len("fbcode/") :]
-    if package.endswith("/BUCK"):
-        package = package[: -len("/BUCK")]
-    return "fbcode//{}:{}".format(package, target_name)
+    package = buck_package.removeprefix(root.path + "/").removesuffix("/BUCK")
+    return "{}/{}:{}".format(root.label, package, target_name)
 
-def _existing_snapshot_labels(ctx: bxl.Context) -> dict[str, bool]:
+def _existing_snapshot_labels(ctx: bxl.Context, root) -> dict[str, bool]:
     # Every target already generated under the snapshot root. Checking
     # membership here lets prepare reference the previous snapshot's
     # `SnapshottableInfo` without failing when a target has never been
     # snapshotted.
-    return {str(t.label): True for t in ctx.uquery().eval("fbcode//bot_generated/antlir/snapshot/...")}
+    return {str(t.label): True for t in ctx.uquery().eval(root.label + "/...")}
 
 def _tree_prefix(kind, label, timestamp):
     return "{}/{}/snap-{}".format(kind, label.package + "/" + label.name, timestamp)
@@ -89,7 +102,8 @@ def _prepare_impl(ctx: bxl.Context):
     timestamp = ctx.cli_args.timestamp
 
     targets_config = []
-    existing_snapshots = _existing_snapshot_labels(ctx)
+    root = _snapshot_root(ctx)
+    existing_snapshots = _existing_snapshot_labels(ctx, root)
 
     flat_targets = [t for targets in ctx.cli_args.target for t in targets]
     for target_index, target_label in enumerate(flat_targets):
@@ -105,8 +119,8 @@ def _prepare_impl(ctx: bxl.Context):
         snapshottable = providers[SnapshottableInfo]
         storage = _require_storage(snapshottable, target_label)
 
-        buck_package = _buck_package(target.label, snapshottable.snapshot_buck_file)
-        snapshot_label = _snapshot_label(buck_package, target.label.name)
+        buck_package = _buck_package(root, target.label, snapshottable.snapshot_buck_file)
+        snapshot_label = _snapshot_label(root, buck_package, target.label.name)
         has_previous = snapshot_label in existing_snapshots
 
         if YumRepoInfo in providers:
@@ -211,6 +225,7 @@ def _prepare_impl(ctx: bxl.Context):
 prepare = bxl_main(
     impl = _prepare_impl,
     cli_args = {
+        "snapshot_root": cli_args.string(doc = "Cell-qualified package the generated BUCK files go under"),
         "target": cli_args.list(cli_args.target_expr()),
         "timestamp": cli_args.string(doc = "Timestamp string for the snapshot (e.g. 2026-05-21+15:00:00)"),
     },

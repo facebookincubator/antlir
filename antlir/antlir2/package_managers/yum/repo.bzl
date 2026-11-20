@@ -239,7 +239,7 @@ _repo = rule(
         "snapshot_buck_file": attrs.option(
             attrs.string(),
             default = None,
-            doc = "Optional alternate path for the generated BUCK file, relative to `fbcode/bot_generated/antlir/snapshot/` or absolute under that root, e.g. `kernel/6.13/BUCK`. Multiple repos can share the same path to be co-located in one BUCK file.",
+            doc = "Optional alternate path for the generated BUCK file, relative to the snapshot root (the snapshot binary's `--snapshot-root`, by default `fbcode//bot_generated/antlir/snapshot`) or absolute under it, e.g. `kernel/6.13/BUCK`. Multiple repos can share the same path to be co-located in one BUCK file.",
         ),
         "snapshot_source": attrs.option(
             attrs.label(),

@@ -424,7 +424,7 @@ _suite = rule(
         "snapshot_buck_file": attrs.option(
             attrs.string(),
             default = None,
-            doc = "Optional alternate path for the generated BUCK file, relative to `fbcode/bot_generated/antlir/snapshot/` or absolute under that root.",
+            doc = "Optional alternate path for the generated BUCK file, relative to the snapshot root (the snapshot binary's `--snapshot-root`, by default `fbcode//bot_generated/antlir/snapshot`) or absolute under it.",
         ),
         "snapshot_source": attrs.option(
             attrs.label(),

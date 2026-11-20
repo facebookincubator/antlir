@@ -37,7 +37,7 @@ use super::progress;
 use super::storage::StorageConfig;
 use super::unchanged::SkippedNoChanges;
 
-const BXL_TARGET: &str = "fbcode//antlir/antlir2/package_managers/snapshot:snapshot.bxl:prepare";
+const BXL_TARGET: &str = "antlir//antlir/antlir2/package_managers/snapshot:snapshot.bxl:prepare";
 
 #[derive(Debug, Clone, Deserialize)]
 struct SnapshotConfig {
@@ -134,6 +134,12 @@ pub(crate) struct Snapshot {
     #[clap(long, default_value_t = 100)]
     concurrency: usize,
 
+    /// The cell-qualified package the generated BUCK files go under; a
+    /// target's goes in a package below it named after the target, or at its
+    /// `snapshot_buck_file`.
+    #[clap(long, default_value = "fbcode//bot_generated/antlir/snapshot")]
+    snapshot_root: String,
+
     /// Rewrite BUCK files even if we believe the snapshot to be unchanged. Use
     /// for any format changes to the BUCK files that do not change the actual
     /// underlying representation of the snapshot.
@@ -190,9 +196,15 @@ impl Snapshot {
         info!(project_root = %project_root.display(), "resolved project root");
 
         let bxl_pb = progress::spinner("Running buck2 bxl prepare");
-        let config = run_bxl_prepare(&self.buck2, &project_root, &self.targets, &timestamp)
-            .await
-            .context("buck2 bxl preparation failed")?;
+        let config = run_bxl_prepare(BxlPrepareRequest {
+            buck2: &self.buck2,
+            project_root: &project_root,
+            snapshot_root: &self.snapshot_root,
+            targets: &self.targets,
+            timestamp: &timestamp,
+        })
+        .await
+        .context("buck2 bxl preparation failed")?;
         bxl_pb.finish_with_message("buck2 bxl prepare complete");
 
         // As early as possible after prepare (which materializes the
@@ -362,14 +374,27 @@ async fn write_buck_files_concurrent(
     Ok(())
 }
 
+struct BxlPrepareRequest<'a> {
+    buck2: &'a Path,
+    project_root: &'a Path,
+    snapshot_root: &'a str,
+    targets: &'a [String],
+    timestamp: &'a str,
+}
+
 async fn run_bxl_prepare(
-    buck2: &Path,
-    project_root: &Path,
-    targets: &[String],
-    timestamp: &str,
+    BxlPrepareRequest {
+        buck2,
+        project_root,
+        snapshot_root,
+        targets,
+        timestamp,
+    }: BxlPrepareRequest<'_>,
 ) -> Result<SnapshotConfig> {
     let mut args: Vec<String> = vec![
         "bxl".to_owned(),
+        "--client-metadata".to_owned(),
+        "id=antlir_snapshot".to_owned(),
         // The snapshot timestamp doubles as a cache buster: the
         // prepare analyses read it via `read_config` (see
         // `_cache_buster` in the yum/deb rules) and fold it into the
@@ -381,6 +406,8 @@ async fn run_bxl_prepare(
         format!("antlir_snapshot.cache_buster={timestamp}"),
         BXL_TARGET.to_owned(),
         "--".to_owned(),
+        "--snapshot_root".to_owned(),
+        snapshot_root.to_owned(),
         "--timestamp".to_owned(),
         timestamp.to_owned(),
     ];
@@ -939,7 +966,65 @@ fn generate_deb_target(
 
 #[cfg(test)]
 mod tests {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    use tokio::fs;
+
     use super::*;
+
+    #[tokio::test]
+    async fn bxl_prepare_passes_tool_identity_before_forwarded_arguments() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        let buck2 = dir.path().join("buck2");
+        fs::write(
+            &buck2,
+            r#"#!/bin/sh
+set -eu
+printf '%s\n' "$@" > args
+printf '{"targets":[]}\n' > config.json
+printf '%s/config.json\n' "$PWD"
+"#,
+        )
+        .await?;
+        let mut permissions = fs::metadata(&buck2).await?.permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&buck2, permissions).await?;
+
+        let targets = vec!["root//apt:noble".to_owned(), "root//apt:pgdg".to_owned()];
+        let timestamp = "2026-11-18+00:00:00";
+        let config = run_bxl_prepare(BxlPrepareRequest {
+            buck2: &buck2,
+            project_root: dir.path(),
+            snapshot_root: "root//apt/snapshot",
+            targets: &targets,
+            timestamp,
+        })
+        .await?;
+
+        assert!(config.targets.is_empty());
+        let args = fs::read_to_string(dir.path().join("args")).await?;
+        assert_eq!(
+            args.lines().collect::<Vec<_>>(),
+            vec![
+                "bxl",
+                "--client-metadata",
+                "id=antlir_snapshot",
+                "-c",
+                "antlir_snapshot.cache_buster=2026-11-18+00:00:00",
+                BXL_TARGET,
+                "--",
+                "--snapshot_root",
+                "root//apt/snapshot",
+                "--timestamp",
+                timestamp,
+                "--target",
+                "root//apt:noble",
+                "--target",
+                "root//apt:pgdg",
+            ],
+        );
+        Ok(())
+    }
 
     #[test]
     fn metadata_checksums_equal_compares_json_files() {
