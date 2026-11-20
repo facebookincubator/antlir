@@ -151,10 +151,31 @@ def _buck_sh_binary(*args, **kwargs):
 def _buck_sh_test(*args, **kwargs):
     _wrap_internal(fb_native.sh_test, args, kwargs)
 
+# The distro C/C++ toolchain passes -nostdinc and -nodefaultlibs, so C/C++
+# targets built for the distro get libc, libm, pthread and the C++ runtime
+# (headers and libraries) as deps, as fbsource's implicit C/C++ deps give them
+# there.
+_DISTRO_IMPLICIT_CXX_DEPS = select({
+    "DEFAULT": [],
+    "antlir//antlir/distro:build-for-distro": [
+        "antlir//antlir/distro/deps/glibc:c",
+        "antlir//antlir/distro/deps/glibc:m",
+        "antlir//antlir/distro/deps/glibc:pthread",
+        "antlir//antlir/distro/deps/libgcc:atomic",
+        "antlir//antlir/distro/deps/libgcc:gcc_s",
+        "antlir//antlir/distro/deps/libgcc:stdc++",
+    ],
+})
+
+def _with_implicit_cxx_deps(kwargs):
+    kwargs["deps"] = kwargs.get("deps", []) + _DISTRO_IMPLICIT_CXX_DEPS
+
 def _cpp_binary(*args, **kwargs):
+    _with_implicit_cxx_deps(kwargs)
     _wrap_internal(shim_cpp_binary, args, kwargs)
 
 def _cpp_library(*args, **kwargs):
+    _with_implicit_cxx_deps(kwargs)
     _wrap_internal(shim_cpp_library, args, kwargs)
 
 # NOT proxied: the shim's `cpp_unittest` injects `CPP_FOLLY_UNITTEST_DEPS` (or
@@ -163,6 +184,7 @@ def _cpp_library(*args, **kwargs):
 # the repo does not have.
 def _cpp_unittest(*args, **kwargs):
     kwargs.pop("supports_static_listing", None)
+    _with_implicit_cxx_deps(kwargs)
     _wrap_internal(fb_native.cxx_test, args, kwargs)
 
 def _cxx_genrule(*args, **kwargs):
@@ -362,6 +384,7 @@ shim = struct(
     config = struct(
         get_platform_for_current_buildfile = lambda: platform_utils.get_cxx_platform_for_base_path(native.package_name()),
     ),
+    fb_native = fb_native,
     get_visibility = _get_visibility,
     network_access_utils = network_access_utils,
     target_utils = struct(

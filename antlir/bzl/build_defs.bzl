@@ -147,6 +147,7 @@ buck_sh_binary = shim.buck_sh_binary
 buck_sh_test = shim.buck_sh_test
 config = shim.config
 export_file = shim.export_file
+fb_native = shim.fb_native
 write_file = shim.write_file
 get_visibility = shim.get_visibility
 http_file = shim.http_file

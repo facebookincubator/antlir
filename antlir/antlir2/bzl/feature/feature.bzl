@@ -287,7 +287,7 @@ _nested_feature_type = attrs.option(
             attrs.dict(
                 attrs.string(),
                 attrs.one_of(
-                    # @oss-disable[end= ]: attrs.transition_dep(cfg = "antlir//antlir/distro/transition:to-current-distro-platform"),
+                    attrs.transition_dep(cfg = "antlir//antlir/distro/transition:to-current-distro-platform"),
                     attrs.dep(),
                 ),
                 doc = "ParseTimeFeature.distro_platform_deps",
