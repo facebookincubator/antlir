@@ -107,7 +107,11 @@ def _compile(
 
     ctx.actions.run(
         cmd_args(
-            cmd_args("sudo") if not rootless else cmd_args(),
+            # Preserve scratch-path env vars through sudo so that features
+            # (e.g. test-only build_environment) can serialize them into the
+            # image, and so the build itself can place tempdirs under
+            # buck-out/ where tests can inspect them.
+            cmd_args("sudo", "--preserve-env=BUCK_SCRATCH_PATH,TMPDIR") if not rootless else cmd_args(),
             antlir2,
             cmd_args(logs, format = "--logs={}"),
             "compile",

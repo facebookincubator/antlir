@@ -11,5 +11,6 @@ feature_impl(
     deps = [
         "nix",
         "serde_json",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
 )

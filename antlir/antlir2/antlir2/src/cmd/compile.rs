@@ -269,6 +269,10 @@ impl Compile {
                         self.parent.iter().map(|p| p.join("store")),
                     )
                     .context("while creating cad_stack object store")?;
+                    // The tempdir was created and populated while escalated,
+                    // so it and its contents may be root-owned: re-escalate
+                    // to package them into the object store and clean up.
+                    let root_guard = rootless.map(|r| r.escalate()).transpose()?;
                     add_root_dir(
                         &store,
                         Dir::open_ambient_dir(dir.path(), ambient_authority())
@@ -276,6 +280,7 @@ impl Compile {
                     )
                     .context("while adding root to object store")?;
                     dir.close().context("while cleaning up tempdir")?;
+                    drop(root_guard);
                 }
                 _ => return Err(anyhow!("TempDir only makes sense with CadStack").into()),
             },
@@ -326,7 +331,17 @@ impl Compile {
                     .allocate_new_subvol_path()
                     .context("while allocating new path for subvol")?;
                 let _guard = rootless.map(|r| r.escalate()).transpose()?;
-                let root_tempdir = TempDir::new().context("while creating tmpdir")?;
+                // Create the working dir inside the buck action scratch dir
+                // when available, so that any root-owned leftovers land under
+                // buck-out/ where tests can find them (via the repo mount)
+                // instead of host /tmp, which test containers cannot see.
+                let root_tempdir = match std::env::var_os("BUCK_SCRATCH_PATH") {
+                    Some(scratch) if Path::new(&scratch).is_dir() => {
+                        tempfile::Builder::new().tempdir_in(scratch)
+                    }
+                    _ => tempfile::Builder::new().tempdir(),
+                }
+                .context("while creating tmpdir")?;
                 if !self.parent.is_empty() {
                     let parent = cad_stack::ObjectStore::open_rw(
                         self.parent[0].join("store"),

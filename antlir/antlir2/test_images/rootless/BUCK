@@ -1,0 +1,59 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/features/test_only_features/build_environment:build_environment.bzl", "build_environment")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+
+oncall("antlir")
+
+# Matrix of build configurations we care about:
+#   working_format in (btrfs, cad-stack) x rootless in (True, False)
+# Each layer is a small image carrying the build_environment feature, which
+# serializes the absolute build-time BUCK_SCRATCH_PATH and TMPDIR into the
+# image so the test knows where to look for files that might have been left
+# owned by root. The cad-stack working tempdir is created under
+# BUCK_SCRATCH_PATH so leaks land in buck-out/, visible inside the test
+# container via the repo mount (the container's /tmp is private).
+# The tests assert the healthy state: marker files intact in the image and no
+# root-owned files anywhere else in buck-out/.
+
+[
+    image.layer(
+        name = "layer-{}-{}".format(
+            working_format,
+            "rootless" if rootless else "rooted",
+        ),
+        features = [
+            feature.rpms_install(rpms = ["python3"]),
+            feature.ensure_dirs_exist(dirs = "/rootless-check"),
+            feature.install_text(
+                dst = "/rootless-check/hello",
+                text = "hello\n",
+            ),
+            build_environment(path = "/.build_environment.json"),
+        ],
+        rootless = rootless,
+        working_format = working_format,
+    )
+    for working_format in ("btrfs", "cad-stack")
+    for rootless in (True, False)
+]
+
+[
+    image_python_test(
+        name = "test-{}-{}".format(
+            working_format,
+            "rootless" if rootless else "rooted",
+        ),
+        srcs = ["test_rootless.py"],
+        env = {
+            "EXPECT_ROOTLESS": "1" if rootless else "0",
+        },
+        layer = ":layer-{}-{}".format(
+            working_format,
+            "rootless" if rootless else "rooted",
+        ),
+        rootless = rootless,
+    )
+    for working_format in ("btrfs", "cad-stack")
+    for rootless in (True, False)
+]
