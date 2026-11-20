@@ -46,7 +46,7 @@ def _suite_set_impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(archive_dir),
         DebSuiteSetInfo(
             archive_dir = archive_dir,
-            base_variant = ctx.attrs.suites[0][DebSuiteInfo].base_variant,
+            base_variant = ctx.attrs.base_variant or ctx.attrs.suites[0][DebSuiteInfo].base_variant,
             suites = suites,
         ),
     ]
@@ -54,10 +54,12 @@ def _suite_set_impl(ctx: AnalysisContext) -> list[Provider]:
 _suite_set = rule(
     impl = _suite_set_impl,
     attrs = {
-        "suites": attrs.list(
-            attrs.dep(providers = [DebSuiteInfo]),
-            doc = "the first suite's base_variant seeds the transaction",
+        "base_variant": attrs.option(
+            attrs.enum(["none", "essential", "minbase", "standard"]),
+            default = None,
+            doc = "seeds the transaction; defaults to the first suite's",
         ),
+        "suites": attrs.list(attrs.dep(providers = [DebSuiteInfo])),
     },
     doc = "Suites an apt feature resolves across, as apt does across its sources",
 )

@@ -36,6 +36,23 @@ def _is_required(pkg) -> bool:
     return str(candidate.record.get("Priority", "")).lower() == "required"
 
 
+def _essential_dependencies(changes) -> set[str]:
+    """
+    Packages in the transaction that satisfy an Essential package's
+    (Pre-)Depends, such as the awk base-files needs when it is not mawk.
+    """
+    marked = {p.name for p in changes if p.marked_install or p.marked_upgrade}
+    return {
+        version.package.name
+        for pkg in changes
+        if _is_essential(pkg) and pkg.candidate is not None
+        for dep in pkg.candidate.get_dependencies("PreDepends", "Depends")
+        for alternative in dep.or_dependencies
+        for version in alternative.target_versions
+        if version.package.name in marked
+    }
+
+
 def _distribution(candidate, distributions: list[str]) -> str | None:
     """
     The archive distribution (dists/<distribution>) a candidate comes from,
@@ -115,7 +132,7 @@ def main() -> int:
     base_variant = spec.get("base_variant", "none")
 
     assert mode == "resolve", f"resolve.py only supports mode=resolve, got {mode}"
-    if base_variant not in ("none", "minbase", "standard"):
+    if base_variant not in ("none", "essential", "minbase", "standard"):
         print(f"Error: unknown base_variant {base_variant!r}", file=sys.stderr)
         return 1
     assert arch, "arch is required to pick the right per-arch indexes"
@@ -252,25 +269,27 @@ def main() -> int:
                 continue
             cache[name].candidate = pinned
 
-        # Seed the debootstrap base set (Essential + Required, plus
-        # Important for the "standard" variant) before processing items,
-        # so layers get a complete minimal system instead of only the
-        # requested closure. Items are processed after, so explicit
-        # removals still win. Skipped for remove-only transactions.
-        if base_variant != "none" and any(
-            item.get("action") == "install" for item in items
-        ):
+        # Seed the debootstrap base set (Essential + Required for "minbase",
+        # plus Important for "standard"), so layers get a complete minimal
+        # system instead of only the requested closure, before any item, so
+        # explicit removals still win. "essential" seeds only the Essential
+        # packages, after the requested installs (as a single apt install of
+        # everything would), so a requested package providing a virtual one
+        # of them needs (an awk) is the one that satisfies it. Skipped for
+        # remove-only transactions.
+        def seed_base() -> bool:
             for pkg in cache:
                 candidate = pkg.candidate
                 if candidate is None or candidate.record is None:
                     continue
-                record = candidate.record
-                is_essential = str(record.get("Essential", "")).lower() == "yes"
-                priority = str(record.get("Priority", "")).lower()
                 wanted = (
-                    is_essential
-                    or priority == "required"
-                    or (base_variant == "standard" and priority == "important")
+                    _is_essential(pkg)
+                    or (base_variant != "essential" and _is_required(pkg))
+                    or (
+                        base_variant == "standard"
+                        and str(candidate.record.get("Priority", "")).lower()
+                        == "important"
+                    )
                 )
                 if not wanted:
                     continue
@@ -281,7 +300,8 @@ def main() -> int:
                         f"Error: failed to mark base package {pkg.name}: {e}",
                         file=sys.stderr,
                     )
-                    return 1
+                    return False
+            return True
 
         # Process items
         install_packages = []
@@ -294,7 +314,23 @@ def main() -> int:
         }
         soname_index = None
 
-        for item in items:
+        seeding = base_variant != "none" and any(
+            item["action"] == "install" for item in items
+        )
+        if base_variant == "essential":
+            # after the last install, keeping the items in order
+            last_install = max(
+                (i for i, item in enumerate(items) if item["action"] == "install"),
+                default=-1,
+            )
+            ordered = items[: last_install + 1] + [None] + items[last_install + 1 :]
+        else:
+            ordered = [None] + items
+        for item in ordered:
+            if item is None:
+                if seeding and not seed_base():
+                    return 1
+                continue
             action = item["action"]
             source = item["apt"]
             if "soname" in source:
@@ -358,10 +394,17 @@ def main() -> int:
         # an earlier stage than everything else: maintainer scripts assume
         # them without declaring a dependency (e.g. ucf runs awk, whose
         # /usr/bin/awk alternative only exists once mawk is configured), and
-        # packages unrelated by Depends are configured in this order.
+        # packages unrelated by Depends are configured in this order. What
+        # the Essential packages depend on goes with them (an awk other than
+        # mawk, which is Priority: optional).
+        early = _essential_dependencies(changes)
         for pkg in sorted(
             changes,
-            key=lambda p: (not _is_essential(p), not _is_required(p), p.name),
+            key=lambda p: (
+                not _is_essential(p),
+                not (_is_required(p) or p.name in early),
+                p.name,
+            ),
         ):
             if pkg.marked_install or pkg.marked_upgrade:
                 candidate = pkg.candidate

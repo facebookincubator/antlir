@@ -385,9 +385,9 @@ _suite = rule(
         ),
         "archive_url": attrs.string(),
         "base_variant": attrs.enum(
-            ["none", "minbase", "standard"],
+            ["none", "essential", "minbase", "standard"],
             default = "minbase",
-            doc = "Seed the debootstrap base set (Essential + Required for minbase, plus Important for standard) into every installing transaction. Seeded packages are marked before user items, so explicit removals still win.",
+            doc = "Seed the debootstrap base set (Essential packages for essential, plus Required for minbase, plus Important for standard) into every installing transaction. Seeded packages are marked before user items (for essential: after the installs, so a requested package can satisfy a virtual package an Essential one needs), and before removals, so explicit removals still win.",
         ),
         "components": attrs.list(attrs.string()),
         "distribution": attrs.option(attrs.string(), default = None),

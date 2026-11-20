@@ -62,7 +62,7 @@ _local_suite = rule(
                 "ovr_config//cpu:x86_64": ["amd64"],
             }),
         ),
-        "base_variant": attrs.enum(["none", "minbase", "standard"], default = "none"),
+        "base_variant": attrs.enum(["none", "essential", "minbase", "standard"], default = "none"),
         "debs": attrs.list(attrs.source()),
         "distribution": attrs.option(attrs.string(), default = None),
         "_index": attrs.default_only(
