@@ -285,12 +285,14 @@ def _rust_library(*, name: str, **kwargs):
 def _rust_bindgen_library(name: str, header: str, **kwargs):
     cpp_deps = kwargs.pop("cpp_deps", [])
 
-    # The header's includes resolve against the cpp_deps' exported headers
+    # The header's includes resolve against the cpp_deps' exported headers.
+    # bindgen comes from toolchains//:bindgen, so a repo can choose the libclang
+    # it loads.
     _cxx_genrule(
         name = name + "--bindings.rs",
         out = "bindings.rs",
         bash = """
-            $(exe antlir//third-party/rust/bindgen:bindgen) --header "$SRCS" --out $OUT -- {}
+            $(exe toolchains//:bindgen) --header "$SRCS" --out $OUT -- {}
         """.format(" ".join(["$(cppflags {})".format(dep) for dep in cpp_deps])),
         srcs = [header],
         visibility = [],

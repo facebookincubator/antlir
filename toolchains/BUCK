@@ -134,6 +134,14 @@ alias(
     visibility = ["PUBLIC"],
 )
 
+# bindgen for rust_bindgen_library, with the host's libclang. A repository
+# that pins libclang wraps this with it.
+alias(
+    name = "bindgen",
+    actual = "antlir//third-party/rust/bindgen:bindgen",
+    visibility = ["PUBLIC"],
+)
+
 remote_test_execution_toolchain(
     name = "remote_test_execution",
     visibility = ["PUBLIC"],
