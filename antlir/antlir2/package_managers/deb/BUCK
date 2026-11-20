@@ -56,6 +56,52 @@ suite(
     visibility = ["PUBLIC"],
 )
 
+# noble's security pocket, to layer over `:noble` with a `suite_set`
+suite(
+    name = "noble-security",
+    architectures = [
+        "amd64",
+    ],
+    archive_url = internal_external(
+        fb = "https://mirror.facebook.net/ubuntu",
+        oss = "https://archive.ubuntu.com/ubuntu",
+    ),
+    components = [
+        "main",
+        "universe",
+    ],
+    distribution = "noble-security",
+    snapshot_storage = {
+        "api_key": "antlir_snapshots-key",
+        "bucket": "antlir_snapshots",
+        "type": "manifold",
+    },
+    visibility = ["PUBLIC"],
+)
+
+# noble's updates pocket, to layer over `:noble` with a `suite_set`
+suite(
+    name = "noble-updates",
+    architectures = [
+        "amd64",
+    ],
+    archive_url = internal_external(
+        fb = "https://mirror.facebook.net/ubuntu",
+        oss = "https://archive.ubuntu.com/ubuntu",
+    ),
+    components = [
+        "main",
+        "universe",
+    ],
+    distribution = "noble-updates",
+    snapshot_storage = {
+        "api_key": "antlir_snapshots-key",
+        "bucket": "antlir_snapshots",
+        "type": "manifold",
+    },
+    visibility = ["PUBLIC"],
+)
+
 suite(
     name = "stonking",
     architectures = [
