@@ -17,6 +17,7 @@ def download(
     checksums: dict[str, str] = {},
     allow_nondeterministic_downloads: bool = False,
     cache_buster: str = "",
+    decompress: bool = True,
 ) -> Artifact:
     # @oss-disable[end= ]: url = maybe_resolve_manifold_url(url)
 
@@ -24,7 +25,7 @@ def download(
         fail("when allow_nondeterministic_downloads=False, at least one checksum must be provided")
 
     filetype = url.rsplit(".", 1)[-1]
-    if filetype not in ("xz", "gz"):
+    if not decompress or filetype not in ("xz", "gz"):
         filetype = None
 
     has_content_based_path = should_use_content_based_path(actions, checksums) if checksums else allow_nondeterministic_downloads
@@ -42,6 +43,7 @@ def download(
         )
     else:
         dl_target = out
+    dl_output = dl_target if isinstance(dl_target, OutputArtifact) else dl_target.as_output()
 
     if checksums:
         if checksums.get("sha256", None) or checksums.get("sha1", None):
@@ -94,7 +96,7 @@ def download(
                     "verify",
                     cmd_args(checksums["sha512"], format = "--sha512={}"),
                     raw_target,
-                    cmd_args(dl_target.as_output(), format = "--out={}"),
+                    cmd_args(dl_output, format = "--out={}"),
                 ),
                 category = "verify_sha512",
                 identifier = out.short_path,
@@ -123,7 +125,7 @@ def download(
                 "-L",
                 url,
                 "-o",
-                dl_target.as_output(),
+                dl_output,
             ),
             env = internal_external(
                 fb = {
@@ -150,7 +152,7 @@ def download(
                 metadata_run_info,
                 "decompress",
                 dl_target,
-                out,
+                out if isinstance(out, OutputArtifact) else out.as_output(),
                 cmd_args(filetype, format = "--format={}"),
             ),
             category = "decompress",

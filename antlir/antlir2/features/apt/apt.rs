@@ -21,8 +21,7 @@ use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph_if::Requirement;
 use antlir2_depgraph_if::item::Item;
-// Mandatory dep from feature_impl(); suppress unused-dep check.
-use antlir2_features as _;
+use antlir2_features::types::BuckOutSource;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use antlir2_isolate::unshare;
@@ -62,6 +61,12 @@ pub enum Action {
 #[serde(rename_all = "snake_case")]
 pub enum AptSource {
     Subject(String),
+    /// A file of newline-separated sonames. Debian publishes no soname ->
+    /// package mapping, so unlike an rpm capability these cannot be handed
+    /// straight to the package manager; the resolver looks each one up.
+    SonamesSource(BuckOutSource),
+    /// A single soname, expanded from `SonamesSource` before the driver runs.
+    Soname(String),
 }
 
 /// Buck2's `record` will always include `null` values, but serde's native enum
@@ -75,11 +80,15 @@ impl<'de> Deserialize<'de> for AptSource {
         #[derive(Deserialize)]
         struct SourceStruct {
             subject: Option<String>,
+            sonames_src: Option<BuckOutSource>,
         }
 
-        SourceStruct::deserialize(deserializer).and_then(|s| match s.subject {
-            Some(subj) => Ok(Self::Subject(subj)),
-            None => Err(D::Error::custom("subject must be set")),
+        SourceStruct::deserialize(deserializer).and_then(|s| match (s.subject, s.sonames_src) {
+            (Some(subj), None) => Ok(Self::Subject(subj)),
+            (None, Some(src)) => Ok(Self::SonamesSource(src)),
+            _ => Err(D::Error::custom(
+                "exactly one of {subject, sonames_src} must be set",
+            )),
         })
     }
 }
@@ -691,6 +700,27 @@ fn run_apt_driver(
     let debs_dir_in_container = ctx
         .debs_dir()
         .map(|d| Path::new("/__antlir2__/working_directory").join(d));
+
+    // The driver only understands individual sonames; read the file here so
+    // that neither it nor the resolver has to care where the list came from.
+    let mut expanded_items = Vec::with_capacity(items.len());
+    for item in items {
+        match &item.apt {
+            AptSource::SonamesSource(src) => {
+                let contents = std::fs::read_to_string(src)
+                    .with_context(|| format!("while reading {}", src.display()))?;
+                for soname in contents.lines().map(str::trim).filter(|l| !l.is_empty()) {
+                    expanded_items.push(AptItem {
+                        action: item.action,
+                        apt: AptSource::Soname(soname.to_owned()),
+                        feature_label: item.feature_label.clone(),
+                    });
+                }
+            }
+            _ => expanded_items.push(item.clone()),
+        }
+    }
+    let items = expanded_items.as_slice();
 
     let spec = DriverSpec {
         archive_dir: &archive_in_container,

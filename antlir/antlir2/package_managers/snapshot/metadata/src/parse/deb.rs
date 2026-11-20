@@ -9,6 +9,7 @@ use anyhow::Result;
 use clap::Parser;
 use clap::Subcommand;
 
+mod contents;
 mod packages;
 mod release;
 
@@ -25,6 +26,8 @@ enum Sub {
     Release(release::ParseRelease),
     /// Parse a Debian Packages index file into structured JSON.
     Packages(packages::ParsePackages),
+    /// Invert a Debian Contents index into a soname -> packages map.
+    Contents(contents::ParseContents),
 }
 
 impl Parse {
@@ -32,6 +35,7 @@ impl Parse {
         match &self.sub {
             Sub::Release(sub) => sub.run(),
             Sub::Packages(sub) => sub.run(),
+            Sub::Contents(sub) => sub.run(),
         }
     }
 }

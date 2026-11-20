@@ -30,21 +30,24 @@ STONKING_SUITE = internal_external(
     oss = "antlir//antlir/antlir2/package_managers/deb:stonking",
 )
 
-def _common(action: str, *, packages: list[str | Select] | Select, suite: str | None = None):
+# The suite matching the configured OS
+DEFAULT_SUITE = select({
+    "DEFAULT": TRIXIE_SUITE,
+    "antlir//antlir/antlir2/os:ubuntu-noble": NOBLE_SUITE,
+    "antlir//antlir/antlir2/os:ubuntu-stonking": STONKING_SUITE,
+})
+
+def _common(action: str, *, packages: list[str | Select] | Select, suite: str | None = None, sonames_src: str | Select | None = None):
     return ParseTimeFeature(
         feature_type = "apt",
         plugin = "antlir//antlir/antlir2/features/apt:apt",
         kwargs = {
             "action": action,
+            "sonames_src": sonames_src,
             "subjects": packages,
         },
         deps = {
-            "suite": suite
-            or select({
-                "DEFAULT": TRIXIE_SUITE,
-                "antlir//antlir/antlir2/os:ubuntu-noble": NOBLE_SUITE,
-                "antlir//antlir/antlir2/os:ubuntu-stonking": STONKING_SUITE,
-            }),
+            "suite": suite or DEFAULT_SUITE,
         },
         distro_platform_deps = {
             "driver": "antlir//antlir/antlir2/features/apt:driver",
@@ -56,7 +59,7 @@ def _common(action: str, *, packages: list[str | Select] | Select, suite: str | 
         },
     )
 
-def apt_install(*, packages: list[str | Select] | Select, suite: str | None = None):
+def apt_install(*, packages: list[str | Select] | Select = [], suite: str | None = None, sonames_src: str | Select | None = None):
     """
     Install deb packages by name.
 
@@ -64,8 +67,12 @@ def apt_install(*, packages: list[str | Select] | Select, suite: str | None = No
 
     `suite` overrides the default suite for the image OS, for example with a
     `local_suite` of debs built by `package.deb`.
+
+    `sonames_src` is a file of newline-separated sonames; the package that
+    installs each one is looked up in the archive's Contents index at resolve
+    time. See antlir/distro/deb:find-requires.
     """
-    return _common("install", packages = packages, suite = suite)
+    return _common("install", packages = packages, suite = suite, sonames_src = sonames_src)
 
 def apt_remove_if_exists(*, packages: list[str | Select] | Select):
     """
@@ -92,7 +99,8 @@ action_enum = enum(
 )
 
 apt_source_record = record(
-    subject = str,
+    subject = [str, None],
+    sonames_src = [Artifact, None],
 )
 
 apt_item_record = record(
@@ -105,11 +113,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     items = [
         apt_item_record(
             action = action_enum(ctx.attrs.action),
-            apt = apt_source_record(subject = pkg),
+            apt = apt_source_record(subject = pkg, sonames_src = None),
             feature_label = ctx.label.raw_target(),
         )
         for pkg in ctx.attrs.subjects
     ]
+    required_artifacts = []
+    if ctx.attrs.sonames_src:
+        items.append(
+            apt_item_record(
+                action = action_enum(ctx.attrs.action),
+                apt = apt_source_record(subject = None, sonames_src = ctx.attrs.sonames_src),
+                feature_label = ctx.label.raw_target(),
+            ),
+        )
+        required_artifacts.append(ctx.attrs.sonames_src)
 
     return [
         DefaultInfo(),
@@ -120,6 +138,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 driver_cmd = ctx.attrs.driver[RunInfo],
             ),
             build_phase = BuildPhase("package_manager"),
+            required_artifacts = required_artifacts,
             plugin = ctx.attrs.plugin,
             reduce_fn = _reduce_apt_features,
             planner = apt_planner(
@@ -137,6 +156,7 @@ apt_rule = new_feature_rule(
         "driver": attrs.dep(providers = [RunInfo]),
         "plan": attrs.exec_dep(providers = [RunInfo]),
         "resolve": attrs.dep(providers = [RunInfo]),
+        "sonames_src": attrs.option(attrs.source(), default = None),
         "subjects": attrs.list(attrs.string()),
         "suite": attrs.dep(),
         "_metadata": attrs.exec_dep(providers = [RunInfo]),

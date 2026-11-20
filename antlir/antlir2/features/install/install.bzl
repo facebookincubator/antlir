@@ -19,6 +19,7 @@ load(
     "ParseTimeFeature",
     "new_feature_rule",
 )
+load("//antlir/antlir2/features/apt:apt.bzl", "DEFAULT_SUITE", "apt_rule")
 load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_rule")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
@@ -30,6 +31,15 @@ default_permissions = record(
     file = field(int | None, default = None),
     directory = field(int | None, default = None),
 )
+
+# Which package manager resolves the distro dependencies of an installed
+# binary. This is a macro-level select rather than a rule attr default because
+# every feature is instantiated as an anon target, and those must pass every
+# attr explicitly. Shared by every file that instantiates `install_rule`.
+PACKAGE_MANAGER = select({
+    "DEFAULT": "dnf",
+    "antlir//antlir/antlir2/os/package_manager:package_manager[apt]": "apt",
+})
 
 transition_to_distro_platform = enum("no", "yes", "yes-without-rpm-deps")
 _transition_to_distro_platform_enum = transition_to_distro_platform
@@ -169,6 +179,15 @@ def install(
         distro_platform_deps["_python_xar_deps"] = "antlir//antlir/distro/toolchain/python:xar-deps"
         distro_platform_deps["_rpm_driver"] = "antlir//antlir/antlir2/features/rpm:driver"
         distro_platform_deps["_rpm_resolve"] = "antlir//antlir/antlir2/features/rpm:resolve"
+        # The deb equivalents. Which set is used is decided at analysis time by
+        # the configured package manager; the other is only analyzed, never run.
+        exec_deps["_deb_find_requires"] = "antlir//antlir/distro/deb:find-requires"
+        uses_plugins["_apt_plugin"] = "antlir//antlir/antlir2/features/apt:apt"
+        exec_deps["_apt_plan"] = "antlir//antlir/antlir2/features/apt:plan"
+        exec_deps["_apt_metadata"] = "antlir//antlir/antlir2/package_managers/snapshot:metadata"
+        deps["_apt_suite"] = DEFAULT_SUITE
+        distro_platform_deps["_apt_driver"] = "antlir//antlir/antlir2/features/apt:driver"
+        distro_platform_deps["_apt_resolve"] = "antlir//antlir/antlir2/features/apt:resolve"
     elif transition_to_distro_platform == _transition_to_distro_platform_enum("yes-without-rpm-deps"):
         distro_platform_deps["src"] = src
     else:
@@ -202,6 +221,7 @@ def install(
                 "ignore_symlink_tree": ignore_symlink_tree,
                 "mode": mode,
                 "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
+                "package_manager": PACKAGE_MANAGER,
                 "setcap": setcap,
                 "split_debuginfo": split_debuginfo,
                 "strip_all": strip_all,
@@ -243,6 +263,7 @@ def install_text(
             "dst": dst,
             "group": group,
             "mode": mode,
+            "package_manager": PACKAGE_MANAGER,
             "text": text,
             "user": user,
             "xattrs": xattrs,
@@ -628,63 +649,93 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     if ctx.attrs.transition_to_distro_platform != "yes":
         return [DefaultInfo()] + features
 
-    # RPM find-requires only understands singular ELF files, so we need to find
+    # find-requires only understands singular ELF files, so we need to find
     # the bits in a python executable we want to run find-requires on. That is:
     # * The executable itself
     # * The shared libraries coming from the distro
     #
     # We should ignore any first-party shared libs since they'll be bundled with
     # the PAR.
-    rpm_subjects = ctx.actions.declare_output("rpm_requires.txt", has_content_based_path = False)
+    is_apt = ctx.attrs.package_manager == "apt"
+
+    # First-party shared libs (e.g. a prebuilt from a wheel) are installed with
+    # the binary from its rpath tree, so no distro package provides them. Every
+    # distro-backed shared lib is produced by a rule in antlir/distro/deps/;
+    # first-party libs live anywhere else.
+    bundled = [
+        so.target
+        for so in (shared_libraries.so_targets if shared_libraries else [])
+        if not (so.target.owner and so.target.owner.package.startswith("antlir/distro/deps/"))
+    ]
     if src_is_python:
         features.extend([f.analysis for f in ctx.attrs._python_pex_deps[FeatureInfo].features])
         if is_python_xar_target(ctx.attrs.src):
             features.extend([f.analysis for f in ctx.attrs._python_xar_deps[FeatureInfo].features])
-        requires_cmd = cmd_args(
-            ctx.attrs._rpm_find_requires_py[RunInfo],
-            rpm_subjects.as_output(),
-            extract_par_elfs(ctx.attrs.src),
+        elfs = extract_par_elfs(ctx.attrs.src)
+    else:
+        elfs = [src] + bundled
+
+    if is_apt:
+        # Unlike rpmdeps, this emits bare sonames; the apt resolver maps them
+        # onto packages, since debian has no soname -> package metadata.
+        sonames = ctx.actions.declare_output("deb_requires.txt", has_content_based_path = False)
+        ctx.actions.run(
+            cmd_args(
+                ctx.attrs._deb_find_requires[RunInfo],
+                cmd_args() if src_is_python else "--require-first-elf",
+                sonames.as_output(),
+                elfs,
+            ),
+            category = "deb_find_requires",
+        )
+        anon_target = ctx.actions.anon_target(
+            apt_rule,
+            {
+                "action": "install",
+                "driver": ctx.attrs._apt_driver,
+                "plan": ctx.attrs._apt_plan,
+                "plugin": ctx.attrs._apt_plugin,
+                "resolve": ctx.attrs._apt_resolve,
+                "sonames_src": sonames,
+                "subjects": [],
+                "suite": ctx.attrs._apt_suite,
+                "_metadata": ctx.attrs._apt_metadata,
+            },
         )
     else:
-        # First-party shared libs (e.g. a prebuilt from a wheel) are installed
-        # with the binary from its rpath tree, so no RPM provides them. Distro
-        # libs still come from RPMs. Every RPM-backed shared lib is produced
-        # by a rule in antlir/distro/deps/; first-party libs live anywhere else.
-        bundled = [
-            so.target
-            for so in (shared_libraries.so_targets if shared_libraries else [])
-            if not (so.target.owner and so.target.owner.package.startswith("antlir/distro/deps/"))
-        ]
-        requires_cmd = cmd_args(
-            ctx.attrs._rpm_find_requires[RunInfo],
-            rpm_subjects.as_output(),
-            src,
-            bundled,
+        rpm_subjects = ctx.actions.declare_output("rpm_requires.txt", has_content_based_path = False)
+        if src_is_python:
+            ctx.actions.run(
+                cmd_args(ctx.attrs._rpm_find_requires_py[RunInfo], rpm_subjects.as_output(), elfs),
+                category = "rpm_find_requires",
+            )
+        else:
+            ctx.actions.run(
+                cmd_args(ctx.attrs._rpm_find_requires[RunInfo], rpm_subjects.as_output(), src, bundled),
+                category = "rpm_find_requires",
+            )
+        anon_target = ctx.actions.anon_target(
+            rpms_rule,
+            {
+                "action": "install",
+                "driver": ctx.attrs._rpm_driver,
+                "plan": ctx.attrs._rpm_plan,
+                "plugin": ctx.attrs._rpm_plugin,
+                "resolve": ctx.attrs._rpm_resolve,
+                "subjects": [],
+                "subjects_src": rpm_subjects,
+            },
         )
-    ctx.actions.run(requires_cmd, category = "rpm_find_requires")
 
-    anon_rpm_target = ctx.actions.anon_target(
-        rpms_rule,
-        {
-            "action": "install",
-            "driver": ctx.attrs._rpm_driver,
-            "plan": ctx.attrs._rpm_plan,
-            "plugin": ctx.attrs._rpm_plugin,
-            "resolve": ctx.attrs._rpm_resolve,
-            "subjects": [],
-            "subjects_src": rpm_subjects,
-        },
-    )
-
-    def _map(rpm_feature_providers):
+    def _map(package_feature_providers):
         return [
             DefaultInfo(),
             MultiFeatureAnalysis(
-                features = features + [rpm_feature_providers[FeatureAnalysis]],
+                features = features + [package_feature_providers[FeatureAnalysis]],
             ),
         ]
 
-    return anon_rpm_target.promise.map(_map)
+    return anon_target.promise.map(_map)
 
 install_rule = new_feature_rule(
     impl = _impl,
@@ -707,6 +758,7 @@ install_rule = new_feature_rule(
             default = False,
             doc = "Always install as a regular file, even in @mode/dev",
         ),
+        "package_manager": attrs.string(),
         "setcap": attrs.option(attrs.string(), default = None),
         "split_debuginfo": attrs.bool(default = True),
         "src": attrs.option(
@@ -725,7 +777,14 @@ install_rule = new_feature_rule(
             default = "root",
         ),
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
+        "_apt_driver": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
+        "_apt_metadata": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
+        "_apt_plan": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
+        "_apt_plugin": attrs.option(attrs.label(), default = None),
+        "_apt_resolve": attrs.option(attrs.dep(providers = [RunInfo]), default = None),
+        "_apt_suite": attrs.option(attrs.dep(), default = None),
         "_binaries_require_repo": binaries_require_repo.optional_attr,
+        "_deb_find_requires": attrs.option(attrs.exec_dep(providers = [RunInfo]), default = None),
         "_debuginfo_splitter": attrs.option(attrs.exec_dep(), default = None),
         "_ensure_dir_exists_plugin": attrs.option(attrs.label(), default = None),
         "_is_macos": attrs.option(attrs.bool(), default = None),

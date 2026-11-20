@@ -29,6 +29,58 @@ def _is_essential(pkg) -> bool:
     return str(candidate.record.get("Essential", "")).lower() == "yes"
 
 
+def load_soname_index(dist_path: str, arch: str) -> dict[str, list[str]]:
+    """
+    soname -> packages that install it, inverted from each component's Contents
+    index when the archive was snapshotted. This is what debian has in place of
+    the soname `Provides` an rpm declares.
+    """
+    index = {}
+    for component in sorted(os.listdir(dist_path)):
+        path = os.path.join(dist_path, component, f"sonames-{arch}.json")
+        if not os.path.exists(path):
+            continue
+        with open(path) as f:
+            for soname, packages in json.load(f).items():
+                index.setdefault(soname, []).extend(packages)
+    return index
+
+
+def resolve_soname(
+    soname: str, index: dict[str, list[str]], cache, requested: set[str]
+) -> tuple[str | None, str | None]:
+    """(package providing `soname`, error)"""
+    providers = sorted(
+        {package for package in index.get(soname, []) if package in cache}
+    )
+    if not index:
+        return None, (
+            f"cannot look up {soname!r}: this archive has no Contents index "
+            "(snapshots taken before Contents was collected lack one; "
+            "re-snapshot the suite)"
+        )
+    if not providers:
+        return None, f"no package in this archive provides {soname!r}"
+    if len(providers) == 1:
+        return providers[0], None
+
+    # Several packages ship the same soname because they are interchangeable
+    # builds of it (the desktop and gles flavors of Qt, two boost releases,
+    # ...). Nothing in the archive says which one is meant, so only an explicit
+    # request or the parent layer can break the tie.
+    chosen = [
+        package
+        for package in providers
+        if package in requested or cache[package].is_installed
+    ]
+    if len(chosen) == 1:
+        return chosen[0], None
+    return None, (
+        f"{soname!r} is provided by more than one package ({', '.join(providers)}); "
+        f"install the one you want by name"
+    )
+
+
 def main() -> int:
     spec = json.load(sys.stdin)
 
@@ -44,6 +96,7 @@ def main() -> int:
     if base_variant not in ("none", "minbase", "standard"):
         print(f"Error: unknown base_variant {base_variant!r}", file=sys.stderr)
         return 1
+    assert arch, "arch is required to pick the right per-arch indexes"
 
     if not os.path.isdir(archive_dir):
         print(f"Error: archive dir {archive_dir} does not exist", file=sys.stderr)
@@ -178,9 +231,28 @@ def main() -> int:
         install_packages = []
         remove_packages = []
 
+        requested = {
+            item["apt"]["subject"]
+            for item in items
+            if item["action"] == "install" and item["apt"].get("subject")
+        }
+        soname_index = None
+
         for item in items:
             action = item["action"]
-            subject = item["apt"]["subject"]
+            source = item["apt"]
+            if "soname" in source:
+                if soname_index is None:
+                    soname_index = load_soname_index(dist_path, arch)
+                subject, error = resolve_soname(
+                    source["soname"], soname_index, cache, requested
+                )
+                if subject is None:
+                    json.dump({"tx_error": error}, sys.stdout)
+                    sys.stdout.write("\n")
+                    continue
+            else:
+                subject = source["subject"]
 
             if action == "install":
                 if subject not in cache:

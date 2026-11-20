@@ -11,11 +11,15 @@ def _download_from_index_impl(
     index_json: ArtifactValue,
     baseurl: str,
     files: dict[str, typing.Any],
+    optional: list[str],
 ):
     index = index_json.read_json()
 
     for relpath, out in files.items():
         checksums = index.get(relpath)
+        if checksums == None and relpath in optional:
+            actions.write(out, "")
+            continue
         if checksums == None:
             fail("no checksums for relpath found '{}' in index {}".format(relpath, index_json))
 
@@ -42,6 +46,7 @@ _download_from_index = dynamic_actions(
         "baseurl": dynattrs.value(str),
         "files": dynattrs.dict(str, dynattrs.output()),
         "index_json": dynattrs.artifact_value(),
+        "optional": dynattrs.value(list[str]),
     },
 )
 
@@ -51,13 +56,18 @@ def download_from_index(
     index_json: Artifact,
     baseurl: str,
     relpaths: list[str],
+    optional_relpaths: list[str] = [],
 ) -> dict[str, Artifact]:
     """Download files listed in an index.json that maps relpath → checksums.
 
     The index JSON is expected to be a dict of relpath → {"sha1":..., "sha256":...}.
     For each relpath in relpaths, this will declare an output and download it
     via actions.download_file using checksums from the index.
+
+    `optional_relpaths` may be missing from the index, in which case their
+    output is an empty file.
     """
+    relpaths = relpaths + optional_relpaths
     if not relpaths:
         return {}
 
@@ -70,6 +80,7 @@ def download_from_index(
             baseurl = baseurl,
             index_json = index_json,
             files = {relpath: out.as_output() for relpath, out in outputs.items()},
+            optional = optional_relpaths,
         ),
     )
     return outputs

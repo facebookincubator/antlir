@@ -133,10 +133,14 @@ struct Out {
     components: BTreeMap<String, Component>,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Default, PartialEq, Serialize)]
 struct Component {
     /// Packages index file to download for each architecture
     packages: BTreeMap<String, BlobDl>,
+    /// Contents index file to download for each architecture. This is the only
+    /// place debian publishes which package installs a given file, so it is
+    /// what a soname has to be resolved through.
+    contents: BTreeMap<String, BlobDl>,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -169,6 +173,50 @@ struct FileHashes {
     size: u64,
     sha256: Option<String>,
     sha512: Option<String>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum IndexKind {
+    Packages,
+    Contents,
+}
+
+/// Split `<stem>[.<compression>]`, returning the compression suffix (empty when
+/// uncompressed). `None` if the filename is not `stem` at all.
+fn split_compression<'a>(filename: &'a str, stem: &str) -> Option<&'a str> {
+    match filename.strip_prefix(stem)? {
+        "" => Some(""),
+        ".gz" => Some("gz"),
+        ".xz" => Some("xz"),
+        _ => None,
+    }
+}
+
+/// Classify an index path from a Release file's checksum section into
+/// `(component, arch, kind, compression)`. Anything else (translations, dep11,
+/// sources, debian-installer, ...) is not something we download.
+fn classify(path: &str) -> Option<(&str, &str, IndexKind, &str)> {
+    let segments: Vec<&str> = path.split('/').collect();
+    match *segments.as_slice() {
+        // <component>/binary-<arch>/Packages[.<compression>]
+        [component, dir, filename] => {
+            let arch = dir.strip_prefix("binary-")?;
+            let compression = split_compression(filename, "Packages")?;
+            Some((component, arch, IndexKind::Packages, compression))
+        }
+        // <component>/Contents-<arch>[.<compression>]
+        [component, filename] => {
+            let rest = filename.strip_prefix("Contents-")?;
+            // arch names never contain a dot, so any suffix is the compression
+            let (arch, compression) = match rest.rsplit_once('.') {
+                Some((arch, "gz")) => (arch, "gz"),
+                Some((arch, "xz")) => (arch, "xz"),
+                _ => (rest, ""),
+            };
+            Some((component, arch, IndexKind::Contents, compression))
+        }
+        _ => None,
+    }
 }
 
 fn parse<R: BufRead>(reader: R) -> Result<Out> {
@@ -260,30 +308,11 @@ fn parse<R: BufRead>(reader: R) -> Result<Out> {
     }
 
     // Fold merged per-path hashes into components, keeping the best
-    // compression per (component, arch) like before
+    // compression per (component, arch, kind)
     for (path, hashes) in &files {
-        let segments: Vec<&str> = path.splitn(4, '/').collect();
-        // Match <component>/binary-<arch>/Packages[.<ext>]
-        if segments.len() < 3 {
+        let Some((component, arch, kind, filetype)) = classify(path) else {
             continue;
-        }
-        let component = segments[0];
-        let arch = match segments[1].strip_prefix("binary-") {
-            Some(a) => a,
-            None => continue,
         };
-        let filename = segments[2];
-        let (is_packages, filetype) = match filename {
-            "Packages" => (true, ""),
-            "Packages.gz" => (true, "gz"),
-            "Packages.xz" => (true, "xz"),
-            _ => (false, ""),
-        };
-        // Skip debian-installer paths (segments.len() > 3 means
-        // there's extra nesting like debian-installer/binary-<arch>/...)
-        if !is_packages || segments.len() > 3 {
-            continue;
-        }
 
         let checksums = Checksums::builder()
             .maybe_sha256(hashes.sha256.clone())
@@ -296,18 +325,17 @@ fn parse<R: BufRead>(reader: R) -> Result<Out> {
             filetype: filetype.to_owned(),
         };
 
-        let comp = out
-            .components
-            .entry(component.to_owned())
-            .or_insert_with(|| Component {
-                packages: BTreeMap::new(),
-            });
+        let comp = out.components.entry(component.to_owned()).or_default();
+        let index = match kind {
+            IndexKind::Packages => &mut comp.packages,
+            IndexKind::Contents => &mut comp.contents,
+        };
 
-        let dominated = comp.packages.get(arch).is_some_and(|existing| {
+        let dominated = index.get(arch).is_some_and(|existing| {
             compression_rank(&existing.filetype) >= compression_rank(filetype)
         });
         if !dominated {
-            comp.packages.insert(arch.to_owned(), entry);
+            index.insert(arch.to_owned(), entry);
         }
     }
 
@@ -433,6 +461,40 @@ mod tests {
                 filetype: "xz".into(),
             },
         );
+
+        // Contents is only published uncompressed and gzipped
+        assert_eq!(
+            main.contents["amd64"],
+            BlobDl {
+                href: "main/Contents-amd64.gz".into(),
+                size: 12616620,
+                checksums: Checksums::new_sha256(hex!(
+                    "72c22fcdb0aa2cc72af45b7b4d467f926bc8626ffd595513630ea6aa8d21126a"
+                )),
+                filetype: "gz".into(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_classify() {
+        assert!(matches!(
+            classify("main/binary-amd64/Packages.xz"),
+            Some(("main", "amd64", IndexKind::Packages, "xz"))
+        ));
+        assert!(matches!(
+            classify("main/Contents-amd64.gz"),
+            Some(("main", "amd64", IndexKind::Contents, "gz"))
+        ));
+        assert!(matches!(
+            classify("main/Contents-amd64"),
+            Some(("main", "amd64", IndexKind::Contents, ""))
+        ));
+        // Not indexes we ever download
+        assert!(classify("main/debian-installer/binary-amd64/Packages").is_none());
+        assert!(classify("main/source/Sources.xz").is_none());
+        assert!(classify("main/i18n/Translation-en.xz").is_none());
+        assert!(classify("main/dep11/Components-amd64.yml.gz").is_none());
     }
 
     #[test]

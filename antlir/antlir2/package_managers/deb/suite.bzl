@@ -91,6 +91,9 @@ def _suite_get_deb(
         metadata_run_info = metadata_run_info,
     )
 
+def _contents_relpath(distribution: str, component: str, arch: str) -> str:
+    return "dists/{}/{}/Contents-{}".format(distribution, component, arch)
+
 def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     archive_url = ctx.attrs.archive_url
     if not archive_url.endswith("/"):
@@ -122,16 +125,25 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
         )
         release_file = from_index[release_relpath]
 
-        # Also download Packages indexes via index for determinism when snapshotted
-        needed_packages_relpaths = []
+        # Also download the Packages and Contents indexes via index for
+        # determinism when snapshotted. A snapshot only ever holds bytes the
+        # archive published; anything derived from them is a buck action so it
+        # can be changed without re-snapshotting. Contents is optional in the
+        # archive format (and absent from snapshots taken before it was
+        # collected), so a missing one only means nothing in that component can
+        # be found by soname.
+        needed_relpaths = []
+        contents_relpaths = []
         for arch in ctx.attrs.architectures:
             for comp in ctx.attrs.components:
-                needed_packages_relpaths.append("dists/{}/{}/binary-{}/Packages".format(distribution, comp, arch))
+                needed_relpaths.append("dists/{}/{}/binary-{}/Packages".format(distribution, comp, arch))
+                contents_relpaths.append(_contents_relpath(distribution, comp, arch))
         per_arch_packages_from_index = download_from_index(
             actions = ctx.actions,
             index_json = index_json,
             baseurl = archive_url,
-            relpaths = needed_packages_relpaths,
+            relpaths = needed_relpaths,
+            optional_relpaths = contents_relpaths,
         )
     else:
         release_file = download(
@@ -186,7 +198,22 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
                     category = "parse",
                     identifier = "snapshotted/{}/{}/Packages".format(arch, comp),
                 )
-                arch_map[comp] = struct(txt = txt_artifact, json = json_out)
+                contents_artifact = per_arch_packages_from_index[_contents_relpath(distribution, comp, arch)]
+                sonames_out = ctx.actions.declare_output(
+                    "{}/{}/sonames.json".format(arch, comp),
+                    has_content_based_path = True,
+                )
+                ctx.actions.run(
+                    cmd_args(ctx.attrs._metadata_bin[RunInfo], "parse", "deb", "contents", contents_artifact, sonames_out.as_output()),
+                    category = "parse",
+                    identifier = "snapshotted/{}/{}/Contents".format(arch, comp),
+                )
+                arch_map[comp] = struct(
+                    txt = txt_artifact,
+                    json = json_out,
+                    contents = contents_artifact,
+                    sonames = sonames_out,
+                )
             per_arch_indexes[arch] = arch_map
     else:
         for arch in ctx.attrs.architectures:
@@ -241,9 +268,22 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     archive_dir_srcs = {
         dist_prefix + "Release": generated_release,
     }
+
+    # Index files as the archive published them. These are what a snapshot
+    # preserves; the soname map below is derived from Contents by a buck action
+    # on both paths, so its extraction can change without re-snapshotting.
+    snapshot_srcs = dict(archive_dir_srcs)
     for arch, arch_indexes in per_arch_indexes.items():
         for cname, c in arch_indexes.items():
-            archive_dir_srcs[dist_prefix + cname + "/binary-" + arch + "/Packages"] = c.txt
+            packages_relpath = dist_prefix + cname + "/binary-" + arch + "/Packages"
+            archive_dir_srcs[packages_relpath] = c.txt
+            snapshot_srcs[packages_relpath] = c.txt
+            snapshot_srcs[_contents_relpath(distribution, cname, arch)] = c.contents
+
+            # apt ignores this (it is not listed in the InRelease we generate),
+            # but the resolver reads it out of the same directory to answer
+            # "which package provides this soname".
+            archive_dir_srcs[dist_prefix + cname + "/sonames-" + arch + ".json"] = c.sonames
 
     archive_dir = ctx.actions.copied_dir("archive", archive_dir_srcs)
     # For snapshotting, emit `dists/...` directly at the metadata tree root
@@ -252,7 +292,7 @@ def _suite_impl(ctx: AnalysisContext) -> list[Provider]:
     # `tree_base_url` (no `archive` segment), so `archive_url + "dists/..."`
     # correctly resolves to the stored location. This removes the need for
     # post-hoc `archive/` stripping in the index generation.
-    for path, artifact in archive_dir_srcs.items():
+    for path, artifact in snapshot_srcs.items():
         metadata_tree[path] = artifact
     metadata_tree = ctx.actions.copied_dir("snapshottable_metadata", metadata_tree)
 
