@@ -152,15 +152,15 @@ int unshare_userns(
       exit(EXIT_SUCCESS);
 
     default:
-      close(pipefd[1]);
+      close(pipefd[0]);
       // In the parent process, we must unshare the usernamespace, signal the
       // child process by closing our ends of the pipe and then wait for it to
       // exit, which signals that the namespace mapping is complete
       if (unshare(CLONE_NEWUSER) == -1) {
-        close(pipefd[0]);
+        close(pipefd[1]);
         return -1;
       }
-      if (close(pipefd[0]) == -1) {
+      if (close(pipefd[1]) == -1) {
         return -1;
       }
 
