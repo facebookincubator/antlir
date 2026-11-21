@@ -13,13 +13,13 @@ from pathlib import Path
 EXPECTED_HASHES = {
     "x86_64": {
         "build_id": "cdede5c8d904566a5cd33f0fdaff40eab44cdcd3",
-        "stripped_hash": "fd17e87da8106206c67f040707170426",
-        "debug_hash": "d299324457ed9ce850b4d62546ae3487",
+        "stripped_hash": "617b99443b042c92c20a6b9f2b0c7e08",
+        "debug_hash": "c84537494c469002ca83a389d8ea18ca",
     },
     "aarch64": {
         "build_id": "b10f090fd2b667eb80e46d68a3233976f0013258",
-        "stripped_hash": "259c762a7e91223aaab3119dabc5d00c",
-        "debug_hash": "61b7b37ddb917095d853f48ee1572966",
+        "stripped_hash": "e345e2b2990ae6d6175087c0ab3227fa",
+        "debug_hash": "f84189055279ff97deee7ba613946671",
     },
 }
 

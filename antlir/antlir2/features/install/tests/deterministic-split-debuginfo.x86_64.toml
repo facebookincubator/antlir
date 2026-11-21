@@ -6,7 +6,7 @@ mode = "u+rx,g+rx,o+rx"
 file-type = "regular-file"
 user = "root"
 group = "root"
-content-hash = "fd17e87da8106206c67f040707170426"
+content-hash = "617b99443b042c92c20a6b9f2b0c7e08"
 
 [file.usr]
 op = "added"
@@ -61,7 +61,7 @@ mode = "u+rwx,g+rx,o+rx"
 file-type = "regular-file"
 user = "root"
 group = "root"
-content-hash = "d299324457ed9ce850b4d62546ae3487"
+content-hash = "c84537494c469002ca83a389d8ea18ca"
 
 [file."usr/lib/debug/.build-id/cd/ede5c8d904566a5cd33f0fdaff40eab44cdcd3.debug.dwp"]
 op = "added"
