@@ -103,7 +103,7 @@ def write_metadata(binary: Path, objcopy: str, metadata: Path) -> None:
             "--only-section",
             ".note.gnu.build-id",
             binary,
-            "/dev/stdout",
+            "-",
         ],
         capture_output=True,
     )

@@ -160,7 +160,7 @@ def extract_buck_binary(
             "_analyze": _EXTRACT_ANALYZE,
             "_debuginfo_splitter": "antlir//antlir/antlir2/tools:debuginfo-splitter",
             "_objcopy": internal_external(
-                fb = "fbsource//third-party/binutils:objcopy",
+                fb = "fbsource//third-party/llvm-project:llvm-objcopy",
                 oss = "toolchains//:objcopy",
             ),
         },
