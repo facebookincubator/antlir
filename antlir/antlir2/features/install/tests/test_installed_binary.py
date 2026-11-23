@@ -73,6 +73,21 @@ class TestInstalledBinary(unittest.TestCase):
         self.assertNotIn(".symtab", result.stdout)
 
     @skip_in_dev
+    def test_strip_all_keeps_non_alloc_sections(self) -> None:
+        result = subprocess.run(
+            [
+                "readelf",
+                "-p",
+                "antlir_payload",
+                "/usr/bin/true-rs-with-payload.strip-all",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertIn("antlir-payload", result.stdout)
+
+    @skip_in_dev
     def test_strip_all_gdb_loads_debuginfo(self) -> None:
         """Verify that gdb can resolve symbols from separate debuginfo for a
         strip_all binary. The binary itself has no .symtab, but gdb should

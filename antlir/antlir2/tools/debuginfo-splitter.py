@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
+import functools
 import json
 import shutil
 import subprocess
@@ -20,6 +21,17 @@ def is_elf_binary(binary: Path) -> bool:
         return first_4 == b"\x7fELF"
 
 
+@functools.cache
+def strip_all_flag(objcopy: str) -> str:
+    # llvm-objcopy's --strip-all also drops every non-alloc section outside a
+    # segment (.comment, .note.stapsdt, payloads embedded with --add-section).
+    # --strip-all-gnu keeps those, matching binutils' --strip-all.
+    version = subprocess.run(
+        [objcopy, "--version"], capture_output=True, text=True, check=True
+    ).stdout
+    return "--strip-all-gnu" if "LLVM" in version else "--strip-all"
+
+
 def strip_binary(binary: Path, objcopy: str, stripped: Path, strip_all: bool) -> None:
     if not is_elf_binary(binary):
         if binary.is_dir():
@@ -33,7 +45,7 @@ def strip_binary(binary: Path, objcopy: str, stripped: Path, strip_all: bool) ->
     # --strip-debug only removes DWARF debug sections but preserves .symtab
     # and .strtab for symbolication.
     if strip_all:
-        strip_flags = ["--strip-all"]
+        strip_flags = [strip_all_flag(objcopy)]
     else:
         strip_flags = ["--strip-debug", "--keep-file-symbols"]
 

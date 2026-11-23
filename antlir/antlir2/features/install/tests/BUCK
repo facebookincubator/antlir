@@ -6,6 +6,7 @@ load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_rust_test")
 load("//antlir/antlir2/testing:query_test.bzl", "query_test")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary", "rust_binary")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
 
@@ -163,6 +164,20 @@ rust_binary(
     unittests = False,
 )
 
+# true-rs with a non-alloc section, like payloads embedded with
+# `objcopy --add-section`, which strip_all must keep
+buck_genrule(
+    name = "true-rs-with-payload",
+    out = "true-rs-with-payload",
+    cmd = "printf antlir-payload > $TMP/payload && $(exe {}) --add-section antlir_payload=$TMP/payload $(location :true-rs) $OUT".format(
+        internal_external(
+            fb = "fbsource//third-party/llvm-project:llvm-objcopy",
+            oss = "toolchains//:objcopy",
+        ),
+    ),
+    executable = True,
+)
+
 python_binary(
     name = "true-py",
     srcs = ["true.py"],
@@ -195,6 +210,11 @@ image.layer(
         feature.install(
             src = ":true-rs",
             dst = "/usr/bin/true-rs.strip-all",
+            strip_all = True,
+        ),
+        feature.install(
+            src = ":true-rs-with-payload",
+            dst = "/usr/bin/true-rs-with-payload.strip-all",
             strip_all = True,
         ),
         feature.install(
