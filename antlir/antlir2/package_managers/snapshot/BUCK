@@ -1,6 +1,23 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+load("@prelude//:rules.bzl", "constraint")
+load("//antlir/bzl:build_defs.bzl", "alias", "rust_binary", "rust_library")
+load("//antlir/bzl:internal_external.bzl", "internal_external")
 
 oncall("antlir")
+
+# Build `snapshot` and `metadata` from the sources in this package instead
+# of downloading the prebuilt MSDK binaries (the default). Pass the modifier
+# to any build that (transitively) depends on them, e.g.:
+#   buck2 build fbcode//antlir/antlir2/package_managers/snapshot:snapshot \
+#       -m 'antlir//antlir/antlir2/package_managers/snapshot:build-mode[from-source]'
+constraint(
+    name = "build-mode",
+    default = "msdk",
+    values = [
+        "msdk",
+        "from-source",
+    ],
+    visibility = ["PUBLIC"],
+)
 
 rust_library(
     name = "snapshot_common",
@@ -26,7 +43,7 @@ rust_library(
 )
 
 rust_binary(
-    name = "metadata",
+    name = "metadata.real",
     srcs = glob(["metadata/src/**/*.rs"]),
     crate = "metadata",
     crate_root = "metadata/src/main.rs",
@@ -34,7 +51,7 @@ rust_binary(
         "hex-literal",
     ],
     test_srcs = glob(["testdata/**"]),
-    visibility = ["PUBLIC"],
+    visibility = [],
     deps = [
         "anyhow",
         "clap",
@@ -53,8 +70,20 @@ rust_binary(
     ],
 )
 
+alias(
+    name = "metadata",
+    actual = select({
+        ":build-mode[from-source]": ":metadata.real",
+        ":build-mode[msdk]": internal_external(
+            fb = "//antlir/antlir2/package_managers/snapshot/facebook:msdk[metadata/metadata]",
+            oss = ":metadata.real",
+        ),
+    }),
+    visibility = ["PUBLIC"],
+)
+
 rust_binary(
-    name = "snapshot",
+    name = "snapshot.real",
     srcs = glob(["snapshot/src/**/*.rs"]),
     crate = "snapshot",
     crate_root = "snapshot/src/main.rs",
@@ -68,6 +97,7 @@ rust_binary(
     test_deps = [
         "hex-literal",
     ],
+    visibility = [],
     deps = [
         "anyhow",
         "async-trait",
@@ -98,4 +128,16 @@ rust_binary(
         "//antlir/filesystem/stdio_path:stdio_path",
         "//antlir/util/cli/json_arg:json_arg",
     ],
+)
+
+alias(
+    name = "snapshot",
+    actual = select({
+        ":build-mode[from-source]": ":snapshot.real",
+        ":build-mode[msdk]": internal_external(
+            fb = "//antlir/antlir2/package_managers/snapshot/facebook:msdk[snapshot/snapshot]",
+            oss = ":snapshot.real",
+        ),
+    }),
+    visibility = ["PUBLIC"],
 )
