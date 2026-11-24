@@ -148,7 +148,7 @@ _rpm = rule(
         "transfiletriggerpostun_script": attrs.option(attrs.string(), default = None),
         "version": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime HHMMSS"),
         "_strip": internal_external(
-            fb = attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:strip")),
+            fb = attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/llvm-project:llvm-strip")),
             oss = attrs.option(attrs.exec_dep(), default = None),
         ),
     },
