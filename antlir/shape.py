@@ -40,7 +40,19 @@ class ShapeMeta(ModelMetaclass):
             # create an inner class `types` to make all the fields types usable
             # from a user of shape without having to know the cryptic generated
             # class names
-            if "types" in dct or "types" in dct.get("__annotations__", {}):
+            try:
+                # annotationlib is new on Python 3.14
+                import annotationlib
+
+                if annotate := annotationlib.get_annotate_from_class_namespace(dct):
+                    annotations = annotationlib.call_annotate_function(
+                        annotate, format=annotationlib.Format.FORWARDREF
+                    )
+                else:  # pragma: no cover
+                    annotations = {}
+            except ImportError:  # pragma: no cover
+                annotations = dct.get("__annotations__", {})
+            if "types" in dct or "types" in annotations:
                 raise KeyError("'types' cannot be used as a shape field name")
             types_cls = {}
             for key, f in cls.__fields__.items():
