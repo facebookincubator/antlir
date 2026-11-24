@@ -23,6 +23,7 @@ use nom::bytes::complete::take_until1;
 use nom::character::complete::char;
 use nom::character::complete::newline;
 use nom::character::complete::none_of;
+use nom::character::complete::one_of;
 use nom::combinator::all_consuming;
 use nom::combinator::recognize;
 use nom::error::ContextError;
@@ -191,6 +192,9 @@ pub enum GroupRecordPassword {
     /// The group password field is always set
     /// to "x" on modern Unix systems.
     X,
+    /// `*`, which no password hashes to: what Debian's base-passwd writes
+    /// until shadow passwords are enabled.
+    Disabled,
 }
 
 impl GroupRecordPassword {
@@ -198,8 +202,15 @@ impl GroupRecordPassword {
     where
         E: ParseError<&'a str> + ContextError<&'a str>,
     {
-        let (input, _) = context("password", char('x')).parse(input)?;
-        Ok((input, Self::X))
+        let (input, c) = context("password", one_of("x*")).parse(input)?;
+        Ok((
+            input,
+            match c {
+                'x' => Self::X,
+                '*' => Self::Disabled,
+                _ => unreachable!("parser would have failed"),
+            },
+        ))
     }
 }
 
@@ -207,6 +218,7 @@ impl Display for GroupRecordPassword {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Self::X => "x".fmt(f),
+            Self::Disabled => "*".fmt(f),
         }
     }
 }
@@ -304,6 +316,18 @@ systemd-journal:x:190:systemd-journald
                 users: vec!["root".into(), "daemon".into()],
             }),
             groups.get_group_by_id(1.into()),
+        );
+    }
+
+    #[test]
+    fn parse_disabled_password() {
+        // base-passwd's group.master, before shadow passwords are enabled
+        let src = "root:*:0:\ndaemon:*:1:\n";
+        let groups = EtcGroup::parse(src).expect("failed to parse");
+        assert_eq!(src, groups.to_string(), "`*` should round-trip");
+        assert_eq!(
+            Some(&GroupRecordPassword::Disabled),
+            groups.get_group_by_id(1.into()).map(|g| &g.password),
         );
     }
 

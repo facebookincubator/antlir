@@ -195,6 +195,9 @@ pub enum UserRecordPassword {
     /// Empty string, login is allowed without a password at all.
     /// Prefer using Shadow and setting no password there.
     Empty,
+    /// `*`, which no password hashes to: what Debian's base-passwd writes
+    /// until shadow passwords are enabled.
+    Disabled,
 }
 
 impl UserRecordPassword {
@@ -207,6 +210,7 @@ impl UserRecordPassword {
             nom::branch::alt((
                 nom::bytes::complete::tag("x"),
                 nom::bytes::complete::tag("!"),
+                nom::bytes::complete::tag("*"),
                 nom::bytes::complete::tag(""),
             )),
         )
@@ -216,6 +220,7 @@ impl UserRecordPassword {
             match txt {
                 "x" => Self::Shadow,
                 "!" => Self::Locked,
+                "*" => Self::Disabled,
                 "" => Self::Empty,
                 _ => unreachable!("parser would have failed"),
             },
@@ -228,6 +233,7 @@ impl Display for UserRecordPassword {
         match self {
             Self::Shadow => write!(f, "x"),
             Self::Locked => write!(f, "!"),
+            Self::Disabled => write!(f, "*"),
             Self::Empty => write!(f, ""),
         }
     }
@@ -296,9 +302,9 @@ impl<'a> UserRecord<'a> {
         ShadowRecord {
             name: self.name.clone(),
             encrypted_password: match self.password {
-                UserRecordPassword::Shadow | UserRecordPassword::Locked => {
-                    ShadowRecordPassword::NoLogin
-                }
+                UserRecordPassword::Shadow
+                | UserRecordPassword::Locked
+                | UserRecordPassword::Disabled => ShadowRecordPassword::NoLogin,
                 UserRecordPassword::Empty => ShadowRecordPassword::OpenLogin,
             },
             last_password_change: None,
@@ -338,6 +344,7 @@ mod tests {
     #[rstest]
     #[case::shadow("x", UserRecordPassword::Shadow)]
     #[case::shadow("!", UserRecordPassword::Locked)]
+    #[case::shadow("*", UserRecordPassword::Disabled)]
     #[case::shadow("", UserRecordPassword::Empty)]
     fn test_parse_password(#[case] input: &str, #[case] expected: UserRecordPassword) {
         let (rest, pw) =
