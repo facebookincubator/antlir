@@ -41,3 +41,25 @@ rust_unittest(
         "cpio",
     ],
 )
+
+# antlir2.source_date_epoch (or this attribute) clamps modification times, as
+# reproducible image builders do
+package.cpio(
+    name = "test-clamped.cpio",
+    layer = "//antlir/antlir2/test_images/package:standard",
+    source_date_epoch = 1000,
+)
+
+rust_unittest(
+    name = "test-cpio-clamped",
+    srcs = ["test_cpio_clamped.rs"],
+    crate_root = "test_cpio_clamped.rs",
+    resources = {
+        "test-clamped.cpio": ":test-clamped.cpio",
+        "test.cpio": ":test.cpio",
+    },
+    deps = [
+        "buck-resources",
+        "cpio",
+    ],
+)

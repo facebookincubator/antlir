@@ -13,7 +13,13 @@ load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 # @oss-disable[end= ]: load("//antlir/antlir2/os/facebook:package.bzl", "get_default_rou_for_package")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
 
-def package_macro(buck_rule, *, always_needs_root: bool = False, always_rootless: bool = False):
+def package_macro(
+    buck_rule,
+    *,
+    always_needs_root: bool = False,
+    always_rootless: bool = False,
+    supports_source_date_epoch: bool = False,
+):
     def _inner(
         default_os: str | None = None,
         rootless: bool | None = None,
@@ -53,6 +59,15 @@ def package_macro(buck_rule, *, always_needs_root: bool = False, always_rootless
                 "antlir//antlir/antlir2/cfg:exec_mode[force-remote]": ["prelude//platforms:runs_only_remote"],
             }),
         )
+
+        if supports_source_date_epoch:
+            # `-c antlir2.source_date_epoch=<seconds>` is our standard for fixing fs
+            # metadata to a specific timestamp
+            epoch = read_config("antlir2", "source_date_epoch", "")
+            if "source_date_epoch" not in kwargs and epoch:
+                if not epoch.isdigit():
+                    fail("antlir2.source_date_epoch must be a number of seconds, not '{}'".format(epoch))
+                kwargs["source_date_epoch"] = int(epoch)
 
         buck_rule(
             default_os = default_os,

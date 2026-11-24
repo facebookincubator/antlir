@@ -24,6 +24,10 @@ use crate::run_cmd;
 #[serde(deny_unknown_fields)]
 pub struct Cpio {
     build_appliance: BuildAppliance,
+    /// Clamp modification times to this and write reproducible inode and
+    /// device numbers
+    #[serde(default)]
+    source_date_epoch: Option<u64>,
 }
 
 impl PackageFormat for Cpio {
@@ -34,6 +38,7 @@ impl PackageFormat for Cpio {
             .ephemeral(false)
             .readonly()
             .tmpfs(Path::new("/__antlir2__/out"))
+            .tmpfs(Path::new("/__antlir2__/clamped"))
             .outputs(("/__antlir2__/out/cpio", out))
             .inputs((Path::new("/__antlir2__/root"), layer))
             .inputs((
@@ -47,18 +52,34 @@ impl PackageFormat for Cpio {
         // to the live rootfs at unpack time (init_mkdir + init_chmod in
         // init/initramfs.c), so this carries the layer root's actual mode
         // into the booted image instead of leaving the kernel default.
-        let cpio_script = "set -ue -o pipefail; \
-            pushd /__antlir2__/root; \
+        let (root, reproducible) = match self.source_date_epoch {
+            // the layer is read-only, so its modification times are clamped
+            // in a copy
+            Some(epoch) => (
+                format!(
+                    "/usr/bin/cp -a /__antlir2__/root/. /__antlir2__/clamped; \
+                    /usr/bin/find /__antlir2__/clamped -newermt @{epoch} \
+                        -exec /usr/bin/touch -h -d @{epoch} {{}} +; \
+                    pushd /__antlir2__/clamped"
+                ),
+                " --reproducible",
+            ),
+            None => ("pushd /__antlir2__/root".to_owned(), ""),
+        };
+        let cpio_script = format!(
+            "set -ue -o pipefail; \
+            {root}; \
             /usr/bin/find . ! -type s | \
             LANG=C /usr/bin/sort | \
-            LANG=C /usr/bin/cpio -o -H newc \
-            > /__antlir2__/out/cpio";
+            LANG=C /usr/bin/cpio -o -H newc{reproducible} \
+            > /__antlir2__/out/cpio"
+        );
 
         run_cmd(
             unshare(isol_context)?
                 .command("/bin/bash")?
                 .arg("-c")
-                .arg(cpio_script)
+                .arg(&cpio_script)
                 .stdout(Stdio::piped()),
         )
         .context("Failed to build cpio archive")?;

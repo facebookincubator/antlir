@@ -139,6 +139,14 @@ def _generic_impl(
             uses_build_appliance = uses_build_appliance,
         )
 
+_SOURCE_DATE_EPOCH_ATTRS = {
+    "source_date_epoch": attrs.option(
+        attrs.int(),
+        default = None,
+        doc = "Clamp modification times to this, and number inodes from 1 with no device numbers",
+    ),
+}
+
 # Create a new buck2 rule that implements a specific package format.
 def _new_package_rule(
     *,
@@ -150,7 +158,10 @@ def _new_package_rule(
     sudo: bool = False,
     force_extension: str | None = None,
     uses_build_appliance: bool = False,
+    supports_source_date_epoch: bool = False,
 ):
+    if supports_source_date_epoch:
+        rule_attrs = rule_attrs | _SOURCE_DATE_EPOCH_ATTRS
     kwargs = {
         "attrs": default_attrs
         | common_attrs
@@ -268,7 +279,11 @@ def _compressed_impl(ctx: AnalysisContext, uncompressed: typing.Callable, rule_a
         )
     ]
 
-def _new_compressed_package_rule(compressor: str, uncompressed: typing.Callable, default_compression_level: int, rule_attrs: dict[str, Attr] = {}):
+def _new_compressed_package_rule(
+    compressor: str, uncompressed: typing.Callable, default_compression_level: int, rule_attrs: dict[str, Attr] = {}, supports_source_date_epoch: bool = False
+):
+    if supports_source_date_epoch:
+        rule_attrs = rule_attrs | _SOURCE_DATE_EPOCH_ATTRS
     return rule(
         impl = partial(
             _compressed_impl,
@@ -303,24 +318,28 @@ _cpio, _cpio_anon = _new_package_rule(
     format = "cpio",
     sudo = True,
     uses_build_appliance = True,
+    supports_source_date_epoch = True,
 )
 
 _cpio_gz = _new_compressed_package_rule(
     default_compression_level = 3,
     uncompressed = _cpio_anon,
     compressor = "gzip",
+    supports_source_date_epoch = True,
 )
 
 _cpio_zst = _new_compressed_package_rule(
     default_compression_level = 15,
     uncompressed = _cpio_anon,
     compressor = "zstd",
+    supports_source_date_epoch = True,
 )
 
 _cpio_lz4 = _new_compressed_package_rule(
     default_compression_level = 12,
     uncompressed = _cpio_anon,
     compressor = "lz4",
+    supports_source_date_epoch = True,
 )
 
 # @unused
@@ -443,10 +462,10 @@ _cad_stack, _cad_stack_anon = _new_package_rule(
 package = struct(
     btrfs = btrfs,
     cad_stack = package_macro(_cad_stack, always_rootless = True),
-    cpio = package_macro(_cpio),
-    cpio_gz = package_macro(_cpio_gz),
-    cpio_lz4 = package_macro(_cpio_lz4),
-    cpio_zst = package_macro(_cpio_zst),
+    cpio = package_macro(_cpio, supports_source_date_epoch = True),
+    cpio_gz = package_macro(_cpio_gz, supports_source_date_epoch = True),
+    cpio_lz4 = package_macro(_cpio_lz4, supports_source_date_epoch = True),
+    cpio_zst = package_macro(_cpio_zst, supports_source_date_epoch = True),
     deb = deb,
     dm_verity = dm_verity,
     erofs = package_macro(_erofs),
