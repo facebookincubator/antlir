@@ -184,6 +184,13 @@ dpkg-divert --package antlir2-diverter --add --rename --divert /etc/antlir2-dive
 """,
             version = "1",
         ),
+        # Records, before it is unpacked, whether libc-bin's postinst (which
+        # runs ldconfig) has run
+        test_deb(
+            name = "antlir2-after-essential",
+            preinst = "if [ -e /etc/ld.so.cache ]; then echo configured; else echo unconfigured; fi > /antlir2-libc-bin-status",
+            version = "1",
+        ),
         # Unpacked after the diverter (Pre-Depends), with a hard link to its
         # diverted file and a diverted conffile
         test_deb(
@@ -509,14 +516,16 @@ suite_set(
     }),
 )
 
-# A new root gets only the Essential packages' files before maintainer
-# scripts run, as debootstrap does: a package diverting a path it ships
-# itself renames nothing in its preinst
+# A new root is installed as debootstrap installs it: the Essential
+# packages are configured before any other package is unpacked, and only
+# their files are on disk before maintainer scripts run, so a package
+# diverting a path it ships itself renames nothing in its preinst
 image.layer(
     name = "self-diverted",
     features = [
         feature.apt_install(
             packages = [
+                "antlir2-after-essential",
                 "antlir2-diverter",
                 "bash",
                 "dash",

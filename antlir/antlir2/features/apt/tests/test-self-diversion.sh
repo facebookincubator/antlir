@@ -9,3 +9,7 @@ set -ex
 test "$(cat /antlir2-diverted)" = "diverter"
 test ! -e /antlir2-diverted.distrib
 test "$(dpkg-divert --truename /antlir2-diverted)" = "/antlir2-diverted.distrib"
+
+# libc-bin (Essential) was configured before antlir2-after-essential was
+# unpacked
+test "$(cat /antlir2-libc-bin-status)" = "configured"

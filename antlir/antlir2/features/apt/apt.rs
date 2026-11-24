@@ -310,10 +310,11 @@ impl Apt {
         let names: Vec<String> = tx.install.iter().map(|p| p.package.name.clone()).collect();
 
         run_driver(install_tx(tx.install.clone()), Some(DriverStage::Control))?;
-        // A new root starts as debootstrap and mkosi start it: the files of
-        // the Essential packages and what they depend on are extracted
-        // before any maintainer script runs
-        if previous_versions.is_empty() {
+        // A new root is installed as debootstrap and mkosi install it: the
+        // files of the Essential packages and what they depend on are
+        // extracted, those packages are unpacked and configured, and only
+        // then are the rest unpacked and configured
+        let phases = if previous_versions.is_empty() {
             let essential = control_relations(ctx, &names)?.essential_closure(&names);
             let extract = tx
                 .install
@@ -322,78 +323,83 @@ impl Apt {
                 .cloned()
                 .collect();
             run_driver(install_tx(extract), Some(DriverStage::Extract))?;
-        }
+            let (first, rest): (Vec<String>, Vec<String>) =
+                names.iter().cloned().partition(|n| essential.contains(n));
+            vec![first, rest]
+        } else {
+            vec![names.clone()]
+        };
 
         // dpkg unpacks in apt's order, and runs a package's preinst right
         // before it unpacks it
-        let mut batch = Vec::new();
-        for name in apt_order(&names, &tx.unpack) {
-            let package = find(&name).package;
-            let control = ctx.dst_path(format!("{CONTROL_DIR}/{name}"))?;
-            if control.join("preinst").exists() {
-                if !batch.is_empty() {
-                    run_driver(install_tx(std::mem::take(&mut batch)), None)?;
+        let unpack = |names: &[String]| -> Result<()> {
+            let mut batch = Vec::new();
+            for name in apt_order(names, &tx.unpack) {
+                let package = find(&name).package;
+                let control = ctx.dst_path(format!("{CONTROL_DIR}/{name}"))?;
+                if control.join("preinst").exists() {
+                    if !batch.is_empty() {
+                        run_driver(install_tx(std::mem::take(&mut batch)), None)?;
+                    }
+                    let args = match previous_versions.get(&package.name) {
+                        Some(old) => vec!["upgrade", old.as_str()],
+                        // dpkg passes the old version as $2, empty when there
+                        // is none; `set -u` scripts (e.g. libselinux1) rely on
+                        // it being set
+                        None => vec!["install", ""],
+                    };
+                    // dpkg runs it from tmp.ci, which holds the package's control
+                    // files (debconf reads the package name from tmp.ci/control)
+                    let tmp_ci = ctx.dst_path(DPKG_TMP_CI_DIR)?;
+                    std::fs::rename(&control, &tmp_ci)?;
+                    let res = script(
+                        &package.name,
+                        &package.arch,
+                        "preinst",
+                        &args,
+                        DPKG_TMP_CI_DIR,
+                    );
+                    std::fs::rename(&tmp_ci, &control)?;
+                    res?;
                 }
-                let args = match previous_versions.get(&package.name) {
-                    Some(old) => vec!["upgrade", old.as_str()],
-                    // dpkg passes the old version as $2, empty when there
-                    // is none; `set -u` scripts (e.g. libselinux1) rely on
-                    // it being set
-                    None => vec!["install", ""],
-                };
-                // dpkg runs it from tmp.ci, which holds the package's control
-                // files (debconf reads the package name from tmp.ci/control)
-                let tmp_ci = ctx.dst_path(DPKG_TMP_CI_DIR)?;
-                std::fs::rename(&control, &tmp_ci)?;
-                let res = script(
-                    &package.name,
-                    &package.arch,
-                    "preinst",
-                    &args,
-                    DPKG_TMP_CI_DIR,
-                );
-                std::fs::rename(&tmp_ci, &control)?;
-                res?;
+                batch.push(find(&name));
             }
-            batch.push(find(&name));
-        }
-        run_driver(install_tx(batch), None)?;
-
-        // A new root is installed as debootstrap and mkosi do it: the
-        // Essential packages first, then the rest
-        let relations = status_relations(ctx)?;
-        let (first, rest): (Vec<String>, Vec<String>) = if previous_versions.is_empty() {
-            let essential = relations.essential_closure(&names);
-            names.iter().cloned().partition(|n| essential.contains(n))
-        } else {
-            (Vec::new(), names.clone())
+            if !batch.is_empty() {
+                run_driver(install_tx(batch), None)?;
+            }
+            Ok(())
         };
+
         // apt has dpkg configure what later packages pre-depend on as it
         // unpacks, and the rest with `dpkg --configure --pending`
-        let configure = |names: &[String]| {
+        let configure = |names: &[String]| -> Result<()> {
+            let relations = status_relations(ctx)?;
             let (explicit, pending): (Vec<String>, Vec<String>) = apt_order(names, &tx.configure)
                 .into_iter()
                 .partition(|n| tx.configure.iter().any(|c| bare_name(c) == bare_name(n)));
-            explicit
+            for name in explicit
                 .into_iter()
                 .chain(dpkg_configure_order(&pending, &relations))
+            {
+                let package = find(&name).package;
+                let args = match previous_versions.get(&package.name) {
+                    Some(old) => vec!["configure", old.as_str()],
+                    None => vec!["configure", ""],
+                };
+                script(
+                    &package.name,
+                    &package.arch,
+                    "postinst",
+                    &args,
+                    DPKG_INFO_DIR,
+                )?;
+            }
+            Ok(())
         };
-        let order = configure(&first)
-            .chain(configure(&rest))
-            .collect::<Vec<_>>();
-        for name in order {
-            let package = find(&name).package;
-            let args = match previous_versions.get(&package.name) {
-                Some(old) => vec!["configure", old.as_str()],
-                None => vec!["configure", ""],
-            };
-            script(
-                &package.name,
-                &package.arch,
-                "postinst",
-                &args,
-                DPKG_INFO_DIR,
-            )?;
+
+        for phase in phases {
+            unpack(&phase)?;
+            configure(&phase)?;
         }
         Ok(())
     }
