@@ -115,7 +115,7 @@ starlark_simple_value!(TypeId);
 #[starlark_value(type = "TypeId")]
 impl<'v> StarlarkValue<'v> for TypeId {
     fn invoke(
-        &self,
+        _this: &Self,
         me: Value<'v>,
         args: &starlark::eval::Arguments<'v, '_>,
         eval: &mut Evaluator<'v, '_, '_>,
