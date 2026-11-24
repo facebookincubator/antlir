@@ -37,12 +37,18 @@ def _unprivileged_dir_impl_with_layer(layer: [Dependency, ProviderCollection], *
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
             cmd_args(ctx.attrs._working_format, format = "--working-format={}"),
-            cmd_args(layer[LayerInfo].contents.subvol_symlink, format = "--layer={}"),
+            cmd_args(
+                {
+                    "btrfs": layer[LayerInfo].contents.subvol_symlink,
+                    "cad-stack": layer[LayerInfo].contents.cad_stack,
+                }[ctx.attrs._working_format],
+                format = "--layer={}",
+            ),
             "--dir",
             cmd_args(package.as_output(), format = "--out={}"),
             "--rootless" if ctx.attrs._rootless else cmd_args(),
         ),
-        local_only = True,
+        local_only = ctx.attrs._working_format == "btrfs" or not ctx.attrs._rootless,
         category = "antlir2_package",
         identifier = "unprivileged_dir",
     )
