@@ -14,8 +14,9 @@ done
 
 conffiles=$(dpkg-query -W -f '${Conffiles}\n' systemd)
 test -n "$conffiles"
-echo "$conffiles" | while read -r path md5; do
+echo "$conffiles" | while read -r path md5 flag; do
     [ -n "$path" ] || continue
+    [ "$flag" != remove-on-upgrade ] || continue
     test "$(md5sum < "$path" | cut -d' ' -f1)" = "$md5"
 done
 

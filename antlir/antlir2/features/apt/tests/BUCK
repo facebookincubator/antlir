@@ -551,3 +551,20 @@ test_on_all_flavors(
     layer = ":systemd-without-recommends",
     test = "test-dpkg-database.sh",
 )
+
+# dpkg records a remove-on-upgrade conffile (which the package names but does
+# not ship) with a placeholder hash and the flag
+image.layer(
+    name = "pkgconf-installed",
+    features = [
+        feature.apt_install(packages = ["pkgconf"]),
+    ],
+    parent_layer = ":bash-installed",
+)
+
+test_on_all_flavors(
+    image_sh_test,
+    name = "test-remove-on-upgrade-conffiles",
+    layer = ":pkgconf-installed",
+    test = "test-remove-on-upgrade-conffiles.sh",
+)

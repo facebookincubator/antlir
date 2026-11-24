@@ -211,6 +211,20 @@ def _md5(path: str) -> str:
         return hashlib.md5(f.read()).hexdigest()
 
 
+def _conffile_entry(
+    line: str, install_root: str, installed_path: Callable[[str], str]
+) -> str:
+    """
+    A conffile's line in the status database: its md5sum as unpacked (where
+    `installed_path` puts it), or for a `remove-on-upgrade` conffile (which
+    the package does not ship) dpkg's placeholder and the flag
+    """
+    if line.startswith("remove-on-upgrade "):
+        return f" {line.split(maxsplit=1)[1]} newconffile remove-on-upgrade"
+    path = installed_path(line).lstrip("/")
+    return f" {line} {_md5(os.path.join(install_root, path))}"
+
+
 def _status_stanza(
     control: str,
     conffiles: list[str],
@@ -221,20 +235,20 @@ def _status_stanza(
     The status entry for an unpacked package: its control fields, Status, and
     the md5sum of each conffile as unpacked (where `installed_path` puts it)
     """
-
-    def entry(c: str) -> str:
-        return f" {c} {_md5(os.path.join(install_root, installed_path(c).lstrip('/')))}"
-
     fields = control.strip().split("\n")
     lines = []
     for line in fields:
         if line.startswith("Description:") and conffiles:
             lines.append("Conffiles:")
-            lines.extend(entry(c) for c in conffiles)
+            lines.extend(
+                _conffile_entry(c, install_root, installed_path) for c in conffiles
+            )
         lines.append(line)
     if conffiles and not any(line.startswith("Description:") for line in fields):
         lines.append("Conffiles:")
-        lines.extend(entry(c) for c in conffiles)
+        lines.extend(
+            _conffile_entry(c, install_root, installed_path) for c in conffiles
+        )
     lines.append("Status: install ok installed")
     return "\n".join(lines) + "\n\n"
 
@@ -408,8 +422,11 @@ def _install(
     conffiles = []
     if os.path.exists(conffiles_path):
         with open(conffiles_path) as f:
-            # remove-on-upgrade entries are flagged, not shipped
-            conffiles = [line.strip() for line in f if line.strip().startswith("/")]
+            conffiles = [
+                line.strip()
+                for line in f
+                if line.strip().startswith(("/", "remove-on-upgrade "))
+            ]
 
     if control_data:
         # Reinstalls and upgrades must replace the old entry: dpkg refuses
