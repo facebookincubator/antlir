@@ -27,6 +27,15 @@ def is_outplace_python_target(target) -> bool:
         return info.package_style == "outplace"
     return False
 
+def is_inplace_python_target(target) -> bool:
+    """
+    Returns whether the given target is a python inplace par
+    """
+    info = _extract_python_library_info(target)
+    if info:
+        return info.package_style == "inplace"
+    return False
+
 def _extract_python_library_info(target) -> PythonLibraryInfo | None:
     """
     Extracts the PythonLibraryInfo from a target.

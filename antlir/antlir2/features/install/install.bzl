@@ -9,7 +9,14 @@ load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:binaries_require_repo.bzl", "binaries_require_repo")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
-load("//antlir/antlir2/bzl:python_helpers.bzl", "extract_par_elfs", "is_outplace_python_target", "is_python_target", "is_python_xar_target")
+load(
+    "//antlir/antlir2/bzl:python_helpers.bzl",
+    "extract_par_elfs",
+    "is_inplace_python_target",
+    "is_outplace_python_target",
+    "is_python_target",
+    "is_python_xar_target",
+)
 load("//antlir/antlir2/bzl:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load(
@@ -537,6 +544,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         # build mode indicates that every binary is in fact standalone
         if not standalone:
             standalone = binaries_require_repo.is_standalone(src)
+
+        # A python binary can still be built in place when the build mode makes
+        # binaries standalone. Its launcher runs only next to its link-tree in
+        # buck-out, so install its standalone par instead.
+        if standalone and src_is_python and is_inplace_python_target(ctx.attrs.src) and "standalone" in src_subtargets:
+            src = ctx.attrs.src.sub_target("standalone")
 
         # Non-standalone (aka dev-mode) binaries don't get stripped, they just
         # get symlinked. The split action does not (currently) support directory

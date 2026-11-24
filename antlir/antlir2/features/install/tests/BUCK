@@ -185,6 +185,13 @@ python_binary(
     package_style = "outplace",
 )
 
+python_binary(
+    name = "true-py-inplace",
+    srcs = ["true.py"],
+    main_module = "antlir.antlir2.features.install.tests.true",
+    package_style = "inplace",
+)
+
 image.layer(
     name = "installed-binary",
     features = [
@@ -220,6 +227,10 @@ image.layer(
         feature.install(
             src = ":true-py",
             dst = "/usr/bin/true-py",
+        ),
+        feature.install(
+            src = ":true-py-inplace",
+            dst = "/usr/bin/true-py-inplace",
         ),
     ],
 )

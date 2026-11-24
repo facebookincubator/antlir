@@ -24,7 +24,7 @@ class TestInstalledBinary(unittest.TestCase):
         super().setUp()
 
     def test_runs(self) -> None:
-        for lang in ["rs", "py"]:
+        for lang in ["rs", "py", "py-inplace"]:
             with self.subTest(lang):
                 result = subprocess.run([f"true-{lang}"], check=True)
                 self.assertEqual(result.returncode, 0)
@@ -107,6 +107,13 @@ class TestInstalledBinary(unittest.TestCase):
         # gdb should resolve 'main' from the separate debuginfo and print its
         # address, e.g. 'Symbol "main" is at 0x... in a file compiled ...'
         self.assertIn('Symbol "main"', result.stdout)
+
+    @skip_in_dev
+    def test_inplace_par_is_standalone(self) -> None:
+        # A live par launcher runs only where buck-out is mounted, as it is in
+        # some test environments, so check that a standalone par was installed.
+        with open("/usr/bin/true-py-inplace", "rb") as f:
+            self.assertNotIn(b"LINKTREEDIR=", f.read(1024))
 
     def test_outplace_par(self) -> None:
         path = (
