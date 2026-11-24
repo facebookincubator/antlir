@@ -310,8 +310,18 @@ impl Apt {
         let names: Vec<String> = tx.install.iter().map(|p| p.package.name.clone()).collect();
 
         run_driver(install_tx(tx.install.clone()), Some(DriverStage::Control))?;
+        // A new root starts as debootstrap and mkosi start it: the files of
+        // the Essential packages and what they depend on are extracted
+        // before any maintainer script runs
         if previous_versions.is_empty() {
-            run_driver(install_tx(tx.install.clone()), Some(DriverStage::Extract))?;
+            let essential = control_relations(ctx, &names)?.essential_closure(&names);
+            let extract = tx
+                .install
+                .iter()
+                .filter(|p| essential.contains(&p.package.name))
+                .cloned()
+                .collect();
+            run_driver(install_tx(extract), Some(DriverStage::Extract))?;
         }
 
         // dpkg unpacks in apt's order, and runs a package's preinst right
@@ -630,6 +640,20 @@ fn parse_relation_field(field: &str) -> Vec<Vec<String>> {
         })
         .filter(|alts| !alts.is_empty())
         .collect()
+}
+
+/// Relations of the packages to install, from the control files the driver
+/// extracted to `CONTROL_DIR`
+fn control_relations(ctx: &CompilerContext, names: &[String]) -> Result<Relations> {
+    let controls = names
+        .iter()
+        .map(|name| {
+            let path = ctx.dst_path(format!("{CONTROL_DIR}/{name}/control"))?;
+            std::fs::read_to_string(&path)
+                .with_context(|| format!("while reading {}", path.display()))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    Ok(Relations::parse(controls.iter().map(String::as_str)))
 }
 
 /// Relations of every package in the image's dpkg status db

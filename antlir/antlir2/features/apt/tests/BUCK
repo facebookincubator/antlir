@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/features/apt:apt.bzl", "NOBLE_SUITE", "STONKING_SUITE", "TRIXIE_SUITE")
 load("//antlir/antlir2/package_managers/deb:local_suite.bzl", "local_suite")
 load("//antlir/antlir2/package_managers/deb:suite_set.bzl", "suite_set")
 load("//antlir/antlir2/testing:image_debs_test.bzl", "image_test_deb_names")
@@ -496,6 +497,41 @@ test_on_all_flavors(
     name = "test-diversion",
     layer = ":diverted",
     test = "test-diversion.sh",
+)
+
+suite_set(
+    name = "default-and-test-suite",
+    base_variant = "essential",
+    suites = [":test-suite"] + select({
+        "DEFAULT": [TRIXIE_SUITE],
+        "antlir//antlir/antlir2/os:ubuntu-noble": [NOBLE_SUITE],
+        "antlir//antlir/antlir2/os:ubuntu-stonking": [STONKING_SUITE],
+    }),
+)
+
+# A new root gets only the Essential packages' files before maintainer
+# scripts run, as debootstrap does: a package diverting a path it ships
+# itself renames nothing in its preinst
+image.layer(
+    name = "self-diverted",
+    features = [
+        feature.apt_install(
+            packages = [
+                "antlir2-diverter",
+                "bash",
+                "dash",
+                "dpkg",
+            ],
+            suite = ":default-and-test-suite",
+        ),
+    ],
+)
+
+test_on_all_flavors(
+    image_sh_test,
+    name = "test-self-diversion",
+    layer = ":self-diverted",
+    test = "test-self-diversion.sh",
 )
 
 # the dpkg database records what dpkg would: every path a package ships, and
