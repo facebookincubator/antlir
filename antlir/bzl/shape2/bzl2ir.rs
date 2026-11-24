@@ -115,15 +115,14 @@ starlark_simple_value!(TypeId);
 #[starlark_value(type = "TypeId")]
 impl<'v> StarlarkValue<'v> for TypeId {
     fn invoke(
-        _this: &Self,
-        me: Value<'v>,
+        this: ValueOf<'v, Self>,
         args: &starlark::eval::Arguments<'v, '_>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> starlark::Result<Value<'v>> {
         let reg = get_type_registry(eval)?
             .try_borrow()
             .map_err(starlark::Error::new_native)?;
-        let ty = me.try_to_type(&reg)?;
+        let ty = this.to_value().try_to_type(&reg)?;
         match ty.as_ref() {
             ir::Type::Complex(ir::ComplexType::Struct(_)) => {
                 args.no_positional_args(eval.heap())?;
