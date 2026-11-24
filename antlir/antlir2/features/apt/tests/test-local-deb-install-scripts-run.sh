@@ -16,6 +16,8 @@ done
 # recorded "$@" ends with a trailing space.
 test "$(cat /antlir2-preinst-ran)" = "install "
 test "$(cat /antlir2-postinst-ran)" = "configure "
+test "$(cat /antlir2-preinst-epoch)" = "$EXPECTED_SOURCE_DATE_EPOCH"
+test "$(cat /antlir2-postinst-epoch)" = "$EXPECTED_SOURCE_DATE_EPOCH"
 
 test ! -e /antlir2-prerm-ran
 test ! -e /antlir2-postrm-ran

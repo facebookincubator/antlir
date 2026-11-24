@@ -7,6 +7,7 @@
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::fs::Permissions;
 use std::io::BufReader;
 use std::io::BufWriter;
@@ -116,6 +117,10 @@ pub struct AptItem {
 pub struct Apt {
     pub items: Vec<AptItem>,
     pub driver_cmd: Vec<String>,
+    /// SOURCE_DATE_EPOCH for maintainer scripts, as `apt-get` passes its own
+    /// environment on to them
+    #[serde(default)]
+    pub source_date_epoch: Option<u64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -146,10 +151,16 @@ pub struct InstallPackage {
     pub archive: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct ResolvedTransaction {
     pub install: Vec<InstallPackage>,
     pub remove: Vec<RemovePackage>,
+    /// The order apt has dpkg unpack the packages to install in
+    #[serde(default)]
+    pub unpack: Vec<String>,
+    /// ... and configure as it unpacks, ahead of `dpkg --configure --pending`
+    #[serde(default)]
+    pub configure: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
@@ -183,17 +194,22 @@ impl antlir2_compile::CompileFeature for Apt {
 
 const DPKG_INFO_DIR: &str = "/var/lib/dpkg/info";
 
+const DPKG_TMP_CI_DIR: &str = "/var/lib/dpkg/tmp.ci";
+
+/// Where the driver extracts the control files of the packages to install
+const CONTROL_DIR: &str = "/var/lib/dpkg/antlir2-control";
+
 impl Apt {
-    /// Apply the transaction following dpkg's ordering of maintainer scripts
-    /// around file removal and extraction. The exception is preinst, which
-    /// (like debootstrap) runs after unpacking, since on a fresh root there
-    /// is no /bin/sh until the essential packages are unpacked.
-    /// Like dpkg, packages are configured dependencies-first and removed
-    /// dependents-first, since scripts often rely on another package's
-    /// side effects (users, alternatives, config).
+    /// Apply the transaction the way apt has dpkg do it: remove packages,
+    /// running prerm and postrm around the removal of their files, unpack
+    /// the new ones (`dpkg --unpack`), each right after its preinst, then
+    /// configure them (`dpkg --configure --pending`).
+    /// A new root has no /bin/sh for preinst until the essential packages
+    /// are unpacked, so, like debootstrap, every package is extracted into
+    /// it first.
     fn run_transaction(&self, ctx: &CompilerContext, plan: Plan) -> Result<()> {
         let tx = plan.tx.into_inner();
-        let run_driver = |tx: ResolvedTransaction| {
+        let run_driver = |tx: ResolvedTransaction, stage: Option<DriverStage>| {
             run_apt_driver(
                 DriverContext::Compile {
                     ctx,
@@ -205,6 +221,20 @@ impl Apt {
                 &self.items,
                 DriverMode::Run,
                 Some(tx),
+                stage,
+            )
+        };
+        let script = |name: &str, arch: &str, script: &str, args: &[&str], dir: &str| {
+            run_maintainer_script(
+                ctx,
+                MaintainerScript {
+                    dir,
+                    package: name,
+                    arch,
+                    script,
+                    args,
+                    source_date_epoch: self.source_date_epoch,
+                },
             )
         };
 
@@ -225,13 +255,17 @@ impl Apt {
             })
             .collect();
             for pkg in &remove {
-                run_maintainer_script(ctx, &pkg.name, &pkg.arch, "prerm", &["remove"])?;
+                script(&pkg.name, &pkg.arch, "prerm", &["remove"], DPKG_INFO_DIR)?;
             }
             // The driver deletes all of a package's info files, but postrm
             // runs after the files are gone
             let mut postrms = Vec::new();
             for pkg in &remove {
-                let path = ctx.dst_path(format!("{DPKG_INFO_DIR}/{}.postrm", pkg.name))?;
+                let mut path =
+                    ctx.dst_path(format!("{DPKG_INFO_DIR}/{}:{}.postrm", pkg.name, pkg.arch))?;
+                if !path.exists() {
+                    path = ctx.dst_path(format!("{DPKG_INFO_DIR}/{}.postrm", pkg.name))?;
+                }
                 match std::fs::read(&path) {
                     Ok(contents) => postrms.push((pkg, path, contents)),
                     Err(e) if e.kind() == ErrorKind::NotFound => {}
@@ -240,46 +274,56 @@ impl Apt {
                     }
                 }
             }
-            run_driver(ResolvedTransaction {
-                install: vec![],
-                remove: tx.remove.clone(),
-            })?;
+            run_driver(
+                ResolvedTransaction {
+                    remove: tx.remove.clone(),
+                    ..Default::default()
+                },
+                None,
+            )?;
             for (pkg, path, contents) in postrms {
                 std::fs::write(&path, contents)
                     .with_context(|| format!("while restoring {}", path.display()))?;
                 std::fs::set_permissions(&path, Permissions::from_mode(0o755))?;
-                let res = run_maintainer_script(ctx, &pkg.name, &pkg.arch, "postrm", &["remove"]);
+                let res = script(&pkg.name, &pkg.arch, "postrm", &["remove"], DPKG_INFO_DIR);
                 std::fs::remove_file(&path)
                     .with_context(|| format!("while removing {}", path.display()))?;
                 res?;
             }
         }
 
-        if !tx.install.is_empty() {
-            let previous_versions = installed_versions(ctx)?;
-            run_driver(ResolvedTransaction {
-                install: tx.install.clone(),
-                remove: vec![],
-            })?;
-            // dpkg configures dependencies before the packages that depend
-            // on them (e.g. dbus-system-bus-common's postinst creates the
-            // messagebus user that dbus's postinst requires); the resolver
-            // does not guarantee this order, so sort it here.
-            let install: Vec<InstallPackage> = sort_by_dependencies(
-                ctx,
-                tx.install.iter().map(|p| p.package.name.clone()).collect(),
-                false,
-            )?
-            .into_iter()
-            .map(|name| {
-                tx.install
-                    .iter()
-                    .find(|p| p.package.name == name)
-                    .expect("sorted name came from tx.install")
-                    .clone()
-            })
-            .collect();
-            for InstallPackage { package, .. } in &install {
+        if tx.install.is_empty() {
+            return Ok(());
+        }
+        let previous_versions = installed_versions(ctx)?;
+        let install_tx = |packages: Vec<InstallPackage>| ResolvedTransaction {
+            install: packages,
+            ..Default::default()
+        };
+        let find = |name: &str| {
+            tx.install
+                .iter()
+                .find(|p| p.package.name == name)
+                .expect("sorted name came from tx.install")
+                .clone()
+        };
+        let names: Vec<String> = tx.install.iter().map(|p| p.package.name.clone()).collect();
+
+        run_driver(install_tx(tx.install.clone()), Some(DriverStage::Control))?;
+        if previous_versions.is_empty() {
+            run_driver(install_tx(tx.install.clone()), Some(DriverStage::Extract))?;
+        }
+
+        // dpkg unpacks in apt's order, and runs a package's preinst right
+        // before it unpacks it
+        let mut batch = Vec::new();
+        for name in apt_order(&names, &tx.unpack) {
+            let package = find(&name).package;
+            let control = ctx.dst_path(format!("{CONTROL_DIR}/{name}"))?;
+            if control.join("preinst").exists() {
+                if !batch.is_empty() {
+                    run_driver(install_tx(std::mem::take(&mut batch)), None)?;
+                }
                 let args = match previous_versions.get(&package.name) {
                     Some(old) => vec!["upgrade", old.as_str()],
                     // dpkg passes the old version as $2, empty when there
@@ -287,15 +331,59 @@ impl Apt {
                     // it being set
                     None => vec!["install", ""],
                 };
-                run_maintainer_script(ctx, &package.name, &package.arch, "preinst", &args)?;
+                // dpkg runs it from tmp.ci, which holds the package's control
+                // files (debconf reads the package name from tmp.ci/control)
+                let tmp_ci = ctx.dst_path(DPKG_TMP_CI_DIR)?;
+                std::fs::rename(&control, &tmp_ci)?;
+                let res = script(
+                    &package.name,
+                    &package.arch,
+                    "preinst",
+                    &args,
+                    DPKG_TMP_CI_DIR,
+                );
+                std::fs::rename(&tmp_ci, &control)?;
+                res?;
             }
-            for InstallPackage { package, .. } in &install {
-                let args = match previous_versions.get(&package.name) {
-                    Some(old) => vec!["configure", old.as_str()],
-                    None => vec!["configure", ""],
-                };
-                run_maintainer_script(ctx, &package.name, &package.arch, "postinst", &args)?;
-            }
+            batch.push(find(&name));
+        }
+        run_driver(install_tx(batch), None)?;
+
+        // A new root is installed as debootstrap and mkosi do it: the
+        // Essential packages first, then the rest
+        let relations = status_relations(ctx)?;
+        let (first, rest): (Vec<String>, Vec<String>) = if previous_versions.is_empty() {
+            let essential = relations.essential_closure(&names);
+            names.iter().cloned().partition(|n| essential.contains(n))
+        } else {
+            (Vec::new(), names.clone())
+        };
+        // apt has dpkg configure what later packages pre-depend on as it
+        // unpacks, and the rest with `dpkg --configure --pending`
+        let configure = |names: &[String]| {
+            let (explicit, pending): (Vec<String>, Vec<String>) = apt_order(names, &tx.configure)
+                .into_iter()
+                .partition(|n| tx.configure.iter().any(|c| bare_name(c) == bare_name(n)));
+            explicit
+                .into_iter()
+                .chain(dpkg_configure_order(&pending, &relations))
+        };
+        let order = configure(&first)
+            .chain(configure(&rest))
+            .collect::<Vec<_>>();
+        for name in order {
+            let package = find(&name).package;
+            let args = match previous_versions.get(&package.name) {
+                Some(old) => vec!["configure", old.as_str()],
+                None => vec!["configure", ""],
+            };
+            script(
+                &package.name,
+                &package.arch,
+                "postinst",
+                &args,
+                DPKG_INFO_DIR,
+            )?;
         }
         Ok(())
     }
@@ -323,16 +411,39 @@ fn installed_versions(ctx: &CompilerContext) -> Result<HashMap<String, String>> 
         .collect())
 }
 
+struct MaintainerScript<'a> {
+    /// where the script is: the info dir, or for preinst the new package's
+    /// control files
+    dir: &'a str,
+    package: &'a str,
+    arch: &'a str,
+    script: &'a str,
+    args: &'a [&'a str],
+    source_date_epoch: Option<u64>,
+}
+
 /// Run a maintainer script (if the package has one) with the image as the
 /// root filesystem
-fn run_maintainer_script(
-    ctx: &CompilerContext,
-    package: &str,
-    arch: &str,
-    script: &str,
-    args: &[&str],
-) -> Result<()> {
-    let path = format!("{DPKG_INFO_DIR}/{package}.{script}");
+fn run_maintainer_script(ctx: &CompilerContext, s: MaintainerScript) -> Result<()> {
+    let MaintainerScript {
+        dir,
+        package,
+        arch,
+        script,
+        args,
+        source_date_epoch,
+    } = s;
+    let path = if dir == DPKG_INFO_DIR {
+        // a Multi-Arch: same package's info files are named with its arch
+        let qualified = format!("{dir}/{package}:{arch}.{script}");
+        if ctx.dst_path(&qualified)?.exists() {
+            qualified
+        } else {
+            format!("{dir}/{package}.{script}")
+        }
+    } else {
+        format!("{dir}/{script}")
+    };
     if !ctx.dst_path(&path)?.exists() {
         return Ok(());
     }
@@ -348,10 +459,16 @@ fn run_maintainer_script(
             "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         ))
         .setenv(("DEBIAN_FRONTEND", "noninteractive"))
+        // scripts that derive a charmap from the locale (console-setup's
+        // setupcon) pick UTF-8, as they do on an installed system
+        .setenv(("LANG", "C.UTF-8"))
         .setenv(("SYSTEMD_OFFLINE", "1"))
         .setenv(("DPKG_MAINTSCRIPT_PACKAGE", package))
         .setenv(("DPKG_MAINTSCRIPT_NAME", script))
         .setenv(("DPKG_MAINTSCRIPT_ARCH", arch));
+    if let Some(epoch) = source_date_epoch {
+        isol.setenv(("SOURCE_DATE_EPOCH".to_owned(), epoch.to_string()));
+    }
     let mut cmd = unshare(isol.build())?.command(&path)?;
     cmd.args(args);
     trace!("running maintainer script: {cmd:?}");
@@ -372,67 +489,258 @@ fn run_maintainer_script(
     Ok(())
 }
 
-/// Depends and Pre-Depends of every package in the image's dpkg status db
-fn package_dependencies(ctx: &CompilerContext) -> Result<HashMap<String, Vec<String>>> {
-    let path = ctx.dst_path("/var/lib/dpkg/status")?;
-    let status = match std::fs::read_to_string(&path) {
-        Ok(status) => status,
-        Err(e) if e.kind() == ErrorKind::NotFound => return Ok(HashMap::new()),
-        Err(e) => return Err(e).with_context(|| format!("while reading {}", path.display())),
-    };
-    Ok(status
-        .split("\n\n")
-        .filter_map(|stanza| {
-            // unfold continuation lines so wrapped Depends stay whole
-            let mut logical: Vec<String> = Vec::new();
-            for line in stanza.lines() {
-                if line.starts_with(' ') || line.starts_with('\t') {
-                    if let Some(last) = logical.last_mut() {
-                        last.push_str(line);
-                    }
-                } else {
-                    logical.push(line.to_owned());
-                }
-            }
+fn bare_name(name: &str) -> &str {
+    name.split(':').next().unwrap_or(name)
+}
+
+/// What dpkg orders packages by: their Depends and Pre-Depends (each clause
+/// satisfied by any of its alternatives) and the virtual packages they
+/// provide
+#[derive(Debug, Default)]
+struct Relations {
+    depends: HashMap<String, Vec<Vec<String>>>,
+    provides: HashMap<String, Vec<String>>,
+    essential: HashSet<String>,
+}
+
+impl Relations {
+    /// Parse package stanzas (a status file or control files), keyed by
+    /// their Package field
+    fn parse<'a>(stanzas: impl IntoIterator<Item = &'a str>) -> Self {
+        let mut relations = Self::default();
+        for stanza in stanzas {
+            let fields = unfold(stanza);
             let field = |name: &str| {
-                logical
+                fields
                     .iter()
                     .find_map(|l| l.strip_prefix(name)?.strip_prefix(':'))
                     .map(str::trim)
             };
-            let name = field("Package")?.to_owned();
-            let mut deps = Vec::new();
-            for key in ["Depends", "Pre-Depends"] {
-                if let Some(field) = field(key) {
-                    deps.extend(parse_depends(field));
+            let Some(name) = field("Package") else {
+                continue;
+            };
+            let clauses = ["Depends", "Pre-Depends"]
+                .into_iter()
+                .filter_map(field)
+                .flat_map(parse_relation_field)
+                .collect();
+            for provided in field("Provides")
+                .map(parse_relation_field)
+                .unwrap_or_default()
+            {
+                for virtual_name in provided {
+                    relations
+                        .provides
+                        .entry(virtual_name)
+                        .or_default()
+                        .push(name.to_owned());
                 }
             }
-            Some((name, deps))
-        })
-        .collect())
+            if field("Essential") == Some("yes") {
+                relations.essential.insert(name.to_owned());
+            }
+            relations.depends.insert(name.to_owned(), clauses);
+        }
+        relations
+    }
+
+    /// The Essential packages among `names` and what they depend on, which
+    /// is what apt installs for `apt-get install ?essential`
+    fn essential_closure(&self, names: &[String]) -> HashSet<String> {
+        let by_bare: HashMap<&str, &String> = names.iter().map(|n| (bare_name(n), n)).collect();
+        let mut closure = HashSet::new();
+        let mut stack: Vec<&str> = by_bare
+            .keys()
+            .copied()
+            .filter(|n| self.essential.contains(*n))
+            .collect();
+        while let Some(name) = stack.pop() {
+            let Some(full) = by_bare.get(name) else {
+                continue;
+            };
+            if !closure.insert((*full).clone()) {
+                continue;
+            }
+            for alt in self.depends.get(name).into_iter().flatten().flatten() {
+                let providers = self.provides.get(alt.as_str()).into_iter().flatten();
+                stack.extend(
+                    std::iter::once(alt)
+                        .chain(providers)
+                        .map(String::as_str)
+                        .filter(|n| by_bare.contains_key(n)),
+                );
+            }
+        }
+        closure
+    }
+
+    /// The first alternative of each clause, keyed and named as in `names`
+    fn depends_names(&self, names: &[String]) -> HashMap<String, Vec<String>> {
+        let by_bare: HashMap<&str, &String> = names.iter().map(|n| (bare_name(n), n)).collect();
+        names
+            .iter()
+            .map(|name| {
+                let deps = self
+                    .depends
+                    .get(bare_name(name))
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|clause| clause.first())
+                    .map(|d| {
+                        by_bare
+                            .get(d.as_str())
+                            .map_or_else(|| d.clone(), |n| (*n).clone())
+                    })
+                    .collect();
+                (name.clone(), deps)
+            })
+            .collect()
+    }
 }
 
-/// Bare package names from a Depends/Pre-Depends field:
-/// "dbus-bin (= 1.14), libfoo:amd64 | libbar" -> ["dbus-bin", "libfoo"]
-fn parse_depends(field: &str) -> Vec<String> {
+/// A stanza's lines with continuation lines folded into the field they
+/// continue
+fn unfold(stanza: &str) -> Vec<String> {
+    let mut logical: Vec<String> = Vec::new();
+    for line in stanza.lines() {
+        if line.starts_with(' ') || line.starts_with('\t') {
+            if let Some(last) = logical.last_mut() {
+                last.push_str(line);
+            }
+        } else {
+            logical.push(line.to_owned());
+        }
+    }
+    logical
+}
+
+/// Bare package names of each clause of a relation field:
+/// "a (>= 1) | b:any, c" -> [["a", "b"], ["c"]]
+fn parse_relation_field(field: &str) -> Vec<Vec<String>> {
     field
         .split(',')
-        .filter_map(|alts| {
-            let name = alts
+        .map(|clause| {
+            clause
                 .split('|')
-                .next()?
-                .split('(')
-                .next()?
-                .split(':')
-                .next()?
-                .trim();
-            if name.is_empty() {
-                None
-            } else {
-                Some(name.to_owned())
-            }
+                .filter_map(|alt| {
+                    let name = alt.split('(').next()?.split(':').next()?.trim();
+                    (!name.is_empty()).then(|| name.to_owned())
+                })
+                .collect::<Vec<_>>()
         })
+        .filter(|alts| !alts.is_empty())
         .collect()
+}
+
+/// Relations of every package in the image's dpkg status db
+fn status_relations(ctx: &CompilerContext) -> Result<Relations> {
+    let path = ctx.dst_path("/var/lib/dpkg/status")?;
+    let status = std::fs::read_to_string(&path)
+        .with_context(|| format!("while reading {}", path.display()))?;
+    Ok(Relations::parse(status.split("\n\n")))
+}
+
+/// `names` in the order apt gave (by bare name), any it did not name last
+fn apt_order(names: &[String], order: &[String]) -> Vec<String> {
+    let position: HashMap<&str, usize> = order
+        .iter()
+        .enumerate()
+        .map(|(i, n)| (bare_name(n), i))
+        .collect();
+    let mut names = names.to_vec();
+    names.sort_by_key(|n| position.get(bare_name(n)).copied().unwrap_or(usize::MAX));
+    names
+}
+
+/// The bucket of dpkg's package table a package name falls in: FNV-1a of
+/// the lowercased name, modulo the table's 65521 buckets (dpkg's
+/// lib/dpkg/pkg-hash.c)
+fn dpkg_hash_bin(name: &str) -> u32 {
+    name.bytes()
+        .map(|b| b.to_ascii_lowercase())
+        .fold(2166136261u32, |h, b| {
+            (h ^ u32::from(b)).wrapping_mul(16777619)
+        })
+        % 65521
+}
+
+/// The order `dpkg --configure --pending` configures the unpacked `names`
+/// in: the order its package table holds them in (by `dpkg_hash_bin`),
+/// putting off each package whose dependencies are not configured yet until
+/// the end of the queue, then, when a whole pass of the queue configures
+/// nothing, settling for dependencies in a cycle with the package, and
+/// finally for any that are unpacked.
+fn dpkg_configure_order(names: &[String], relations: &Relations) -> Vec<String> {
+    let pending: HashSet<&str> = names.iter().map(|n| bare_name(n)).collect();
+    let mut queue: Vec<&String> = names.iter().collect();
+    queue.sort_by_key(|n| dpkg_hash_bin(bare_name(n)));
+    let mut queue: VecDeque<&String> = queue.into();
+
+    let deps_of = |name: &str| relations.depends.get(name).into_iter().flatten();
+    // whether `to` depends, through pending packages, on `from`
+    let reaches = |from: &str, to: &str| {
+        let mut seen = HashSet::new();
+        let mut stack = vec![from];
+        while let Some(name) = stack.pop() {
+            if !seen.insert(name) {
+                continue;
+            }
+            for alt in deps_of(name).flatten() {
+                if alt == to {
+                    return true;
+                }
+                if pending.contains(alt.as_str()) {
+                    stack.push(alt);
+                }
+            }
+        }
+        false
+    };
+
+    let mut configured: HashSet<&str> = HashSet::new();
+    let mut order = Vec::with_capacity(names.len());
+    let mut dependtry = 1;
+    let mut without_progress = 0;
+    while let Some(name) = queue.pop_front() {
+        let pkg = bare_name(name);
+        let ready = |dep: &str| {
+            configured.contains(dep)
+                || (pending.contains(dep)
+                    && (dependtry >= 3 || (dependtry == 2 && reaches(dep, pkg))))
+        };
+        let satisfied = deps_of(pkg).all(|clause| {
+            clause.iter().any(|alt| {
+                let providers = relations.provides.get(alt.as_str());
+                if alt == pkg || ready(alt) {
+                    return true;
+                }
+                if pending.contains(alt.as_str()) {
+                    return false;
+                }
+                // installed already, or provided by a package that is
+                relations.depends.contains_key(alt.as_str())
+                    || providers.into_iter().flatten().any(|p| {
+                        ready(p)
+                            || (!pending.contains(p.as_str())
+                                && relations.depends.contains_key(p.as_str()))
+                    })
+            })
+        });
+        // beyond that dpkg gives up on the package; it is configured anyway
+        if satisfied || dependtry > 3 {
+            configured.insert(pkg);
+            order.push(name.clone());
+            without_progress = 0;
+        } else {
+            queue.push_back(name);
+            without_progress += 1;
+            if without_progress > queue.len() {
+                dependtry += 1;
+                without_progress = 0;
+            }
+        }
+    }
+    order
 }
 
 /// Order package names the way dpkg would configure (dependencies first)
@@ -448,7 +756,8 @@ fn sort_by_dependencies(
     names: Vec<String>,
     reverse: bool,
 ) -> Result<Vec<String>> {
-    Ok(topo_order(names, &package_dependencies(ctx)?, reverse))
+    let deps = status_relations(ctx)?.depends_names(&names);
+    Ok(topo_order(names, &deps, reverse))
 }
 
 fn topo_order(
@@ -506,6 +815,7 @@ impl Apt {
             &self.items,
             DriverMode::Resolve,
             None,
+            None,
         )?;
         if events.len() != 1 {
             return Err(Error::msg(
@@ -516,9 +826,19 @@ impl Apt {
             install,
             remove,
             dpkg_status,
+            unpack,
+            configure,
         } = events.remove(0)
         {
-            Ok((ResolvedTransaction { install, remove }, dpkg_status))
+            Ok((
+                ResolvedTransaction {
+                    install,
+                    remove,
+                    unpack,
+                    configure,
+                },
+                dpkg_status,
+            ))
         } else {
             Err(Error::msg(
                 "resolve-only event should have been TransactionResolved",
@@ -540,6 +860,16 @@ struct DriverSpec<'a> {
     dpkg_status: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     debs_dir: Option<&'a Path>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stage: Option<DriverStage>,
+}
+
+/// What the driver does with the packages to install (see driver.py)
+#[derive(Debug, Copy, Clone, Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum DriverStage {
+    Control,
+    Extract,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -565,6 +895,10 @@ enum DriverEvent {
         remove: Vec<RemovePackage>,
         #[serde(default)]
         dpkg_status: Option<String>,
+        #[serde(default)]
+        unpack: Vec<String>,
+        #[serde(default)]
+        configure: Vec<String>,
     },
     TxItem {
         package: serde_json::Value,
@@ -692,6 +1026,7 @@ fn run_apt_driver(
     items: &[AptItem],
     mode: DriverMode,
     resolved_transaction: Option<ResolvedTransaction>,
+    stage: Option<DriverStage>,
 ) -> Result<Vec<DriverEvent>> {
     // The archive dir is a symlinked_dir with relative symlinks that resolve
     // within the working directory tree. Mount the working directory and
@@ -734,6 +1069,7 @@ fn run_apt_driver(
         base_variant: ctx.base_variant(),
         dpkg_status: ctx.dpkg_status(),
         debs_dir: debs_dir_in_container.as_deref(),
+        stage,
     };
 
     let opts = memfd::MemfdOptions::default().close_on_exec(false);
@@ -813,19 +1149,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_depends() {
+    fn test_parse_relation_field() {
         assert_eq!(
-            parse_depends(
+            parse_relation_field(
                 "dbus-bin (= 1.14.10-4ubuntu4), dbus-system-bus-common (>= 1.14.10), libc6 (>= 2.34)"
             ),
-            vec!["dbus-bin", "dbus-system-bus-common", "libc6"],
+            vec![
+                vec!["dbus-bin"],
+                vec!["dbus-system-bus-common"],
+                vec!["libc6"]
+            ],
         );
-        // alternatives resolve to the first option, arch qualifiers are stripped
+        // every alternative is kept, arch qualifiers are stripped
         assert_eq!(
-            parse_depends("default-dbus-session-bus | dbus-session-bus, libfoo:amd64"),
-            vec!["default-dbus-session-bus", "libfoo"],
+            parse_relation_field("default-dbus-session-bus | dbus-session-bus, libfoo:amd64"),
+            vec![
+                vec!["default-dbus-session-bus", "dbus-session-bus"],
+                vec!["libfoo"]
+            ],
         );
-        assert!(parse_depends("").is_empty());
+        assert!(parse_relation_field("").is_empty());
     }
 
     fn dep_map(pairs: &[(&str, &[&str])]) -> HashMap<String, Vec<String>> {
@@ -862,6 +1205,81 @@ mod tests {
                 false
             ),
             names(&["tzdata", "dbus-system-bus-common", "dbus"]),
+        );
+    }
+
+    fn relations(stanzas: &str) -> Relations {
+        Relations::parse(stanzas.split("\n\n"))
+    }
+
+    #[test]
+    fn test_dpkg_configure_order_by_name_deferring_unmet() {
+        let rel = relations(
+            "Package: a\nDepends: c\n\nPackage: b\n\nPackage: c\nDepends: libc6 (>= 2.34)\n\nPackage: libc6\n",
+        );
+        // dpkg's table holds a, c, b in that order; a waits for c, and
+        // libc6 is configured already
+        assert_eq!(
+            dpkg_configure_order(&names(&["c", "a", "b"]), &rel),
+            names(&["c", "b", "a"]),
+        );
+    }
+
+    #[test]
+    fn test_dpkg_configure_order_alternatives_and_provides() {
+        let rel = relations(
+            "Package: a\nDepends: x | b\n\nPackage: b\nDepends: awk\n\nPackage: c\nDepends: y | b\n\nPackage: mawk\nProvides: awk\n\nPackage: y\n",
+        );
+        // c's clause is met by installed y at once, while a's is not by x
+        // (not installed) and waits for b; b needs awk, which pending mawk
+        // provides
+        assert_eq!(
+            dpkg_configure_order(&names(&["a", "b", "c", "mawk"]), &rel),
+            names(&["c", "mawk", "b", "a"]),
+        );
+    }
+
+    #[test]
+    fn test_dpkg_configure_order_unsatisfiable() {
+        let rel = relations("Package: a\nDepends: x\n\nPackage: b\n");
+        // x is neither installed nor being installed: a is configured last
+        assert_eq!(
+            dpkg_configure_order(&names(&["a", "b"]), &rel),
+            names(&["b", "a"]),
+        );
+    }
+
+    #[test]
+    fn test_dpkg_configure_order_breaks_cycles() {
+        let rel = relations(
+            "Package: a\nDepends: b\n\nPackage: b\nDepends: a\n\nPackage: c\nDepends: a\n",
+        );
+        // a whole pass defers all three; the cycle then breaks at b, the
+        // first in the queue that a depends on
+        assert_eq!(
+            dpkg_configure_order(&names(&["a", "b", "c"]), &rel),
+            names(&["b", "a", "c"]),
+        );
+    }
+
+    #[test]
+    fn test_dpkg_hash_bin() {
+        // what dpkg's pkg_hash_find_set() computes: systemd's bucket comes
+        // before udev's, whatever the case of the name
+        assert_eq!(dpkg_hash_bin("systemd"), 22236);
+        assert_eq!(dpkg_hash_bin("udev"), 41493);
+        assert_eq!(dpkg_hash_bin("UDEV"), 41493);
+    }
+
+    #[test]
+    fn test_apt_order() {
+        assert_eq!(
+            apt_order(
+                &names(&["libc6:amd64", "base-files", "udev", "zz-unlisted"]),
+                &names(&["udev", "libc6", "base-files"]),
+            ),
+            names(&["udev", "libc6:amd64", "base-files", "zz-unlisted"]),
+            "names keep apt's order, matched without the arch qualifier, and unlisted ones go last",
         );
     }
 

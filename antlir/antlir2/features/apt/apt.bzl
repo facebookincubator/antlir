@@ -40,6 +40,13 @@ DEFAULT_SUITE = select({
     "antlir//antlir/antlir2/os:ubuntu-stonking": STONKING_SUITE,
 })
 
+def _source_date_epoch() -> int | None:
+    # `-c antlir2.source_date_epoch=<seconds>`, the setting fixed_metadata
+    # cpio packages and hermetic rpm installs use
+    # 2004-02-04, matching the reproducible ext4 and EROFS packagers.
+    epoch = read_config("antlir2", "source_date_epoch", "1075852800")
+    return int(epoch) if epoch.isdigit() else None
+
 def _common(
     action: str,
     *,
@@ -55,6 +62,7 @@ def _common(
             "action": action,
             "install_recommends": install_recommends,
             "sonames_src": sonames_src,
+            "source_date_epoch": _source_date_epoch(),
             "subjects": packages,
         },
         deps = {
@@ -162,6 +170,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             data = struct(
                 items = items,
                 driver_cmd = ctx.attrs.driver[RunInfo],
+                source_date_epoch = ctx.attrs.source_date_epoch,
             ),
             build_phase = BuildPhase("package_manager"),
             required_artifacts = required_artifacts,
@@ -184,6 +193,8 @@ apt_rule = new_feature_rule(
         "plan": attrs.exec_dep(providers = [RunInfo]),
         "resolve": attrs.dep(providers = [RunInfo]),
         "sonames_src": attrs.option(attrs.source(), default = None),
+        # SOURCE_DATE_EPOCH for maintainer scripts
+        "source_date_epoch": attrs.option(attrs.int(), default = None),
         "subjects": attrs.list(attrs.string()),
         "suite": attrs.dep(),
         "_metadata": attrs.exec_dep(providers = [RunInfo]),

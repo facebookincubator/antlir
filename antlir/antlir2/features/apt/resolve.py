@@ -16,6 +16,7 @@ Must be run inside a Debian chroot that has python3-apt installed.
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -66,6 +67,40 @@ def _distribution(candidate, distributions: list[str]) -> str | None:
         if origin.codename in distributions:
             return origin.codename
     return None
+
+
+def apt_order(install: list[dict]) -> tuple[list[str], list[str]]:
+    """
+    The order apt has dpkg unpack the packages to install in, and the ones
+    it has dpkg configure as it goes (that later ones pre-depend on), from
+    the transaction apt-get simulates with the configuration apt_pkg runs
+    with here, and APT::Immediate-Configure off as debootstrap and mkosi
+    install
+    """
+    with tempfile.NamedTemporaryFile("w", suffix=".conf") as conf:
+        conf.write(apt_pkg.config.dump())
+        conf.flush()
+        out = subprocess.run(
+            ["apt-get", "--simulate", "--quiet"]
+            + ["-o", "APT::Immediate-Configure=false", "install"]
+            + [f"{i['package']['name']}={i['package']['version']}" for i in install],
+            check=True,
+            env={**os.environ, "APT_CONFIG": conf.name},
+            stdout=subprocess.PIPE,
+            text=True,
+        ).stdout
+    lines = [line.split() for line in out.splitlines()]
+    unpacks = [i for i, words in enumerate(lines) if words[:1] == ["Inst"]]
+    # Conf lines after the last unpack are what apt leaves to `dpkg
+    # --configure --pending`
+    return (
+        [lines[i][1] for i in unpacks],
+        [
+            words[1]
+            for words in lines[: unpacks[-1] if unpacks else 0]
+            if words[:1] == ["Conf"]
+        ],
+    )
 
 
 def load_soname_index(dist_path: str, arch: str) -> dict[str, list[str]]:
@@ -459,44 +494,34 @@ def main() -> int:
         # Compute the resulting dpkg status after the transaction.
         # This is used by child layers via supplements so they don't need
         # the full parent layer subvolume to plan their own apt transactions.
+        # Each entry is the package's whole record: apt takes an installed
+        # version whose relations differ from the archive's (as they would
+        # with them left out) for another version, and reinstalls it.
         status_entries = []
         for pkg in sorted(cache, key=lambda p: p.name):
             if pkg.marked_delete:
                 continue
             if pkg.marked_install or pkg.marked_upgrade:
-                candidate = pkg.candidate
-                if candidate:
-                    status_entries.append(
-                        "Package: {}\n"
-                        "Status: install ok installed\n"
-                        "Version: {}\n"
-                        "Architecture: {}\n".format(
-                            pkg.name,
-                            candidate.version,
-                            candidate.architecture,
-                        )
-                    )
+                version = pkg.candidate
             elif pkg.is_installed:
-                installed = pkg.installed
-                if installed:
-                    pkg_arch = ""
-                    try:
-                        pkg_arch = pkg.architecture
-                        if callable(pkg_arch):
-                            pkg_arch = pkg_arch()
-                    except Exception:
-                        pass
-                    status_entries.append(
-                        "Package: {}\n"
-                        "Status: install ok installed\n"
-                        "Version: {}\n"
-                        "Architecture: {}\n".format(
-                            pkg.name,
-                            installed.version,
-                            str(pkg_arch),
-                        )
-                    )
+                version = pkg.installed
+            else:
+                continue
+            if version is None:
+                continue
+            fields = [
+                line
+                for line in version._records.record.rstrip("\n").split("\n")
+                if not line.startswith("Status:")
+            ]
+            status_entries.append(
+                "\n".join(fields[:1] + ["Status: install ok installed"] + fields[1:])
+                + "\n"
+            )
         dpkg_status_out = "\n".join(status_entries)
+        unpack_order, configure_order = (
+            apt_order(install_list) if install_list else ([], [])
+        )
 
         # Output the resolved transaction as a single JSON event
         json.dump(
@@ -505,6 +530,8 @@ def main() -> int:
                     "install": install_list,
                     "remove": remove_list,
                     "dpkg_status": dpkg_status_out,
+                    "unpack": unpack_order,
+                    "configure": configure_order,
                 }
             },
             sys.stdout,

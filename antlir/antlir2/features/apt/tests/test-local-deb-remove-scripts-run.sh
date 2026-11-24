@@ -12,3 +12,5 @@ test ! -e /var/lib/dpkg/info/antlir2-scripts.postrm
 # Each script records its arguments in the image root
 test "$(cat /antlir2-prerm-ran)" = "remove"
 test "$(cat /antlir2-postrm-ran)" = "remove"
+test "$(cat /antlir2-prerm-epoch)" = "$EXPECTED_SOURCE_DATE_EPOCH"
+test "$(cat /antlir2-postrm-epoch)" = "$EXPECTED_SOURCE_DATE_EPOCH"

@@ -72,6 +72,7 @@ fn main() -> Result<()> {
     let apt = apt::Apt {
         items: args.items.into_inner(),
         driver_cmd: args.resolve_cmd,
+        source_date_epoch: None,
     };
     let (tx, dpkg_status_out) = apt
         .plan(DriverContext::plan(

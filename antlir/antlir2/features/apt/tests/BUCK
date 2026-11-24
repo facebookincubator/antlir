@@ -135,10 +135,79 @@ local_suite(
         ),
         test_deb(
             name = "antlir2-scripts",
-            postinst = 'echo "$@" > /antlir2-postinst-ran',
-            postrm = 'echo "$@" > /antlir2-postrm-ran',
-            preinst = 'echo "$@" > /antlir2-preinst-ran',
-            prerm = 'echo "$@" > /antlir2-prerm-ran',
+            postinst = 'echo "$@" > /antlir2-postinst-ran; echo "$SOURCE_DATE_EPOCH" > /antlir2-postinst-epoch',
+            postrm = 'echo "$@" > /antlir2-postrm-ran; echo "$SOURCE_DATE_EPOCH" > /antlir2-postrm-epoch',
+            preinst = 'echo "$@" > /antlir2-preinst-ran; echo "$SOURCE_DATE_EPOCH" > /antlir2-preinst-epoch',
+            prerm = 'echo "$@" > /antlir2-prerm-ran; echo "$SOURCE_DATE_EPOCH" > /antlir2-prerm-epoch',
+            version = "1",
+        ),
+        test_deb(
+            name = "antlir2-docs",
+            features = [
+                feature.ensure_dirs_exist(dirs = "/usr/share/doc/antlir2-docs"),
+                feature.ensure_dirs_exist(dirs = "/usr/share/man/man1"),
+                feature.install_text(
+                    dst = "/usr/share/doc/antlir2-docs/README",
+                    text = "readme\n",
+                ),
+                feature.install_text(
+                    dst = "/usr/share/doc/antlir2-docs/copyright",
+                    text = "copyright\n",
+                ),
+                feature.install_text(
+                    dst = "/usr/share/man/man1/antlir2-docs.1",
+                    text = "manual\n",
+                ),
+            ],
+            version = "1",
+        ),
+        # Diverts /antlir2-diverted and /etc/antlir2-diverted.conf, which
+        # antlir2-diverted-owner also ships, the way packages that replace
+        # another's file do
+        test_deb(
+            name = "antlir2-diverter",
+            features = [
+                feature.install_text(
+                    dst = "/antlir2-diverted",
+                    text = "diverter\n",
+                ),
+                feature.ensure_dirs_exist(dirs = "/etc"),
+                feature.install_text(
+                    dst = "/etc/antlir2-diverted.conf",
+                    text = "diverter\n",
+                ),
+            ],
+            preinst = """
+dpkg-divert --package antlir2-diverter --add --rename --divert /antlir2-diverted.distrib /antlir2-diverted
+dpkg-divert --package antlir2-diverter --add --rename --divert /etc/antlir2-diverted.conf.distrib /etc/antlir2-diverted.conf
+""",
+            version = "1",
+        ),
+        # Unpacked after the diverter (Pre-Depends), with a hard link to its
+        # diverted file and a diverted conffile
+        test_deb(
+            name = "antlir2-diverted-owner",
+            features = [
+                feature.install_text(
+                    dst = "/antlir2-diverted",
+                    text = "owner\n",
+                ),
+                feature.hardlink(
+                    link = "/antlir2-diverted-link",
+                    target = "/antlir2-diverted",
+                ),
+                feature.ensure_dirs_exist(dirs = "/etc"),
+                feature.install_text(
+                    dst = "/etc/antlir2-diverted.conf",
+                    text = "owner\n",
+                ),
+                feature.ensure_dirs_exist(dirs = "/DEBIAN"),
+                feature.install_text(
+                    dst = "/DEBIAN/conffiles",
+                    text = "/etc/antlir2-diverted.conf\n",
+                ),
+            ],
+            pre_depends = ["antlir2-diverter"],
             version = "1",
         ),
         # Registers itself as an alternative the same way that
@@ -212,6 +281,7 @@ test_on_all_flavors(
 test_on_all_flavors(
     image_sh_test,
     name = "test-local-deb-install-scripts-run",
+    env = {"EXPECTED_SOURCE_DATE_EPOCH": read_config("antlir2", "source_date_epoch", "1075852800")},
     layer = ":local-debs-installed",
     test = "test-local-deb-install-scripts-run.sh",
 )
@@ -232,6 +302,7 @@ image.layer(
 test_on_all_flavors(
     image_sh_test,
     name = "test-local-deb-remove-scripts-run",
+    env = {"EXPECTED_SOURCE_DATE_EPOCH": read_config("antlir2", "source_date_epoch", "1075852800")},
     layer = ":local-deb-scripts-removed",
     test = "test-local-deb-remove-scripts-run.sh",
 )
@@ -369,4 +440,69 @@ test_on_all_flavors(
     env = {"VERSION": "1"},
     layer = ":versioned-pinned",
     test = "test-versioned.sh",
+)
+
+# dpkg leaves out what the image's dpkg configuration excludes (as Ubuntu's
+# minimized images and mkosi's WithDocs=no do), but still lists it
+image.layer(
+    name = "docs-excluded-config",
+    features = [
+        feature.install_text(
+            dst = "/etc/dpkg/dpkg.cfg.d/excludes",
+            text = """path-exclude=/usr/share/doc/*
+path-include=/usr/share/doc/*/copyright
+path-exclude /usr/share/man/*
+""",
+        ),
+    ],
+    parent_layer = ":bash-installed",
+)
+
+image.layer(
+    name = "docs-excluded",
+    features = [
+        feature.apt_install(
+            packages = ["antlir2-docs"],
+            suite = ":test-suite",
+        ),
+    ],
+    parent_layer = ":docs-excluded-config",
+)
+
+test_on_all_flavors(
+    image_sh_test,
+    name = "test-path-filters",
+    layer = ":docs-excluded",
+    test = "test-path-filters.sh",
+)
+
+# the owner's file lands at the diversion, whichever unpacks first
+image.layer(
+    name = "diverted",
+    features = [
+        feature.apt_install(
+            packages = [
+                "antlir2-diverted-owner",
+                "antlir2-diverter",
+            ],
+            suite = ":test-suite",
+        ),
+    ],
+    parent_layer = ":bash-installed",
+)
+
+test_on_all_flavors(
+    image_sh_test,
+    name = "test-diversion",
+    layer = ":diverted",
+    test = "test-diversion.sh",
+)
+
+# the dpkg database records what dpkg would: every path a package ships, and
+# the md5sum of each conffile as unpacked
+test_on_all_flavors(
+    image_sh_test,
+    name = "test-dpkg-database",
+    layer = ":systemd-without-recommends",
+    test = "test-dpkg-database.sh",
 )
