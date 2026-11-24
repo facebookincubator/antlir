@@ -43,7 +43,7 @@ use starlark::values::Value;
 use starlark::values::ValueOf;
 use starlark::values::dict::DictType;
 use starlark::values::int::IntView;
-use starlark::values::list_or_tuple::ListOrTupleType;
+use starlark::values::list_or_tuple::StarlarkListOrTuple;
 use starlark::values::starlark_value;
 use starlark::values::string::StarlarkStr;
 use starlark::values::structs::AllocStruct;
@@ -379,7 +379,9 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
-        #[starlark(require = named)] __thrift: Option<ValueOf<'v, ListOrTupleType<IntView<'v>>>>,
+        #[starlark(require = named)] __thrift: Option<
+            ValueOf<'v, StarlarkListOrTuple<'v, IntView<'v>>>,
+        >,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> starlark::Result<ValueOf<'v, TypeId>> {
         let mut reg = get_type_registry(eval)?
