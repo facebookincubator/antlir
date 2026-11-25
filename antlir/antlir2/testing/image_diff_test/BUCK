@@ -10,7 +10,7 @@ rust_binary(
         "base64",
         "clap",
         "hex",
-        "md-5",
+        "md-5-0-10",
         "serde",
         "serde_with",
         "similar",
