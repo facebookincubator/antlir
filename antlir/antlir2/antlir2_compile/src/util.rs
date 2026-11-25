@@ -22,7 +22,15 @@ use crate::Result;
 
 #[builder]
 #[tracing::instrument(ret, err)]
-pub fn copy_with_metadata<S, D>(src: S, dst: D, uid: Option<u32>, gid: Option<u32>) -> Result<()>
+pub fn copy_with_metadata<S, D>(
+    src: S,
+    dst: D,
+    uid: Option<u32>,
+    gid: Option<u32>,
+    /// Give `dst` the times of `src`
+    #[builder(default = true)]
+    times: bool,
+) -> Result<()>
 where
     S: AsRef<Path> + std::fmt::Debug,
     D: AsRef<Path> + std::fmt::Debug,
@@ -64,12 +72,14 @@ where
     // otherwise if we just copied without chowning
     trace!("setting owner to {}:{}", uid, gid);
     fchown(&f, Some(uid), Some(gid))?;
-    let times = FileTimes::new()
-        .set_accessed(metadata.accessed()?)
-        .set_modified(metadata.modified()?);
-    trace!("setting time to {times:?}");
-    if let Err(e) = f.set_times(times) {
-        warn!("failed to set file times: {e:?}")
+    if times {
+        let times = FileTimes::new()
+            .set_accessed(metadata.accessed()?)
+            .set_modified(metadata.modified()?);
+        trace!("setting time to {times:?}");
+        if let Err(e) = f.set_times(times) {
+            warn!("failed to set file times: {e:?}")
+        }
     }
     copy_xattrs(src, &f)?;
     Ok(())

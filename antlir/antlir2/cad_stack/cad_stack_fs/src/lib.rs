@@ -11,6 +11,8 @@ use std::collections::VecDeque;
 use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 use cad_stack::Checksum;
 use cad_stack::ObjectStore;
@@ -23,11 +25,14 @@ use cap_std::fs::PermissionsExt;
 use cap_std::io_lifetimes::AsFd;
 use rustix::fs::AtFlags;
 use rustix::fs::Gid;
+use rustix::fs::Timespec;
+use rustix::fs::Timestamps;
 use rustix::fs::Uid;
 use rustix::fs::chownat;
 use rustix::fs::fchown;
 use rustix::fs::readlinkat;
 use rustix::fs::symlinkat;
+use rustix::fs::utimensat;
 use xattr::FileExt;
 
 pub mod dir;
@@ -58,6 +63,7 @@ pub enum Operation {
     ReadXattrs,
     SetPermissions,
     SetOwnership,
+    SetTimes,
     SetXattrs,
     WriteFile,
 }
@@ -78,6 +84,7 @@ impl std::fmt::Display for Operation {
             Self::ReadXattrs => write!(f, "reading xattrs"),
             Self::SetPermissions => write!(f, "setting permissions"),
             Self::SetOwnership => write!(f, "setting ownership"),
+            Self::SetTimes => write!(f, "setting times"),
             Self::SetXattrs => write!(f, "setting xattrs"),
             Self::WriteFile => write!(f, "writing file content"),
         }
@@ -129,8 +136,7 @@ impl<T> IoContext<T> for std::result::Result<T, rustix::io::Errno> {
 /// storing all files, symlinks, and subdirectories in the object store.
 /// Returns the checksum of the root directory object.
 pub fn add_dir_recursive(store: &ObjectStore, dir: fs::Dir) -> Result<Checksum<Dir>> {
-    let mut seen_inodes: HashMap<(u64, u64), (PathBuf, Checksum<Inode>)> = HashMap::new();
-    add_dir_recursive_impl(store, dir, Path::new("."), &mut seen_inodes)
+    add_dir_recursive_impl(store, dir, Path::new("."), &mut Scan::new(None))
 }
 
 /// Same as [add_dir_recursive] but also mark this directory as "the root dir"
@@ -141,13 +147,56 @@ pub fn add_root_dir(store: &ObjectStore, dir: fs::Dir) -> Result<Checksum<Dir>> 
     Ok(root_dir)
 }
 
+/// Same as [add_root_dir], recording the modification times older than
+/// `build_started`, when the build of the tree started. Those came from the
+/// build's inputs (a parent layer extracted with [extract_root_dir], packages
+/// and archives that carry their files' mtimes), so they are deterministic;
+/// a file the build changed is newer and records 0 instead of the time of the
+/// build.
+pub fn add_root_dir_with_mtimes(
+    store: &ObjectStore,
+    dir: fs::Dir,
+    build_started: SystemTime,
+) -> Result<Checksum<Dir>> {
+    let started = build_started
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX));
+    let root_dir =
+        add_dir_recursive_impl(store, dir, Path::new("."), &mut Scan::new(Some(started)))?;
+    store.set_alias(ALIAS_ROOT, &root_dir)?;
+    Ok(root_dir)
+}
+
+/// The state of adding one tree to the store
+struct Scan {
+    seen_inodes: HashMap<(u64, u64), (PathBuf, Checksum<Inode>)>,
+    /// Record the mtimes older than this (seconds since the epoch)
+    mtimes_before: Option<i64>,
+}
+
+impl Scan {
+    fn new(mtimes_before: Option<i64>) -> Self {
+        Self {
+            seen_inodes: HashMap::new(),
+            mtimes_before,
+        }
+    }
+
+    fn mtime(&self, stat: &fs::Metadata) -> i64 {
+        match self.mtimes_before {
+            Some(before) if stat.mtime() < before => stat.mtime(),
+            _ => 0,
+        }
+    }
+}
+
 fn add_dir_recursive_impl(
     store: &ObjectStore,
     dir: fs::Dir,
     current_path: &Path,
-    seen_inodes: &mut HashMap<(u64, u64), (PathBuf, Checksum<Inode>)>,
+    scan: &mut Scan,
 ) -> Result<Checksum<Dir>> {
-    let (object, subdirs) = scan_dir(store, &dir, current_path, seen_inodes)?;
+    let (object, subdirs) = scan_dir(store, &dir, current_path, scan)?;
     let mut stack = vec![Frame {
         dir,
         path: current_path.to_owned(),
@@ -170,7 +219,7 @@ fn add_dir_recursive_impl(
 
         if let Some((open_result, subdir_path)) = descend {
             let subdir = open_result.io_context(Operation::OpenDir, &subdir_path)?;
-            let (object, subdirs) = scan_dir(store, &subdir, &subdir_path, seen_inodes)?;
+            let (object, subdirs) = scan_dir(store, &subdir, &subdir_path, scan)?;
             stack.push(Frame {
                 dir: subdir,
                 path: subdir_path,
@@ -223,10 +272,10 @@ fn scan_dir(
     store: &ObjectStore,
     dir: &fs::Dir,
     path: &Path,
-    seen_inodes: &mut HashMap<(u64, u64), (PathBuf, Checksum<Inode>)>,
+    scan: &mut Scan,
 ) -> Result<(Dir, VecDeque<(String, PathBuf)>)> {
     let mut object = Dir::builder()
-        .meta(store.store(&get_dir_meta(dir, path)?)?)
+        .meta(store.store(&get_dir_meta(dir, path, scan)?)?)
         .build();
 
     // Collect and sort entries by name for deterministic hardlink inode
@@ -253,7 +302,7 @@ fn scan_dir(
         if ft.is_dir() {
             subdirs.push_back((name, entry_path));
         } else if ft.is_symlink() {
-            let meta = get_symlink_meta(dir, &ent, &entry_path)?;
+            let meta = get_symlink_meta(dir, &ent, &entry_path, scan)?;
             let meta_checksum = store.store(&meta)?;
             object.add_file(name, meta_checksum);
         } else if ft.is_file() {
@@ -262,13 +311,14 @@ fn scan_dir(
                 .metadata()
                 .io_context(Operation::ReadMetadata, &entry_path)?;
             let dev_ino = (file_stat.dev(), file_stat.ino());
-            if let Some((first_target, meta_checksum)) = seen_inodes.get(&dev_ino) {
+            if let Some((first_target, meta_checksum)) = scan.seen_inodes.get(&dev_ino) {
                 object.add_hardlink(name, first_target.clone(), *meta_checksum);
             } else {
-                let meta = get_file_meta(store, f, &entry_path)?;
+                let meta = get_file_meta(store, f, &entry_path, scan)?;
                 let meta_checksum = store.store(&meta)?;
                 object.add_file(name, meta_checksum);
-                seen_inodes.insert(dev_ino, (entry_path, meta_checksum));
+                scan.seen_inodes
+                    .insert(dev_ino, (entry_path, meta_checksum));
             }
         }
     }
@@ -330,6 +380,7 @@ fn extract_dir_recursive_impl(
                     .io_context(Operation::CreateSymlink, &entry_path)?;
 
                 apply_meta_to_symlink(target, name, &inode, &entry_path)?;
+                set_times(target, name, &inode, AtFlags::SYMLINK_NOFOLLOW, &entry_path)?;
             } else if let Some(content_checksum) = inode.content() {
                 let mut file = target
                     .create(name)
@@ -344,6 +395,7 @@ fn extract_dir_recursive_impl(
                     .open(name)
                     .io_context(Operation::OpenFile, &entry_path)?;
                 apply_meta_to_file(&file, &inode, &entry_path)?;
+                set_times(target, name, &inode, AtFlags::empty(), &entry_path)?;
             }
         }
     }
@@ -372,10 +424,31 @@ fn extract_dir_recursive_impl(
         }
     }
 
+    // Last, since creating the entries changed it
+    set_times(target, ".", &dir_meta, AtFlags::empty(), current_path)?;
+
     Ok(())
 }
 
-fn get_dir_meta(dir: &fs::Dir, path: &Path) -> Result<Inode> {
+/// Set an extracted entry's atime and mtime to the mtime it recorded
+fn set_times(dir: &fs::Dir, name: &str, meta: &Inode, flags: AtFlags, path: &Path) -> Result<()> {
+    let time = Timespec {
+        tv_sec: meta.mtime(),
+        tv_nsec: 0,
+    };
+    utimensat(
+        dir,
+        name,
+        &Timestamps {
+            last_access: time,
+            last_modification: time,
+        },
+        flags,
+    )
+    .io_context(Operation::SetTimes, path)
+}
+
+fn get_dir_meta(dir: &fs::Dir, path: &Path, scan: &Scan) -> Result<Inode> {
     let stat = dir
         .dir_metadata()
         .io_context(Operation::ReadMetadata, path)?;
@@ -384,12 +457,13 @@ fn get_dir_meta(dir: &fs::Dir, path: &Path) -> Result<Inode> {
         .uid(stat.uid())
         .gid(stat.gid())
         .mode(stat.mode())
+        .mtime(scan.mtime(&stat))
         .xattrs(xattrs)
         .data(Data::Directory)
         .build())
 }
 
-fn get_file_meta(store: &ObjectStore, f: fs::File, path: &Path) -> Result<Inode> {
+fn get_file_meta(store: &ObjectStore, f: fs::File, path: &Path, scan: &Scan) -> Result<Inode> {
     let stat = f.metadata().io_context(Operation::ReadMetadata, path)?;
     let (f, xattrs) = get_xattrs_from_fd(f).io_context(Operation::ReadXattrs, path)?;
     let content = FileContent::from_cap_std_file(f.into_std());
@@ -398,12 +472,13 @@ fn get_file_meta(store: &ObjectStore, f: fs::File, path: &Path) -> Result<Inode>
         .uid(stat.uid())
         .gid(stat.gid())
         .mode(stat.mode())
+        .mtime(scan.mtime(&stat))
         .xattrs(xattrs)
         .data(Data::RegularFile(content_checksum))
         .build())
 }
 
-fn get_symlink_meta(dir: &fs::Dir, ent: &DirEntry, path: &Path) -> Result<Inode> {
+fn get_symlink_meta(dir: &fs::Dir, ent: &DirEntry, path: &Path, scan: &Scan) -> Result<Inode> {
     let target =
         readlinkat(dir.as_fd(), ent.file_name(), vec![]).io_context(Operation::ReadLink, path)?;
     let stat = dir
@@ -417,6 +492,7 @@ fn get_symlink_meta(dir: &fs::Dir, ent: &DirEntry, path: &Path) -> Result<Inode>
         .uid(stat.uid())
         .gid(stat.gid())
         .mode(stat.mode())
+        .mtime(scan.mtime(&stat))
         // Symlinks don't support xattrs on Linux
         .data(Data::Symlink(target_path))
         .build())
@@ -574,6 +650,103 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+
+    fn set_mtime(path: &Path, secs: i64, flags: AtFlags) {
+        let time = Timespec {
+            tv_sec: secs,
+            tv_nsec: 0,
+        };
+        utimensat(
+            rustix::fs::CWD,
+            path,
+            &Timestamps {
+                last_access: time,
+                last_modification: time,
+            },
+            flags,
+        )
+        .expect("failed to set mtime");
+    }
+
+    fn mtime(path: &Path) -> i64 {
+        std::fs::symlink_metadata(path)
+            .expect("failed to stat")
+            .mtime()
+    }
+
+    #[test]
+    fn test_mtimes_recorded_before_build_started() {
+        let (_store_tmpdir, store) = create_test_store();
+        let src = TempDir::new().expect("failed to create tmpdir");
+        let base = src.path();
+        std::fs::write(base.join("old"), "old").expect("failed to write old");
+        std::fs::write(base.join("new"), "new").expect("failed to write new");
+        std::fs::create_dir(base.join("dir")).expect("failed to create dir");
+        std::fs::write(base.join("dir/file"), "file").expect("failed to write dir/file");
+        std::os::unix::fs::symlink("old", base.join("link")).expect("failed to create link");
+        set_mtime(&base.join("old"), 1000, AtFlags::empty());
+        // changed after the build started
+        set_mtime(&base.join("new"), 9000, AtFlags::empty());
+        set_mtime(&base.join("dir/file"), 2000, AtFlags::empty());
+        set_mtime(&base.join("dir"), 3000, AtFlags::empty());
+        set_mtime(&base.join("link"), 4000, AtFlags::SYMLINK_NOFOLLOW);
+        set_mtime(base, 1500, AtFlags::empty());
+
+        add_root_dir_with_mtimes(
+            &store,
+            fs::Dir::open_ambient_dir(base, cap_std::ambient_authority())
+                .expect("failed to open src"),
+            UNIX_EPOCH + std::time::Duration::from_secs(5000),
+        )
+        .expect("failed to add root dir");
+
+        let dst = TempDir::new().expect("failed to create tmpdir");
+        extract_root_dir(
+            &store,
+            &fs::Dir::open_ambient_dir(dst.path(), cap_std::ambient_authority())
+                .expect("failed to open dst"),
+        )
+        .expect("failed to extract");
+        let dst = dst.path();
+        assert_eq!(mtime(&dst.join("old")), 1000, "an input's mtime is kept");
+        assert_eq!(
+            mtime(&dst.join("new")),
+            0,
+            "a file the build changed records 0, not the build's time"
+        );
+        assert_eq!(mtime(&dst.join("dir/file")), 2000);
+        assert_eq!(
+            mtime(&dst.join("dir")),
+            3000,
+            "a directory gets its mtime after its entries are created"
+        );
+        assert_eq!(mtime(&dst.join("link")), 4000, "a symlink's own mtime");
+        assert_eq!(mtime(dst), 1500);
+    }
+
+    #[test]
+    fn test_mtimes_not_recorded_by_add_root_dir() {
+        let (_store_tmpdir, store) = create_test_store();
+        let src = TempDir::new().expect("failed to create tmpdir");
+        std::fs::write(src.path().join("file"), "file").expect("failed to write file");
+        set_mtime(&src.path().join("file"), 1000, AtFlags::empty());
+        add_root_dir(
+            &store,
+            fs::Dir::open_ambient_dir(src.path(), cap_std::ambient_authority())
+                .expect("failed to open src"),
+        )
+        .expect("failed to add root dir");
+
+        let dst = TempDir::new().expect("failed to create tmpdir");
+        extract_root_dir(
+            &store,
+            &fs::Dir::open_ambient_dir(dst.path(), cap_std::ambient_authority())
+                .expect("failed to open dst"),
+        )
+        .expect("failed to extract");
+        assert_eq!(mtime(&dst.path().join("file")), 0);
+        assert_eq!(mtime(dst.path()), 0);
+    }
 
     fn create_test_store() -> (TempDir, ObjectStore) {
         let store_tmpdir = TempDir::new().expect("failed to create tmpdir");

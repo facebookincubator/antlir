@@ -443,7 +443,7 @@ impl antlir2_compile::CompileFeature for Install {
                     continue;
                 }
 
-                copy_output(entry.path(), &dst_path, uid, gid)?;
+                copy_output(ctx.copy_host_times(), entry.path(), &dst_path, uid, gid)?;
             }
 
             let dir_path = ctx.dst_path(&self.dst)?;
@@ -484,17 +484,31 @@ impl antlir2_compile::CompileFeature for Install {
                     }) => {
                         if self.always_use_gnu_debuglink {
                             let debug_dst = dst.with_extension("debug");
-                            cp_debug_symbols(debuginfo, &debug_dst, dwp, uid, gid)?;
-                            copy_output(&self.src, &dst, uid, gid)?;
+                            cp_debug_symbols(
+                                ctx.copy_host_times(),
+                                debuginfo,
+                                &debug_dst,
+                                dwp,
+                                uid,
+                                gid,
+                            )?;
+                            copy_output(ctx.copy_host_times(), &self.src, &dst, uid, gid)?;
                             add_gnu_debuglink(&dst, &debug_dst)?;
                         } else if let Some(buildid) = &metadata.buildid {
                             let debug_dst = ctx
                                 .dst_path(buildid_debug_path(buildid))?
                                 .with_extension("debug");
-                            cp_debug_symbols(debuginfo, &debug_dst, dwp, uid, gid)?;
-                            copy_output(&self.src, &dst, uid, gid)?;
+                            cp_debug_symbols(
+                                ctx.copy_host_times(),
+                                debuginfo,
+                                &debug_dst,
+                                dwp,
+                                uid,
+                                gid,
+                            )?;
+                            copy_output(ctx.copy_host_times(), &self.src, &dst, uid, gid)?;
                         } else {
-                            copy_output(&self.src, &dst, uid, gid)?;
+                            copy_output(ctx.copy_host_times(), &self.src, &dst, uid, gid)?;
                         };
                         let dst_file = File::options().write(true).open(&dst)?;
                         Some(dst_file)
@@ -515,11 +529,13 @@ impl antlir2_compile::CompileFeature for Install {
                 // but does lead to some better reproducibility of image builds as it's
                 // one less entropic thing to change between runs when the input did not
                 // change
-                let src_meta = std::fs::metadata(&self.src)?;
-                let times = FileTimes::new()
-                    .set_accessed(src_meta.accessed()?)
-                    .set_modified(src_meta.modified()?);
-                dst_file.set_times(times)?;
+                if ctx.copy_host_times() {
+                    let src_meta = std::fs::metadata(&self.src)?;
+                    let times = FileTimes::new()
+                        .set_accessed(src_meta.accessed()?)
+                        .set_modified(src_meta.modified()?);
+                    dst_file.set_times(times)?;
+                }
                 for (key, val) in &self.xattrs {
                     dst_file.set_xattr(key, &val.0)?;
                 }
@@ -547,6 +563,7 @@ impl antlir2_compile::CompileFeature for Install {
                     std::fs::create_dir_all(&shared_lib_dir)?;
                     for shared_lib in &shared_libraries.so_targets {
                         install_shared_library(
+                            ctx.copy_host_times(),
                             &shared_lib.target,
                             &shared_lib_dir,
                             &shared_lib.soname,
@@ -572,10 +589,17 @@ impl antlir2_compile::CompileFeature for Install {
 
                     let dst_path = resources_dir.join(relpath);
                     if !dst_path.exists() {
-                        copy_output(&std::fs::canonicalize(entry.path())?, &dst_path, uid, gid)?;
+                        copy_output(
+                            ctx.copy_host_times(),
+                            &std::fs::canonicalize(entry.path())?,
+                            &dst_path,
+                            uid,
+                            gid,
+                        )?;
                     }
                 }
                 copy_output(
+                    ctx.copy_host_times(),
                     &implicit_resources.resources_json,
                     &dst_parent.join(format!(
                         "{}.resources.json",
@@ -610,7 +634,14 @@ impl antlir2_compile::CompileFeature for Install {
                         let debug_dst = ctx
                             .dst_path(buildid_debug_path(buildid))?
                             .with_extension("debug");
-                        cp_debug_symbols(&debuginfo_src, &debug_dst, &None, uid, gid)?;
+                        cp_debug_symbols(
+                            ctx.copy_host_times(),
+                            &debuginfo_src,
+                            &debug_dst,
+                            &None,
+                            uid,
+                            gid,
+                        )?;
                     }
                 }
             }
@@ -622,12 +653,19 @@ impl antlir2_compile::CompileFeature for Install {
 /// Copies a build output into the layer. buck2 keeps its outputs read-only, and the copy is
 /// the layer's own, so a regular file gets its owner's write bit back; whatever else the mode
 /// says is kept, as is a directory's or a symlink's.
-fn copy_output(src: &Path, dst: &Path, uid: UserId, gid: GroupId) -> antlir2_compile::Result<()> {
+fn copy_output(
+    times: bool,
+    src: &Path,
+    dst: &Path,
+    uid: UserId,
+    gid: GroupId,
+) -> antlir2_compile::Result<()> {
     copy_with_metadata()
         .src(src)
         .dst(dst)
         .uid(uid.as_raw())
         .gid(gid.as_raw())
+        .times(times)
         .call()?;
     let metadata = std::fs::symlink_metadata(dst)?;
     if metadata.is_file() {
@@ -643,6 +681,7 @@ fn buildid_debug_path(buildid: &str) -> PathBuf {
 }
 
 fn cp_debug_symbols(
+    times: bool,
     debug_src: &Path,
     debug_dst: &Path,
     maybe_dwp: &Option<BuckOutSource>,
@@ -655,11 +694,11 @@ fn cp_debug_symbols(
             .expect("debug_dst will always have parent"),
     )?;
 
-    copy_output(debug_src, debug_dst, uid, gid)?;
+    copy_output(times, debug_src, debug_dst, uid, gid)?;
     if let Some(dwp) = maybe_dwp {
         // We want dwps to live alongside the split *.debug file as *.debug.dwp such
         // that it's discoverable by lldb
-        copy_output(dwp, &debug_dst.with_extension("debug.dwp"), uid, gid)?;
+        copy_output(times, dwp, &debug_dst.with_extension("debug.dwp"), uid, gid)?;
     }
     Ok(())
 }
@@ -669,6 +708,7 @@ fn cp_debug_symbols(
 /// (libz.so -> libz.so.1.2.13). Such symlinks are reproduced in `dir` together
 /// with the file they point to, so that they do not dangle.
 fn install_shared_library(
+    times: bool,
     src: &Path,
     dir: &Path,
     soname: &str,
@@ -692,14 +732,14 @@ fn install_shared_library(
             None
         };
         let Some(link_target) = link_target.filter(|t| t.file_name() == Some(t.as_os_str())) else {
-            copy_output(&real_path, &dst, uid, gid)?;
+            copy_output(times, &real_path, &dst, uid, gid)?;
             return Ok(());
         };
 
         // The soname may coincide with a name further along the chain
         // (libz.so -> libz.so.1 -> libz.so.1.2.13).
         if dst.file_name() != Some(link_target.as_os_str()) {
-            copy_output(&src, &dst, uid, gid)?;
+            copy_output(times, &src, &dst, uid, gid)?;
         }
         src.set_file_name(&link_target);
         dst.set_file_name(&link_target);
@@ -771,6 +811,7 @@ mod tests {
 
         fn install(&self, name: &str, soname: &str) {
             install_shared_library(
+                true,
                 &self.src_dir.join(name),
                 &self.dst_dir,
                 soname,

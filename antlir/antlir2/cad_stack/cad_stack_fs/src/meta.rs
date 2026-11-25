@@ -36,9 +36,14 @@ pub struct Inode {
     uid: u32,
     gid: u32,
     mode: u32,
-    // Timestamps are intentionally untracked since it is a major source of
-    // non-determinism. When materializing to a real filesystem, mtime and atime
-    // are zeroed.
+    /// Modification time (seconds), recorded only where it is deterministic
+    /// (see [crate::add_root_dir_with_mtimes]); 0 everywhere else, which is
+    /// also how objects from before mtimes were recorded read. 0 is not
+    /// serialized, so those objects keep their checksums. Extraction sets it
+    /// as the atime and mtime.
+    #[builder(default)]
+    #[serde(default, skip_serializing_if = "is_zero")]
+    mtime: i64,
     #[builder(default)]
     #[serde_as(as = "Vec<(_, Hex)>")]
     xattrs: BTreeMap<OsString, Vec<u8>>,
@@ -56,6 +61,10 @@ impl Inode {
 
     pub fn mode(&self) -> u32 {
         self.mode
+    }
+
+    pub fn mtime(&self) -> i64 {
+        self.mtime
     }
 
     pub fn xattrs(&self) -> &BTreeMap<OsString, Vec<u8>> {
@@ -82,6 +91,10 @@ impl Inode {
             _ => None,
         }
     }
+}
+
+fn is_zero(mtime: &i64) -> bool {
+    *mtime == 0
 }
 
 json_object!(Inode);

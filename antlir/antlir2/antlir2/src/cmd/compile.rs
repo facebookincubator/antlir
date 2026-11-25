@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 use antlir2_btrfs::Subvolume;
 use antlir2_compile::Arch;
@@ -24,7 +25,7 @@ use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use anyhow::anyhow;
 use buck_label::Label;
-use cad_stack_fs::add_root_dir;
+use cad_stack_fs::add_root_dir_with_mtimes;
 use cad_stack_fs::extract_root_dir;
 use cap_std::ambient_authority;
 use cap_std::fs::Dir;
@@ -107,6 +108,8 @@ impl WorkingLayer {
 impl Compile {
     #[tracing::instrument(name = "compile", skip_all, ret, err)]
     pub(crate) fn run(mut self, rootless: Rootless) -> Result<()> {
+        // cad-stack layers record the modification times from before this
+        let build_started = SystemTime::now();
         // Load plugins now that the host tracing subscriber is installed; see `PluginArg`.
         let host_dispatch = tracing::Dispatch::default();
         let _loaded_plugins = Plugin::load_all(std::mem::take(&mut self.plugins), host_dispatch)
@@ -273,10 +276,11 @@ impl Compile {
                     // so it and its contents may be root-owned: re-escalate
                     // to package them into the object store and clean up.
                     let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-                    add_root_dir(
+                    add_root_dir_with_mtimes(
                         &store,
                         Dir::open_ambient_dir(dir.path(), ambient_authority())
                             .context("while opening subvol root")?,
+                        build_started,
                     )
                     .context("while adding root to object store")?;
                     dir.close().context("while cleaning up tempdir")?;
@@ -294,8 +298,14 @@ impl Compile {
         root: PathBuf,
         plans: HashMap<String, serde_json::Value>,
     ) -> Result<CompilerContext> {
-        CompilerContext::new(self.label.clone(), self.target_arch, root, plans)
-            .map_err(Error::Compile)
+        CompilerContext::new(
+            self.label.clone(),
+            self.target_arch,
+            root,
+            plans,
+            matches!(self.working_format, WorkingFormat::Btrfs),
+        )
+        .map_err(Error::Compile)
     }
 
     /// Create a new mutable subvolume

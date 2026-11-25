@@ -1,0 +1,63 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
+
+oncall("antlir")
+
+# A file whose modification time comes from the build's inputs, as a package's
+# files' do
+buck_genrule(
+    name = "input.tar",
+    out = "input.tar",
+    cmd = """
+        set -e
+        mkdir -p $TMP/root/mtimes
+        echo input > $TMP/root/mtimes/from-input
+        touch -d @1000 $TMP/root/mtimes/from-input $TMP/root/mtimes
+        tar --owner=0 --group=0 --numeric-owner -C $TMP/root -cf $OUT mtimes
+    """,
+)
+
+image.layer(
+    name = "parent",
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ]
+        ),
+        feature.tarball(
+            src = ":input.tar",
+            into_dir = "/",
+        ),
+    ],
+    rootless = True,
+    working_format = "cad-stack",
+)
+
+image.layer(
+    name = "child",
+    features = [
+        feature.install_text(
+            dst = "/mtimes/written",
+            text = "written\n",
+        ),
+        # buck-out's mtime for it is the host's
+        feature.install(
+            src = ":input.tar",
+            dst = "/mtimes/installed",
+        ),
+    ],
+    parent_layer = ":parent",
+    rootless = True,
+    working_format = "cad-stack",
+)
+
+image_sh_test(
+    name = "test-mtimes",
+    layer = ":child",
+    rootless = True,
+    test = "test-mtimes.sh",
+)

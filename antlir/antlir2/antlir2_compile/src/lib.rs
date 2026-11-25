@@ -101,6 +101,10 @@ pub struct CompilerContext {
     /// Open fd to the image root directory
     root: Dir,
     plans: HashMap<String, serde_json::Value>,
+    /// Whether files copied into the image from the build host take the
+    /// source's times. Not when the layer records modification times
+    /// (cad-stack), as the host's would make it differ from build to build.
+    copy_host_times: bool,
 }
 
 fn parse_file<T, E>(f: File) -> Result<T>
@@ -118,6 +122,7 @@ impl CompilerContext {
         target_arch: Arch,
         root: PathBuf,
         plans: HashMap<String, serde_json::Value>,
+        copy_host_times: bool,
     ) -> Result<Self> {
         let root_fd = Dir::open_ambient_dir(&root, cap_std::ambient_authority())?;
         Ok(Self {
@@ -126,7 +131,14 @@ impl CompilerContext {
             root_path: root,
             root: root_fd,
             plans,
+            copy_host_times,
         })
+    }
+
+    /// Whether files copied into the image from the build host (buck-out)
+    /// should take the source's access and modification times
+    pub fn copy_host_times(&self) -> bool {
+        self.copy_host_times
     }
 
     pub fn label(&self) -> &Label {
