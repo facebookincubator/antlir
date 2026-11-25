@@ -47,6 +47,11 @@ image.layer(
             src = "//antlir:empty",
             dst = "/baz",
         ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/not-executable",
+            mode = 0o444,
+        ),
         feature.ensure_dirs_exist(dirs = "/input"),
     ],
 )

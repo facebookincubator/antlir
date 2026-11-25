@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(io_error_more)]
-
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
@@ -93,6 +91,28 @@ fn input_binds() {
         .expect("failed to run command");
     assert_cmd_success(&out);
     assert_eq!(out.stdout, b"bar\n");
+}
+
+/// A program that cannot be executed is named in the error, with the reason.
+#[test]
+fn explains_permission_denied() {
+    let isol = IsolationContext::builder(Path::new("/isolated"))
+        .ephemeral(false)
+        .working_directory(Path::new("/"))
+        .build();
+    let out = unshare(isol)
+        .expect("failed to prepare unshare")
+        .command("/not-executable")
+        .expect("failed to create command")
+        .output()
+        .expect("failed to run command");
+    assert_cmd_fail(&out);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("while spawning pid2: /not-executable (mode 0444, owner ")
+            && stderr.contains("has no execute bit"),
+        "{stderr}"
+    );
 }
 
 /// When mounting an input directory, it must be readonly.

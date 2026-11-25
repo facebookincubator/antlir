@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(io_error_more)]
-
 use std::borrow::Cow;
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -24,6 +22,7 @@ use nix::sched::CloneFlags;
 use nix::sched::unshare;
 use tracing::warn;
 
+mod exec_denied;
 mod isolation;
 pub(crate) mod net;
 pub(crate) mod new_mount_api;

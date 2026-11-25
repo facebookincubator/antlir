@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::process::CommandExt;
@@ -26,7 +27,11 @@ use tokio::signal::unix::SignalKind;
 use tokio::signal::unix::signal;
 use tracing::warn;
 
+use crate::exec_denied;
 use crate::isolation;
+
+/// A reasonable default PATH (same as systemd-nspawn uses)
+const DEFAULT_PATH: &str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
 #[derive(Parser, Debug)]
 pub(crate) struct Pid1Args {
@@ -74,11 +79,7 @@ async fn pid1_async(args: Pid1Args) -> Result<()> {
 
     let mut pid2 = Command::new(&args.program);
     pid2.env_clear();
-    // reasonable default PATH (same as systemd-nspawn uses)
-    pid2.env(
-        "PATH",
-        "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-    );
+    pid2.env("PATH", DEFAULT_PATH);
     pid2.env("container", "antlir2");
     pid2.env("USER", args.isolation.user.as_ref());
     if let Some(term) = std::env::var_os("TERM") {
@@ -103,6 +104,17 @@ async fn pid1_async(args: Pid1Args) -> Result<()> {
                 "NotFound while spawning pid2 - is {} in the layer {} ?",
                 String::from_utf8_lossy(args.program.as_bytes()),
                 args.isolation.layer.display(),
+            )));
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            let path_env = args
+                .isolation
+                .setenv
+                .get(OsStr::new("PATH"))
+                .map_or(OsStr::new(DEFAULT_PATH), |path| path.as_ref());
+            return Err(Error::from(e).context(format!(
+                "while spawning pid2: {}",
+                exec_denied::explain(&args.program, path_env)
             )));
         }
         Err(e) => return Err(Error::from(e).context("while spawning pid2")),
