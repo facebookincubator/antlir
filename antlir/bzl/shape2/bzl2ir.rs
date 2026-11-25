@@ -34,6 +34,7 @@ use starlark::starlark_module;
 use starlark::starlark_simple_value;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
+use starlark::values::Absent;
 use starlark::values::FreezeErrorContext;
 use starlark::values::NoSerialize;
 use starlark::values::StarlarkValue;
@@ -323,7 +324,7 @@ fn shape(builder: &mut GlobalsBuilder) {
     fn field<'v>(
         ty: Value<'v>,
         #[starlark(default = false)] optional: bool,
-        default: Option<Value<'v>>,
+        #[starlark(default = Absent)] default: Option<Value<'v>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<ValueOf<'v, StarlarkField>> {
         let reg = get_type_registry(eval)?.try_borrow()?;
