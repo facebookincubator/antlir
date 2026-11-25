@@ -32,6 +32,7 @@ use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
 use starlark::values::OwnedFrozen;
 use starlark::values::Value;
+use starlark::values::none::NoneOr;
 use starlark::values::none::NoneType;
 use test::TestFn;
 use test::test::ShouldPanic;
@@ -68,7 +69,12 @@ fn saving_fail(gb: &mut GlobalsBuilder) {
 /// Starlark interface used by .star unit test files
 #[starlark_module]
 fn unittest(gb: &mut GlobalsBuilder) {
-    fn assert_eq<'v>(a: Value<'v>, b: Value<'v>, msg: Option<&str>) -> anyhow::Result<NoneType> {
+    fn assert_eq<'v>(
+        a: Value<'v>,
+        b: Value<'v>,
+        #[starlark(default = NoneType)] msg: NoneOr<&str>,
+    ) -> anyhow::Result<NoneType> {
+        let msg = msg.into_option();
         if a.equals(b)
             .map_err(starlark::Error::into_anyhow)
             .with_context(|| {
@@ -88,7 +94,12 @@ fn unittest(gb: &mut GlobalsBuilder) {
         }
     }
 
-    fn assert_ne<'v>(a: Value<'v>, b: Value<'v>, msg: Option<&str>) -> anyhow::Result<NoneType> {
+    fn assert_ne<'v>(
+        a: Value<'v>,
+        b: Value<'v>,
+        #[starlark(default = NoneType)] msg: NoneOr<&str>,
+    ) -> anyhow::Result<NoneType> {
+        let msg = msg.into_option();
         if !a
             .equals(b)
             .map_err(starlark::Error::into_anyhow)

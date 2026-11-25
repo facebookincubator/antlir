@@ -44,6 +44,8 @@ use starlark::values::ValueOf;
 use starlark::values::dict::StarlarkDict;
 use starlark::values::int::IntView;
 use starlark::values::list_or_tuple::StarlarkListOrTuple;
+use starlark::values::none::NoneOr;
+use starlark::values::none::NoneType;
 use starlark::values::starlark_value;
 use starlark::values::string::StarlarkStr;
 use starlark::values::structs::AllocStruct;
@@ -239,12 +241,13 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> anyhow::Result<&'a TypeRegistry
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
-        #[starlark(require = named)] __thrift: Option<
+        #[starlark(require = named, default = NoneType)] __thrift: NoneOr<
             ValueOf<'v, StarlarkDict<'v, IntView<'v>, StarlarkStr>>,
         >,
         #[starlark(kwargs)] kwargs: ValueOf<'v, StarlarkDict<'v, StarlarkStr, Value<'v>>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<ValueOf<'v, TypeId>> {
+        let __thrift = __thrift.into_option();
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let mut fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = BTreeMap::new();
         for entry in kwargs.try_items::<&str, Value>() {
@@ -379,11 +382,12 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
-        #[starlark(require = named)] __thrift: Option<
+        #[starlark(require = named, default = NoneType)] __thrift: NoneOr<
             ValueOf<'v, StarlarkListOrTuple<'v, IntView<'v>>>,
         >,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> starlark::Result<ValueOf<'v, TypeId>> {
+        let __thrift = __thrift.into_option();
         let mut reg = get_type_registry(eval)?
             .try_borrow_mut()
             .map_err(starlark::Error::new_native)?;
