@@ -41,7 +41,7 @@ use starlark::values::StringValue;
 use starlark::values::UnpackValue;
 use starlark::values::Value;
 use starlark::values::ValueOf;
-use starlark::values::dict::DictType;
+use starlark::values::dict::StarlarkDict;
 use starlark::values::int::IntView;
 use starlark::values::list_or_tuple::StarlarkListOrTuple;
 use starlark::values::starlark_value;
@@ -240,9 +240,9 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> anyhow::Result<&'a TypeRegistry
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
         #[starlark(require = named)] __thrift: Option<
-            ValueOf<'v, DictType<IntView<'v>, StarlarkStr>>,
+            ValueOf<'v, StarlarkDict<'v, IntView<'v>, StarlarkStr>>,
         >,
-        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<StarlarkStr, Value<'v>>>,
+        #[starlark(kwargs)] kwargs: ValueOf<'v, StarlarkDict<'v, StarlarkStr, Value<'v>>>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<ValueOf<'v, TypeId>> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
@@ -343,7 +343,7 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn new<'v>(
         shape: Value<'v>,
-        #[starlark(kwargs)] kwargs: ValueOf<'v, DictType<StarlarkStr, Value<'v>>>,
+        #[starlark(kwargs)] kwargs: ValueOf<'v, StarlarkDict<'v, StarlarkStr, Value<'v>>>,
     ) -> anyhow::Result<AllocStruct<Vec<(StringValue<'v>, Value<'v>)>>> {
         let _ = shape;
         // no need to type-check, since it will already be done at buck parse
