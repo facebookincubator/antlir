@@ -238,6 +238,16 @@ all_rpms.append(
 
 all_rpms.append(
     test_rpm(
+        name = "antlir2-postscript-lua",
+        epoch = 0,
+        post_install_script = ("<lua>", "posix.mkdir('/antlir2-postscript-lua')"),
+        release = "1",
+        version = "1",
+    ),
+)
+
+all_rpms.append(
+    test_rpm(
         name = "antlir2-changelog",
         changelog = """* Mon Jan 1 2024 Vinnie Magro <vmagro@meta.com> - 0.1-1
 - Example changelog

@@ -1,0 +1,8 @@
+[file.antlir2-postscript-lua]
+op = "added"
+
+[file.antlir2-postscript-lua.diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"

@@ -5,6 +5,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/os:oses.bzl", "OSES")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "python_binary", "python_unittest")
 load("//antlir/bzl:internal_external.bzl", "internal_external")
@@ -609,6 +610,39 @@ test_rpms(
         ),
         ":test-deps",
     ],
+)
+
+test_rpms(
+    name = "postscript-lua",
+    also_eln_dnf5 = True,
+    expected = expected_t(
+        installed = [
+            "antlir2-postscript-lua",
+        ]
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "antlir2-postscript-lua",
+            ]
+        ),
+        ":test-deps",
+    ],
+    parent_layer = ":simple--layer",
+)
+
+image_diff_test(
+    name = "test-postscript-lua",
+    diff = "test_postscript_lua.toml",
+    diff_type = "file",
+    exclude = ["usr/lib/sysimage/rpm"],
+    layer = ":postscript-lua--layer",
+)
+
+antlir2_configured_alias(
+    name = "test-postscript-lua-dnf5",
+    actual = ":test-postscript-lua",
+    default_os = "eln",
 )
 
 image_python_test(

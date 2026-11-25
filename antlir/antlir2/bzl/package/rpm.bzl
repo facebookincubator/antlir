@@ -96,6 +96,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     return [DefaultInfo(package)]
 
+_scriptlet_attr = attrs.option(attrs.one_of(attrs.string(), attrs.tuple(attrs.string(doc = "interpreter"), attrs.string(doc = "script"))), default = None)
+
 _rpm = rule(
     impl = _impl,
     attrs = default_attrs
@@ -128,9 +130,9 @@ _rpm = rule(
             default = os_select(linux = "linux", macos = "darwin"),
         ),
         "packager": attrs.option(attrs.string(), default = None),
-        "post_install_script": attrs.option(attrs.string(), default = None),
-        "post_uninstall_script": attrs.option(attrs.string(), default = None),
-        "pre_uninstall_script": attrs.option(attrs.string(), default = None),
+        "post_install_script": _scriptlet_attr,
+        "post_uninstall_script": _scriptlet_attr,
+        "pre_uninstall_script": _scriptlet_attr,
         "provides": attrs.list(attrs.string(), default = []),
         "python_bytecompile": attrs.bool(default = True),
         "recommends": attrs.list(attrs.string(), default = []),
@@ -145,7 +147,7 @@ _rpm = rule(
         "summary": attrs.option(attrs.string(), default = None),
         "supplements": attrs.list(attrs.string(), default = []),
         "transfiletriggerpostun_paths": attrs.list(attrs.string(), default = []),
-        "transfiletriggerpostun_script": attrs.option(attrs.string(), default = None),
+        "transfiletriggerpostun_script": _scriptlet_attr,
         "version": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime HHMMSS"),
         "_strip": internal_external(
             fb = attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/llvm-project:llvm-strip")),

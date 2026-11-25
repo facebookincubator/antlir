@@ -24,7 +24,7 @@ def test_rpm(
     recommends: list[str] = [],
     features = [],
     parent_layer: str | None = None,
-    post_install_script: str | None = None,
+    post_install_script: str | tuple[str, str] | None = None,
     transfiletriggerpostun_script: str | None = None,
     transfiletriggerpostun_paths: list[str] = [],
     changelog: str | None = None,

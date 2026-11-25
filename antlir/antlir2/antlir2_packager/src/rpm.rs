@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Display;
 use std::fmt::Write as _;
 use std::os::linux::fs::MetadataExt;
 use std::path::Path;
@@ -63,10 +64,10 @@ pub struct Rpm {
     conflicts: Vec<String>,
     description: Option<String>,
     packager: Option<String>,
-    post_install_script: Option<String>,
-    pre_uninstall_script: Option<String>,
-    post_uninstall_script: Option<String>,
-    transfiletriggerpostun_script: Option<String>,
+    post_install_script: Option<Scriptlet>,
+    pre_uninstall_script: Option<Scriptlet>,
+    post_uninstall_script: Option<Scriptlet>,
+    transfiletriggerpostun_script: Option<Scriptlet>,
     #[serde(default)]
     transfiletriggerpostun_paths: Vec<String>,
     sign_with_private_key: Option<PathBuf>,
@@ -90,6 +91,22 @@ pub struct Rpm {
     disable_ldconfig: bool,
     #[serde(rename = "_strip")]
     strip: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum Scriptlet {
+    WithInterpreter(String, String),
+    Bare(String),
+}
+
+impl Display for Scriptlet {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Bare(script) => write!(f, "\n{script}"),
+            Self::WithInterpreter(interpreter, script) => write!(f, "-p {interpreter}\n{script}"),
+        }
+    }
 }
 
 impl PackageFormat for Rpm {
@@ -219,17 +236,17 @@ AutoProv: {autoprov}
             post_install_script = self
                 .post_install_script
                 .as_ref()
-                .map(|s| format!("%post\n{s}\n"))
+                .map(|s| format!("%post {s}\n"))
                 .unwrap_or_default(),
             pre_uninstall_script = self
                 .pre_uninstall_script
                 .as_ref()
-                .map(|s| format!("%preun\n{s}\n"))
+                .map(|s| format!("%preun {s}\n"))
                 .unwrap_or_default(),
             post_uninstall_script = self
                 .post_uninstall_script
                 .as_ref()
-                .map(|s| format!("%postun\n{s}\n"))
+                .map(|s| format!("%postun {s}\n"))
                 .unwrap_or_default(),
             transfiletriggerpostun_script = match (
                 &self.transfiletriggerpostun_script,
@@ -237,7 +254,16 @@ AutoProv: {autoprov}
             ) {
                 (Some(s), paths) => {
                     let path_args = paths.join(" ");
-                    format!("%transfiletriggerpostun -- {path_args}\n{s}\n")
+                    match s {
+                        Scriptlet::Bare(script) => {
+                            format!("%transfiletriggerpostun -- {path_args}\n{script}\n")
+                        }
+                        Scriptlet::WithInterpreter(interpreter, script) => {
+                            format!(
+                                "%transfiletriggerpostun -p {interpreter} -- {path_args}\n{script}\n"
+                            )
+                        }
+                    }
                 }
                 _ => String::new(),
             },
