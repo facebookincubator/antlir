@@ -56,13 +56,13 @@ def _rfc3339(seconds: int) -> str:
     )
 
 def _hermetic_driver_impl(ctx: AnalysisContext) -> list[Provider]:
-    if ctx.attrs.hermit == None:
-        fail("hermetic RPM installs need a Hermit build, which is not available in this build")
     if ctx.attrs.source_date_epoch == None or ctx.attrs.source_date_epoch <= 0:
         fail(
             "hermetic RPM installs need -c antlir2.source_date_epoch=<seconds since the epoch>, "
             + "the commit time of the revision being built; got {}".format(ctx.attrs.source_date_epoch),
         )
+    if ctx.attrs.hermit == None:
+        fail("hermetic RPM installs need a Hermit build, which is not available in this build")
     epoch = _rfc3339(ctx.attrs.source_date_epoch)
 
     # Copied into the Buck output directory: the appliance sees these paths.

@@ -61,7 +61,11 @@ prelude.alias(
 hermetic_driver(
     name = "hermetic-driver",
     driver = ":dnf-driver",
-    # @oss-disable[end= ]: hermit = "fbcode//hermetic_infra/hermit/hermit-cli:hermit",
+    # Hermit is a dependency only of builds that pass -c antlir2.source_date_epoch,
+    # which hermetic RPM installs require. Test selection reads the unconfigured
+    # graph without that setting, so a change to Hermit no longer selects every
+    # target that reaches this driver through the distro C++ toolchain's sysroot.
+    # @oss-disable[end= ]: hermit = "fbcode//hermetic_infra/hermit/hermit-cli:hermit" if _source_date_epoch.isdigit() else None,
     # Required when hermetic RPM installs are enabled: the commit time of the
     # revision being built, in seconds since the epoch. See hermetic.bzl.
     source_date_epoch = int(_source_date_epoch) if _source_date_epoch.isdigit() else None,
