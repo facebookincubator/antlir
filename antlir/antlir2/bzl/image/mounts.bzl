@@ -35,7 +35,7 @@ def all_mounts(*, features: list[feature_record | typing.Any] | None, parent_lay
                     mount_record(
                         layer = layer_mount_record(
                             mountpoint = mount.layer.mountpoint,
-                            subvol_symlink = layer_mount.layer[LayerInfo].contents.subvol_symlink,
+                            contents = layer_mount.layer[LayerInfo].contents,
                         ),
                         host = None,
                     )
@@ -50,7 +50,7 @@ def all_mounts(*, features: list[feature_record | typing.Any] | None, parent_lay
                         mount_record(
                             layer = layer_mount_record(
                                 mountpoint = new_mountpoint,
-                                subvol_symlink = nested.layer.subvol_symlink,
+                                contents = nested.layer.contents,
                             )
                             if nested.layer
                             else None,
@@ -81,8 +81,22 @@ def all_mounts(*, features: list[feature_record | typing.Any] | None, parent_lay
 
 def container_mount_args(mount: mount_record) -> cmd_args:
     if mount.layer:
-        return cmd_args("--bind-mount-ro", mount.layer.subvol_symlink, mount.layer.mountpoint)
+        if not mount.layer.contents.subvol_symlink:
+            fail("the layer mounted at {} has no local subvolume (force-remote cad-stack layer)".format(mount.layer.mountpoint))
+        return cmd_args("--bind-mount-ro", mount.layer.contents.subvol_symlink, mount.layer.mountpoint)
     elif mount.host:
         return cmd_args("--bind-mount-ro", mount.host.src, mount.host.mountpoint)
     else:
         fail("neither host nor layer mount, what is it?!")
+
+def genrule_mount_args(mount: mount_record) -> cmd_args:
+    """
+    Mount args for genrule_in_image, which materializes a cad-stack layer
+    itself, so the mounted layer needs no local subvolume and the genrule can
+    run remotely
+    """
+    # TODO: re-unify with container_mount_args once container_subtarget
+    # supports a cad-stack mount src
+    if mount.layer and mount.layer.contents.cad_stack:
+        return cmd_args([cmd_args("--mount-cad-stack", mount.layer.mountpoint, layer) for layer in mount.layer.contents.cad_stack])
+    return container_mount_args(mount)

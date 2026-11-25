@@ -59,3 +59,13 @@ class Test(unittest.TestCase):
         self.assertEqual(
             f.read_text(), "file-in-mount-1\nfile-in-mount-2\nfile 1 in mounted layer"
         )
+
+    def test_with_mount_cad_stack(self) -> None:
+        for var in ("WITH_MOUNT_CAD_STACK", "WITH_MOUNT_CAD_STACK_REMOTE"):
+            with self.subTest(var):
+                f = Path(os.getenv(var))
+                self.assertTrue(f.exists())
+                self.assertEqual(
+                    f.read_text(),
+                    "file-in-mount-1\nfile-in-mount-2\nfile 1 in mounted layer",
+                )

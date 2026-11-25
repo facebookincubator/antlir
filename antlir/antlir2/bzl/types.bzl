@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/bzl:layer_contents.bzl", _LayerContents = "LayerContents")
 load("//antlir/antlir2/bzl/image:mount_types.bzl", "mount_record")
 load("//antlir/antlir2/features:feature_info.bzl", "feature_record")
 
@@ -31,15 +32,8 @@ FlavorDnfInfo = provider(
     ]
 )
 
-# Eventually antlir2 hopes to support other storage formats, but for now only
-# local subvolumes are supported
-LayerContents = record(
-    subvol_symlink = field(Artifact | None),  # symlink pointing to the built subvol
-    # was the subvol built in rootless mode or not?
-    subvol_symlink_rootless = field(bool),
-    cad_stack = field(list[Artifact] | None, default = None),
-    configured_working_format = str,
-)
+# defined apart so that mount_types.bzl, which this loads, can use it too
+LayerContents = _LayerContents
 
 LayerInfo = provider(
     fields = {

@@ -38,6 +38,28 @@ def _default_list(maybe_value: list[str] | None, default: list[str]) -> list[str
         return default
     return maybe_value
 
+def _materialize(ctx: AnalysisContext, name: str, cad_stack: list[Artifact], rootless: bool) -> Artifact:
+    subvol_symlink = ctx.actions.declare_output(name)
+    ctx.actions.run(
+        cmd_args(
+            cmd_args("sudo") if not rootless else cmd_args(),
+            ctx.attrs._antlir2[RunInfo],
+            "cad-stack",
+            "materialize",
+            cmd_args("--rootless") if rootless else cmd_args(),
+            cmd_args(cad_stack[0], format = "--top={}"),
+            [cmd_args(p, format = "--parent={}") for p in cad_stack[1:]],
+            cmd_args(subvol_symlink.as_output(), format = "--subvol-symlink={}"),
+        ),
+        category = "materialize_to_subvol",
+        identifier = name,
+        env = {
+            "RUST_LOG": "antlir2=trace",
+        },
+        local_only = True,
+    )
+    return subvol_symlink
+
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     if not ctx.attrs.boot and (ctx.attrs.boot_requires_units or ctx.attrs.boot_after_units):
         fail("boot=False cannot be combined with boot_{requires,after}_units")
@@ -53,31 +75,18 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # The layer was compiled on RE without a local materialize_to_subvol
         # (e.g. force-remote + aarch64). Create our own local materialize
         # action using the layer's cad_stack.
-        subvol_symlink = ctx.actions.declare_output("subvol_symlink")
-        rootless = layer_contents.subvol_symlink_rootless
-        cad_stack = layer_contents.cad_stack
-        ctx.actions.run(
-            cmd_args(
-                cmd_args("sudo") if not rootless else cmd_args(),
-                ctx.attrs._antlir2[RunInfo],
-                "cad-stack",
-                "materialize",
-                cmd_args("--rootless") if rootless else cmd_args(),
-                cmd_args(cad_stack[0], format = "--top={}"),
-                [cmd_args(p, format = "--parent={}") for p in cad_stack[1:]],
-                cmd_args(subvol_symlink.as_output(), format = "--subvol-symlink={}"),
-            ),
-            category = "materialize_to_subvol",
-            env = {
-                "RUST_LOG": "antlir2=trace",
-            },
-            local_only = True,
-        )
+        subvol_symlink = _materialize(ctx, "subvol_symlink", layer_contents.cad_stack, layer_contents.subvol_symlink_rootless)
 
     mounts = {}
-    for mount in ctx.attrs.layer[LayerInfo].mounts:
+    for i, mount in enumerate(ctx.attrs.layer[LayerInfo].mounts):
         if mount.layer:
-            mounts[mount.layer.mountpoint] = mount.layer.subvol_symlink
+            # likewise for mounted cad-stack layers
+            mounts[mount.layer.mountpoint] = mount.layer.contents.subvol_symlink or _materialize(
+                ctx,
+                "mount_{}/subvol_symlink".format(i),
+                mount.layer.contents.cad_stack,
+                mount.layer.contents.subvol_symlink_rootless,
+            )
         if mount.host:
             mounts[mount.host.mountpoint] = mount.host.src
     spec = ctx.actions.write_json(

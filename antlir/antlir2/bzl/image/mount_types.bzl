@@ -3,9 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:layer_contents.bzl", "LayerContents")
+
 layer_mount_record = record(
     mountpoint = str,
-    subvol_symlink = Artifact,
+    contents = LayerContents,
 )
 
 host_mount_record = record(

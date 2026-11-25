@@ -36,6 +36,11 @@ struct Args {
     /// `--bind-mount-ro src dst` creates an RO bind-mount of src to dst in the subvol
     #[clap(long, num_args = 2)]
     bind_mount_ro: Vec<PathBuf>,
+    /// `--mount-cad-stack dst layer`, repeated for each layer of a cad-stack
+    /// (top first), materializes it and creates an RO bind-mount of it to dst
+    /// in the subvol
+    #[clap(long, num_args = 2)]
+    mount_cad_stack: Vec<PathBuf>,
     #[clap(flatten)]
     out: Out,
     #[clap(last(true))]
@@ -75,25 +80,27 @@ fn main() -> Result<()> {
             ensure!(args.layer.len() == 1, "btrfs requires exactly one layer");
             args.layer[0].clone()
         }
-        WorkingFormat::CadStack => {
-            let wv = WorkingVolume::ensure()?;
-            let path = wv.allocate_new_subvol_path()?;
-            std::fs::create_dir_all(&path)?;
-
-            let store = cad_stack::ObjectStore::open_rw(
-                args.layer[0].join("store"),
-                args.layer.iter().skip(1).map(|p| p.join("store")),
-            )
-            .context("while opening cad-stack store")?;
-            extract_root_dir(
-                &store,
-                &Dir::open_ambient_dir(&path, ambient_authority())
-                    .context("while opening new root")?,
-            )
-            .context("while re-hydrating cad-stack")?;
-            path
-        }
+        WorkingFormat::CadStack => materialize_cad_stack(&args.layer)?,
     };
+    let mut cad_stacks: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
+    for pair in args.mount_cad_stack.chunks(2) {
+        let [dst, layer] = pair else {
+            return Err(anyhow!("Unrecognized mount arg: {:?}", pair));
+        };
+        cad_stacks
+            .entry(dst.clone())
+            .or_default()
+            .push(layer.clone());
+    }
+    let cad_stack_mounts = cad_stacks
+        .into_iter()
+        .map(|(dst, stack)| {
+            let path = materialize_cad_stack(&stack).with_context(|| {
+                format!("while materializing the layer mounted at {}", dst.display())
+            })?;
+            Ok((dst, path))
+        })
+        .collect::<Result<HashMap<_, _>>>()?;
 
     let mut builder = IsolationContext::builder(layer_path.as_path());
     builder.ephemeral(true);
@@ -119,6 +126,7 @@ fn main() -> Result<()> {
             })
             .collect::<anyhow::Result<HashMap<_, _>>>()?,
     );
+    builder.inputs(cad_stack_mounts);
 
     if args.out.dir {
         std::fs::create_dir_all(&args.out.out)?;
@@ -179,6 +187,25 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Re-hydrate a cad-stack (top first) into a new directory in the working volume
+fn materialize_cad_stack(stack: &[PathBuf]) -> Result<PathBuf> {
+    let wv = WorkingVolume::ensure()?;
+    let path = wv.allocate_new_subvol_path()?;
+    std::fs::create_dir_all(&path)?;
+
+    let store = cad_stack::ObjectStore::open_rw(
+        stack[0].join("store"),
+        stack.iter().skip(1).map(|p| p.join("store")),
+    )
+    .context("while opening cad-stack store")?;
+    extract_root_dir(
+        &store,
+        &Dir::open_ambient_dir(&path, ambient_authority()).context("while opening new root")?,
+    )
+    .context("while re-hydrating cad-stack")?;
+    Ok(path)
 }
 
 fn chown_r(dir: &Path, uid: Option<Uid>, gid: Option<Gid>) -> std::io::Result<()> {

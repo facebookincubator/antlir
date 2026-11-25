@@ -150,6 +150,34 @@ genrule_in_image(
     layer = ":layer-with-mount",
 )
 
+# The same mount, built rootless in cad-stack format: the genrule
+# materializes the mounted layer from its cad-stack
+genrule_in_image(
+    name = "with-mount-cad-stack",
+    out = "f",
+    bash = """
+        ls /mnt/layer > $OUT
+        cat /mnt/layer/file-in-mount-1 >> $OUT
+    """,
+    layer = ":layer-with-mount",
+    rootless = True,
+    working_format = "cad-stack",
+)
+
+# ... without a local subvolume for either layer
+genrule_in_image(
+    name = "with-mount-cad-stack-remote",
+    out = "f",
+    bash = """
+        ls /mnt/layer > $OUT
+        cat /mnt/layer/file-in-mount-1 >> $OUT
+    """,
+    exec_mode = "force-remote",
+    layer = ":layer-with-mount",
+    rootless = True,
+    working_format = "cad-stack",
+)
+
 genrule_in_image(
     name = "executable-script",
     out = "script.sh",
@@ -184,6 +212,8 @@ python_unittest(
         "RUN_EXECUTABLE_SCRIPT": "$(location :run-executable-script)",
         "SINGLE_FILE": "$(location :single-file)",
         "WITH_MOUNT": "$(location :with-mount)",
+        "WITH_MOUNT_CAD_STACK": "$(location :with-mount-cad-stack)",
+        "WITH_MOUNT_CAD_STACK_REMOTE": "$(location :with-mount-cad-stack-remote)",
     },
     network_access = network_access_utils.all(),
 )
