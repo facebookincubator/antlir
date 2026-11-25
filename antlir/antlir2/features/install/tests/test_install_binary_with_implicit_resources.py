@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-import os
 import subprocess
 import unittest
 from pathlib import Path
@@ -34,10 +33,3 @@ class TestInstallBinaryWithImplicitResources(unittest.TestCase):
         )
         self.assertTrue(empty_resource.is_dir())
         self.assertEqual(list(empty_resource.iterdir()), [])
-
-        dir_resource = (
-            resources_path.parent
-            / resources["antlir/antlir2/features/install/tests/dir_resource"]
-        )
-        self.assertEqual((dir_resource / "hello.txt").read_text(), "hello\n")
-        self.assertTrue(os.access(dir_resource / "bin" / "tool", os.X_OK))

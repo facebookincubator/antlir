@@ -7,7 +7,6 @@
 import argparse
 import functools
 import json
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -157,12 +156,7 @@ def cmd_split_dir(args: argparse.Namespace) -> None:
     debuginfo_dir.mkdir(parents=True, exist_ok=True)
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
-    # Each resource is a symlink into buck-out, and a resource can be a
-    # directory, so the walk follows symlinked directories.
-    paths = []
-    for root, dirnames, filenames in os.walk(input_dir, followlinks=True):
-        paths.extend(Path(root) / name for name in dirnames + filenames)
-    for filepath in sorted(paths):
+    for filepath in sorted(input_dir.rglob("*")):
         relpath = filepath.relative_to(input_dir)
         if filepath.is_dir():
             (stripped_dir / relpath).mkdir(parents=True, exist_ok=True)
