@@ -27,6 +27,11 @@ impl FileContent {
         std::io::copy(&mut self.file, output)?;
         Ok(())
     }
+
+    /// The file holding the content, to read it.
+    pub fn into_file(self) -> File {
+        self.file
+    }
 }
 
 impl Object for FileContent {

@@ -30,9 +30,9 @@ use rustix::fs::readlinkat;
 use rustix::fs::symlinkat;
 use xattr::FileExt;
 
-mod dir;
-mod file_content;
-mod meta;
+pub mod dir;
+pub mod file_content;
+pub mod meta;
 
 use crate::dir::Dir;
 use crate::dir::DirEntry as DirEntryObject;
