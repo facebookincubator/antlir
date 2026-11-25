@@ -343,7 +343,12 @@ impl antlir2_depgraph_if::RequiresProvides for Install {
                     file_type: FileType::Directory,
                     mode: 0o555,
                 })));
-                for entry in WalkDir::new(&implicit_resources.resources_dir).min_depth(1) {
+                // Each resource is a symlink into buck-out, so the walk follows
+                // links to reach the files of a resource that is a directory.
+                for entry in WalkDir::new(&implicit_resources.resources_dir)
+                    .follow_links(true)
+                    .min_depth(1)
+                {
                     let entry = entry
                         .with_context(|| {
                             format!(
@@ -580,7 +585,7 @@ impl antlir2_compile::CompileFeature for Install {
                 let dst_parent = dst.parent().expect("must have parent");
                 let resources_dir = dst_parent.join(&implicit_resources.resources_dir_name);
                 std::fs::create_dir_all(&resources_dir)?;
-                for entry in WalkDir::new(&implicit_resources.resources_dir) {
+                for entry in WalkDir::new(&implicit_resources.resources_dir).follow_links(true) {
                     let entry = entry.map_err(std::io::Error::from)?;
                     let relpath = entry
                         .path()

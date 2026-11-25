@@ -517,11 +517,18 @@ buck_genrule(
     cmd = 'mkdir "$OUT"',
 )
 
+buck_genrule(
+    name = "dir-resource",
+    out = "dir",
+    cmd = 'mkdir -p "$OUT/bin" && echo hello > "$OUT/hello.txt" && touch "$OUT/bin/tool" && chmod +x "$OUT/bin/tool"',
+)
+
 rust_binary(
     name = "binary-with-resources",
     srcs = ["binary_with_resources.rs"],
     crate_root = "binary_with_resources.rs",
     resources = {
+        "dir_resource": ":dir-resource",
         "empty_resource": ":empty-resource",
         "my_resource": ":resource.txt",
     },
@@ -548,6 +555,28 @@ image_python_test(
     srcs = ["test_install_binary_with_implicit_resources.py"],
     # @oss-disable[end= ]: labels = [ci.mode("fbcode//mode/opt")],
     layer = ":install-binary-with-implicit-resources",
+    supports_static_listing = False,
+)
+
+# Without the split, install copies the resources straight from buck-out.
+image.layer(
+    name = "install-binary-with-implicit-resources-unsplit",
+    features = [
+        feature.rpms_install(rpms = ["coreutils"]),
+        feature.install(
+            src = ":binary-with-resources",
+            dst = "/binary-with-resources",
+            never_use_dev_binary_symlink = True,
+            split_debuginfo = False,
+        ),
+    ],
+)
+
+image_python_test(
+    name = "test-install-binary-with-implicit-resources-unsplit",
+    srcs = ["test_install_binary_with_implicit_resources.py"],
+    # @oss-disable[end= ]: labels = [ci.mode("fbcode//mode/opt")],
+    layer = ":install-binary-with-implicit-resources-unsplit",
     supports_static_listing = False,
 )
 
