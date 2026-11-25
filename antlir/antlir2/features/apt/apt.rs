@@ -16,6 +16,7 @@ use std::io::Seek;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
 use std::process::Stdio;
 
 use antlir2_compile::Arch;
@@ -206,8 +207,14 @@ impl Apt {
     /// configure them (`dpkg --configure --pending`).
     /// A new root has no /bin/sh for preinst until the essential packages
     /// are unpacked, so, like debootstrap, every package is extracted into
-    /// it first.
+    /// it first. At the end, dpkg processes the triggers the transaction
+    /// activated, as at the end of every dpkg run apt makes.
     fn run_transaction(&self, ctx: &CompilerContext, plan: Plan) -> Result<()> {
+        self.apply_transaction(ctx, plan)?;
+        run_pending_triggers(ctx, self.source_date_epoch)
+    }
+
+    fn apply_transaction(&self, ctx: &CompilerContext, plan: Plan) -> Result<()> {
         let tx = plan.tx.into_inner();
         let run_driver = |tx: ResolvedTransaction, stage: Option<DriverStage>| {
             run_apt_driver(
@@ -463,6 +470,48 @@ fn run_maintainer_script(ctx: &CompilerContext, s: MaintainerScript) -> Result<(
     if !ctx.dst_path(&path)?.exists() {
         return Ok(());
     }
+    let mut cmd = image_command(
+        ctx,
+        &path,
+        source_date_epoch,
+        &[
+            ("DPKG_MAINTSCRIPT_PACKAGE", package),
+            ("DPKG_MAINTSCRIPT_NAME", script),
+            ("DPKG_MAINTSCRIPT_ARCH", arch),
+        ],
+    )?;
+    cmd.args(args);
+    trace!("running maintainer script: {cmd:?}");
+    run_image_command(cmd, &format!("{package} {script} {args:?}"))
+}
+
+/// Have dpkg process the triggers that are pending, as it does at the end of
+/// every run apt makes: this also sets up dpkg's triggers database, without
+/// which `dpkg-trigger` in later maintainer scripts records nothing. apt
+/// holds dpkg's frontend lock while it runs dpkg, so dpkg takes none.
+fn run_pending_triggers(ctx: &CompilerContext, source_date_epoch: Option<u64>) -> Result<()> {
+    if !ctx.dst_path("/usr/bin/dpkg")?.exists() {
+        return Ok(());
+    }
+    let mut cmd = image_command(
+        ctx,
+        "/usr/bin/dpkg",
+        source_date_epoch,
+        &[("DPKG_FRONTEND_LOCKED", "1")],
+    )?;
+    cmd.args(["--triggers-only", "--pending"]);
+    trace!("processing pending triggers: {cmd:?}");
+    run_image_command(cmd, "dpkg --triggers-only --pending")
+}
+
+/// A command run with the image as the root filesystem, in the environment
+/// dpkg runs maintainer scripts in
+fn image_command(
+    ctx: &CompilerContext,
+    program: &str,
+    source_date_epoch: Option<u64>,
+    env: &[(&str, &str)],
+) -> Result<Command> {
     let mut isol = IsolationContext::builder(ctx.root_path());
     isol.ephemeral(false)
         .working_directory(Path::new("/"))
@@ -478,29 +527,30 @@ fn run_maintainer_script(ctx: &CompilerContext, s: MaintainerScript) -> Result<(
         // scripts that derive a charmap from the locale (console-setup's
         // setupcon) pick UTF-8, as they do on an installed system
         .setenv(("LANG", "C.UTF-8"))
-        .setenv(("SYSTEMD_OFFLINE", "1"))
-        .setenv(("DPKG_MAINTSCRIPT_PACKAGE", package))
-        .setenv(("DPKG_MAINTSCRIPT_NAME", script))
-        .setenv(("DPKG_MAINTSCRIPT_ARCH", arch));
+        .setenv(("SYSTEMD_OFFLINE", "1"));
+    for (key, value) in env {
+        isol.setenv(((*key).to_owned(), (*value).to_owned()));
+    }
     if let Some(epoch) = source_date_epoch {
         isol.setenv(("SOURCE_DATE_EPOCH".to_owned(), epoch.to_string()));
     }
-    let mut cmd = unshare(isol.build())?.command(&path)?;
-    cmd.args(args);
-    trace!("running maintainer script: {cmd:?}");
+    Ok(unshare(isol.build())?.command(program)?)
+}
+
+fn run_image_command(mut cmd: Command, what: &str) -> Result<()> {
     let out = cmd
         .output()
-        .with_context(|| format!("while running {package} {script}"))?;
+        .with_context(|| format!("while running {what}"))?;
     let stdout = String::from_utf8_lossy(&out.stdout);
     let stderr = String::from_utf8_lossy(&out.stderr);
     if !out.status.success() {
         return Err(anyhow::anyhow!(
-            "{package} {script} {args:?} failed ({}):\n{stdout}\n{stderr}",
+            "{what} failed ({}):\n{stdout}\n{stderr}",
             out.status
         ));
     }
     if !stdout.is_empty() || !stderr.is_empty() {
-        debug!("{package} {script}: {stdout}{stderr}");
+        debug!("{what}: {stdout}{stderr}");
     }
     Ok(())
 }
