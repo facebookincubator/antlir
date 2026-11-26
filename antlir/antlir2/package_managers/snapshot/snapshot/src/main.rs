@@ -6,6 +6,7 @@
  */
 
 use std::fs::File;
+use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Mutex;
@@ -24,6 +25,10 @@ struct Args {
     verbose: u8,
     #[clap(long)]
     log: Option<PathBuf>,
+    /// Maximum mutating storage requests (writes, copies, symlinks,
+    /// directory creation, TTL updates) per second, across the whole process.
+    #[clap(long, global = true, default_value_t = snapshot::storage::DEFAULT_WRITE_QPS)]
+    write_qps: NonZeroU32,
     #[clap(subcommand)]
     sub: Sub,
 }
@@ -95,6 +100,8 @@ async fn do_main(fb: fbinit::FacebookInit) -> Result<()> {
         .with(stderr_layer)
         .with(file_layer)
         .init();
+
+    snapshot::storage::set_write_qps(args.write_qps);
 
     match args.sub {
         Sub::Metadata(metadata) => metadata.run(fb).await,

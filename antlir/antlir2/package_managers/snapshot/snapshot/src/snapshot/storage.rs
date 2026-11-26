@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::num::NonZeroU32;
 use std::path::Path;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -26,6 +28,25 @@ use facebook::ManifoldStorageConfig;
 
 /// How many tree symlinks to create at once.
 pub(crate) const MAX_CONCURRENT_SYMLINK: usize = 500;
+
+/// Default cap on mutating storage requests per second, across the whole
+/// process. Several snapshot jobs share one Manifold API key quota, so each
+/// one stays well under it on its own.
+pub(crate) const DEFAULT_WRITE_QPS: NonZeroU32 =
+    NonZeroU32::new(2000).expect("2000 is indeed non-zero");
+
+static WRITE_QPS: OnceLock<NonZeroU32> = OnceLock::new();
+
+/// Set the process-wide write QPS cap. Must be called before the first
+/// storage write; later calls are ignored.
+pub(crate) fn set_write_qps(qps: NonZeroU32) {
+    let _ = WRITE_QPS.set(qps);
+}
+
+#[cfg(facebook)]
+pub(crate) fn write_qps() -> NonZeroU32 {
+    WRITE_QPS.get().copied().unwrap_or(DEFAULT_WRITE_QPS)
+}
 
 const INITIAL_BACKOFF: Duration = Duration::from_secs(1);
 const MAX_ELAPSED: Duration = Duration::from_secs(60);
